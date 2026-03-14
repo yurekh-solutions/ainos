@@ -63,7 +63,7 @@ export default function SignInPage() {
               <Zap className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-white tracking-tight">IANOS</h1>
-            <p className="text-white/50 text-sm mt-1">Billing Suite</p>
+            <p className="text-white/50 text-sm mt-2">Billing Suite</p>
           </motion.div>
 
           {/* Welcome Text */}
@@ -71,7 +71,7 @@ export default function SignInPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-center mb-8"
+            className="text-center mb-6 mt-2"
           >
             <div className="flex items-center justify-center gap-2 mb-2">
               <Sparkles className="w-4 h-4 text-amber-400" />
@@ -98,7 +98,7 @@ export default function SignInPage() {
           </motion.button>
 
           {/* Divider */}
-          <div className="flex items-center gap-4 my-6">
+          <div className="flex items-center gap-4 my-5">
             <div className="flex-1 h-px bg-white/10" />
             <span className="text-white/30 text-xs">FEATURES</span>
             <div className="flex-1 h-px bg-white/10" />
@@ -109,7 +109,7 @@ export default function SignInPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="space-y-3"
+            className="space-y-2"
           >
             {features.map((feature, index) => (
               <motion.div
@@ -117,7 +117,7 @@ export default function SignInPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.5 + index * 0.1 }}
-                className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/5"
+                className="flex items-center gap-3 p-2.5 rounded-lg bg-white/5 border border-white/5"
               >
                 <feature.icon className={`w-5 h-5 ${feature.color}`} />
                 <span className="text-white/70 text-sm">{feature.text}</span>
