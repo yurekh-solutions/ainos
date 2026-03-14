@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { X, Search, Play, Clock, Webhook, Mail, FileText, Send, Bell, CreditCard, BarChart3, User, UserPlus, GitBranch, Timer, Globe, Table } from 'lucide-react';
 import { useWorkflowStore } from '@/store/workflowStore';
@@ -19,10 +19,22 @@ interface NodePaletteProps {
 }
 
 export function NodePalette({ onClose, workflowId, onNodeAdd }: NodePaletteProps) {
-  const { nodeTypes, addNode } = useWorkflowStore();
+  const { nodeTypes, addNode, workflows } = useWorkflowStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const nodeCounterRef = useRef(0);
+  
+  const workflow = workflows.find((w) => w.id === workflowId);
+  
+  // Calculate next ID for each node type based on existing nodes
+  const getNextNodeId = (nodeType: string) => {
+    if (!workflow) return `${nodeType}-1`;
+    const existingNodes = workflow.nodes.filter((n) => n.type === nodeType);
+    const maxNum = existingNodes.reduce((max, node) => {
+      const match = node.id.match(new RegExp(`${nodeType}-(\\d+)`));
+      return match ? Math.max(max, parseInt(match[1], 10)) : max;
+    }, 0);
+    return `${nodeType}-${maxNum + 1}`;
+  };
 
   const categories = Array.from(new Set(nodeTypes.map((nt) => nt.category)));
 
@@ -34,11 +46,11 @@ export function NodePalette({ onClose, workflowId, onNodeAdd }: NodePaletteProps
   });
 
   const handleAddNode = (nodeType: typeof nodeTypes[0]) => {
-    nodeCounterRef.current += 1;
-    const nodeId = `${nodeType.type}-${nodeCounterRef.current}`;
+    const nodeId = getNextNodeId(nodeType.type);
+    const nodeCount = workflow?.nodes.length ?? 0;
     // Position nodes in the left area, away from the config panel (which is on the right)
-    const posX = 100 + ((nodeCounterRef.current * 60) % 250);
-    const posY = 150 + ((nodeCounterRef.current * 50) % 250);
+    const posX = 100 + ((nodeCount * 60) % 250);
+    const posY = 150 + ((nodeCount * 50) % 250);
     
     const newNodeData = {
       label: nodeType.label,
