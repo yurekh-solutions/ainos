@@ -14,13 +14,13 @@ import {
   type Node,
   Panel,
 } from '@xyflow/react';
-import { Play, Save, Settings } from 'lucide-react';
+import { Play, Save, Settings, Trash2, Copy, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWorkflowStore } from '@/store/workflowStore';
 import { WorkflowNode } from './WorkflowNode';
 import { NodePalette } from './NodePalette';
 import { NodeConfigPanel } from './NodeConfigPanel';
-import type { WorkflowEdge } from '@/types/workflow';
+import type { WorkflowNode as WorkflowNodeType, WorkflowEdge } from '@/types/workflow';
 
 const nodeTypes = {
   workflowNode: WorkflowNode,
@@ -34,7 +34,7 @@ export function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
   const { workflows, updateWorkflow, addExecution } = useWorkflowStore();
   const workflow = workflows.find((w) => w.id === workflowId);
   
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node>(
+  const [nodes, setNodes, onNodesChange] = useNodesState(
     workflow?.nodes.map((n) => ({
       id: n.id,
       type: 'workflowNode',
@@ -43,7 +43,7 @@ export function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
     })) || []
   );
   
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(
+  const [edges, setEdges, onEdgesChange] = useEdgesState(
     workflow?.edges.map((e) => ({
       id: e.id,
       source: e.source,
@@ -60,12 +60,12 @@ export function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
 
   const onConnect = useCallback(
     (connection: Connection) => {
-      const edge = {
+      const edge: Edge = {
         ...connection,
         id: `e${connection.source}-${connection.target}`,
         animated: true,
         style: { stroke: '#6366f1', strokeWidth: 2 },
-      } as Edge;
+      };
       setEdges((eds) => addEdge(edge, eds));
       
       // Update store
@@ -162,7 +162,7 @@ export function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
           <MiniMap
             className="glass-card !border-none"
             nodeColor={(node) => {
-              return (node.data?.color as string) || '#6366f1';
+              return node.data?.color || '#6366f1';
             }}
             maskColor="rgba(0,0,0,0.5)"
           />
@@ -229,7 +229,7 @@ export function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
               onClose={() => setShowPalette(false)}
               workflowId={workflowId}
               onNodeAdd={(node) => {
-                setNodes((nds) => [...nds, node as Node]);
+                setNodes((nds) => [...nds, node]);
                 setShowPalette(false);
               }}
             />
