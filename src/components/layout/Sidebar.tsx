@@ -16,15 +16,20 @@ import {
   ChevronRight,
   Zap,
   LogOut,
+  Building2,
+  BarChart3,
+  CreditCard,
 } from 'lucide-react';
 
 const menuItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
-  { icon: FileText, label: 'Invoices', href: '/invoices' },
-  { icon: Users, label: 'Customers', href: '/customers' },
-  { icon: Package, label: 'Products', href: '/products' },
-  { icon: Workflow, label: 'Workflows', href: '/workflows' },
-  { icon: Settings, label: 'Settings', href: '/settings' },
+  { icon: LayoutDashboard, label: 'Dashboard', href: '/', color: 'text-indigo-400' },
+  { icon: FileText, label: 'Invoices', href: '/invoices', color: 'text-purple-400' },
+  { icon: Users, label: 'Customers', href: '/customers', color: 'text-pink-400' },
+  { icon: Package, label: 'Products', href: '/products', color: 'text-amber-400' },
+  { icon: Building2, label: 'Company', href: '/company', color: 'text-emerald-400' },
+  { icon: BarChart3, label: 'Reports', href: '/reports', color: 'text-cyan-400' },
+  { icon: Workflow, label: 'Workflows', href: '/workflows', color: 'text-violet-400' },
+  { icon: Settings, label: 'Settings', href: '/settings', color: 'text-gray-400' },
 ];
 
 export function Sidebar() {
@@ -49,8 +54,8 @@ export function Sidebar() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <h1 className="text-xl font-bold gradient-text">Ianos</h1>
-            <p className="text-xs text-white/50">Automation</p>
+            <h1 className="text-xl font-bold gradient-text">IANOS</h1>
+            <p className="text-xs text-white/50">Billing Suite</p>
           </motion.div>
         )}
       </div>
@@ -73,7 +78,7 @@ export function Sidebar() {
                 }
               `}
             >
-              <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-indigo-400' : ''}`} />
+              <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? item.color : ''}`} />
               {!collapsed && (
                 <motion.span
                   initial={{ opacity: 0 }}
