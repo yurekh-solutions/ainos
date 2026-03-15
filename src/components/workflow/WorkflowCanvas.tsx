@@ -14,7 +14,7 @@ import {
   type Node,
   Panel,
 } from '@xyflow/react';
-import { Play, Save, Settings, Trash2, Copy, Download } from 'lucide-react';
+import { Play, Save, Settings, Plus, Menu, X, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWorkflowStore } from '@/store/workflowStore';
 import { WorkflowNode } from './WorkflowNode';
@@ -57,6 +57,7 @@ export function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
   
   const [isExecuting, setIsExecuting] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
+  const [showMobilePanel, setShowMobilePanel] = useState(false);
 
   const onConnect = useCallback(
     (connection: Connection) => {
@@ -139,7 +140,7 @@ export function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
   }
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full relative">
       {/* Main Canvas */}
       <div className="flex-1 relative">
         <ReactFlow
@@ -159,59 +160,61 @@ export function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
         >
           <Background color="rgba(255,255,255,0.1)" gap={20} size={1} />
           <Controls className="glass-card !border-none" />
+          {/* MiniMap - Hidden on mobile */}
           <MiniMap
-            className="glass-card !border-none"
+            className="glass-card !border-none hidden sm:block"
             nodeColor={(node) => {
               return (node.data?.color as string) || '#6366f1';
             }}
             maskColor="rgba(0,0,0,0.5)"
           />
           
-          {/* Toolbar */}
-          <Panel position="top-left" className="m-4">
+          {/* Toolbar - Responsive */}
+          <Panel position="top-left" className="m-2 sm:m-4">
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="glass-card p-2 flex items-center gap-2"
+              className="glass-card p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2"
             >
               <button
                 onClick={() => setShowPalette(!showPalette)}
-                className="glass-button px-4 py-2 rounded-lg text-white text-sm font-medium flex items-center gap-2"
+                className="glass-button px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-white text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2"
               >
-                <span>+</span> Add Node
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Add Node</span>
               </button>
-              <div className="w-px h-6 bg-white/20" />
+              <div className="w-px h-5 sm:h-6 bg-white/20" />
               <button
                 onClick={handleExecute}
                 disabled={isExecuting}
-                className="glass-button px-4 py-2 rounded-lg text-white text-sm font-medium flex items-center gap-2 disabled:opacity-50"
+                className="glass-button px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-white text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2 disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
               >
                 <Play className="w-4 h-4" />
-                {isExecuting ? 'Running...' : 'Execute'}
+                <span className="hidden sm:inline">{isExecuting ? 'Running...' : 'Execute'}</span>
               </button>
               <button
                 onClick={handleSave}
-                className="glass p-2 rounded-lg text-white/80 hover:text-white transition-colors"
+                className="glass p-1.5 sm:p-2 rounded-lg text-white/80 hover:text-white transition-colors"
               >
-                <Save className="w-5 h-5" />
+                <Save className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
-              <button className="glass p-2 rounded-lg text-white/80 hover:text-white transition-colors">
-                <Settings className="w-5 h-5" />
+              <button className="glass p-1.5 sm:p-2 rounded-lg text-white/80 hover:text-white transition-colors hidden sm:flex">
+                <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </motion.div>
           </Panel>
 
-          {/* Workflow Info */}
-          <Panel position="top-right" className="m-4">
+          {/* Workflow Info - Hidden on mobile, visible on larger screens */}
+          <Panel position="top-right" className="m-2 sm:m-4 hidden sm:block">
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="glass-card p-4"
+              className="glass-card p-3 sm:p-4 max-w-[200px] sm:max-w-none"
             >
-              <h3 className="text-white font-semibold">{workflow.name}</h3>
-              <p className="text-white/60 text-sm mt-1">{workflow.description}</p>
-              <div className="flex items-center gap-4 mt-3 text-xs text-white/40">
+              <h3 className="text-white font-semibold text-sm sm:text-base truncate">{workflow.name}</h3>
+              <p className="text-white/60 text-xs sm:text-sm mt-1 line-clamp-2">{workflow.description}</p>
+              <div className="flex items-center gap-2 sm:gap-4 mt-2 sm:mt-3 text-[10px] sm:text-xs text-white/40">
                 <span>{nodes.length} nodes</span>
                 <span>{edges.length} connections</span>
                 <span className={workflow.isActive ? 'text-green-400' : 'text-yellow-400'}>
@@ -237,8 +240,52 @@ export function WorkflowCanvas({ workflowId }: WorkflowCanvasProps) {
         </AnimatePresence>
       </div>
 
-      {/* Node Config Panel - fixed width sidebar */}
-      <NodeConfigPanel workflowId={workflowId} />
+      {/* Mobile Panel Toggle Button */}
+      <button
+        onClick={() => setShowMobilePanel(true)}
+        className="lg:hidden fixed bottom-4 right-4 z-30 glass-button p-3 rounded-full shadow-lg flex items-center gap-2"
+      >
+        <ChevronRight className="w-5 h-5 text-white" />
+      </button>
+
+      {/* Node Config Panel - Desktop: always visible, Mobile: overlay */}
+      <div className="hidden lg:block">
+        <NodeConfigPanel workflowId={workflowId} />
+      </div>
+
+      {/* Mobile Config Panel Overlay */}
+      <AnimatePresence>
+        {showMobilePanel && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowMobilePanel(false)}
+              className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+            />
+            {/* Panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="lg:hidden fixed top-0 right-0 bottom-0 w-[85%] max-w-[340px] z-50"
+            >
+              <div className="h-full relative">
+                <button
+                  onClick={() => setShowMobilePanel(false)}
+                  className="absolute top-4 left-4 z-10 p-2 rounded-lg bg-white/10 text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <NodeConfigPanel workflowId={workflowId} />
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

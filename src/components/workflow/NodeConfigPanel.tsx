@@ -15,12 +15,12 @@ export function NodeConfigPanel({ workflowId }: NodeConfigPanelProps) {
 
   if (!node) {
     return (
-      <div className="w-[340px] glass-panel border-l border-white/10 flex flex-col h-full items-center justify-center p-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
-          <span className="text-2xl">👆</span>
+      <div className="w-full lg:w-[340px] glass-panel border-l border-white/10 flex flex-col h-full items-center justify-center p-6 sm:p-8 text-center">
+        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+          <span className="text-xl sm:text-2xl">👆</span>
         </div>
-        <h3 className="text-white font-medium mb-2">No Node Selected</h3>
-        <p className="text-white/50 text-sm">Click on a node to configure its settings</p>
+        <h3 className="text-white font-medium mb-2 text-sm sm:text-base">No Node Selected</h3>
+        <p className="text-white/50 text-xs sm:text-sm">Click on a node to configure its settings</p>
       </div>
     );
   }
@@ -48,27 +48,27 @@ export function NodeConfigPanel({ workflowId }: NodeConfigPanelProps) {
         initial={{ opacity: 0, x: 300 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: 300 }}
-        className="w-[340px] glass-panel border-l border-white/10 flex flex-col h-full"
+        className="w-full lg:w-[340px] glass-panel border-l border-white/10 flex flex-col h-full"
       >
         {/* Header */}
-        <div className="p-4 border-b border-white/10 flex items-center justify-between">
-          <div>
-            <h3 className="text-white font-semibold">{node.data.label}</h3>
-            <p className="text-white/50 text-xs">{node.type}</p>
+        <div className="p-3 sm:p-4 border-b border-white/10 flex items-center justify-between">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-white font-semibold text-sm sm:text-base truncate">{node.data.label}</h3>
+            <p className="text-white/50 text-[10px] sm:text-xs">{node.type}</p>
           </div>
           <button
             onClick={() => setSelectedNode(null)}
-            className="p-1 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+            className="p-1 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors flex-shrink-0 ml-2"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
 
         {/* Config Form */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
           {/* Node Name */}
           <div>
-            <label className="text-white/60 text-xs uppercase tracking-wider mb-2 block">
+            <label className="text-white/60 text-[10px] sm:text-xs uppercase tracking-wider mb-1.5 sm:mb-2 block">
               Node Name
             </label>
             <input
@@ -79,13 +79,13 @@ export function NodeConfigPanel({ workflowId }: NodeConfigPanelProps) {
                   data: { ...node.data, label: e.target.value },
                 })
               }
-              className="glass-input w-full px-4 py-2 rounded-lg text-white text-sm"
+              className="glass-input w-full px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-white text-xs sm:text-sm"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="text-white/60 text-xs uppercase tracking-wider mb-2 block">
+            <label className="text-white/60 text-[10px] sm:text-xs uppercase tracking-wider mb-1.5 sm:mb-2 block">
               Description
             </label>
             <textarea
@@ -96,18 +96,18 @@ export function NodeConfigPanel({ workflowId }: NodeConfigPanelProps) {
                 })
               }
               rows={3}
-              className="glass-input w-full px-4 py-2 rounded-lg text-white text-sm resize-none"
+              className="glass-input w-full px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-white text-xs sm:text-sm resize-none"
             />
           </div>
 
           {/* Dynamic Config Fields */}
           {node.data.config && Object.keys(node.data.config).length > 0 && (
-            <div className="border-t border-white/10 pt-4">
-              <h4 className="text-white/80 text-sm font-medium mb-3">Configuration</h4>
-              <div className="space-y-3">
+            <div className="border-t border-white/10 pt-3 sm:pt-4">
+              <h4 className="text-white/80 text-xs sm:text-sm font-medium mb-2 sm:mb-3">Configuration</h4>
+              <div className="space-y-2 sm:space-y-3">
                 {Object.entries(node.data.config).map(([key, value]) => (
                   <div key={key}>
-                    <label className="text-white/60 text-xs mb-1 block capitalize">
+                    <label className="text-white/60 text-[10px] sm:text-xs mb-1 block capitalize">
                       {key.replace(/([A-Z])/g, ' $1').trim()}
                     </label>
                     {typeof value === 'boolean' ? (
@@ -118,21 +118,21 @@ export function NodeConfigPanel({ workflowId }: NodeConfigPanelProps) {
                           onChange={(e) => handleUpdateConfig(key, e.target.checked)}
                           className="w-4 h-4 rounded border-white/20 bg-white/5"
                         />
-                        <span className="text-white/80 text-sm">{value ? 'Enabled' : 'Disabled'}</span>
+                        <span className="text-white/80 text-xs sm:text-sm">{value ? 'Enabled' : 'Disabled'}</span>
                       </label>
                     ) : typeof value === 'number' ? (
                       <input
                         type="number"
                         value={value}
                         onChange={(e) => handleUpdateConfig(key, parseFloat(e.target.value))}
-                        className="glass-input w-full px-4 py-2 rounded-lg text-white text-sm"
+                        className="glass-input w-full px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-white text-xs sm:text-sm"
                       />
                     ) : (
                       <input
                         type="text"
                         value={String(value)}
                         onChange={(e) => handleUpdateConfig(key, e.target.value)}
-                        className="glass-input w-full px-4 py-2 rounded-lg text-white text-sm"
+                        className="glass-input w-full px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-white text-xs sm:text-sm"
                       />
                     )}
                   </div>
@@ -143,19 +143,19 @@ export function NodeConfigPanel({ workflowId }: NodeConfigPanelProps) {
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-white/10 flex gap-2">
+        <div className="p-3 sm:p-4 border-t border-white/10 flex gap-2">
           <button
             onClick={() => setSelectedNode(null)}
-            className="flex-1 glass-button px-4 py-2 rounded-lg text-white text-sm font-medium flex items-center justify-center gap-2"
+            className="flex-1 glass-button px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-white text-xs sm:text-sm font-medium flex items-center justify-center gap-2"
           >
-            <Save className="w-4 h-4" />
+            <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             Done
           </button>
           <button
             onClick={handleDelete}
-            className="px-4 py-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
           >
-            <Trash2 className="w-5 h-5" />
+            <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
       </motion.div>
