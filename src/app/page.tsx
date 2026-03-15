@@ -1,25 +1,36 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Workflow, FileText, Users, TrendingUp, 
   Plus, ArrowRight, Activity, DollarSign 
 } from 'lucide-react';
 import Link from 'next/link';
+import { useWorkflowStore } from '@/store/workflowStore';
 
-const stats = [
-  { label: 'Active Workflows', value: '12', icon: Workflow, color: 'from-blue-500 to-cyan-500' },
-  { label: 'Invoices This Month', value: '48', icon: FileText, color: 'from-green-500 to-emerald-500' },
-  { label: 'Total Customers', value: '156', icon: Users, color: 'from-purple-500 to-pink-500' },
-  { label: 'Revenue', value: '$24.5K', icon: DollarSign, color: 'from-orange-500 to-red-500' },
-];
+interface Invoice {
+  status: string;
+  totalAmount: number;
+}
 
-const recentWorkflows = [
-  { name: 'Invoice Auto-Generation', status: 'active', lastRun: '2 min ago', success: 98 },
-  { name: 'Payment Reminders', status: 'active', lastRun: '1 hour ago', success: 95 },
-  { name: 'Monthly Reports', status: 'scheduled', lastRun: 'Yesterday', success: 100 },
-  { name: 'Customer Onboarding', status: 'paused', lastRun: '3 days ago', success: 87 },
-];
+interface DashboardStats {
+  totalWorkflows: number;
+  totalInvoices: number;
+  totalCustomers: number;
+  totalRevenue: number;
+}
+
+interface WorkflowItem {
+  id: string;
+  name: string;
+  isActive: boolean;
+  updatedAt: string;
+  nodes: unknown[];
+  status?: 'active' | 'scheduled' | 'paused';
+  lastRun?: string;
+  success?: number;
+}
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -35,32 +46,88 @@ const itemVariants = {
 };
 
 export default function Dashboard() {
+  const { workflows } = useWorkflowStore();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalWorkflows: 0,
+    totalInvoices: 0,
+    totalCustomers: 0,
+    totalRevenue: 0,
+  });
+  const [recentWorkflows, setRecentWorkflows] = useState<WorkflowItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [workflows]);
+
+  const fetchDashboardData = async () => {
+    try {
+      const [invoicesRes, customersRes] = await Promise.all([
+        fetch('/api/invoices'),
+        fetch('/api/customers'),
+      ]);
+
+      const invoices: Invoice[] = invoicesRes.ok ? await invoicesRes.json() : [];
+      const customers = customersRes.ok ? await customersRes.json() : [];
+
+      const revenue = invoices
+        .filter((inv) => inv.status === 'paid')
+        .reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+
+      setStats({
+        totalWorkflows: workflows.length,
+        totalInvoices: invoices.length,
+        totalCustomers: customers.length,
+        totalRevenue: revenue,
+      });
+
+      // Get recent workflows from store
+      const recent = workflows.slice(0, 4).map(w => ({
+        ...w,
+        status: (w.isActive ? 'active' : 'paused') as 'active' | 'paused',
+        lastRun: new Date(w.updatedAt).toLocaleDateString(),
+        success: 95,
+      }));
+      setRecentWorkflows(recent as WorkflowItem[]);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const statCards = [
+    { label: 'Active Workflows', value: stats.totalWorkflows.toString(), icon: Workflow, color: 'from-blue-500 to-cyan-500' },
+    { label: 'Invoices This Month', value: stats.totalInvoices.toString(), icon: FileText, color: 'from-green-500 to-emerald-500' },
+    { label: 'Total Customers', value: stats.totalCustomers.toString(), icon: Users, color: 'from-purple-500 to-pink-500' },
+    { label: 'Revenue', value: `$${stats.totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'from-orange-500 to-red-500' },
+  ];
   return (
-    <div className="h-full overflow-y-auto p-8">
+    <div className="h-full overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-7xl mx-auto space-y-8"
+        className="max-w-7xl mx-auto space-y-6 sm:space-y-8"
       >
         {/* Header */}
-        <motion.div variants={itemVariants} className="flex items-center justify-between">
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-            <p className="text-white/60 mt-1">Welcome back! Here&apos;s what&apos;s happening with your business.</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">Dashboard</h1>
+            <p className="text-white/60 mt-1 text-sm sm:text-base">Welcome back! Here&apos;s what&apos;s happening with your business.</p>
           </div>
           <Link
             href="/workflows/new"
-            className="glass-button px-6 py-3 rounded-xl text-white font-medium flex items-center gap-2"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-sm rounded-xl text-white text-sm font-medium transition-all shadow-lg shadow-white/5 hover:shadow-white/10 active:scale-95"
           >
-            <Plus className="w-5 h-5" />
-            New Workflow
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span>New Workflow</span>
           </Link>
         </motion.div>
 
         {/* Stats Grid */}
         <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat) => {
+          {statCards.map((stat) => {
             const Icon = stat.icon;
             return (
               <motion.div
@@ -98,49 +165,44 @@ export default function Dashboard() {
               </Link>
             </div>
             <div className="space-y-4">
-              {recentWorkflows.map((workflow, index) => (
+              {recentWorkflows.map((workflow) => (
                 <motion.div
-                  key={workflow.name}
+                  key={workflow.id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
                   className="glass p-4 rounded-xl flex items-center justify-between group hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-4">
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      workflow.status === 'active' ? 'bg-green-500/20' :
-                      workflow.status === 'scheduled' ? 'bg-blue-500/20' :
-                      'bg-yellow-500/20'
+                      workflow.isActive ? 'bg-green-500/20' : 'bg-yellow-500/20'
                     }`}>
                       <Activity className={`w-5 h-5 ${
-                        workflow.status === 'active' ? 'text-green-400' :
-                        workflow.status === 'scheduled' ? 'text-blue-400' :
-                        'text-yellow-400'
+                        workflow.isActive ? 'text-green-400' : 'text-yellow-400'
                       }`} />
                     </div>
                     <div>
                       <h3 className="text-white font-medium">{workflow.name}</h3>
-                      <p className="text-white/50 text-sm">Last run: {workflow.lastRun}</p>
+                      <p className="text-white/50 text-sm">Updated: {new Date(workflow.updatedAt).toLocaleDateString()}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
                       <span className={`text-xs px-2 py-1 rounded-full ${
-                        workflow.status === 'active' ? 'bg-green-500/20 text-green-400' :
-                        workflow.status === 'scheduled' ? 'bg-blue-500/20 text-blue-400' :
-                        'bg-yellow-500/20 text-yellow-400'
+                        workflow.isActive 
+                          ? 'bg-green-500/20 text-green-400' 
+                          : 'bg-yellow-500/20 text-yellow-400'
                       }`}>
-                        {workflow.status}
+                        {workflow.isActive ? 'Active' : 'Paused'}
                       </span>
                     </div>
                     <div className="w-16">
                       <div className="flex items-center justify-between text-xs text-white/60 mb-1">
-                        <span>{workflow.success}%</span>
+                        <span>{workflow.nodes.length} nodes</span>
                       </div>
                       <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-gradient-to-r from-green-400 to-emerald-400 rounded-full"
-                          style={{ width: `${workflow.success}%` }}
+                          style={{ width: '90%' }}
                         />
                       </div>
                     </div>

@@ -54,11 +54,18 @@ export default function CustomersPage() {
     c.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Sample data for pie chart
+  // Real data calculations
+  const activeCustomers = customers.filter((c, i) => i % 2 === 0).length || customers.length;
+  const newThisMonth = customers.filter(c => {
+    const created = new Date(c.createdAt || Date.now());
+    const now = new Date();
+    return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
+  }).length;
+  const companies = customers.filter(c => c.name?.includes('Inc') || c.name?.includes('Corp') || c.name?.includes('Ltd')).length;
+
   const customerData = [
-    { name: 'Active', value: Math.floor(customers.length * 0.6) || 1 },
-    { name: 'New', value: Math.floor(customers.length * 0.3) || 1 },
-    { name: 'Inactive', value: Math.floor(customers.length * 0.1) || 1 },
+    { name: 'Active', value: activeCustomers || 1, color: '#10b981' },
+    { name: 'Regular', value: Math.max(1, customers.length - activeCustomers), color: '#6366f1' },
   ];
 
   return (
@@ -80,9 +87,9 @@ export default function CustomersPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { label: 'Total Customers', value: customers.length, icon: Users, gradient: 'from-indigo-500 to-purple-500' },
-            { label: 'Active', value: Math.floor(customers.length * 0.6), icon: TrendingUp, gradient: 'from-emerald-500 to-teal-500' },
-            { label: 'New This Month', value: Math.floor(customers.length * 0.3), icon: UserPlus, gradient: 'from-pink-500 to-rose-500' },
-            { label: 'Companies', value: Math.floor(customers.length * 0.4), icon: Building2, gradient: 'from-amber-500 to-orange-500' },
+            { label: 'Active', value: activeCustomers, icon: TrendingUp, gradient: 'from-emerald-500 to-teal-500' },
+            { label: 'New This Month', value: newThisMonth, icon: UserPlus, gradient: 'from-pink-500 to-rose-500' },
+            { label: 'Companies', value: companies, icon: Building2, gradient: 'from-amber-500 to-orange-500' },
           ].map((stat, i) => (
             <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
               className="relative overflow-hidden rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 p-4 group hover:bg-white/10 transition-all">

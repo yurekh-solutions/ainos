@@ -29,20 +29,20 @@ export default function WorkflowsPage() {
   });
 
   return (
-    <div className="h-full overflow-y-auto p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="h-full overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-white">Workflows</h1>
-            <p className="text-white/60 mt-1">Manage and monitor your automation workflows</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">Workflows</h1>
+            <p className="text-white/60 mt-1 text-sm sm:text-base">Manage and monitor your automation workflows</p>
           </div>
           <Link
             href="/workflows/new"
-            className="glass-button px-6 py-3 rounded-xl text-white font-medium flex items-center gap-2"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-sm rounded-xl text-white text-sm font-medium transition-all shadow-lg shadow-white/5 hover:shadow-white/10 active:scale-95"
           >
-            <Plus className="w-5 h-5" />
-            Create Workflow
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span>New Workflow</span>
           </Link>
         </div>
 
@@ -143,7 +143,7 @@ export default function WorkflowsPage() {
             <p className="text-white/50 mb-6">Create your first automation workflow to get started</p>
             <Link
               href="/workflows/new"
-              className="glass-button inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-medium"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-sm rounded-xl text-white font-medium transition-all shadow-lg shadow-white/5 hover:shadow-white/10 active:scale-95"
             >
               <Plus className="w-5 h-5" />
               Create Workflow

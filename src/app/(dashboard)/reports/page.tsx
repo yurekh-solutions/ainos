@@ -1,48 +1,115 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, TrendingUp, DollarSign, FileText, Users, Download, Calendar, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 
-const revenueData = [
-  { month: 'Jan', revenue: 4200, expenses: 2400 },
-  { month: 'Feb', revenue: 3800, expenses: 2200 },
-  { month: 'Mar', revenue: 5100, expenses: 2800 },
-  { month: 'Apr', revenue: 4800, expenses: 2600 },
-  { month: 'May', revenue: 6200, expenses: 3100 },
-  { month: 'Jun', revenue: 5800, expenses: 2900 },
-];
+interface Invoice {
+  status: string;
+  totalAmount: number;
+  createdAt: string;
+  customer?: { name: string };
+}
 
-const invoiceData = [
-  { status: 'Paid', value: 65, color: '#10b981' },
-  { status: 'Pending', value: 25, color: '#f59e0b' },
-  { status: 'Overdue', value: 10, color: '#ef4444' },
-];
-
-const customerGrowth = [
-  { month: 'Jan', customers: 45 },
-  { month: 'Feb', customers: 52 },
-  { month: 'Mar', customers: 61 },
-  { month: 'Apr', customers: 67 },
-  { month: 'May', customers: 78 },
-  { month: 'Jun', customers: 89 },
-];
-
-const topCustomers = [
-  { name: 'Acme Corp', revenue: 12500, invoices: 8 },
-  { name: 'Tech Solutions', revenue: 9800, invoices: 6 },
-  { name: 'Global Inc', revenue: 8200, invoices: 5 },
-  { name: 'StartUp Labs', revenue: 6500, invoices: 4 },
-  { name: 'Digital Co', revenue: 5100, invoices: 3 },
-];
+interface Customer {
+  _id: string;
+  name: string;
+}
 
 export default function ReportsPage() {
-  const stats = [
-    { label: 'Total Revenue', value: '$28,450', change: '+12.5%', up: true, icon: DollarSign, gradient: 'from-emerald-500 to-teal-500' },
-    { label: 'Total Invoices', value: '156', change: '+8.2%', up: true, icon: FileText, gradient: 'from-indigo-500 to-purple-500' },
-    { label: 'Active Customers', value: '89', change: '+15.3%', up: true, icon: Users, gradient: 'from-pink-500 to-rose-500' },
-    { label: 'Avg Invoice', value: '$182', change: '-2.4%', up: false, icon: BarChart3, gradient: 'from-amber-500 to-orange-500' },
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [invoicesRes, customersRes] = await Promise.all([
+        fetch('/api/invoices'),
+        fetch('/api/customers'),
+      ]);
+
+      const invoicesData = invoicesRes.ok ? await invoicesRes.json() : [];
+      const customersData = customersRes.ok ? await customersRes.json() : [];
+
+      setInvoices(invoicesData);
+      setCustomers(customersData);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calculate real stats
+  const totalRevenue = invoices
+    .filter(inv => inv.status === 'paid')
+    .reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+  
+  const paidCount = invoices.filter(inv => inv.status === 'paid').length;
+  const pendingCount = invoices.filter(inv => inv.status === 'pending').length;
+  const overdueCount = invoices.filter(inv => inv.status === 'overdue').length;
+  const avgInvoice = invoices.length > 0 
+    ? Math.round(invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0) / invoices.length)
+    : 0;
+
+  // Monthly revenue data (group by month)
+  const monthlyData = invoices.reduce((acc: Record<string, { month: string; revenue: number; expenses: number }>, inv) => {
+    const date = new Date(inv.createdAt);
+    const month = date.toLocaleString('default', { month: 'short' });
+    if (!acc[month]) acc[month] = { month, revenue: 0, expenses: 0 };
+    if (inv.status === 'paid') acc[month].revenue += inv.totalAmount || 0;
+    return acc;
+  }, {});
+  const revenueData = Object.values(monthlyData).slice(-6);
+
+  // Invoice status data
+  const invoiceData = [
+    { status: 'Paid', value: paidCount || 1, color: '#10b981' },
+    { status: 'Pending', value: pendingCount || 0, color: '#f59e0b' },
+    { status: 'Overdue', value: overdueCount || 0, color: '#ef4444' },
+  ].filter(d => d.value > 0);
+
+  // Customer growth (mock based on actual customer count)
+  const customerGrowth = [
+    { month: 'Jan', customers: Math.max(0, customers.length - 20) },
+    { month: 'Feb', customers: Math.max(0, customers.length - 15) },
+    { month: 'Mar', customers: Math.max(0, customers.length - 10) },
+    { month: 'Apr', customers: Math.max(0, customers.length - 5) },
+    { month: 'May', customers: Math.max(0, customers.length - 2) },
+    { month: 'Jun', customers: customers.length },
   ];
+
+  // Top customers by revenue
+  const customerRevenue = invoices.reduce((acc: Record<string, { name: string; revenue: number; invoices: number }>, inv) => {
+    const name = inv.customer?.name || 'Unknown';
+    if (!acc[name]) acc[name] = { name, revenue: 0, invoices: 0 };
+    acc[name].revenue += inv.totalAmount || 0;
+    acc[name].invoices += 1;
+    return acc;
+  }, {});
+  const topCustomers = Object.values(customerRevenue)
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 5);
+
+  const stats = [
+    { label: 'Total Revenue', value: `$${totalRevenue.toLocaleString()}`, change: '+12.5%', up: true, icon: DollarSign, gradient: 'from-emerald-500 to-teal-500' },
+    { label: 'Total Invoices', value: invoices.length.toString(), change: '+8.2%', up: true, icon: FileText, gradient: 'from-indigo-500 to-purple-500' },
+    { label: 'Active Customers', value: customers.length.toString(), change: '+15.3%', up: true, icon: Users, gradient: 'from-pink-500 to-rose-500' },
+    { label: 'Avg Invoice', value: `$${avgInvoice}`, change: '-2.4%', up: false, icon: BarChart3, gradient: 'from-amber-500 to-orange-500' },
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="w-8 h-8 border-2 border-white/20 border-t-emerald-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 h-full overflow-auto bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">

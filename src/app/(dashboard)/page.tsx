@@ -32,26 +32,6 @@ interface Invoice {
   customer?: { name: string };
 }
 
-// Sample data for charts (replace with real data from API)
-const revenueData = [
-  { month: 'Jan', revenue: 4000, invoices: 24 },
-  { month: 'Feb', revenue: 3000, invoices: 18 },
-  { month: 'Mar', revenue: 5000, invoices: 32 },
-  { month: 'Apr', revenue: 4500, invoices: 28 },
-  { month: 'May', revenue: 6000, invoices: 38 },
-  { month: 'Jun', revenue: 5500, invoices: 35 },
-];
-
-const weeklyData = [
-  { day: 'Mon', amount: 1200 },
-  { day: 'Tue', amount: 1800 },
-  { day: 'Wed', amount: 1400 },
-  { day: 'Thu', amount: 2200 },
-  { day: 'Fri', amount: 1900 },
-  { day: 'Sat', amount: 800 },
-  { day: 'Sun', amount: 600 },
-];
-
 const COLORS = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6'];
 
 export default function DashboardPage() {
@@ -61,6 +41,7 @@ export default function DashboardPage() {
     totalRevenue: 0, pendingInvoices: 0, paidInvoices: 0,
   });
   const [recentInvoices, setRecentInvoices] = useState<Invoice[]>([]);
+  const [allInvoices, setAllInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { fetchStats(); }, []);
@@ -70,21 +51,44 @@ export default function DashboardPage() {
       const [invoicesRes, customersRes, productsRes] = await Promise.all([
         fetch('/api/invoices'), fetch('/api/customers'), fetch('/api/products'),
       ]);
-      const invoices = invoicesRes.ok ? await invoicesRes.json() : [];
+      const invoices: Invoice[] = invoicesRes.ok ? await invoicesRes.json() : [];
       const customers = customersRes.ok ? await customersRes.json() : [];
       const products = productsRes.ok ? await productsRes.json() : [];
-      const revenue = invoices.filter((inv: Invoice) => inv.status === 'paid')
-        .reduce((sum: number, inv: Invoice) => sum + inv.totalAmount, 0);
+      const revenue = invoices.filter((inv) => inv.status === 'paid')
+        .reduce((sum, inv) => sum + inv.totalAmount, 0);
       setStats({
         totalInvoices: invoices.length, totalCustomers: customers.length,
         totalProducts: products.length, totalRevenue: revenue,
-        pendingInvoices: invoices.filter((inv: Invoice) => inv.status === 'pending').length,
-        paidInvoices: invoices.filter((inv: Invoice) => inv.status === 'paid').length,
+        pendingInvoices: invoices.filter((inv) => inv.status === 'pending').length,
+        paidInvoices: invoices.filter((inv) => inv.status === 'paid').length,
       });
       setRecentInvoices(invoices.slice(0, 5));
+      setAllInvoices(invoices);
     } catch (error) { console.error('Error:', error); }
     finally { setLoading(false); }
   };
+
+  // Generate real chart data from invoices
+  const monthlyData = allInvoices.reduce((acc: Record<string, { month: string; revenue: number; invoices: number }>, inv) => {
+    const date = new Date(inv.createdAt);
+    const month = date.toLocaleString('default', { month: 'short' });
+    if (!acc[month]) acc[month] = { month, revenue: 0, invoices: 0 };
+    acc[month].invoices += 1;
+    if (inv.status === 'paid') acc[month].revenue += inv.totalAmount || 0;
+    return acc;
+  }, {});
+  const revenueData = Object.values(monthlyData).slice(-6);
+
+  // Weekly data (last 7 days)
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const weeklyData = days.map(day => ({ day, amount: 0 }));
+  allInvoices.forEach(inv => {
+    const date = new Date(inv.createdAt);
+    const dayIndex = date.getDay();
+    if (inv.status === 'paid') {
+      weeklyData[dayIndex].amount += inv.totalAmount || 0;
+    }
+  });
 
   const pieData = [
     { name: 'Paid', value: stats.paidInvoices || 1, color: '#10b981' },
@@ -240,7 +244,7 @@ export default function DashboardPage() {
                 <YAxis stroke="rgba(255,255,255,0.3)" fontSize={11} />
                 <Tooltip contentStyle={{ background: 'rgba(15,23,42,0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }} />
                 <Bar dataKey="amount" fill="#6366f1" radius={[4, 4, 0, 0]}>
-                  {weeklyData.map((_, index) => (<Cell key={index} fill={COLORS[index % COLORS.length]} />))}
+                  {weeklyData.map((item: { day: string; amount: number }, index: number) => (<Cell key={index} fill={COLORS[index % COLORS.length]} />))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
