@@ -496,17 +496,8 @@ export default function InvoicesPage() {
               <p className="text-sm mb-6" style={{ color: 'hsl(var(--muted-foreground))' }}>
                 Create your first invoice to get started
               </p>
-              <Link
-                href="/invoices/new"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white text-sm font-medium transition-all"
-                style={{ 
-                  background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))',
-                  boxShadow: '0 10px 30px -10px hsl(var(--primary) / 0.4)'
-                }}
-              >
-                <Plus className="w-4 h-4" />
-                Create Invoice
-              </Link>
+            
+               
             </div>
           )}
         </div>
