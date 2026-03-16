@@ -122,7 +122,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(invoice, { status: 201 });
   } catch (error) {
     console.error('Error creating invoice:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: 'Internal server error', details: errorMessage }, { status: 500 });
   }
 }
 
