@@ -31,6 +31,7 @@ interface Invoice {
   status: string;
   totalAmount: number;
   createdAt: string;
+  customerName?: string;
   customer?: { name: string };
 }
 
