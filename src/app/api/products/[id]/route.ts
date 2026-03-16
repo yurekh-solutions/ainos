@@ -7,7 +7,7 @@ import User from '@/models/User';
 // PUT - Update product
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -23,7 +23,7 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const { id } = params;
+    const { id } = await params;
 
     // Find product and verify ownership
     const product = await Product.findOne({ 
@@ -58,7 +58,7 @@ export async function PUT(
 // DELETE - Delete product
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -73,7 +73,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Find product and verify ownership
     const product = await Product.findOne({ 
