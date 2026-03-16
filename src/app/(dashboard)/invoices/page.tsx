@@ -187,12 +187,12 @@ export default function InvoicesPage() {
     
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
-    doc.text('#', 25, tableY + 7);
+    doc.text('No.', 25, tableY + 7);
     doc.text('Description', 35, tableY + 7);
     doc.text('Qty', 100, tableY + 7);
-    doc.text('Price (₹)', 120, tableY + 7);
+    doc.text('Price', 120, tableY + 7);
     doc.text(`GST (${invoice.taxRate || 18}%)`, 150, tableY + 7);
-    doc.text('Total (₹)', 180, tableY + 7);
+    doc.text('Total', 180, tableY + 7);
     
     // Items
     let y = tableY + 20;
