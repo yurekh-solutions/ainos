@@ -45,17 +45,29 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     
+    // Validate required fields
+    if (!body.customerName) {
+      return NextResponse.json({ error: 'Customer name is required' }, { status: 400 });
+    }
+    
+    if (!body.items || body.items.length === 0) {
+      return NextResponse.json({ error: 'At least one item is required' }, { status: 400 });
+    }
+    
     // Find or create customer
-    let customer = await Customer.findOne({ 
-      companyId: user.companyId,
-      email: body.customerEmail 
-    });
+    let customer = null;
+    if (body.customerEmail) {
+      customer = await Customer.findOne({ 
+        companyId: user.companyId,
+        email: body.customerEmail 
+      });
+    }
     
     if (!customer) {
       customer = await Customer.create({
         companyId: user.companyId,
         name: body.customerName,
-        email: body.customerEmail,
+        email: body.customerEmail || null,
         createdBy: user._id.toString(),
       });
     }
@@ -93,6 +105,8 @@ export async function POST(req: NextRequest) {
       customerId: customer._id.toString(),
       customerName: body.customerName,
       customerEmail: body.customerEmail,
+      customerAddress: body.customerAddress,
+      customerGstNumber: body.customerGst,
       invoiceNumber,
       invoiceDate: new Date(),
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
