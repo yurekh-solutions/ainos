@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye } from 'lucide-react';
+import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
 
@@ -327,17 +327,31 @@ export default function InvoicesPage() {
               Manage and track your invoices
             </p>
           </div>
-          <Link
-            href="/invoices/new"
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl text-white text-sm font-medium transition-all shadow-lg active:scale-95"
-            style={{ 
-              background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))',
-              boxShadow: '0 10px 30px -10px hsl(var(--primary) / 0.4)'
-            }}
-          >
-            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span>New Invoice</span>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link
+              href="/company"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl text-sm font-medium transition-all border-2"
+              style={{ 
+                borderColor: 'hsl(var(--primary))',
+                color: 'hsl(var(--primary))',
+                background: 'transparent'
+              }}
+            >
+              <Building2 className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span>Company Profile</span>
+            </Link>
+            <Link
+              href="/invoices/new"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl text-white text-sm font-medium transition-all shadow-lg active:scale-95"
+              style={{ 
+                background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))',
+                boxShadow: '0 10px 30px -10px hsl(var(--primary) / 0.4)'
+              }}
+            >
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span>New Invoice</span>
+            </Link>
+          </div>
         </div>
 
         {/* Search & Filter */}
