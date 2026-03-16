@@ -5,7 +5,7 @@ import User from '@/models/User';
 
 export async function PUT(req: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(req);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -30,3 +30,4 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
