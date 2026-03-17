@@ -506,10 +506,12 @@ export default function NewInvoicePage() {
                 <span>Subtotal</span>
                 <span className="font-medium">₹{subtotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                <span>GST ({gstRate}%)</span>
-                <span className="font-medium">₹{tax.toFixed(2)}</span>
-              </div>
+              {gstPercentage > 0 && (
+                <div className="flex justify-between text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <span>GST ({gstRate}%)</span>
+                  <span className="font-medium">₹{tax.toFixed(2)}</span>
+                </div>
+              )}
               <div className="border-t pt-3 flex justify-between text-lg font-semibold"
                 style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }}>
                 <span>Total (INR)</span>

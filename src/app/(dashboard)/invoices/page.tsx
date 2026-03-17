@@ -208,6 +208,7 @@ export default function InvoicesPage() {
     
     // Items Table Header
     const tableY = 130;
+    const hasTax = (invoice.taxRate || 0) > 0;
     doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.roundedRect(15, tableY, 180, 12, 2, 2, 'F');
     
@@ -218,8 +219,10 @@ export default function InvoicesPage() {
     doc.text('Item Description', 35, tableY + 8);
     doc.text('Qty', 100, tableY + 8);
     doc.text('Rate', 120, tableY + 8);
-    doc.text('GST', 145, tableY + 8);
-    doc.text('Amount', 175, tableY + 8);
+    if (hasTax) {
+      doc.text('GST', 145, tableY + 8);
+    }
+    doc.text('Amount', hasTax ? 175 : 165, tableY + 8);
     
     // Items with alternating background
     let y = tableY + 18;
@@ -235,16 +238,18 @@ export default function InvoicesPage() {
       doc.text(item.description || 'Item', 35, y);
       doc.text(item.quantity.toString(), 100, y);
       doc.text(item.price.toFixed(2), 120, y);
-      doc.text(`${item.taxAmount.toFixed(2)}`, 145, y);
+      if (hasTax) {
+        doc.text(`${item.taxAmount.toFixed(2)}`, 145, y);
+      }
       doc.setFont('helvetica', 'bold');
-      doc.text(item.total.toFixed(2), 175, y);
+      doc.text(item.total.toFixed(2), hasTax ? 175 : 165, y);
       y += 12;
     });
     
     // Totals Section Box
     const totalsY = y + 10;
     doc.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-    doc.roundedRect(110, totalsY, 85, 50, 3, 3, 'F');
+    doc.roundedRect(110, totalsY, 85, hasTax ? 50 : 40, 3, 3, 'F');
     
     const actualSubtotal = invoice.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const actualTaxTotal = invoice.items.reduce((sum, item) => sum + item.taxAmount, 0);
@@ -256,17 +261,19 @@ export default function InvoicesPage() {
     doc.text('Subtotal:', 115, totalsY + 12);
     doc.text(actualSubtotal.toFixed(2), 185, totalsY + 12, { align: 'right' });
     
-    doc.text(`GST (${invoice.taxRate || 18}%):`, 115, totalsY + 22);
-    doc.text(actualTaxTotal.toFixed(2), 185, totalsY + 22, { align: 'right' });
+    if (hasTax) {
+      doc.text(`GST (${invoice.taxRate}%):`, 115, totalsY + 22);
+      doc.text(actualTaxTotal.toFixed(2), 185, totalsY + 22, { align: 'right' });
+    }
     
     doc.setDrawColor(200, 200, 200);
-    doc.line(115, totalsY + 28, 190, totalsY + 28);
+    doc.line(115, hasTax ? totalsY + 28 : totalsY + 18, 190, hasTax ? totalsY + 28 : totalsY + 18);
     
     doc.setFontSize(13);
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.setFont('helvetica', 'bold');
-    doc.text('Total Amount:', 115, totalsY + 40);
-    doc.text(actualTotal.toFixed(2), 185, totalsY + 40, { align: 'right' });
+    doc.text('Total Amount:', 115, hasTax ? totalsY + 40 : totalsY + 30);
+    doc.text(actualTotal.toFixed(2), 185, hasTax ? totalsY + 40 : totalsY + 30, { align: 'right' });
     
     // Amount in words box
     doc.setFillColor(255, 255, 255);
