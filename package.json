@@ -18,6 +18,9 @@
     "@radix-ui/react-toast": "^1.2.15",
     "@react-pdf/renderer": "^4.3.2",
     "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "@xyflow/react": "^12.10.1",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
@@ -37,9 +40,6 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6"
   }
