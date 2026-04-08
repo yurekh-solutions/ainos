@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { Sidebar } from "@/components/layout/Sidebar";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 

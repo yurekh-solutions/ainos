@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Plus, Trash2, Save, FileText, Percent, Building2, Package, ChevronDown } from 'lucide-react';
