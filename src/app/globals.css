@@ -1,0 +1,625 @@
+@import "tailwindcss";
+
+/* ============================================
+   AIONS Smart Billing - Modern Glass Design
+   Clean, Borderless, Elegant
+   ============================================ */
+
+@layer base {
+  :root {
+    /* ============================================
+       Light Theme - Warm Cream Palette
+       From Reference: Soft cream/beige aesthetic
+       ============================================ */
+    
+    /* Base Colors - Warm Cream Tones */
+    --cream: 40 50% 97%;             /* #FCFAF7 - Soft cream white */
+    --warm-sand: 35 30% 92%;         /* #F5F1EB - Warm sand */
+    --beige: 32 25% 85%;             /* #E8E0D5 - Beige */
+    --taupe: 30 18% 65%;             /* #B5A89A - Taupe */
+    --terracotta: 25 45% 50%;        /* #C17A47 - Terracotta/Warm brown */
+    --deep-brown: 25 30% 25%;        /* #523D2E - Deep brown */
+    
+    /* Theme Variables */
+    --background: 40 50% 97%;
+    --foreground: 25 30% 22%;
+
+    --card: 40 50% 97%;
+    --card-foreground: 25 30% 22%;
+
+    --popover: 40 50% 97%;
+    --popover-foreground: 25 30% 22%;
+
+    /* Primary: Terracotta - Warm brown/orange */
+    --primary: 25 45% 50%;
+    --primary-foreground: 40 50% 97%;
+    --primary-glow: 25 50% 58%;
+    
+    /* Secondary: Warm Sand */
+    --secondary: 35 30% 92%;
+    --secondary-foreground: 25 30% 22%;
+
+    /* Muted: Beige */
+    --muted: 32 25% 85%;
+    --muted-foreground: 30 15% 50%;
+
+    /* Accent: Taupe */
+    --accent: 30 18% 65%;
+    --accent-foreground: 25 30% 22%;
+
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 40 50% 97%;
+
+    --border: 32 20% 88%;
+    --input: 32 20% 88%;
+    --ring: 25 45% 50%;
+    
+    --radius: 1rem;
+
+    /* Legacy compatibility */
+    --background-secondary: 35 30% 92%;
+    --foreground-muted: 30 15% 50%;
+    --card-bg: 40 50% 97%;
+    --card-border: 32 20% 88%;
+    --card-hover: 35 25% 94%;
+    --input-bg: 40 50% 97%;
+    --input-border: 32 20% 88%;
+    --sidebar-bg: 35 30% 94%;
+    --sidebar-border: 32 20% 88%;
+    --primary-hover: 25 45% 45%;
+    --primary-light: 25 45% 50% / 0.12;
+    --success: 142 50% 42%;
+    --warning: 35 85% 52%;
+    --error: 0 65% 55%;
+    --info: 200 75% 48%;
+    --page-gradient: linear-gradient(135deg, hsl(35 30% 92%) 0%, hsl(40 50% 97%) 50%, hsl(35 25% 90%) 100%);
+
+    /* Light Theme Shadows - Soft & Warm */
+    --shadow-sm: 0 1px 2px 0 rgb(82 61 46 / 0.04);
+    --shadow: 0 1px 3px 0 rgb(82 61 46 / 0.06), 0 1px 2px -1px rgb(82 61 46 / 0.06);
+    --shadow-md: 0 4px 6px -1px rgb(82 61 46 / 0.06), 0 2px 4px -2px rgb(82 61 46 / 0.06);
+    --shadow-lg: 0 10px 15px -3px rgb(82 61 46 / 0.06), 0 4px 6px -4px rgb(82 61 46 / 0.06);
+    --shadow-xl: 0 20px 25px -5px rgb(82 61 46 / 0.06), 0 8px 10px -6px rgb(82 61 46 / 0.06);
+    --shadow-glass: 0 8px 32px 0 rgba(82, 61, 46, 0.06);
+  }
+
+  .dark {
+    /* ============================================
+       Dark Theme - Glassmorphism Style
+       From Image 2: Warm Dark Dashboard
+       ============================================ */
+    
+    /* Deep warm dark base */
+    --background: 28 21% 12%;
+    --foreground: 40 20% 95%;
+
+    --card: 28 18% 16%;
+    --card-foreground: 40 20% 95%;
+
+    --popover: 28 18% 14%;
+    --popover-foreground: 40 20% 95%;
+
+    /* Primary: Warm amber/gold accent */
+    --primary: 35 70% 55%;
+    --primary-foreground: 28 21% 12%;
+    --primary-glow: 35 70% 65%;
+
+    --secondary: 28 15% 20%;
+    --secondary-foreground: 40 20% 95%;
+
+    --muted: 28 15% 22%;
+    --muted-foreground: 35 10% 55%;
+
+    /* Accent: Warm orange/amber */
+    --accent: 30 60% 50%;
+    --accent-foreground: 40 33% 99%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 40 33% 99%;
+
+    --border: 28 15% 22%;
+    --input: 28 15% 22%;
+    --ring: 35 70% 55%;
+    
+    /* Legacy compatibility */
+    --background-secondary: 28 15% 18%;
+    --foreground-muted: 35 10% 55%;
+    --card-bg: 28 18% 16%;
+    --card-border: 28 15% 24%;
+    --card-hover: 28 15% 22%;
+    --input-bg: 28 15% 18%;
+    --input-border: 28 15% 24%;
+    --sidebar-bg: 28 21% 10%;
+    --sidebar-border: 28 15% 20%;
+    --primary-hover: 35 70% 60%;
+    --primary-light: 35 70% 55% / 0.2;
+    --success: 142 60% 45%;
+    --warning: 38 85% 55%;
+    --error: 0 62% 50%;
+    --info: 200 80% 55%;
+    --page-gradient: linear-gradient(135deg, hsl(28 21% 8%) 0%, hsl(28 21% 12%) 50%, hsl(28 18% 16%) 100%);
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #__next {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  background: linear-gradient(135deg, hsl(35 30% 92%) 0%, hsl(40 50% 97%) 50%, hsl(35 25% 90%) 100%);
+  background-attachment: fixed;
+  color: hsl(var(--foreground));
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  overflow-x: hidden;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.dark body {
+  background: linear-gradient(135deg, hsl(28 21% 8%) 0%, hsl(28 21% 10%) 50%, hsl(28 18% 14%) 100%);
+  background-attachment: fixed;
+}
+
+/* ============================================
+   Modern Glass Cards - Clean & Borderless
+   ============================================ */
+
+.glass-card {
+  background: linear-gradient(
+    145deg,
+    hsl(40 50% 99% / 0.75) 0%,
+    hsl(35 30% 95% / 0.65) 100%
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid hsl(32 25% 85% / 0.7);
+  border-radius: 1.25rem;
+  box-shadow: 
+    0 4px 6px -1px rgb(82 61 46 / 0.04),
+    0 2px 4px -2px rgb(82 61 46 / 0.04),
+    0 10px 40px -10px rgb(82 61 46 / 0.08),
+    inset 0 1px 0 0 hsl(40 50% 100% / 0.8);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  background: linear-gradient(
+    145deg,
+    hsl(40 50% 100% / 0.85) 0%,
+    hsl(35 30% 96% / 0.75) 100%
+  );
+  border-color: hsl(25 30% 75% / 0.6);
+  box-shadow: 
+    0 4px 6px -1px rgb(82 61 46 / 0.05),
+    0 2px 4px -2px rgb(82 61 46 / 0.04),
+    0 20px 50px -10px rgb(82 61 46 / 0.12),
+    inset 0 1px 0 0 hsl(40 50% 100% / 0.9);
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   Dark Theme Glassmorphism - Enhanced
+   From Image 2: Rich glass effects with warm tones
+   ============================================ */
+
+.dark .glass-card {
+  background: linear-gradient(
+    135deg,
+    hsl(28 18% 18% / 0.7) 0%,
+    hsl(28 18% 14% / 0.6) 100%
+  );
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid hsl(35 30% 35% / 0.25);
+  border-radius: 1.25rem;
+  box-shadow: 
+    0 4px 6px -1px rgb(0 0 0 / 0.2),
+    0 2px 4px -2px rgb(0 0 0 / 0.15),
+    0 10px 40px -10px rgb(0 0 0 / 0.3),
+    inset 0 1px 0 0 hsl(35 30% 40% / 0.1);
+}
+
+.dark .glass-card:hover {
+  background: linear-gradient(
+    135deg,
+    hsl(28 18% 20% / 0.75) 0%,
+    hsl(28 18% 16% / 0.65) 100%
+  );
+  border-color: hsl(35 40% 45% / 0.35);
+  box-shadow: 
+    0 4px 6px -1px rgb(0 0 0 / 0.25),
+    0 2px 4px -2px rgb(0 0 0 / 0.2),
+    0 20px 50px -10px rgb(0 0 0 / 0.4),
+    inset 0 1px 0 0 hsl(35 40% 50% / 0.15);
+  transform: translateY(-2px);
+}
+
+/* Subtle Glass Card - For secondary content */
+.glass-card-subtle {
+  background: linear-gradient(
+    135deg,
+    hsl(40 50% 98% / 0.6) 0%,
+    hsl(35 30% 93% / 0.5) 100%
+  );
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid hsl(32 25% 85% / 0.5);
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+}
+
+.glass-card-subtle:hover {
+  background: linear-gradient(
+    135deg,
+    hsl(40 50% 99% / 0.7) 0%,
+    hsl(35 30% 94% / 0.6) 100%
+  );
+  border-color: hsl(32 25% 85% / 0.65);
+}
+
+.dark .glass-card-subtle {
+  background: linear-gradient(
+    135deg,
+    hsl(28 18% 20% / 0.5) 0%,
+    hsl(28 18% 16% / 0.4) 100%
+  );
+  border: 1px solid hsl(35 25% 30% / 0.2);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.dark .glass-card-subtle:hover {
+  background: linear-gradient(
+    135deg,
+    hsl(28 18% 22% / 0.55) 0%,
+    hsl(28 18% 18% / 0.45) 100%
+  );
+  border-color: hsl(35 30% 40% / 0.3);
+}
+
+/* Glass Panel - For sidebar and overlays */
+.glass-panel {
+  background: linear-gradient(
+    180deg,
+    hsl(35 30% 96% / 0.95) 0%,
+    hsl(40 50% 98% / 0.9) 100%
+  );
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-right: 1px solid hsl(32 25% 85% / 0.6);
+}
+
+.dark .glass-panel {
+  background: linear-gradient(
+    180deg,
+    hsl(28 21% 12% / 0.85) 0%,
+    hsl(28 18% 14% / 0.75) 100%
+  );
+  border-right: 1px solid hsl(35 30% 30% / 0.25);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+}
+
+/* Modern Inputs */
+.glass-input {
+  background: hsl(var(--input-bg));
+  border: 1px solid hsl(var(--input-border) / 0.5);
+  border-radius: 0.75rem;
+  color: hsl(var(--foreground));
+  transition: all 0.2s ease;
+}
+
+.glass-input:focus {
+  border-color: hsl(var(--primary) / 0.5);
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+  outline: none;
+}
+
+.glass-input::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+/* Modern Buttons */
+.btn-primary {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%);
+  color: hsl(var(--primary-foreground));
+  border-radius: 0.75rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 14px 0 hsl(var(--primary) / 0.35);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px 0 hsl(var(--primary) / 0.45);
+}
+
+.dark .btn-primary {
+  background: linear-gradient(135deg, hsl(35 70% 55%) 0%, hsl(35 70% 65%) 100%);
+  color: hsl(28 21% 12%);
+  box-shadow: 0 4px 14px 0 hsl(35 70% 55% / 0.4);
+}
+
+.dark .btn-primary:hover {
+  box-shadow: 0 6px 20px 0 hsl(35 70% 60% / 0.5);
+}
+
+.btn-secondary {
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  border-radius: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: hsl(var(--muted));
+}
+
+.dark .btn-secondary {
+  background: hsl(28 15% 20%);
+  border: 1px solid hsl(35 20% 30% / 0.3);
+}
+
+.dark .btn-secondary:hover {
+  background: hsl(28 15% 25%);
+  border-color: hsl(35 25% 35% / 0.4);
+}
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+
+.text-gradient {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 50%, hsl(var(--accent)) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Smooth hover lift effect */
+.hover-lift {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+}
+
+/* Glow effect on hover */
+.hover-glow {
+  transition: box-shadow 0.3s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 30px hsl(var(--primary) / 0.3);
+}
+
+.dark .hover-glow:hover {
+  box-shadow: 0 0 30px hsl(35 70% 55% / 0.25);
+}
+
+/* ============================================
+   Dark Theme Glassmorphism Utilities
+   ============================================ */
+
+/* Rich glass card with warm amber borders */
+.glass-card-amber {
+  background: linear-gradient(
+    145deg,
+    hsl(28 18% 20% / 0.65) 0%,
+    hsl(28 18% 14% / 0.55) 100%
+  );
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid hsl(35 40% 45% / 0.3);
+  border-radius: 1.25rem;
+  box-shadow: 
+    0 4px 6px -1px rgb(0 0 0 / 0.25),
+    0 2px 4px -2px rgb(0 0 0 / 0.2),
+    0 10px 40px -10px rgb(0 0 0 / 0.35),
+    inset 0 1px 0 0 hsl(35 40% 50% / 0.15);
+}
+
+/* Floating glass element */
+.glass-float {
+  background: linear-gradient(
+    135deg,
+    hsl(28 18% 22% / 0.6) 0%,
+    hsl(28 18% 16% / 0.5) 100%
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid hsl(35 30% 40% / 0.25);
+  border-radius: 1rem;
+  box-shadow: 
+    0 10px 40px -10px rgb(0 0 0 / 0.4),
+    inset 0 1px 0 0 hsl(35 30% 45% / 0.1);
+}
+
+/* Glass input for dark theme */
+.dark .glass-input {
+  background: hsl(28 15% 16%);
+  border: 1px solid hsl(35 20% 30% / 0.4);
+  color: hsl(40 20% 95%);
+}
+
+.dark .glass-input:focus {
+  border-color: hsl(35 50% 50% / 0.6);
+  box-shadow: 0 0 0 3px hsl(35 50% 50% / 0.15);
+}
+
+.dark .glass-input::placeholder {
+  color: hsl(35 10% 50%);
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 3s ease-in-out infinite;
+}
+
+/* ============================================
+   Scrollbar - Clean & Modern
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.35);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.55);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(35 15% 40% / 0.4);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(35 20% 50% / 0.5);
+}
+
+/* ============================================
+   Status Colors - Soft & Modern
+   ============================================ */
+
+.status-success {
+  background: hsl(142 60% 40% / 0.1);
+  border: 1px solid hsl(142 60% 40% / 0.25);
+  color: hsl(142 60% 35%);
+}
+
+.status-warning {
+  background: hsl(38 85% 50% / 0.1);
+  border: 1px solid hsl(38 85% 50% / 0.25);
+  color: hsl(38 85% 45%);
+}
+
+.status-error {
+  background: hsl(0 70% 55% / 0.1);
+  border: 1px solid hsl(0 70% 55% / 0.25);
+  color: hsl(0 70% 50%);
+}
+
+.status-info {
+  background: hsl(200 80% 50% / 0.1);
+  border: 1px solid hsl(200 80% 50% / 0.25);
+  color: hsl(200 80% 45%);
+}
+
+/* Dark theme status colors with warm tones */
+.dark .status-success {
+  background: hsl(142 50% 45% / 0.15);
+  border: 1px solid hsl(142 50% 45% / 0.3);
+  color: hsl(142 60% 55%);
+}
+
+.dark .status-warning {
+  background: hsl(35 70% 55% / 0.15);
+  border: 1px solid hsl(35 70% 55% / 0.3);
+  color: hsl(35 80% 60%);
+}
+
+.dark .status-error {
+  background: hsl(0 60% 55% / 0.15);
+  border: 1px solid hsl(0 60% 55% / 0.3);
+  color: hsl(0 70% 65%);
+}
+
+.dark .status-info {
+  background: hsl(200 60% 55% / 0.15);
+  border: 1px solid hsl(200 60% 55% / 0.3);
+  color: hsl(200 70% 65%);
+}
+
+/* ============================================
+   Form Elements
+   ============================================ */
+
+select {
+  background-color: hsl(var(--input-bg));
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--input-border) / 0.5);
+  border-radius: 0.75rem;
+}
+
+select:focus {
+  border-color: hsl(var(--primary) / 0.5);
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+  outline: none;
+}
+
+select option {
+  background-color: hsl(var(--card-bg));
+  color: hsl(var(--foreground));
+}
+
+/* Dark theme form elements */
+.dark select {
+  background-color: hsl(28 15% 16%);
+  border: 1px solid hsl(35 20% 30% / 0.4);
+  color: hsl(40 20% 95%);
+}
+
+.dark select:focus {
+  border-color: hsl(35 50% 50% / 0.6);
+  box-shadow: 0 0 0 3px hsl(35 50% 50% / 0.15);
+}
+
+.dark select option {
+  background-color: hsl(28 18% 16%);
+  color: hsl(40 20% 95%);
+}
