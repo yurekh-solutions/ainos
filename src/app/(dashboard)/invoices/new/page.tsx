@@ -202,7 +202,7 @@ export default function NewInvoicePage() {
               </div>
               <Link 
                 href="/company"
-                className="text-xs text-[#C17A47] hover:underline"
+                className="text-xs hover:underline" style={{ color: 'hsl(var(--primary))' }}
               >
                 Edit Company
               </Link>
@@ -232,7 +232,7 @@ export default function NewInvoicePage() {
                   type="text"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#C17A47]/20"
+                  className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
                   style={{ 
                     background: 'hsl(var(--card-bg))',
                     border: '1px solid hsl(var(--border) / 0.5)',
@@ -250,7 +250,7 @@ export default function NewInvoicePage() {
                   type="email"
                   value={customerEmail}
                   onChange={(e) => setCustomerEmail(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#C17A47]/20"
+                  className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
                   style={{ 
                     background: 'hsl(var(--card-bg))',
                     border: '1px solid hsl(var(--border) / 0.5)',
@@ -267,7 +267,7 @@ export default function NewInvoicePage() {
                   type="text"
                   value={customerAddress}
                   onChange={(e) => setCustomerAddress(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#C17A47]/20"
+                  className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
                   style={{ 
                     background: 'hsl(var(--card-bg))',
                     border: '1px solid hsl(var(--border) / 0.5)',
@@ -284,7 +284,7 @@ export default function NewInvoicePage() {
                   type="text"
                   value={customerGst}
                   onChange={(e) => setCustomerGst(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#C17A47]/20"
+                  className="w-full px-4 py-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
                   style={{ 
                     background: 'hsl(var(--card-bg))',
                     border: '1px solid hsl(var(--border) / 0.5)',
@@ -322,7 +322,7 @@ export default function NewInvoicePage() {
                     step="0.01"
                     value={gstRate}
                     onChange={(e) => setGstRate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#C17A47]/20 pr-8"
+                    className="w-full px-3 py-2 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20 pr-8"
                     style={{ 
                       background: 'hsl(var(--card-bg))',
                       border: '1px solid hsl(var(--border) / 0.5)',
@@ -330,10 +330,10 @@ export default function NewInvoicePage() {
                     }}
                     placeholder="18"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#8B7355]">%</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>%</span>
                 </div>
               </div>
-              <p className="text-sm text-[#8B7355] mt-5">
+              <p className="text-sm mt-5" style={{ color: 'hsl(var(--muted-foreground))' }}>
                 Set your GST/Tax rate. Default is 18% for India.
               </p>
             </div>
@@ -385,7 +385,7 @@ export default function NewInvoicePage() {
                         value={item.productName}
                         onChange={(e) => updateItem(item.id, 'productName', e.target.value)}
                         onFocus={() => setShowProductDropdown(item.id)}
-                        className="w-full px-3 py-2 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#C17A47]/20 pr-8"
+                        className="w-full px-3 py-2 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20 pr-8"
                         style={{ 
                           background: 'hsl(var(--card-bg))',
                           border: '1px solid hsl(var(--border) / 0.5)',
@@ -395,21 +395,21 @@ export default function NewInvoicePage() {
                         required
                       />
                       <ChevronDown 
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8B7355] cursor-pointer"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 cursor-pointer" style={{ color: 'hsl(var(--muted-foreground))' }}
                         onClick={() => setShowProductDropdown(showProductDropdown === item.id ? null : item.id)}
                       />
                       
                       {/* Product Dropdown */}
                       {showProductDropdown === item.id && products.length > 0 && (
-                        <div className="absolute z-10 w-full mt-1 bg-white border border-[#E8E0D5] rounded-lg shadow-lg max-h-48 overflow-auto">
+                        <div className="absolute z-10 w-full mt-1 glass-card rounded-lg shadow-lg max-h-48 overflow-auto">
                           {products.map((product) => (
                             <div
                               key={product.id || product._id}
                               className="px-3 py-2 hover:bg-[#F5F1EB] cursor-pointer text-sm"
                               onClick={() => selectProduct(item.id, product)}
                             >
-                              <div className="font-medium text-[#3A2D24]">{product.name}</div>
-                              <div className="text-xs text-[#8B7355]">₹{product.price}</div>
+                              <div className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>{product.name}</div>
+                              <div className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>₹{product.price}</div>
                             </div>
                           ))}
                         </div>
@@ -424,7 +424,7 @@ export default function NewInvoicePage() {
                       type="text"
                       value={item.description}
                       onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#C17A47]/20"
+                      className="w-full px-3 py-2 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
                       style={{ 
                         background: 'hsl(var(--card-bg))',
                         border: '1px solid hsl(var(--border) / 0.5)',
@@ -443,7 +443,7 @@ export default function NewInvoicePage() {
                       step="any"
                       value={item.quantity}
                       onChange={(e) => updateItem(item.id, 'quantity', e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#C17A47]/20"
+                      className="w-full px-3 py-2 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
                       style={{ 
                         background: 'hsl(var(--card-bg))',
                         border: '1px solid hsl(var(--border) / 0.5)',
@@ -462,7 +462,7 @@ export default function NewInvoicePage() {
                       step="0.01"
                       value={item.price}
                       onChange={(e) => updateItem(item.id, 'price', e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#C17A47]/20"
+                      className="w-full px-3 py-2 rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
                       style={{ 
                         background: 'hsl(var(--card-bg))',
                         border: '1px solid hsl(var(--border) / 0.5)',

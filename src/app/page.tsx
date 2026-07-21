@@ -78,34 +78,34 @@ export default function Dashboard() {
       label: 'Active Automations', 
       value: stats.totalAutomations.toString(), 
       icon: Sparkles, 
-      gradient: 'from-violet-500 to-purple-600',
-      bgGlow: 'bg-violet-500/10'
+      color: '#6c5ce7',
+      bgGlow: 'bg-[#6c5ce7]/10'
     },
     { 
       label: 'Invoices', 
       value: stats.totalInvoices.toString(), 
       icon: FileText, 
-      gradient: 'from-emerald-500 to-teal-600',
-      bgGlow: 'bg-emerald-500/10'
+      color: '#00b894',
+      bgGlow: 'bg-[#00b894]/10'
     },
     { 
       label: 'Customers', 
       value: stats.totalCustomers.toString(), 
       icon: Users, 
-      gradient: 'from-amber-500 to-orange-600',
-      bgGlow: 'bg-amber-500/10'
+      color: '#6c5ce7',
+      bgGlow: 'bg-[#6c5ce7]/10'
     },
     { 
       label: 'Revenue', 
       value: `$${stats.totalRevenue.toLocaleString()}`, 
       icon: DollarSign, 
-      gradient: 'from-rose-500 to-pink-600',
-      bgGlow: 'bg-rose-500/10'
+      color: '#6c5ce7',
+      bgGlow: 'bg-[#6c5ce7]/10'
     },
   ];
 
   return (
-    <div className="h-full overflow-y-auto p-4 sm:p-6 lg:p-8" style={{ background: 'var(--page-gradient)' }}>
+    <div className="h-full overflow-y-auto p-4 sm:p-6 lg:p-8" style={{ background: 'linear-gradient(180deg, hsl(230 20% 5%) 0%, hsl(230 20% 7%) 50%, hsl(230 18% 9%) 100%)' }}>
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -131,7 +131,7 @@ export default function Dashboard() {
             }}
           >
             <Plus className="w-4 h-4" />
-            <span>Billing Suit</span>
+            <span>Billing Suite</span>
           </Link>
         </motion.div>
 
@@ -160,7 +160,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ${stat.bgGlow} flex items-center justify-center`}>
-                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-lg`}>
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shadow-lg" style={{ background: stat.color }}>
                       <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                     </div>
                   </div>
@@ -193,32 +193,32 @@ export default function Dashboard() {
                   desc: 'Invoice #INV-001 for $1,250', 
                   time: '2 min ago', 
                   icon: FileText,
-                  color: 'from-violet-500 to-purple-600',
-                  bgColor: 'bg-violet-500/10'
+                  color: '#6c5ce7',
+                  bgColor: 'bg-[#6c5ce7]/10'
                 },
                 { 
                   title: 'Payment received', 
                   desc: '$850 from John Smith', 
                   time: '1 hour ago', 
                   icon: DollarSign,
-                  color: 'from-emerald-500 to-teal-600',
-                  bgColor: 'bg-emerald-500/10'
+                  color: '#00b894',
+                  bgColor: 'bg-[#00b894]/10'
                 },
                 { 
                   title: 'New customer added', 
                   desc: 'Sarah Johnson joined', 
                   time: '3 hours ago', 
                   icon: Users,
-                  color: 'from-amber-500 to-orange-600',
-                  bgColor: 'bg-amber-500/10'
+                  color: '#6c5ce7',
+                  bgColor: 'bg-[#6c5ce7]/10'
                 },
                 { 
                   title: 'Automation triggered', 
                   desc: 'Invoice reminder sent', 
                   time: '5 hours ago', 
                   icon: Sparkles,
-                  color: 'from-rose-500 to-pink-600',
-                  bgColor: 'bg-rose-500/10'
+                  color: '#6c5ce7',
+                  bgColor: 'bg-[#6c5ce7]/10'
                 },
               ].map((item, index) => (
                 <motion.div
@@ -229,7 +229,7 @@ export default function Dashboard() {
                   className="flex items-center gap-4 p-3 rounded-xl transition-colors hover:bg-[hsl(var(--muted))] cursor-pointer"
                 >
                   <div className={`w-10 h-10 rounded-xl ${item.bgColor} flex items-center justify-center`}>
-                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${item.color} flex items-center justify-center`}>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: item.color }}>
                       <item.icon className="w-4 h-4 text-white" />
                     </div>
                   </div>
@@ -262,24 +262,24 @@ export default function Dashboard() {
                     desc: 'Generate a new invoice',
                     icon: FileText, 
                     href: '/invoices/new',
-                    color: 'from-violet-500 to-purple-600',
-                    bgColor: 'bg-violet-500/10'
+                    color: '#6c5ce7',
+                    bgColor: 'bg-[#6c5ce7]/10'
                   },
                   { 
                     label: 'Add Customer', 
                     desc: 'Create new customer',
                     icon: Users, 
                     href: '/customers',
-                    color: 'from-emerald-500 to-teal-600',
-                    bgColor: 'bg-emerald-500/10'
+                    color: '#00b894',
+                    bgColor: 'bg-[#00b894]/10'
                   },
                   { 
                     label: 'Automations', 
                     desc: 'Manage auto-tasks',
                     icon: Sparkles, 
                     href: '/automations',
-                    color: 'from-amber-500 to-orange-600',
-                    bgColor: 'bg-amber-500/10'
+                    color: '#6c5ce7',
+                    bgColor: 'bg-[#6c5ce7]/10'
                   },
                 ].map((action, index) => (
                   <Link key={action.label} href={action.href}>
@@ -288,7 +288,7 @@ export default function Dashboard() {
                       className="flex items-center gap-3 p-3 rounded-xl transition-colors hover:bg-[hsl(var(--muted))] cursor-pointer group"
                     >
                       <div className={`w-10 h-10 rounded-xl ${action.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                        <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${action.color} flex items-center justify-center`}>
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: action.color }}>
                           <action.icon className="w-4 h-4 text-white" />
                         </div>
                       </div>

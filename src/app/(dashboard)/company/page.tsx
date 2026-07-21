@@ -160,8 +160,8 @@ export default function CompanyPage() {
         className={`w-full px-4 py-2.5 text-sm rounded-xl transition-all duration-200 ${className}`}
         style={{
           background: '#FFFFFF',
-          border: isFocused ? '2px solid #C17A47' : '2px solid #E8E0D5',
-          color: '#3A2D24',
+          border: isFocused ? '2px solid hsl(var(--primary))' : '2px solid hsl(var(--border))',
+          color: 'hsl(var(--foreground))',
           outline: 'none',
           boxShadow: isFocused ? '0 0 0 3px rgba(193, 122, 71, 0.15)' : 'none'
         }}
@@ -188,8 +188,8 @@ export default function CompanyPage() {
         className="w-full px-4 py-2.5 text-sm rounded-xl transition-all duration-200"
         style={{
           background: '#FFFFFF',
-          border: isFocused ? '2px solid #C17A47' : '2px solid #E8E0D5',
-          color: '#3A2D24',
+          border: isFocused ? '2px solid hsl(var(--primary))' : '2px solid hsl(var(--border))',
+          color: 'hsl(var(--foreground))',
           outline: 'none',
           boxShadow: isFocused ? '0 0 0 3px rgba(193, 122, 71, 0.15)' : 'none'
         }}
@@ -327,7 +327,7 @@ export default function CompanyPage() {
                   <Phone className="w-3.5 h-3.5" /> Phone *
                 </label>
                 <FormInput name="phone" type="tel" defaultValue={company.phone} placeholder="9876543210" required />
-                <p className="text-[10px] text-[#8B7355]">Enter 10 digit mobile number</p>
+                <p className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>Enter 10 digit mobile number</p>
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
@@ -354,14 +354,14 @@ export default function CompanyPage() {
                   <Hash className="w-3.5 h-3.5" /> GST Number
                 </label>
                 <FormInput name="gstNumber" defaultValue={company.gstNumber} placeholder="22AAAAA0000A1Z5" className="uppercase" />
-                <p className="text-[10px] text-[#8B7355]">15 digit GSTIN</p>
+                <p className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>15 digit GSTIN</p>
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   <CreditCard className="w-3.5 h-3.5" /> PAN Number
                 </label>
                 <FormInput name="panNumber" defaultValue={company.panNumber} placeholder="AAAAA0000A" className="uppercase" />
-                <p className="text-[10px] text-[#8B7355]">10 digit PAN</p>
+                <p className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>10 digit PAN</p>
               </div>
             </div>
           </motion.div>
@@ -405,7 +405,7 @@ export default function CompanyPage() {
                   <MapPin className="w-3.5 h-3.5" /> PIN Code *
                 </label>
                 <FormInput name="pincode" defaultValue={company.pincode} placeholder="400001" required />
-                <p className="text-[10px] text-[#8B7355]">6 digit code</p>
+                <p className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>6 digit code</p>
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
@@ -450,7 +450,7 @@ export default function CompanyPage() {
                   <Hash className="w-3.5 h-3.5" /> IFSC Code
                 </label>
                 <FormInput name="ifscCode" defaultValue={company.ifscCode} placeholder="SBIN0001234" className="uppercase" />
-                <p className="text-[10px] text-[#8B7355]">11 characters</p>
+                <p className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>11 characters</p>
               </div>
             </div>
           </motion.div>

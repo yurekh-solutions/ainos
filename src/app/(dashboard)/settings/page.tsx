@@ -18,9 +18,9 @@ const Toggle = ({ enabled, onChange }: { enabled: boolean; onChange: () => void 
     className="relative w-14 h-7 rounded-full transition-all duration-300"
     style={{ 
       background: enabled 
-        ? 'linear-gradient(135deg, #C17A47 0%, #D4A574 100%)' 
-        : 'linear-gradient(135deg, hsl(35 30% 88%) 0%, hsl(32 25% 85%) 100%)',
-      boxShadow: enabled ? '0 2px 10px rgba(193, 122, 71, 0.3)' : 'none'
+        ? 'linear-gradient(135deg, hsl(252 60% 55%) 0%, hsl(252 65% 65%) 100%)' 
+        : 'linear-gradient(135deg, hsl(230 12% 20%) 0%, hsl(230 12% 18%) 100%)',
+      boxShadow: enabled ? '0 2px 10px hsl(252 60% 55% / 0.3)' : 'none'
     }}
   >
     <span 
@@ -63,18 +63,11 @@ export default function SettingsPage() {
 
   const themeOptions = [
     { 
-      value: 'light', 
-      label: 'Light', 
-      icon: Sun, 
-      desc: 'Clean and bright interface',
-      preview: 'linear-gradient(145deg, #FCFAF7 0%, #F5F1EB 100%)',
-    },
-    { 
       value: 'dark', 
       label: 'Dark', 
       icon: Moon, 
-      desc: 'Easy on the eyes',
-      preview: 'linear-gradient(145deg, #2A211C 0%, #3A3128 100%)',
+      desc: 'Deep dark with purple accent',
+      preview: 'linear-gradient(145deg, #1a1a2e 0%, #16162a 100%)',
     },
   ];
 
@@ -94,7 +87,7 @@ export default function SettingsPage() {
           >
             <div className="glass-card p-4 rounded-2xl">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C17A47] to-[#D4A574] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, hsl(252 60% 55%), hsl(252 65% 65%))' }}>
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -111,10 +104,10 @@ export default function SettingsPage() {
                     className="w-full flex items-center gap-3 p-3 rounded-xl transition-all"
                     style={{
                       background: activeSection === section.id 
-                        ? 'linear-gradient(135deg, rgba(193, 122, 71, 0.12) 0%, rgba(212, 165, 116, 0.08) 100%)'
+                        ? 'linear-gradient(135deg, hsl(252 60% 55% / 0.12) 0%, hsl(252 65% 65% / 0.08) 100%)'
                         : 'transparent',
                       border: activeSection === section.id 
-                        ? '1px solid rgba(193, 122, 71, 0.2)' 
+                        ? '1px solid hsl(252 60% 55% / 0.2)' 
                         : '1px solid transparent'
                     }}
                   >
@@ -122,13 +115,13 @@ export default function SettingsPage() {
                       className="w-9 h-9 rounded-lg flex items-center justify-center"
                       style={{ 
                         background: activeSection === section.id 
-                          ? 'linear-gradient(135deg, #C17A47 0%, #D4A574 100%)'
-                          : 'rgba(193, 122, 71, 0.1)'
+                          ? 'linear-gradient(135deg, hsl(252 60% 55%) 0%, hsl(252 65% 65%) 100%)'
+                          : 'hsl(252 60% 55% / 0.1)'
                       }}
                     >
                       <section.icon 
                         className="w-4 h-4" 
-                        style={{ color: activeSection === section.id ? 'white' : '#C17A47' }} 
+                        style={{ color: activeSection === section.id ? 'white' : 'hsl(var(--primary))' }} 
                       />
                     </div>
                     <span 
@@ -138,7 +131,7 @@ export default function SettingsPage() {
                       {section.label}
                     </span>
                     {activeSection === section.id && (
-                      <ChevronRight className="w-4 h-4 text-[#C17A47]" />
+                      <ChevronRight className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
                     )}
                   </button>
                 ))}
@@ -156,8 +149,8 @@ export default function SettingsPage() {
                 className="glass-card p-6 rounded-2xl"
               >
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C17A47]/20 to-[#D4A574]/10 flex items-center justify-center">
-                    <User className="w-5 h-5 text-[#C17A47]" />
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(252 60% 55% / 0.15)' }}>
+                    <User className="w-5 h-5" style={{ color: 'hsl(var(--primary))' }} />
                   </div>
                   <h2 className="text-xl font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Profile</h2>
                 </div>
@@ -166,11 +159,11 @@ export default function SettingsPage() {
                   <div className="relative">
                     <div 
                       className="w-24 h-24 rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-lg"
-                      style={{ background: 'linear-gradient(135deg, #C17A47 0%, #D4A574 100%)' }}
+                      style={{ background: 'linear-gradient(135deg, hsl(252 60% 55%) 0%, hsl(252 65% 65%) 100%)' }}
                     >
                       {session?.user?.name?.[0] || 'U'}
                     </div>
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#8B9A7B] flex items-center justify-center border-2 border-white">
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center border-2 border-[hsl(230_18%_10%)]">
                       <CheckCircle2 className="w-3 h-3 text-white" />
                     </div>
                   </div>
@@ -193,7 +186,7 @@ export default function SettingsPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 pt-2">
-                      <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-[#8B9A7B]/15 text-[#6B7A5B] border border-[#8B9A7B]/25">
+                      <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
                         Google Account Connected
                       </span>
                     </div>
@@ -210,13 +203,13 @@ export default function SettingsPage() {
                 className="glass-card p-6 rounded-2xl"
               >
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C17A47]/20 to-[#D4A574]/10 flex items-center justify-center">
-                    <Palette className="w-5 h-5 text-[#C17A47]" />
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(252 60% 55% / 0.15)' }}>
+                    <Palette className="w-5 h-5" style={{ color: 'hsl(var(--primary))' }} />
                   </div>
                   <div>
                     <h2 className="text-xl font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Appearance</h2>
                     <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                      Currently using <span className="font-medium text-[#C17A47]">{resolvedTheme === 'dark' ? 'Dark' : 'Light'} mode</span>
+                      Currently using <span className="font-medium" style={{ color: 'hsl(var(--primary))' }}>Dark mode</span>
                     </p>
                   </div>
                 </div>
@@ -229,17 +222,17 @@ export default function SettingsPage() {
                     return (
                       <button
                         key={option.value}
-                        onClick={() => setTheme(option.value as 'light' | 'dark')}
+                        onClick={() => setTheme('dark')}
                         className="relative p-5 rounded-2xl transition-all duration-300 text-left group overflow-hidden"
                         style={{
                           background: isSelected 
-                            ? 'linear-gradient(180deg, hsl(40 50% 99% / 0.95) 0%, hsl(35 30% 96% / 0.9) 100%)' 
-                            : 'linear-gradient(180deg, hsl(40 50% 99% / 0.6) 0%, hsl(35 30% 94% / 0.5) 100%)',
+                            ? 'linear-gradient(180deg, hsl(230 18% 14% / 0.95) 0%, hsl(230 18% 10% / 0.9) 100%)' 
+                            : 'linear-gradient(180deg, hsl(230 18% 12% / 0.6) 0%, hsl(230 18% 8% / 0.5) 100%)',
                           border: isSelected 
-                            ? '2px solid rgba(193, 122, 71, 0.5)' 
-                            : '2px solid rgba(193, 122, 71, 0.15)',
+                            ? '2px solid hsl(252 60% 55% / 0.5)' 
+                            : '2px solid hsl(252 60% 55% / 0.15)',
                           boxShadow: isSelected 
-                            ? '0 10px 40px -10px rgba(193, 122, 71, 0.2)' 
+                            ? '0 10px 40px -10px hsl(252 60% 55% / 0.2)' 
                             : 'none',
                         }}
                       >
@@ -249,9 +242,9 @@ export default function SettingsPage() {
                           style={{ background: option.preview }}
                         >
                           <div className="absolute top-3 left-3 flex gap-1.5">
-                            <div className="w-2.5 h-2.5 rounded-full bg-[#C17A47]/30" />
-                            <div className="w-2.5 h-2.5 rounded-full bg-[#B5A89A]/30" />
-                            <div className="w-2.5 h-2.5 rounded-full bg-[#8B9A7B]/30" />
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ background: 'hsl(252 60% 55% / 0.3)' }} />
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ background: 'hsl(230 12% 25% / 0.3)' }} />
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ background: 'hsl(152 70% 45% / 0.3)' }} />
                           </div>
                           <div className="absolute bottom-4 left-4 right-4 space-y-2">
                             <div className="h-2 rounded-full w-3/4 bg-current opacity-10" />
@@ -265,13 +258,13 @@ export default function SettingsPage() {
                               className="w-11 h-11 rounded-xl flex items-center justify-center"
                               style={{ 
                                 background: isSelected 
-                                  ? 'linear-gradient(135deg, #C17A47 0%, #D4A574 100%)'
-                                  : 'rgba(193, 122, 71, 0.1)'
+                                  ? 'linear-gradient(135deg, hsl(252 60% 55%) 0%, hsl(252 65% 65%) 100%)'
+                                  : 'hsl(252 60% 55% / 0.1)'
                               }}
                             >
                               <Icon 
                                 className="w-5 h-5" 
-                                style={{ color: isSelected ? 'white' : '#C17A47' }} 
+                                style={{ color: isSelected ? 'white' : 'hsl(var(--primary))' }} 
                               />
                             </div>
                             <div>
@@ -288,7 +281,7 @@ export default function SettingsPage() {
                             <motion.div
                               layoutId="themeCheck"
                               className="w-7 h-7 rounded-full flex items-center justify-center"
-                              style={{ background: 'linear-gradient(135deg, #C17A47 0%, #D4A574 100%)' }}
+                              style={{ background: 'linear-gradient(135deg, hsl(252 60% 55%) 0%, hsl(252 65% 65%) 100%)' }}
                             >
                               <CheckCircle2 className="w-4 h-4 text-white" />
                             </motion.div>
@@ -309,24 +302,24 @@ export default function SettingsPage() {
                 className="glass-card p-6 rounded-2xl"
               >
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C17A47]/20 to-[#D4A574]/10 flex items-center justify-center">
-                    <Bell className="w-5 h-5 text-[#C17A47]" />
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(252 60% 55% / 0.15)' }}>
+                    <Bell className="w-5 h-5" style={{ color: 'hsl(var(--primary))' }} />
                   </div>
                   <h2 className="text-xl font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Notifications</h2>
                 </div>
 
                 <div className="space-y-3">
                   {[
-                    { key: 'emailNotifications', icon: Mail, label: 'Email Notifications', desc: 'Receive updates via email', color: '#C17A47' },
-                    { key: 'pushNotifications', icon: Smartphone, label: 'Push Notifications', desc: 'Browser push notifications', color: '#B5A89A' },
-                    { key: 'invoiceReminders', icon: Bell, label: 'Invoice Reminders', desc: 'Remind customers about pending invoices', color: '#8B9A7B' },
+                    { key: 'emailNotifications', icon: Mail, label: 'Email Notifications', desc: 'Receive updates via email', color: 'hsl(252 60% 55%)' },
+                    { key: 'pushNotifications', icon: Smartphone, label: 'Push Notifications', desc: 'Browser push notifications', color: 'hsl(230 12% 40%)' },
+                    { key: 'invoiceReminders', icon: Bell, label: 'Invoice Reminders', desc: 'Remind customers about pending invoices', color: 'hsl(152 70% 45%)' },
                   ].map((item) => (
                     <div 
                       key={item.key} 
                       className="flex items-center justify-between p-4 rounded-xl transition-all"
                       style={{ 
-                        background: 'linear-gradient(135deg, rgba(193, 122, 71, 0.03) 0%, rgba(212, 165, 116, 0.02) 100%)',
-                        border: '1px solid rgba(193, 122, 71, 0.1)'
+                        background: 'linear-gradient(135deg, hsl(252 60% 55% / 0.03) 0%, hsl(252 65% 65% / 0.02) 100%)',
+                        border: '1px solid hsl(252 60% 55% / 0.1)'
                       }}
                     >
                       <div className="flex items-center gap-4">
@@ -359,8 +352,8 @@ export default function SettingsPage() {
                 className="glass-card p-6 rounded-2xl"
               >
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C17A47]/20 to-[#D4A574]/10 flex items-center justify-center">
-                    <Globe className="w-5 h-5 text-[#C17A47]" />
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(252 60% 55% / 0.15)' }}>
+                    <Globe className="w-5 h-5" style={{ color: 'hsl(var(--primary))' }} />
                   </div>
                   <h2 className="text-xl font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Regional Settings</h2>
                 </div>
@@ -378,8 +371,8 @@ export default function SettingsPage() {
                       <select 
                         className="w-full px-4 py-3 rounded-xl text-sm transition-all"
                         style={{ 
-                          background: 'linear-gradient(135deg, hsl(40 50% 99%) 0%, hsl(35 30% 96%) 100%)',
-                          border: '1px solid rgba(193, 122, 71, 0.2)',
+                          background: 'hsl(230 18% 12%)',
+                          border: '1px solid hsl(252 60% 55% / 0.2)',
                           color: 'hsl(var(--foreground))'
                         }}
                       >
@@ -401,8 +394,8 @@ export default function SettingsPage() {
                 className="glass-card p-6 rounded-2xl"
               >
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C17A47]/20 to-[#D4A574]/10 flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-[#C17A47]" />
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(252 60% 55% / 0.15)' }}>
+                    <Shield className="w-5 h-5" style={{ color: 'hsl(var(--primary))' }} />
                   </div>
                   <h2 className="text-xl font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Security</h2>
                 </div>
@@ -410,13 +403,13 @@ export default function SettingsPage() {
                 <div 
                   className="flex items-center justify-between p-5 rounded-xl"
                   style={{ 
-                    background: 'linear-gradient(135deg, rgba(193, 122, 71, 0.03) 0%, rgba(212, 165, 116, 0.02) 100%)',
-                    border: '1px solid rgba(193, 122, 71, 0.1)'
+                    background: 'linear-gradient(135deg, hsl(252 60% 55% / 0.03) 0%, hsl(252 65% 65% / 0.02) 100%)',
+                    border: '1px solid hsl(252 60% 55% / 0.1)'
                   }}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-[#C17A47]/10 flex items-center justify-center">
-                      <Lock className="w-5 h-5 text-[#C17A47]" />
+                    <div className="w-12 h-12 rounded-xl bg-[hsl(252_60%_55%)]/10 flex items-center justify-center">
+                      <Lock className="w-5 h-5" style={{ color: 'hsl(var(--primary))' }} />
                     </div>
                     <div>
                       <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>Two-Factor Authentication</p>
@@ -442,18 +435,18 @@ export default function SettingsPage() {
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#8B9A7B]/15 border border-[#8B9A7B]/25"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25"
                 >
-                  <CheckCircle2 className="w-4 h-4 text-[#6B7A5B]" /> 
-                  <span className="text-sm font-medium text-[#6B7A5B]">Settings saved successfully</span>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" /> 
+                  <span className="text-sm font-medium text-emerald-400">Settings saved successfully</span>
                 </motion.div>
               )}
               <button 
                 onClick={handleSave}
                 className="ml-auto flex items-center gap-2 px-6 py-3 rounded-xl text-white font-medium transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
                 style={{ 
-                  background: 'linear-gradient(135deg, #C17A47 0%, #D4A574 100%)',
-                  boxShadow: '0 4px 20px rgba(193, 122, 71, 0.3)'
+                  background: 'linear-gradient(135deg, hsl(252 60% 55%) 0%, hsl(252 65% 65%) 100%)',
+                  boxShadow: '0 4px 20px hsl(252 60% 55% / 0.3)'
                 }}
               >
                 <CheckCircle2 className="w-4 h-4" /> 

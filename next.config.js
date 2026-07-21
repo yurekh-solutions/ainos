@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  basePath: '/ainos',
   output: 'standalone',
   serverExternalPackages: ['mongoose'],
   images: {

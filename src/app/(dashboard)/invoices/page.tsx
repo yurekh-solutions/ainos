@@ -366,7 +366,7 @@ export default function InvoicesPage() {
                 href="/company"
                 className="group relative inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl text-white text-sm font-medium transition-all shadow-lg overflow-hidden"
                 style={{ 
-                  background: 'linear-gradient(135deg, #C17A47, #8B5A3C)',
+                  background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))',
                   boxShadow: '0 10px 30px -10px rgba(193, 122, 71, 0.6)'
                 }}
               >
@@ -383,7 +383,7 @@ export default function InvoicesPage() {
             ) : (
               <Link
                 href="/company"
-                className="group inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl text-sm font-medium transition-all border-2 hover:bg-[#C17A47]/5"
+                className="group inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl text-sm font-medium transition-all border-2 hover:opacity-80"
                 style={{ 
                   borderColor: 'hsl(var(--primary))',
                   color: 'hsl(var(--primary))',
@@ -433,7 +433,7 @@ export default function InvoicesPage() {
               placeholder="Search invoices..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#C17A47]/20"
+              className="w-full pl-10 pr-4 py-2 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
               style={{ 
                 background: 'hsl(var(--card-bg))',
                 border: '1px solid hsl(var(--border) / 0.5)',

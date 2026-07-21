@@ -85,59 +85,59 @@
 
   .dark {
     /* ============================================
-       Dark Theme - Glassmorphism Style
-       From Image 2: Warm Dark Dashboard
+       Dark Theme - Deep Dark + Purple Accent
+       Matching AINOS Suite Dashboard Design
        ============================================ */
     
-    /* Deep warm dark base */
-    --background: 28 21% 12%;
-    --foreground: 40 20% 95%;
+    /* Deep dark base - near black with slight blue tint */
+    --background: 230 20% 6%;
+    --foreground: 220 15% 95%;
 
-    --card: 28 18% 16%;
-    --card-foreground: 40 20% 95%;
+    --card: 230 18% 10%;
+    --card-foreground: 220 15% 95%;
 
-    --popover: 28 18% 14%;
-    --popover-foreground: 40 20% 95%;
+    --popover: 230 18% 8%;
+    --popover-foreground: 220 15% 95%;
 
-    /* Primary: Warm amber/gold accent */
-    --primary: 35 70% 55%;
-    --primary-foreground: 28 21% 12%;
-    --primary-glow: 35 70% 65%;
+    /* Primary: Purple/Indigo accent */
+    --primary: 252 60% 55%;
+    --primary-foreground: 220 15% 98%;
+    --primary-glow: 252 65% 65%;
 
-    --secondary: 28 15% 20%;
-    --secondary-foreground: 40 20% 95%;
+    --secondary: 230 15% 14%;
+    --secondary-foreground: 220 15% 95%;
 
-    --muted: 28 15% 22%;
-    --muted-foreground: 35 10% 55%;
+    --muted: 230 12% 16%;
+    --muted-foreground: 220 10% 50%;
 
-    /* Accent: Warm orange/amber */
-    --accent: 30 60% 50%;
-    --accent-foreground: 40 33% 99%;
+    /* Accent: Purple */
+    --accent: 252 55% 50%;
+    --accent-foreground: 220 15% 98%;
 
     --destructive: 0 62% 50%;
-    --destructive-foreground: 40 33% 99%;
+    --destructive-foreground: 220 15% 98%;
 
-    --border: 28 15% 22%;
-    --input: 28 15% 22%;
-    --ring: 35 70% 55%;
+    --border: 230 12% 18%;
+    --input: 230 12% 18%;
+    --ring: 252 60% 55%;
     
     /* Legacy compatibility */
-    --background-secondary: 28 15% 18%;
-    --foreground-muted: 35 10% 55%;
-    --card-bg: 28 18% 16%;
-    --card-border: 28 15% 24%;
-    --card-hover: 28 15% 22%;
-    --input-bg: 28 15% 18%;
-    --input-border: 28 15% 24%;
-    --sidebar-bg: 28 21% 10%;
-    --sidebar-border: 28 15% 20%;
-    --primary-hover: 35 70% 60%;
-    --primary-light: 35 70% 55% / 0.2;
-    --success: 142 60% 45%;
-    --warning: 38 85% 55%;
+    --background-secondary: 230 15% 8%;
+    --foreground-muted: 220 10% 50%;
+    --card-bg: 230 18% 10%;
+    --card-border: 230 12% 18%;
+    --card-hover: 230 15% 14%;
+    --input-bg: 230 12% 12%;
+    --input-border: 230 12% 20%;
+    --sidebar-bg: 230 20% 5%;
+    --sidebar-border: 230 12% 16%;
+    --primary-hover: 252 65% 60%;
+    --primary-light: 252 60% 55% / 0.15;
+    --success: 152 70% 45%;
+    --warning: 35 80% 50%;
     --error: 0 62% 50%;
     --info: 200 80% 55%;
-    --page-gradient: linear-gradient(135deg, hsl(28 21% 8%) 0%, hsl(28 21% 12%) 50%, hsl(28 18% 16%) 100%);
+    --page-gradient: linear-gradient(180deg, hsl(230 20% 5%) 0%, hsl(230 20% 7%) 50%, hsl(230 18% 9%) 100%);
   }
 }
 
@@ -171,7 +171,7 @@ body {
 }
 
 .dark body {
-  background: linear-gradient(135deg, hsl(28 21% 8%) 0%, hsl(28 21% 10%) 50%, hsl(28 18% 14%) 100%);
+  background: linear-gradient(180deg, hsl(230 20% 5%) 0%, hsl(230 20% 7%) 50%, hsl(230 18% 9%) 100%);
   background-attachment: fixed;
 }
 
@@ -220,32 +220,28 @@ body {
 .dark .glass-card {
   background: linear-gradient(
     135deg,
-    hsl(28 18% 18% / 0.7) 0%,
-    hsl(28 18% 14% / 0.6) 100%
+    hsl(230 18% 12% / 0.8) 0%,
+    hsl(230 18% 9% / 0.7) 100%
   );
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid hsl(35 30% 35% / 0.25);
-  border-radius: 1.25rem;
+  border: 1px solid hsl(230 12% 20% / 0.6);
+  border-radius: 1rem;
   box-shadow: 
-    0 4px 6px -1px rgb(0 0 0 / 0.2),
-    0 2px 4px -2px rgb(0 0 0 / 0.15),
-    0 10px 40px -10px rgb(0 0 0 / 0.3),
-    inset 0 1px 0 0 hsl(35 30% 40% / 0.1);
+    0 1px 3px 0 rgb(0 0 0 / 0.3),
+    0 4px 20px -4px rgb(0 0 0 / 0.4);
 }
 
 .dark .glass-card:hover {
   background: linear-gradient(
     135deg,
-    hsl(28 18% 20% / 0.75) 0%,
-    hsl(28 18% 16% / 0.65) 100%
+    hsl(230 18% 14% / 0.85) 0%,
+    hsl(230 18% 11% / 0.75) 100%
   );
-  border-color: hsl(35 40% 45% / 0.35);
+  border-color: hsl(252 60% 55% / 0.3);
   box-shadow: 
-    0 4px 6px -1px rgb(0 0 0 / 0.25),
-    0 2px 4px -2px rgb(0 0 0 / 0.2),
-    0 20px 50px -10px rgb(0 0 0 / 0.4),
-    inset 0 1px 0 0 hsl(35 40% 50% / 0.15);
+    0 1px 3px 0 rgb(0 0 0 / 0.3),
+    0 8px 30px -4px rgb(0 0 0 / 0.5);
   transform: translateY(-2px);
 }
 
@@ -275,10 +271,10 @@ body {
 .dark .glass-card-subtle {
   background: linear-gradient(
     135deg,
-    hsl(28 18% 20% / 0.5) 0%,
-    hsl(28 18% 16% / 0.4) 100%
+    hsl(230 18% 14% / 0.5) 0%,
+    hsl(230 18% 10% / 0.4) 100%
   );
-  border: 1px solid hsl(35 25% 30% / 0.2);
+  border: 1px solid hsl(230 12% 22% / 0.3);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
@@ -286,10 +282,10 @@ body {
 .dark .glass-card-subtle:hover {
   background: linear-gradient(
     135deg,
-    hsl(28 18% 22% / 0.55) 0%,
-    hsl(28 18% 18% / 0.45) 100%
+    hsl(230 18% 16% / 0.55) 0%,
+    hsl(230 18% 12% / 0.45) 100%
   );
-  border-color: hsl(35 30% 40% / 0.3);
+  border-color: hsl(252 60% 55% / 0.2);
 }
 
 /* Glass Panel - For sidebar and overlays */
@@ -307,10 +303,10 @@ body {
 .dark .glass-panel {
   background: linear-gradient(
     180deg,
-    hsl(28 21% 12% / 0.85) 0%,
-    hsl(28 18% 14% / 0.75) 100%
+    hsl(230 20% 5% / 0.95) 0%,
+    hsl(230 18% 7% / 0.9) 100%
   );
-  border-right: 1px solid hsl(35 30% 30% / 0.25);
+  border-right: 1px solid hsl(230 12% 16% / 0.6);
   backdrop-filter: blur(28px);
   -webkit-backdrop-filter: blur(28px);
 }
@@ -350,13 +346,13 @@ body {
 }
 
 .dark .btn-primary {
-  background: linear-gradient(135deg, hsl(35 70% 55%) 0%, hsl(35 70% 65%) 100%);
-  color: hsl(28 21% 12%);
-  box-shadow: 0 4px 14px 0 hsl(35 70% 55% / 0.4);
+  background: linear-gradient(135deg, hsl(252 60% 55%) 0%, hsl(252 65% 65%) 100%);
+  color: hsl(220 15% 98%);
+  box-shadow: 0 4px 14px 0 hsl(252 60% 55% / 0.4);
 }
 
 .dark .btn-primary:hover {
-  box-shadow: 0 6px 20px 0 hsl(35 70% 60% / 0.5);
+  box-shadow: 0 6px 20px 0 hsl(252 65% 60% / 0.5);
 }
 
 .btn-secondary {
@@ -372,13 +368,13 @@ body {
 }
 
 .dark .btn-secondary {
-  background: hsl(28 15% 20%);
-  border: 1px solid hsl(35 20% 30% / 0.3);
+  background: hsl(230 15% 14%);
+  border: 1px solid hsl(230 12% 22% / 0.4);
 }
 
 .dark .btn-secondary:hover {
-  background: hsl(28 15% 25%);
-  border-color: hsl(35 25% 35% / 0.4);
+  background: hsl(230 15% 18%);
+  border-color: hsl(252 60% 55% / 0.25);
 }
 
 /* ============================================
@@ -418,61 +414,61 @@ body {
 }
 
 .dark .hover-glow:hover {
-  box-shadow: 0 0 30px hsl(35 70% 55% / 0.25);
+  box-shadow: 0 0 30px hsl(252 60% 55% / 0.25);
 }
 
 /* ============================================
    Dark Theme Glassmorphism Utilities
    ============================================ */
 
-/* Rich glass card with warm amber borders */
+/* Rich glass card with purple accent borders */
 .glass-card-amber {
   background: linear-gradient(
     145deg,
-    hsl(28 18% 20% / 0.65) 0%,
-    hsl(28 18% 14% / 0.55) 100%
+    hsl(230 18% 14% / 0.65) 0%,
+    hsl(230 18% 10% / 0.55) 100%
   );
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid hsl(35 40% 45% / 0.3);
+  border: 1px solid hsl(252 60% 55% / 0.2);
   border-radius: 1.25rem;
   box-shadow: 
     0 4px 6px -1px rgb(0 0 0 / 0.25),
     0 2px 4px -2px rgb(0 0 0 / 0.2),
     0 10px 40px -10px rgb(0 0 0 / 0.35),
-    inset 0 1px 0 0 hsl(35 40% 50% / 0.15);
+    inset 0 1px 0 0 hsl(252 60% 55% / 0.08);
 }
 
 /* Floating glass element */
 .glass-float {
   background: linear-gradient(
     135deg,
-    hsl(28 18% 22% / 0.6) 0%,
-    hsl(28 18% 16% / 0.5) 100%
+    hsl(230 18% 16% / 0.6) 0%,
+    hsl(230 18% 12% / 0.5) 100%
   );
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid hsl(35 30% 40% / 0.25);
+  border: 1px solid hsl(252 60% 55% / 0.15);
   border-radius: 1rem;
   box-shadow: 
     0 10px 40px -10px rgb(0 0 0 / 0.4),
-    inset 0 1px 0 0 hsl(35 30% 45% / 0.1);
+    inset 0 1px 0 0 hsl(252 60% 55% / 0.06);
 }
 
 /* Glass input for dark theme */
 .dark .glass-input {
-  background: hsl(28 15% 16%);
-  border: 1px solid hsl(35 20% 30% / 0.4);
-  color: hsl(40 20% 95%);
+  background: hsl(230 15% 10%);
+  border: 1px solid hsl(230 12% 20% / 0.5);
+  color: hsl(220 15% 95%);
 }
 
 .dark .glass-input:focus {
-  border-color: hsl(35 50% 50% / 0.6);
-  box-shadow: 0 0 0 3px hsl(35 50% 50% / 0.15);
+  border-color: hsl(252 60% 55% / 0.5);
+  box-shadow: 0 0 0 3px hsl(252 60% 55% / 0.15);
 }
 
 .dark .glass-input::placeholder {
-  color: hsl(35 10% 50%);
+  color: hsl(220 10% 45%);
 }
 
 /* ============================================
@@ -525,11 +521,11 @@ body {
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: hsl(35 15% 40% / 0.4);
+  background: hsl(230 10% 25% / 0.5);
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: hsl(35 20% 50% / 0.5);
+  background: hsl(230 10% 35% / 0.6);
 }
 
 /* ============================================
@@ -609,17 +605,17 @@ select option {
 
 /* Dark theme form elements */
 .dark select {
-  background-color: hsl(28 15% 16%);
-  border: 1px solid hsl(35 20% 30% / 0.4);
-  color: hsl(40 20% 95%);
+  background-color: hsl(230 15% 10%);
+  border: 1px solid hsl(230 12% 20% / 0.5);
+  color: hsl(220 15% 95%);
 }
 
 .dark select:focus {
-  border-color: hsl(35 50% 50% / 0.6);
-  box-shadow: 0 0 0 3px hsl(35 50% 50% / 0.15);
+  border-color: hsl(252 60% 55% / 0.5);
+  box-shadow: 0 0 0 3px hsl(252 60% 55% / 0.15);
 }
 
 .dark select option {
-  background-color: hsl(28 18% 16%);
-  color: hsl(40 20% 95%);
+  background-color: hsl(230 18% 12%);
+  color: hsl(220 15% 95%);
 }
