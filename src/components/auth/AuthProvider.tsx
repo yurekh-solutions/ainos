@@ -8,5 +8,5 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  return <SessionProvider>{children}</SessionProvider>;
+  return <SessionProvider basePath="/ainos/api/auth">{children}</SessionProvider>;
 }

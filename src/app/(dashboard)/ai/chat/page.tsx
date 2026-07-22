@@ -46,8 +46,8 @@ export default function AIChatPage() {
     <div className="min-h-screen" style={{ background: 'linear-gradient(180deg, hsl(230 20% 5%) 0%, hsl(230 20% 7%) 50%, hsl(230 18% 9%) 100%)' }}>
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">AI Business Assistant</h1>
-          <p className="text-sm text-white/50 mt-1">Ask questions about your business data</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Yurekh AI</h1>
+          <p className="text-sm text-white/50 mt-1">Your intelligent business assistant</p>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
