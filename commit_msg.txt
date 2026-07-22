@@ -1,1 +1,1 @@
-Fix OAuth callback to use Render URL directly
+Fix OAuth callback error: remove invalid mongodb ReadPreference import, add trustHost for proxy, fix error page path
