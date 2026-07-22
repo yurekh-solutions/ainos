@@ -1,1 +1,1 @@
-Fix OAuth callback URL to use full basePath path
+Add error page for OAuth callback errors
