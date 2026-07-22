@@ -33,7 +33,7 @@ export const authOptions: NextAuthOptions = {
             console.log('Creating new user...');
             const newUser = await User.create({
               email: user.email,
-              name: user.name,
+              name: user.name || user.email,
               googleId: user.id,
               image: user.image,
               role: 'user',
@@ -44,7 +44,8 @@ export const authOptions: NextAuthOptions = {
           return true;
         } catch (error) {
           console.error('SignIn error:', error);
-          return false;
+          // Still allow sign-in even if DB fails - user can be created later
+          return true;
         }
       }
       return false;
