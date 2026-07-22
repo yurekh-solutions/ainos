@@ -8,6 +8,11 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback/google`,
+        },
+      },
     }),
   ],
   debug: process.env.NODE_ENV === 'development',
@@ -87,7 +92,7 @@ export const authOptions: NextAuthOptions = {
       options: {
         httpOnly: true,
         sameSite: 'lax',
-        path: '/',
+        path: '/ainos',
         secure: process.env.NODE_ENV === 'production',
       },
     },
@@ -96,7 +101,7 @@ export const authOptions: NextAuthOptions = {
       options: {
         httpOnly: true,
         sameSite: 'lax',
-        path: '/',
+        path: '/ainos',
         secure: process.env.NODE_ENV === 'production',
       },
     },
@@ -105,7 +110,7 @@ export const authOptions: NextAuthOptions = {
       options: {
         httpOnly: true,
         sameSite: 'lax',
-        path: '/',
+        path: '/ainos',
         secure: process.env.NODE_ENV === 'production',
       },
     },
@@ -114,7 +119,7 @@ export const authOptions: NextAuthOptions = {
       options: {
         httpOnly: true,
         sameSite: 'lax',
-        path: '/',
+        path: '/ainos',
         secure: process.env.NODE_ENV === 'production',
         maxAge: 900,
       },
@@ -124,7 +129,7 @@ export const authOptions: NextAuthOptions = {
       options: {
         httpOnly: true,
         sameSite: 'lax',
-        path: '/',
+        path: '/ainos',
         secure: process.env.NODE_ENV === 'production',
         maxAge: 900,
       },
