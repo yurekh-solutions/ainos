@@ -1,0 +1,1 @@
+Add auth error page and fix error route
