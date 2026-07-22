@@ -8,6 +8,11 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          redirect_uri: 'https://yurekh.vercel.app/ainos/api/auth/callback/google',
+        },
+      },
     }),
   ],
   debug: process.env.NODE_ENV === 'development',

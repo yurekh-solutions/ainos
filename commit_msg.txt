@@ -1,1 +1,1 @@
-Fix OAuth callback error: remove invalid mongodb ReadPreference import, add trustHost for proxy, fix error page path
+Fix Google OAuth redirect_uri to include /api/auth path for Vercel proxy
