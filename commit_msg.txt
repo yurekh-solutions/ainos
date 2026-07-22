@@ -1,1 +1,1 @@
-Fix Google OAuth redirect_uri to include /api/auth path for Vercel proxy
+\"Fix NEXTAUTH_URL to include /api/auth for correct OAuth callback construction\"  

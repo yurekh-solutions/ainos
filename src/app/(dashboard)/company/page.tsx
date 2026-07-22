@@ -137,7 +137,7 @@ export default function CompanyPage() {
     'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu & Kashmir', 'Ladakh'
   ];
 
-  // Reusable input component with proper focus handling
+  // Reusable input component with dark theme styling
   const FormInput = ({ name, defaultValue, placeholder, type = 'text', required = false, className = '' }: { 
     name: string; 
     defaultValue?: string; 
@@ -157,19 +157,19 @@ export default function CompanyPage() {
         required={required}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
-        className={`w-full px-4 py-2.5 text-sm rounded-xl transition-all duration-200 ${className}`}
+        className={`w-full px-4 py-3 text-sm rounded-xl transition-all duration-200 placeholder:text-slate-500 ${className}`}
         style={{
-          background: '#FFFFFF',
-          border: isFocused ? '2px solid hsl(var(--primary))' : '2px solid hsl(var(--border))',
+          background: isFocused ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
+          border: isFocused ? '1px solid hsl(var(--primary))' : '1px solid rgba(255,255,255,0.08)',
           color: 'hsl(var(--foreground))',
           outline: 'none',
-          boxShadow: isFocused ? '0 0 0 3px rgba(193, 122, 71, 0.15)' : 'none'
+          boxShadow: isFocused ? '0 0 0 3px rgba(193, 122, 71, 0.1)' : 'none'
         }}
       />
     );
   };
 
-  // Reusable select component
+  // Reusable select component with dark theme styling
   const FormSelect = ({ name, defaultValue, required = false, children }: { 
     name: string; 
     defaultValue?: string; 
@@ -185,13 +185,13 @@ export default function CompanyPage() {
         required={required}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
-        className="w-full px-4 py-2.5 text-sm rounded-xl transition-all duration-200"
+        className="w-full px-4 py-3 text-sm rounded-xl transition-all duration-200"
         style={{
-          background: '#FFFFFF',
-          border: isFocused ? '2px solid hsl(var(--primary))' : '2px solid hsl(var(--border))',
+          background: isFocused ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
+          border: isFocused ? '1px solid hsl(var(--primary))' : '1px solid rgba(255,255,255,0.08)',
           color: 'hsl(var(--foreground))',
           outline: 'none',
-          boxShadow: isFocused ? '0 0 0 3px rgba(193, 122, 71, 0.15)' : 'none'
+          boxShadow: isFocused ? '0 0 0 3px rgba(193, 122, 71, 0.1)' : 'none'
         }}
       >
         {children}
@@ -311,26 +311,26 @@ export default function CompanyPage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                  <Building2 className="w-3.5 h-3.5" /> Business Name *
+                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <Building2 className="w-3.5 h-3.5" /> Business Name <span style={{ color: 'hsl(0 84% 60%)' }}>*</span>
                 </label>
                 <FormInput name="name" defaultValue={company.name} placeholder="e.g., Raj Enterprises" required />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   <Mail className="w-3.5 h-3.5" /> Email
                 </label>
                 <FormInput name="email" type="email" defaultValue={company.email} placeholder="company@gmail.com" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                  <Phone className="w-3.5 h-3.5" /> Phone *
+                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <Phone className="w-3.5 h-3.5" /> Phone <span style={{ color: 'hsl(0 84% 60%)' }}>*</span>
                 </label>
                 <FormInput name="phone" type="tel" defaultValue={company.phone} placeholder="9876543210" required />
-                <p className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>Enter 10 digit mobile number</p>
+                <p className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))', opacity: 0.7 }}>Enter 10 digit mobile number</p>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   <Globe className="w-3.5 h-3.5" /> Website
                 </label>
                 <FormInput name="website" defaultValue={company.website} placeholder="www.yourcompany.com" />
@@ -350,18 +350,18 @@ export default function CompanyPage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   <Hash className="w-3.5 h-3.5" /> GST Number
                 </label>
                 <FormInput name="gstNumber" defaultValue={company.gstNumber} placeholder="22AAAAA0000A1Z5" className="uppercase" />
-                <p className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>15 digit GSTIN</p>
+                <p className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))', opacity: 0.7 }}>15 digit GSTIN</p>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   <CreditCard className="w-3.5 h-3.5" /> PAN Number
                 </label>
                 <FormInput name="panNumber" defaultValue={company.panNumber} placeholder="AAAAA0000A" className="uppercase" />
-                <p className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>10 digit PAN</p>
+                <p className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))', opacity: 0.7 }}>10 digit PAN</p>
               </div>
             </div>
           </motion.div>
@@ -378,20 +378,20 @@ export default function CompanyPage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2 space-y-1.5">
-                <label className="text-xs font-medium uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                  <MapPin className="w-3.5 h-3.5" /> Street Address *
+                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <MapPin className="w-3.5 h-3.5" /> Street Address <span style={{ color: 'hsl(0 84% 60%)' }}>*</span>
                 </label>
                 <FormInput name="address" defaultValue={company.address} placeholder="Shop No. 12, Main Market Road" required />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                  <MapPin className="w-3.5 h-3.5" /> City *
+                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <MapPin className="w-3.5 h-3.5" /> City <span style={{ color: 'hsl(0 84% 60%)' }}>*</span>
                 </label>
                 <FormInput name="city" defaultValue={company.city} placeholder="Mumbai" required />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                  <MapPin className="w-3.5 h-3.5" /> State *
+                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <MapPin className="w-3.5 h-3.5" /> State <span style={{ color: 'hsl(0 84% 60%)' }}>*</span>
                 </label>
                 <FormSelect name="state" defaultValue={company.state} required>
                   <option value="">Select State</option>
@@ -401,14 +401,14 @@ export default function CompanyPage() {
                 </FormSelect>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                  <MapPin className="w-3.5 h-3.5" /> PIN Code *
+                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <MapPin className="w-3.5 h-3.5" /> PIN Code <span style={{ color: 'hsl(0 84% 60%)' }}>*</span>
                 </label>
                 <FormInput name="pincode" defaultValue={company.pincode} placeholder="400001" required />
-                <p className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>6 digit code</p>
+                <p className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))', opacity: 0.7 }}>6 digit code</p>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   <Globe className="w-3.5 h-3.5" /> Country
                 </label>
                 <FormInput name="country" defaultValue={company.country || 'India'} placeholder="India" />
@@ -428,29 +428,29 @@ export default function CompanyPage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   <Building2 className="w-3.5 h-3.5" /> Account Holder
                 </label>
                 <FormInput name="accountHolder" defaultValue={company.accountHolder} placeholder="Name as per bank" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   <Landmark className="w-3.5 h-3.5" /> Bank Name
                 </label>
                 <FormInput name="bankName" defaultValue={company.bankName} placeholder="e.g., State Bank of India" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   <CreditCard className="w-3.5 h-3.5" /> Account Number
                 </label>
                 <FormInput name="bankAccount" defaultValue={company.bankAccount} placeholder="Your account number" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   <Hash className="w-3.5 h-3.5" /> IFSC Code
                 </label>
                 <FormInput name="ifscCode" defaultValue={company.ifscCode} placeholder="SBIN0001234" className="uppercase" />
-                <p className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>11 characters</p>
+                <p className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))', opacity: 0.7 }}>11 characters</p>
               </div>
             </div>
           </motion.div>
