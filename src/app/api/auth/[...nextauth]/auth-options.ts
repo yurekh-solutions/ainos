@@ -10,7 +10,7 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/callback/google`,
+          redirect_uri: 'https://ainos-ywu0.onrender.com/ainos/api/auth/callback/google',
         },
       },
     }),
@@ -81,7 +81,7 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/auth/signin',
-    error: '/auth/error',
+    error: '/error',
   },
   session: {
     strategy: 'jwt',

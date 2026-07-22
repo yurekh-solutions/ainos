@@ -1,1 +1,1 @@
-Add error page for OAuth callback errors
+Fix OAuth callback to use Render URL directly

@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import { ReadPreference } from 'mongodb';
 
 interface MongooseCache {
   conn: typeof mongoose | null;
@@ -39,8 +38,6 @@ async function connectDB() {
       connectTimeoutMS: 10000,   // Timeout for initial connection
       retryWrites: true,         // Retry failed writes
       retryReads: true,          // Retry failed reads
-      // Replica set awareness for production
-      readPreference: ReadPreference.SECONDARY_PREFERRED,
     };
 
     cached!.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
