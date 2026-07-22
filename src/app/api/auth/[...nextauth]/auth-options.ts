@@ -3,6 +3,12 @@ import GoogleProvider from 'next-auth/providers/google';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 
+// Fix: NextAuth v4 constructs callback URL as ${NEXTAUTH_URL}/callback/google
+// We need NEXTAUTH_URL to include /api/auth for correct internal URL construction
+if (process.env.NEXTAUTH_URL && !process.env.NEXTAUTH_URL.includes('/api/auth')) {
+  process.env.NEXTAUTH_URL = process.env.NEXTAUTH_URL.replace(/\/$/, '') + '/api/auth';
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -80,8 +86,8 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: '/auth/signin',
-    error: '/error',
+    signIn: '/ainos/auth/signin',
+    error: '/ainos/error',
   },
   session: {
     strategy: 'jwt',
