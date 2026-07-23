@@ -33,117 +33,120 @@ export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
 }
 
-// Try Instagram's public JSON endpoint (no auth required)
-async function fetchInstagramJSON(username: string): Promise<InstagramFeedResponse | null> {
-  try {
-    const res = await fetch(`https://www.instagram.com/${username}/?__a=1&__d=dis`, {
+// Try Instagram's mobile/web API endpoints
+async function fetchInstagramData(username: string): Promise<InstagramFeedResponse | null> {
+  const endpoints = [
+    // Method 1: Instagram's public JSON endpoint
+    {
+      url: `https://www.instagram.com/${username}/?__a=1&__d=dis`,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
         'Accept': 'application/json',
         'X-IG-App-ID': '936619743392459',
+        'X-ASBD-ID': '198387',
+        'X-IG-WWW-Claim': '0',
       },
-      signal: AbortSignal.timeout(10000),
-    });
-
-    if (!res.ok) {
-      console.error('Instagram JSON endpoint failed:', res.status);
-      return null;
-    }
-
-    const data = await res.json();
-    const user = data?.graphql?.user;
-    
-    if (!user) {
-      console.error('No user data in Instagram response');
-      return null;
-    }
-
-    const edges = user?.edge_owner_to_timeline_media?.edges || [];
-    const posts: InstagramPost[] = edges.map((edge: { node: { id: string; display_url: string; thumbnail_src?: string; edge_media_to_caption?: { edges: { node: { text: string } }[] }; shortcode: string; is_video: boolean; video_url?: string } }, idx: number) => ({
-      id: edge.node.id || `post-${idx}`,
-      media_url: edge.node.display_url || edge.node.thumbnail_src || '',
-      thumbnail_url: edge.node.thumbnail_src,
-      caption: edge.node.edge_media_to_caption?.edges?.[0]?.node?.text || '',
-      permalink: `https://www.instagram.com/p/${edge.node.shortcode}/`,
-      is_video: edge.node.is_video || false,
-    }));
-
-    return {
-      username: INSTAGRAM_USERNAME,
-      profile_picture_url: user.profile_pic_url_hd || user.profile_pic_url || '',
-      bio: user.biography || '',
-      posts,
-      cached: false,
-      lastUpdated: new Date().toISOString(),
-    };
-  } catch (error) {
-    console.error('Instagram JSON fetch error:', error);
-    return null;
-  }
-}
-
-// Fallback: Scrape Instagram's HTML page
-async function scrapeInstagram(username: string): Promise<InstagramFeedResponse | null> {
-  try {
-    const res = await fetch(`https://www.instagram.com/${username}/`, {
+    },
+    // Method 2: Instagram's web API
+    {
+      url: `https://i.instagram.com/api/v1/users/web_profile_info/?username=${username}`,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept': '*/*',
+        'X-IG-App-ID': '936619743392459',
       },
-      signal: AbortSignal.timeout(10000),
-    });
+    },
+    // Method 3: Instagram's graphql endpoint
+    {
+      url: `https://www.instagram.com/graphql/query/`,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-IG-App-ID': '936619743392459',
+      },
+      body: `variables={"id":"${username}","after":null,"first":12}`,
+    },
+  ];
 
-    if (!res.ok) {
-      console.error('Instagram scrape failed:', res.status);
-      return null;
-    }
-
-    const html = await res.text();
-    let profilePic = '';
-    let bio = '';
-    const posts: InstagramPost[] = [];
-
-    // Extract from meta tags
-    const ogImageMatch = html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i);
-    if (ogImageMatch) profilePic = ogImageMatch[1];
-
-    const descMatch = html.match(/<meta\s+property="og:description"\s+content="([^"]+)"/i);
-    if (descMatch) bio = descMatch[1];
-
-    // Extract display_url patterns
-    const displaySrcMatch = html.match(/"display_url"\s*:\s*"(https:\/\/[^"]+)"/g);
-    if (displaySrcMatch && displaySrcMatch.length > 0) {
-      displaySrcMatch.slice(0, 12).forEach((match: string, index: number) => {
-        const urlMatch = match.match(/"display_url"\s*:\s*"(https:\/\/[^"]+)"/);
-        if (urlMatch) {
-          posts.push({
-            id: `post-${index + 1}`,
-            media_url: urlMatch[1].replace(/\\u0026/g, '&'),
-            caption: '',
-            permalink: `https://www.instagram.com/${username}/`,
-            is_video: false,
-          });
-        }
+  for (const endpoint of endpoints) {
+    try {
+      console.log(`Trying Instagram endpoint: ${endpoint.url}`);
+      
+      const res = await fetch(endpoint.url, {
+        method: endpoint.body ? 'POST' : 'GET',
+        headers: endpoint.headers as unknown as Record<string, string>,
+        body: endpoint.body,
+        signal: AbortSignal.timeout(10000),
       });
-    }
 
-    if (posts.length > 0 || profilePic) {
-      return {
-        username: INSTAGRAM_USERNAME,
-        profile_picture_url: profilePic,
-        bio: bio,
-        posts,
-        cached: false,
-        lastUpdated: new Date().toISOString(),
-      };
-    }
+      if (!res.ok) {
+        console.log(`Endpoint failed with status: ${res.status}`);
+        continue;
+      }
 
-    return null;
-  } catch (error) {
-    console.error('Instagram scrape error:', error);
-    return null;
+      const data = await res.json();
+      
+      // Try to extract data from different response formats
+      let profilePic = '';
+      let bio = '';
+      const posts: InstagramPost[] = [];
+
+      // Format 1: GraphQL user data
+      const user = data?.graphql?.user || data?.data?.user || data?.data?.user?.edge_owner_to_timeline_media;
+      if (user) {
+        profilePic = user.profile_pic_url_hd || user.profile_pic_url || '';
+        bio = user.biography || '';
+        
+        const edges = user.edge_owner_to_timeline_media?.edges || [];
+        edges.forEach((edge: { node: { id: string; display_url: string; thumbnail_src?: string; edge_media_to_caption?: { edges: { node: { text: string } }[] }; shortcode: string; is_video: boolean } }, idx: number) => {
+          posts.push({
+            id: edge.node.id || `post-${idx}`,
+            media_url: edge.node.display_url || edge.node.thumbnail_src || '',
+            thumbnail_url: edge.node.thumbnail_src,
+            caption: edge.node.edge_media_to_caption?.edges?.[0]?.node?.text || '',
+            permalink: `https://www.instagram.com/p/${edge.node.shortcode}/`,
+            is_video: edge.node.is_video || false,
+          });
+        });
+      }
+
+      // Format 2: Direct user data
+      if (!posts.length && data?.data?.user) {
+        const userData = data.data.user;
+        profilePic = userData.profile_pic_url || '';
+        bio = userData.biography || '';
+        
+        const mediaEdges = userData.edge_owner_to_timeline_media?.edges || [];
+        mediaEdges.forEach((edge: { node: { id: string; display_url: string; shortcode: string; is_video: boolean } }, idx: number) => {
+          posts.push({
+            id: edge.node.id || `post-${idx}`,
+            media_url: edge.node.display_url || '',
+            permalink: `https://www.instagram.com/p/${edge.node.shortcode}/`,
+            is_video: edge.node.is_video || false,
+            caption: '',
+          });
+        });
+      }
+
+      if (posts.length > 0) {
+        console.log(`Successfully fetched ${posts.length} posts from Instagram`);
+        return {
+          username: INSTAGRAM_USERNAME,
+          profile_picture_url: profilePic,
+          bio: bio,
+          posts,
+          cached: false,
+          lastUpdated: new Date().toISOString(),
+        };
+      }
+    } catch (error) {
+      console.log(`Endpoint error:`, error);
+      continue;
+    }
   }
+
+  console.error('All Instagram endpoints failed');
+  return null;
 }
 
 export async function GET() {
@@ -161,13 +164,8 @@ export async function GET() {
     console.error('Redis cache read error:', err);
   }
 
-  // Try JSON endpoint first, then fallback to scraping
-  let data = await fetchInstagramJSON(INSTAGRAM_USERNAME);
-  
-  if (!data || data.posts.length === 0) {
-    console.log('JSON endpoint failed, trying HTML scrape...');
-    data = await scrapeInstagram(INSTAGRAM_USERNAME);
-  }
+  // Try multiple Instagram endpoints
+  const data = await fetchInstagramData(INSTAGRAM_USERNAME);
 
   if (!data || data.posts.length === 0) {
     return NextResponse.json(
@@ -178,7 +176,7 @@ export async function GET() {
         posts: [],
         cached: false,
         lastUpdated: new Date().toISOString(),
-        error: 'Could not fetch Instagram data. Instagram may be rate-limiting or blocking requests.',
+        error: 'Could not fetch Instagram data. Instagram blocks automated access without API authentication.',
       },
       { status: 200, headers: CORS_HEADERS }
     );

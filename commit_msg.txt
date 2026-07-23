@@ -1,1 +1,1 @@
-\"Fix NEXTAUTH_URL to include /api/auth for correct OAuth callback construction\"  
+Improve Instagram API with multiple endpoint attempts
