@@ -1,0 +1,227 @@
+'use client';
+import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { X, Globe, Palette, Megaphone, Rocket, Printer, BarChart3, Newspaper, Clock, CheckCircle2, Briefcase, ExternalLink } from 'lucide-react';
+
+interface ServiceRequestItem { _id: string; serviceName: string; category: string; status: string; createdAt: string; }
+
+interface ServiceCategory { title: string; icon: React.ElementType; description: string; services: string[]; }
+
+const serviceCategories: ServiceCategory[] = [
+  {
+    title: 'Development Services',
+    icon: Globe,
+    description: 'Websites, apps & custom software built for your business',
+    services: ['Website Development', 'Responsive Website', 'Web Maintenance', 'Landing Pages', 'Mobile Application', 'UI/UX Designing', 'E-commerce', 'Microsite', 'Digital Visiting Card', 'Custom QR Code', 'Custom Software', 'E-commerce Platform Development', 'Quality Assurance & Testing'],
+  },
+  {
+    title: 'Premium Digital Branding',
+    icon: Palette,
+    description: 'Elite design, SEO, PPC & content that positions your brand',
+    services: ['Elite Website Design & Development', 'Exclusive Social Media Management', 'Decadent SEO Strategies', 'Opulent PPC Advertising Campaigns', 'Majestic Email Marketing Automation', 'Sumptuous Content Creation', 'Tailored Landing Page', 'Royal Social Media Analytics', 'Mobile Responsive Elegance', 'Regal Campaign Optimization'],
+  },
+  {
+    title: 'Product Launch & Development',
+    icon: Rocket,
+    description: 'Research, positioning & launch execution end to end',
+    services: ['Exclusive Market Research & Analysis', 'Strategic Launch Blueprint', 'Premium Brand Positioning Strategies', 'Expert Pricing Consultation', 'Bespoke Promotional Materials', 'Exclusive Launch Events', 'Luxury Distribution Channels', 'Celebrity Collaborations', 'Milestone-Laden Timeline', 'Post-Launch Assessment'],
+  },
+  {
+    title: 'Social Media Marketing',
+    icon: Megaphone,
+    description: 'Strategy, content & campaigns that grow your audience',
+    services: ['Bespoke Social Media Strategy Development', 'Opulent Content Creation & Management', 'Royal Influencer Partnership Collaborations', 'Lavish Social Media Campaigns & Contests', 'Exclusive Social Media Analytics & Reporting'],
+  },
+  {
+    title: 'Elevated Branding Services',
+    icon: Briefcase,
+    description: 'Logos, brand systems & identity that command attention',
+    services: ['Luxury Logo Design', 'Opulent Brand Style Guide', 'Sumptuous Brand Collateral', 'Consistent Brand Representation', 'Tailored Brand Messaging', 'Refined Brand Voice & Tone', 'Royal Tagline Creation', 'Exclusive Brand Storytelling', 'Regal Presentation Templates', 'Aristocratic Brand Audit', 'High-End Packaging Design', 'Luxury Stationery Design', 'Exquisite Product Photography'],
+  },
+  {
+    title: 'Print Media & Advertising',
+    icon: Printer,
+    description: 'Print collateral, magazine, outdoor & direct mail campaigns',
+    services: ['Luxury Print Collateral Design', 'High-End Magazine Advertisements', 'Opulent Billboard & Outdoor Advertising', 'Aristocratic Direct Mail Campaigns', 'Bespoke Print Media Campaigns'],
+  },
+  {
+    title: 'Tailored Digital Work',
+    icon: BarChart3,
+    description: 'Analytics, automation & data-driven growth systems',
+    services: ['Exclusive Monthly Analytics Reports', 'Lavish A/B Testing', 'Luxurious Tracking & Attribution', 'Elite Customer Segmentation', 'Bespoke Data Visualization', 'Opulent Competitor Analysis', 'Extravagant Marketing Automation', 'Decadent Social Listening', 'Exclusive Content Strategy', 'Exclusive Training & Support', 'VIP Customer Engagement Programs', 'Luxury Loyalty Programs', 'High-Touch Customer Service Portals', 'Interactive Web Experiences'],
+  },
+  {
+    title: 'Public Relations (PR)',
+    icon: Newspaper,
+    description: 'Media relations, publicity & high-profile placements',
+    services: ['VIP Media Relations & Press Releases', 'Exquisite Event Publicity & Coverage', 'Royal Brand Ambassador Programs', 'Luxury Brand Partnership & Sponsorships', 'High-Profile Media Placements & Features'],
+  },
+];
+
+export default function YurekhServicesPage() {
+  const [requests, setRequests] = useState<ServiceRequestItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState<ServiceCategory | null>(null);
+  const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({ businessName: '', requirements: '', budgetRange: '', timeline: '' });
+
+  useEffect(() => { fetchRequests(); }, []);
+
+  const fetchRequests = async () => {
+    try { const res = await fetch('/api/service-requests'); if (res.ok) setRequests(await res.json()); } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedService || !activeCategory) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/service-requests', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serviceName: selectedService, category: activeCategory.title, ...form }),
+      });
+      if (res.ok) {
+        setForm({ businessName: '', requirements: '', budgetRange: '', timeline: '' });
+        setSelectedService(null);
+        setActiveCategory(null);
+        fetchRequests();
+      }
+    } catch (e) { console.error(e); }
+    finally { setSubmitting(false); }
+  };
+
+  const statusColors: Record<string, string> = {
+    pending: 'hsl(252 60% 55%)', 'in-review': '#a78bfa', 'in-progress': '#60a5fa', delivered: '#34d399', cancelled: '#94a3b8',
+  };
+
+  return (
+    <div className="p-4 md:p-6 h-full overflow-auto" style={{ background: 'var(--page-gradient)' }}>
+      <div className="max-w-[1400px] mx-auto">
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>Yurekh Services</h1>
+            <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Development, branding, marketing & growth — executed by Yurekh Solutions for your business</p>
+          </div>
+          <a href="https://yurekh.com/services" target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold self-start lg:self-auto"
+            style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))', border: '1px solid hsl(var(--primary) / 0.25)' }}>
+            Explore on yurekh.com <ExternalLink className="w-4 h-4" />
+          </a>
+        </motion.div>
+
+        {/* My Requests */}
+        {!loading && requests.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+            <h2 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: 'hsl(var(--muted-foreground))' }}>My Service Requests</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {requests.map((r, i) => (
+                <motion.div key={r._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                  className="glass-card p-4 rounded-2xl">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-sm line-clamp-1" style={{ color: 'hsl(var(--foreground))' }}>{r.serviceName}</h3>
+                      <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>{r.category}</p>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold text-white capitalize flex-shrink-0" style={{ background: statusColors[r.status] || '#94a3b8' }}>{r.status.replace('-', ' ')}</span>
+                  </div>
+                  <p className="text-xs flex items-center gap-1 mt-3" style={{ color: '#94a3b8' }}><Clock className="w-3 h-3" />{new Date(r.createdAt).toLocaleDateString()}</p>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Service Catalog */}
+        <h2 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: 'hsl(var(--muted-foreground))' }}>Service Catalog</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {serviceCategories.map((cat, i) => {
+            const Icon = cat.icon;
+            return (
+              <motion.button key={cat.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setActiveCategory(cat)}
+                className="glass-card p-5 rounded-2xl text-left">
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4"
+                  style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
+                  <Icon className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="font-semibold mb-1" style={{ color: 'hsl(var(--foreground))' }}>{cat.title}</h3>
+                <p className="text-xs mb-3" style={{ color: 'hsl(var(--muted-foreground))' }}>{cat.description}</p>
+                <p className="text-xs font-medium" style={{ color: 'hsl(var(--primary))' }}>{cat.services.length} services →</p>
+              </motion.button>
+            );
+          })}
+        </div>
+
+        {/* Category Detail Modal */}
+        {activeCategory && !selectedService && (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setActiveCategory(null)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={e => e.stopPropagation()}
+              className="glass-card rounded-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold" style={{ color: 'hsl(var(--foreground))' }}>{activeCategory.title}</h2>
+                <button onClick={() => setActiveCategory(null)} className="p-2 rounded-xl hover:opacity-70"><X className="w-5 h-5" style={{ color: 'hsl(var(--muted-foreground))' }} /></button>
+              </div>
+              <p className="text-sm mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>Select a service to request it for your business:</p>
+              <div className="space-y-2">
+                {activeCategory.services.map((service) => (
+                  <button key={service} onClick={() => setSelectedService(service)}
+                    className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl text-left text-sm transition-colors"
+                    style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}>
+                    <span>{service}</span>
+                    <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: 'hsl(var(--primary))' }} />
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Request Form Modal */}
+        {activeCategory && selectedService && (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedService(null)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={e => e.stopPropagation()}
+              className="glass-card rounded-2xl p-6 w-full max-w-md">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-lg font-bold" style={{ color: 'hsl(var(--foreground))' }}>Request Service</h2>
+                <button onClick={() => setSelectedService(null)} className="p-2 rounded-xl hover:opacity-70"><X className="w-5 h-5" style={{ color: 'hsl(var(--muted-foreground))' }} /></button>
+              </div>
+              <p className="text-sm mb-5" style={{ color: 'hsl(var(--primary))' }}>{selectedService}</p>
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <input placeholder="Your business name" value={form.businessName} onChange={e => setForm({ ...form, businessName: e.target.value })}
+                  className="glass-input w-full px-4 py-2.5 rounded-xl text-sm placeholder:opacity-50" />
+                <textarea required placeholder="What do you need? Describe your requirements *" value={form.requirements} onChange={e => setForm({ ...form, requirements: e.target.value })} rows={4}
+                  className="glass-input w-full px-4 py-2.5 rounded-xl text-sm placeholder:opacity-50" />
+                <div className="grid grid-cols-2 gap-3">
+                  <select value={form.budgetRange} onChange={e => setForm({ ...form, budgetRange: e.target.value })}
+                    className="glass-input w-full px-4 py-2.5 rounded-xl text-sm">
+                    <option value="">Budget range</option>
+                    <option value="under-1000">Under $1,000</option>
+                    <option value="1000-5000">$1,000 – $5,000</option>
+                    <option value="5000-20000">$5,000 – $20,000</option>
+                    <option value="above-20000">Above $20,000</option>
+                  </select>
+                  <select value={form.timeline} onChange={e => setForm({ ...form, timeline: e.target.value })}
+                    className="glass-input w-full px-4 py-2.5 rounded-xl text-sm">
+                    <option value="">Timeline</option>
+                    <option value="asap">ASAP</option>
+                    <option value="1-month">Within 1 month</option>
+                    <option value="3-months">Within 3 months</option>
+                    <option value="flexible">Flexible</option>
+                  </select>
+                </div>
+                <button type="submit" disabled={submitting} className="w-full py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-60"
+                  style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
+                  {submitting ? 'Submitting...' : 'Submit Request'}
+                </button>
+                <p className="text-[11px] text-center" style={{ color: 'hsl(var(--muted-foreground))' }}>The Yurekh team will review your request and reach out to you.</p>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,1 +1,6 @@
-Add CORS proxy support for Instagram feed
+Add Yurekh Services module so companies can request Yurekh services from AINOS
+
+- New /services dashboard page: full Yurekh service catalog (8 categories, 70+ services) with request flow and request status tracking
+- New ServiceRequest model and /api/service-requests API (session-scoped GET/POST)
+- Sidebar: add Yurekh Services entry with Briefcase icon
+- Fix empty instagram/feed route breaking TypeScript build

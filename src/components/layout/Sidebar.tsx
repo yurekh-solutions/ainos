@@ -37,6 +37,7 @@ import {
   FolderOpen,
   MessageSquare,
   Headphones,
+  Briefcase,
 } from 'lucide-react';
 
 interface MenuItem {
@@ -57,6 +58,7 @@ const mainItems: MenuItem[] = [
   { icon: Users, label: 'Customers', href: '/customers' },
   { icon: Package, label: 'Products', href: '/products' },
   { icon: Building2, label: 'Company', href: '/company' },
+  { icon: Briefcase, label: 'Yurekh Services', href: '/services' },
   { icon: BarChart3, label: 'Reports', href: '/reports' },
   { icon: Sparkles, label: 'Automations', href: '/automations' },
   { icon: Settings, label: 'Settings', href: '/settings' },
