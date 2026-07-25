@@ -1,8 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Globe, Palette, Megaphone, Rocket, Printer, BarChart3, Newspaper, Clock, CheckCircle2, Briefcase, ExternalLink, Wand2, Zap, Eye, Download, Trash2 } from 'lucide-react';
+import { X, Globe, Palette, Megaphone, Rocket, Printer, BarChart3, Newspaper, Clock, Briefcase, ExternalLink, Wand2, Zap, Eye, Download, Trash2 } from 'lucide-react';
 import WebsiteBuilder from '@/components/services/WebsiteBuilder';
+import AIToolStudio, { StudioToolId } from '@/components/services/AIToolStudio';
 
 interface ServiceRequestItem { _id: string; serviceName: string; category: string; status: string; createdAt: string; }
 
@@ -12,6 +13,38 @@ interface ServiceCategory { title: string; icon: React.ElementType; description:
 
 // Development services that open the AI Website Builder tool (Lovable-style instant build)
 const AI_BUILDABLE = new Set(['Website Development', 'Responsive Website', 'Landing Pages', 'E-commerce', 'Microsite', 'Digital Visiting Card', 'E-commerce Platform Development', 'UI/UX Designing', 'Web Maintenance']);
+
+// Every other service maps to the AINOS AI tool that executes it
+const CATEGORY_TOOL_DEFAULT: Record<string, StudioToolId> = {
+  'Development Services': 'launch',
+  'Premium Digital Branding': 'brandkit',
+  'Product Launch & Development': 'launch',
+  'Social Media Marketing': 'social',
+  'Elevated Branding Services': 'brandkit',
+  'Print Media & Advertising': 'poster',
+  'Tailored Digital Work': 'seo',
+  'Public Relations (PR)': 'pr',
+};
+
+function toolForService(service: string, category: string): StudioToolId {
+  const s = service.toLowerCase();
+  if (/qr code/.test(s)) return 'qr';
+  if (/logo|monogram/.test(s)) return 'logo';
+  if (/social|influencer/.test(s)) return 'social';
+  if (/email/.test(s)) return 'email';
+  if (/seo|analytics|tracking|segmentation|competitor|data visual|listening|a\/b/.test(s)) return 'seo';
+  if (/content|copy|blog|storytelling|messaging|voice|tagline|ppc|advertis/.test(s)) return 'content';
+  if (/press|publicity|media relations|media placements|ambassador|sponsorship/.test(s)) return 'pr';
+  if (/print|magazine|billboard|mail|packaging|stationery|photography|poster|collateral|promotional/.test(s)) return 'poster';
+  if (/launch|market research|pricing|positioning|distribution|timeline|assessment|automation|software|mobile|quality assurance/.test(s)) return 'launch';
+  if (/brand|style guide|presentation|audit/.test(s)) return 'brandkit';
+  return CATEGORY_TOOL_DEFAULT[category] || 'brandkit';
+}
+
+const TOOL_LABELS: Record<StudioToolId, string> = {
+  logo: 'Logo AI', brandkit: 'Brand Kit AI', social: 'Social AI', content: 'Writer AI', seo: 'SEO AI',
+  email: 'Email AI', pr: 'PR AI', launch: 'Blueprint AI', poster: 'Print AI', qr: 'QR Tool',
+};
 
 const serviceCategories: ServiceCategory[] = [
   {
@@ -71,6 +104,7 @@ export default function YurekhServicesPage() {
   const [activeCategory, setActiveCategory] = useState<ServiceCategory | null>(null);
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [builderService, setBuilderService] = useState<string | null>(null);
+  const [studioTool, setStudioTool] = useState<{ tool: StudioToolId; service: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ businessName: '', requirements: '', budgetRange: '', timeline: '' });
 
@@ -138,7 +172,7 @@ export default function YurekhServicesPage() {
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>Yurekh Services</h1>
-            <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Development, branding, marketing & growth — executed by Yurekh Solutions for your business</p>
+            <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Every Yurekh service is a working AI tool — AINOS executes it and delivers the output instantly</p>
           </div>
           <a href="https://yurekh.com/services" target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold self-start lg:self-auto"
@@ -255,25 +289,27 @@ export default function YurekhServicesPage() {
                 <h2 className="text-lg font-bold" style={{ color: 'hsl(var(--foreground))' }}>{activeCategory.title}</h2>
                 <button onClick={() => setActiveCategory(null)} className="p-2 rounded-xl hover:opacity-70"><X className="w-5 h-5" style={{ color: 'hsl(var(--muted-foreground))' }} /></button>
               </div>
-              <p className="text-sm mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>Select a service to request it for your business:</p>
+              <p className="text-sm mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>Pick a service — AINOS runs it as an AI tool and delivers the output instantly:</p>
               <div className="space-y-2">
                 {activeCategory.services.map((service) => {
-                  const buildable = AI_BUILDABLE.has(service);
+                  const websiteTool = AI_BUILDABLE.has(service);
+                  const tool = websiteTool ? null : toolForService(service, activeCategory.title);
                   return (
-                    <button key={service} onClick={() => buildable ? (setBuilderService(service), setActiveCategory(null)) : setSelectedService(service)}
+                    <button key={service}
+                      onClick={() => {
+                        setActiveCategory(null);
+                        if (websiteTool) setBuilderService(service);
+                        else setStudioTool({ tool: tool!, service });
+                      }}
                       className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl text-left text-sm transition-colors"
                       style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}>
                       <span className="flex items-center gap-2 flex-wrap">
                         {service}
-                        {buildable && (
-                          <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold text-white flex items-center gap-0.5" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
-                            <Zap className="w-2.5 h-2.5" /> AI BUILD
-                          </span>
-                        )}
+                        <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold text-white flex items-center gap-0.5" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
+                          <Zap className="w-2.5 h-2.5" /> {websiteTool ? 'WEBSITE AI' : TOOL_LABELS[tool!].toUpperCase()}
+                        </span>
                       </span>
-                      {buildable
-                        ? <Wand2 className="w-4 h-4 flex-shrink-0" style={{ color: 'hsl(var(--primary))' }} />
-                        : <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: 'hsl(var(--primary))' }} />}
+                      <Wand2 className="w-4 h-4 flex-shrink-0" style={{ color: 'hsl(var(--primary))' }} />
                     </button>
                   );
                 })}
@@ -328,6 +364,17 @@ export default function YurekhServicesPage() {
         {/* AI Website Builder popup */}
         {builderService && (
           <WebsiteBuilder siteType={builderService} onClose={() => setBuilderService(null)} onGenerated={fetchSites} />
+        )}
+
+        {/* AI Tool Studio popup — the service is executed by AINOS */}
+        {studioTool && (
+          <AIToolStudio tool={studioTool.tool} serviceName={studioTool.service}
+            onClose={() => setStudioTool(null)}
+            onRequestTeam={(service) => {
+              const cat = serviceCategories.find((c) => c.services.includes(service));
+              setStudioTool(null);
+              if (cat) { setActiveCategory(cat); setSelectedService(service); }
+            }} />
         )}
       </div>
     </div>

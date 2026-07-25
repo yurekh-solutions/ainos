@@ -1,11 +1,14 @@
-Add AI Website Builder tool and fix API basePath routing
+Turn every Yurekh service into a working AINOS AI tool
 
-- New AI Website Builder (Lovable-style): popup form -> instant generated
-  website with live preview, download, copy code and regenerate
-- site-generator engine: industry-aware content, 3 design themes, brand
-  color, free AI copy enrichment + Pollinations hero imagery
-- GeneratedSite model + /api/ai-builder (GET/POST/DELETE, session-scoped)
-- Services page: AI builder hero banner, AI BUILD badges on development
-  services, My Websites section (preview/download/delete)
-- next.config rewrites: route /api/* to /ainos/api/* so client fetches
-  work under the basePath (fixes 405 / HTML-instead-of-JSON errors)
+No more quotation forms - AINOS now executes the services itself:
+- New AI Tool Studio popup: form -> animated generation -> real deliverable
+  with copy/download, image assets and palette swatches
+- 10 tool engines in src/lib/ai-tools.ts: Logo Designer (4 concepts),
+  Brand Kit (palette/taglines/voice/typography), Social Media Engine
+  (7-day plan + creatives), Content & Ad Writer, SEO Toolkit, Email
+  Campaign Writer, Press Release Generator, Launch Blueprint, Print
+  Creative Maker, QR Code Generator
+- /api/ai-tools route (session-protected) with free AI enrichment and
+  guaranteed deterministic fallback
+- Services page: every service now opens its executing tool with a
+  tool badge; request form kept only as an optional team handoff
