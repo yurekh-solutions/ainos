@@ -1,6 +1,11 @@
-Add Yurekh Services module so companies can request Yurekh services from AINOS
+Add AI Website Builder tool and fix API basePath routing
 
-- New /services dashboard page: full Yurekh service catalog (8 categories, 70+ services) with request flow and request status tracking
-- New ServiceRequest model and /api/service-requests API (session-scoped GET/POST)
-- Sidebar: add Yurekh Services entry with Briefcase icon
-- Fix empty instagram/feed route breaking TypeScript build
+- New AI Website Builder (Lovable-style): popup form -> instant generated
+  website with live preview, download, copy code and regenerate
+- site-generator engine: industry-aware content, 3 design themes, brand
+  color, free AI copy enrichment + Pollinations hero imagery
+- GeneratedSite model + /api/ai-builder (GET/POST/DELETE, session-scoped)
+- Services page: AI builder hero banner, AI BUILD badges on development
+  services, My Websites section (preview/download/delete)
+- next.config rewrites: route /api/* to /ainos/api/* so client fetches
+  work under the basePath (fixes 405 / HTML-instead-of-JSON errors)

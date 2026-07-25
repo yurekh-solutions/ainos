@@ -1,11 +1,17 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, Globe, Palette, Megaphone, Rocket, Printer, BarChart3, Newspaper, Clock, CheckCircle2, Briefcase, ExternalLink } from 'lucide-react';
+import { X, Globe, Palette, Megaphone, Rocket, Printer, BarChart3, Newspaper, Clock, CheckCircle2, Briefcase, ExternalLink, Wand2, Zap, Eye, Download, Trash2 } from 'lucide-react';
+import WebsiteBuilder from '@/components/services/WebsiteBuilder';
 
 interface ServiceRequestItem { _id: string; serviceName: string; category: string; status: string; createdAt: string; }
 
+interface GeneratedSiteItem { _id: string; businessName: string; industry: string; siteType: string; theme: string; primaryColor: string; createdAt: string; }
+
 interface ServiceCategory { title: string; icon: React.ElementType; description: string; services: string[]; }
+
+// Development services that open the AI Website Builder tool (Lovable-style instant build)
+const AI_BUILDABLE = new Set(['Website Development', 'Responsive Website', 'Landing Pages', 'E-commerce', 'Microsite', 'Digital Visiting Card', 'E-commerce Platform Development', 'UI/UX Designing', 'Web Maintenance']);
 
 const serviceCategories: ServiceCategory[] = [
   {
@@ -60,17 +66,46 @@ const serviceCategories: ServiceCategory[] = [
 
 export default function YurekhServicesPage() {
   const [requests, setRequests] = useState<ServiceRequestItem[]>([]);
+  const [sites, setSites] = useState<GeneratedSiteItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<ServiceCategory | null>(null);
   const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [builderService, setBuilderService] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ businessName: '', requirements: '', budgetRange: '', timeline: '' });
 
-  useEffect(() => { fetchRequests(); }, []);
+  useEffect(() => { fetchRequests(); fetchSites(); }, []);
 
   const fetchRequests = async () => {
     try { const res = await fetch('/api/service-requests'); if (res.ok) setRequests(await res.json()); } catch (e) { console.error(e); }
     finally { setLoading(false); }
+  };
+
+  const fetchSites = async () => {
+    try { const res = await fetch('/api/ai-builder'); if (res.ok) setSites(await res.json()); } catch (e) { console.error(e); }
+  };
+
+  const openSite = async (id: string, download = false) => {
+    try {
+      const res = await fetch(`/api/ai-builder?id=${id}`);
+      if (!res.ok) return;
+      const site = await res.json();
+      const blob = new Blob([site.html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      if (download) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${site.businessName.toLowerCase().replace(/\s+/g, '-')}.html`;
+        a.click();
+      } else {
+        window.open(url, '_blank');
+      }
+      URL.revokeObjectURL(url);
+    } catch (e) { console.error(e); }
+  };
+
+  const deleteSite = async (id: string) => {
+    try { const res = await fetch(`/api/ai-builder?id=${id}`, { method: 'DELETE' }); if (res.ok) fetchSites(); } catch (e) { console.error(e); }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -112,6 +147,62 @@ export default function YurekhServicesPage() {
           </a>
         </motion.div>
 
+        {/* AI Website Builder hero banner */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+          className="glass-card rounded-2xl p-6 mb-8 relative overflow-hidden">
+          <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full opacity-20 blur-3xl" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }} />
+          <div className="flex flex-col md:flex-row md:items-center gap-5 relative">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
+              <Wand2 className="w-7 h-7 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-lg font-bold" style={{ color: 'hsl(var(--foreground))' }}>AI Website Builder</h2>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-white flex items-center gap-1" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}><Zap className="w-3 h-3" /> NEW TOOL</span>
+              </div>
+              <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Describe your business and get a complete, ready-to-use website in under a minute — just like Lovable & Replit, built into AINOS. Download it, host it anywhere, or let Yurekh customize it further.</p>
+            </div>
+            <button onClick={() => setBuilderService('Website Development')}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white flex-shrink-0 self-start md:self-auto"
+              style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
+              <Wand2 className="w-4 h-4" /> Build My Website
+            </button>
+          </div>
+        </motion.div>
+
+        {/* My Generated Websites */}
+        {sites.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+            <h2 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: 'hsl(var(--muted-foreground))' }}>My Websites</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {sites.map((s, i) => (
+                <motion.div key={s._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                  className="glass-card p-4 rounded-2xl">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl flex-shrink-0" style={{ background: s.primaryColor }} />
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-sm line-clamp-1" style={{ color: 'hsl(var(--foreground))' }}>{s.businessName}</h3>
+                        <p className="text-xs capitalize" style={{ color: 'hsl(var(--muted-foreground))' }}>{s.industry} · {s.theme}</p>
+                      </div>
+                    </div>
+                    <button onClick={() => deleteSite(s._id)} className="p-1.5 rounded-lg hover:opacity-70 flex-shrink-0" title="Delete">
+                      <Trash2 className="w-3.5 h-3.5" style={{ color: '#94a3b8' }} />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 mt-3">
+                    <button onClick={() => openSite(s._id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold flex-1 justify-center"
+                      style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}><Eye className="w-3.5 h-3.5" /> Preview</button>
+                    <button onClick={() => openSite(s._id, true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white flex-1 justify-center"
+                      style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}><Download className="w-3.5 h-3.5" /> Download</button>
+                  </div>
+                  <p className="text-[11px] flex items-center gap-1 mt-2.5" style={{ color: '#94a3b8' }}><Clock className="w-3 h-3" />{new Date(s.createdAt).toLocaleDateString()}</p>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
         {/* My Requests */}
         {!loading && requests.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
@@ -166,14 +257,26 @@ export default function YurekhServicesPage() {
               </div>
               <p className="text-sm mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>Select a service to request it for your business:</p>
               <div className="space-y-2">
-                {activeCategory.services.map((service) => (
-                  <button key={service} onClick={() => setSelectedService(service)}
-                    className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl text-left text-sm transition-colors"
-                    style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}>
-                    <span>{service}</span>
-                    <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: 'hsl(var(--primary))' }} />
-                  </button>
-                ))}
+                {activeCategory.services.map((service) => {
+                  const buildable = AI_BUILDABLE.has(service);
+                  return (
+                    <button key={service} onClick={() => buildable ? (setBuilderService(service), setActiveCategory(null)) : setSelectedService(service)}
+                      className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl text-left text-sm transition-colors"
+                      style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}>
+                      <span className="flex items-center gap-2 flex-wrap">
+                        {service}
+                        {buildable && (
+                          <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold text-white flex items-center gap-0.5" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
+                            <Zap className="w-2.5 h-2.5" /> AI BUILD
+                          </span>
+                        )}
+                      </span>
+                      {buildable
+                        ? <Wand2 className="w-4 h-4 flex-shrink-0" style={{ color: 'hsl(var(--primary))' }} />
+                        : <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: 'hsl(var(--primary))' }} />}
+                    </button>
+                  );
+                })}
               </div>
             </motion.div>
           </div>
@@ -220,6 +323,11 @@ export default function YurekhServicesPage() {
               </form>
             </motion.div>
           </div>
+        )}
+
+        {/* AI Website Builder popup */}
+        {builderService && (
+          <WebsiteBuilder siteType={builderService} onClose={() => setBuilderService(null)} onGenerated={fetchSites} />
         )}
       </div>
     </div>
