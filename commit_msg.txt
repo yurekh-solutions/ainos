@@ -1,10 +1,18 @@
-Early-access free mode: all tools free until BILLING_ENFORCED=true
+Make every AI tool worth paying for: richer deliverables + effortless entry
 
-- billingEnforced() flag in lib/billing.ts; checkQuota bypasses all limits
-  (no DB hit) while billing is off
-- /api/billing GET reports enforced flag + unlimited limits in free mode
-- Billing page: early-access banner, plan cards show 'Free during early
-  access' instead of upgrade buttons until billing goes live
-- Services page chip: 'Early access - ALL TOOLS FREE' badge
-- Flip to paid later by setting BILLING_ENFORCED=true (+ Razorpay keys)
-  in Render env - quotas and checkout activate instantly, no code change
+Engines (all 10 verified end-to-end, ALL PASS):
+- Logo: 6 concepts (adds Mascot + Luxury Wordmark) + direction guide + deliverable checklist
+- Brand kit: moodboard image, brand applications, do's & don'ts
+- Social: reels/story ideas + 30-day scaling plan
+- Content: ad placement/budget guide + testing checklist; blog publishing checklist
+- SEO: FAQ schema starters + Google Business Profile boosters
+- Email: 3-touch follow-up sequence + deliverability checklist
+- PR: copy-paste journalist pitch email
+- Launch: launch-day checklist
+- Poster: 6 formats (adds IG Story + WhatsApp creative) + copy overlay suggestions
+- QR: sticker-ready variant + placement guide
+
+Studio entry made effortless:
+- Business profile remembered (localStorage) - fill once, prefilled in every tool
+- One-tap "Try an example" fills realistic sample inputs
+- One-click PNG download on every generated image (blob fetch, fallback to full-size)

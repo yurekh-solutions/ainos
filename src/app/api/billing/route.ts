@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import {
-  PLANS, PlanId, getActivePlan, getUsage, razorpayConfigured, billingEnforced,
+  PLANS, PlanId, getActivePlan, getUsage, razorpayConfigured,
   createRazorpayOrder, verifyRazorpaySignature, activatePlan,
 } from '@/lib/billing';
 
@@ -16,10 +16,9 @@ export async function GET(req: NextRequest) {
       plan,
       periodEnd,
       usage,
-      limits: billingEnforced() ? PLANS[plan].limits : { toolRuns: 100000, websites: 100000 },
+      limits: PLANS[plan].limits,
       plans: Object.values(PLANS),
       paymentsEnabled: razorpayConfigured(),
-      enforced: billingEnforced(),
       keyId: process.env.RAZORPAY_KEY_ID || null,
     });
   } catch (error) {

@@ -23,7 +23,6 @@ interface BillingStatus {
   limits: { toolRuns: number; websites: number };
   plans: PlanDef[];
   paymentsEnabled: boolean;
-  enforced: boolean;
   keyId: string | null;
 }
 
@@ -146,18 +145,6 @@ export default function BillingPage() {
           </div>
         )}
 
-        {/* Early-access banner — all tools free until billing is enforced */}
-        {status && !status.enforced && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className="mb-8 px-5 py-4 rounded-2xl text-center"
-            style={{ background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)' }}>
-            <p className="text-sm font-bold" style={{ color: '#34d399' }}>🎉 Early access — every tool is fully free right now</p>
-            <p className="text-xs mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
-              Unlimited AI tool runs and websites while we&apos;re in launch mode. The plans below show what pricing will look like when paid tiers go live.
-            </p>
-          </motion.div>
-        )}
-
         {/* Current plan + usage */}
         {status && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-2xl p-6 mb-8">
@@ -222,9 +209,6 @@ export default function BillingPage() {
                   ) : plan.id === 'free' ? (
                     <div className="w-full py-2.5 rounded-xl text-center text-sm font-semibold"
                       style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }}>Included forever</div>
-                  ) : !status.enforced ? (
-                    <div className="w-full py-2.5 rounded-xl text-center text-sm font-semibold"
-                      style={{ background: 'rgba(52,211,153,0.12)', color: '#34d399' }}>Free during early access</div>
                   ) : (
                     <button onClick={() => upgrade(plan)} disabled={paying !== null}
                       className="w-full py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-60"
@@ -239,7 +223,7 @@ export default function BillingPage() {
         )}
 
         {/* Payments-not-live note */}
-        {status && status.enforced && !status.paymentsEnabled && (
+        {status && !status.paymentsEnabled && (
           <p className="text-xs text-center mb-8" style={{ color: 'hsl(var(--muted-foreground))' }}>
             Online payments are being activated. To upgrade today, reach the Yurekh team via{' '}
             <a href="https://yurekh.com/contact" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: 'hsl(var(--primary))' }}>yurekh.com/contact</a> — your plan is enabled manually within hours.

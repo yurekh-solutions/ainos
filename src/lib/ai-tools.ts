@@ -81,15 +81,18 @@ function runLogo(i: Inputs): ToolOutput {
   const colors = i.colors || 'brand colors';
   const base = `logo design for "${name}", ${ind} company, ${colors}, vector style, clean white background, professional, high quality, centered`;
   return {
-    headline: `4 logo concepts for ${name}`,
+    headline: `6 logo concepts for ${name}`,
     images: [
       { label: 'Minimalist', url: img(`minimalist flat ${base}`, 1024, 1024) },
       { label: 'Modern Gradient', url: img(`modern gradient geometric ${base}`, 1024, 1024) },
       { label: 'Emblem / Badge', url: img(`emblem badge crest ${base}`, 1024, 1024) },
       { label: 'Monogram', url: img(`elegant monogram lettermark ${base}`, 1024, 1024) },
+      { label: 'Mascot', url: img(`friendly modern mascot character ${base}`, 1024, 1024) },
+      { label: 'Luxury Wordmark', url: img(`luxury elegant serif wordmark typography ${base}`, 1024, 1024) },
     ],
     sections: [
-      { title: 'How to use', body: 'Click any concept to open it full size, then right-click → Save Image. Use "Regenerate" for 4 fresh concepts. For print-ready vector files (SVG/AI) and trademark-safe refinement, the Yurekh design team can finalize your favourite concept.' },
+      { title: 'Which direction fits you', body: `• Minimalist — best for tech, consulting and modern retail; ages the slowest\n• Modern Gradient — startups and digital-first brands that want energy\n• Emblem / Badge — food, apparel, heritage feel; great on packaging and merch\n• Monogram — premium services, personal brands, luxury positioning\n• Mascot — friendly consumer brands, food & family audiences\n• Luxury Wordmark — boutiques, fashion, high-ticket services` },
+      { title: 'Deliverable checklist', body: `☑ 6 unique concepts rendered for ${name}\n☑ High-resolution PNG (right-click any concept → Save Image)\n☑ Regenerate for unlimited fresh directions\n\nNext step: shortlist 1–2 favourites. The Yurekh design team can convert your pick into print-ready vectors (SVG/AI), a full favicon set and trademark-safe refinements — use the handoff button below.` },
     ],
   };
 }
@@ -125,6 +128,9 @@ async function runBrandkit(i: Inputs): Promise<ToolOutput> {
     headline: `Brand kit for ${name}`,
     palette,
     aiUsed,
+    images: [
+      { label: 'Brand moodboard', url: img(`brand moodboard collage for ${ind} company "${name}", ${base} color theme, textures, typography samples, lifestyle photography, aesthetic flat lay`, 1280, 1024) },
+    ],
     sections: [
       { title: 'Tagline options', body: taglines.map((t, n) => `${n + 1}. ${t}`).join('\n') },
       { title: 'Brand voice', body: `${voice.join(' · ')}\n\nSpeak like a knowledgeable friend: short sentences, active voice, zero jargon. Lead with the customer's outcome, close with a clear next step.` },
@@ -134,6 +140,8 @@ async function runBrandkit(i: Inputs): Promise<ToolOutput> {
         'Headings: Montserrat (Bold) · Body: Open Sans (Regular)\nModern confidence with a proven workhorse body font.',
       ], seed, 5) },
       { title: 'Logo usage rules', body: '• Keep clear space equal to the logo height on all sides\n• Never stretch, rotate or add shadows\n• Use Primary on light backgrounds, Paper on dark\n• Minimum size: 32px digital / 12mm print' },
+      { title: 'Brand applications', body: `• Business card: Ink background, name in Paper, accent line in Primary\n• Social bios: open with the tagline, close with one clear CTA link\n• Email signature: name · role · ${name} in Primary · phone · website\n• Packaging/print: Primary ≤30% of surface — let Paper breathe` },
+      { title: 'Do’s & Don’ts', body: `DO: use the palette consistently on every post, invoice and page\nDO: pick ONE tagline and keep it for at least 6 months\nDON'T: mix more than 2 fonts anywhere\nDON'T: use competitor-adjacent colors in ads — own your hue` },
       { title: 'Mission statement', body: `${name} exists to make ${ind} simpler, better and more human — delivering consistent quality that customers recommend without being asked.` },
     ],
   };
@@ -167,7 +175,9 @@ async function runSocial(i: Inputs): Promise<ToolOutput> {
     aiUsed,
     sections: [
       ...posts.map((p) => ({ title: `${p.day} — ${p.type}`, body: `${p.caption}\n\n${hashtags}` })),
+      { title: 'Reels & story ideas', body: `1. 15s before/after of ${topic} — trending audio, text overlay\n2. "Day in the life" at ${name} — raw, phone-shot, no polish\n3. 3 quick tips carousel narrated to camera\n4. Customer reaction/unboxing repost with a thank-you sticker\n5. Myth vs fact about ${ind} — green tick / red cross format` },
       { title: 'Posting strategy', body: `• Best times for ${platform}: 11:30am & 7:30pm local\n• Reply to every comment within 2 hours on posting day\n• Repost the best performer as a story after 48 hours\n• Track saves & shares — they beat likes as a growth signal` },
+      { title: 'Scale to 30 days', body: `Repeat this 7-day structure 4×, rotating the topic each week:\nWeek 1: ${topic}\nWeek 2: customer stories & results\nWeek 3: education — answer the 5 questions buyers always ask\nWeek 4: offer week — promote one clear call-to-action\n\nRun this tool again each week with the new topic for fresh captions.` },
     ],
     images: [
       { label: 'Creative 1', url: img(`social media post graphic for ${ind} brand ${name}, ${topic}, modern flat design, bold typography space`, 1024, 1024) },
@@ -194,7 +204,11 @@ async function runContent(i: Inputs): Promise<ToolOutput> {
     return {
       headline: `Ad copy pack: ${topic}`,
       aiUsed,
-      sections: variants.map((v, n) => ({ title: `Variant ${n + 1}: ${v.headline}`, body: `${v.body}\n\nCTA button: ${v.cta}` })),
+      sections: [
+        ...variants.map((v, n) => ({ title: `Variant ${n + 1}: ${v.headline}`, body: `${v.body}\n\nCTA button: ${v.cta}` })),
+        { title: 'Where to run each variant', body: `• Variant 1 (problem-led) → Meta/Instagram cold audiences\n• Variant 2 (competitive) → Google Search on competitor + category keywords\n• Variant 3 (trust-led) → retargeting visitors & WhatsApp broadcasts\n\nBudget split to start: 50% / 30% / 20%. After 7 days, move 80% of budget to the best cost-per-lead.` },
+        { title: 'Testing checklist', body: `☑ One variable per test (headline OR image, never both)\n☑ Minimum 3 days / 1,000 impressions before judging\n☑ Landing page headline must match the winning ad headline\n☑ Track leads, not clicks — cheap clicks that don't convert are expensive` },
+      ],
     };
   }
   const kw = i.keywords ? `\n\nTarget keywords woven in: ${i.keywords}` : '';
@@ -204,6 +218,7 @@ async function runContent(i: Inputs): Promise<ToolOutput> {
     { title: `What great ${ind} actually looks like`, body: `Three markers separate great from average:\n\n1. Clarity first — a scoped plan you understand before work begins\n2. Proof over polish — measurable checkpoints, not just pretty updates\n3. Ownership — one accountable person, not a rotating cast\n\nAt ${name}, these aren't values on a wall; they're how projects are run day to day.` },
     { title: 'How to get started (this week)', body: `• Define the single outcome you want in 90 days\n• Gather what you already have — assets, access, past results\n• Book a short scoping conversation before any commitment\n\nThe businesses that win at ${ind} aren't the ones that spend most — they're the ones that start with clarity.` },
     { title: 'Final word', body: `${topic} doesn't need to be complicated. With the right partner and a clear metric, most businesses see meaningful movement within one quarter. When you're ready, ${name} is built for exactly this.` },
+    { title: 'Publishing checklist', body: `☑ Add one relevant image per section (use the AINOS Poster tool for branded graphics)\n☑ Meta title ≤60 chars, description ≤155 chars (generate with the SEO Toolkit)\n☑ Internal link to your services page + one authority outbound link\n☑ End with a single CTA — book, call or enquire\n☑ Share to LinkedIn & WhatsApp status the day it goes live` },
   ];
   return { headline: `Article draft: ${topic}`, sections };
 }
@@ -225,6 +240,8 @@ function runSeo(i: Inputs): ToolOutput {
       { title: 'Target keywords', body: [...extra, ...kwBase].slice(0, 14).map((k) => `• ${k}`).join('\n') },
       { title: 'On-page checklist', body: `☐ One H1 containing "${topic}"\n☐ Keyword in first 100 words + URL slug\n☐ 3+ internal links, 2+ authority outbound links\n☐ Image alt text with descriptive keywords\n☐ FAQ section targeting "People also ask" queries\n☐ LocalBusiness schema${loc ? ` with ${loc} address` : ''}\n☐ Page loads under 2.5s (compress images to WebP)\n☐ Mobile-first: tap targets ≥44px, no horizontal scroll` },
       { title: 'Content plan (next 30 days)', body: `Week 1: Pillar page — "${topic}: complete guide"\nWeek 2: Comparison post — "${topic} vs alternatives"\nWeek 3: Case study or before/after with real numbers\nWeek 4: FAQ roundup answering the 8 most-searched questions` },
+      { title: 'FAQ schema starters (People Also Ask)', body: `Q: How much does ${topic} cost${locSuffix}?\nA: Pricing depends on scope — ${name} provides transparent quotes after a short consultation.\n\nQ: How long does ${topic} take?\nA: Most projects are delivered within agreed timelines, with milestones shared upfront.\n\nQ: Why choose ${name} for ${topic}?\nA: Clear pricing, one accountable contact, and work measured against your outcome — not just deliverables.\n\nAdd these as an FAQ block with FAQPage schema for rich results.` },
+      { title: 'Google Business Profile boosters', body: `• Add "${topic}" to your GBP services list${loc ? ` and confirm ${loc} service area` : ''}\n• Post weekly on GBP — reuse your social captions\n• Ask every happy customer for a review mentioning "${topic}"\n• Upload 3+ real photos monthly — profiles with fresh photos get more calls` },
     ],
   };
 }
@@ -250,7 +267,9 @@ async function runEmail(i: Inputs): Promise<ToolOutput> {
       { title: 'Subject lines (A/B/C test)', body: subjects.map((s, n) => `${'ABC'[n]}: ${s}`).join('\n') },
       { title: 'Preview text', body: `The short version: ${offer} for ${audience} — minus the usual hassle.` },
       { title: 'Email body', body },
+      { title: 'Follow-up sequence', body: `Day 3 — non-openers: resend with subject C, same body.\nDay 5 — openers who didn't click: "Quick question — was this not the right time, or not the right fit? Either answer helps us."\nDay 10 — everyone left: share one customer result or testimonial + the same single CTA.\n\nStop after 3 touches. Silence after that protects your sender reputation.` },
       { title: 'Send strategy', body: '• Send Tue–Thu, 10am or 2pm recipient time\n• A/B test subjects on 20% of the list, send winner to the rest\n• Resend to non-openers after 72h with subject C\n• One CTA per email — never more' },
+      { title: 'Deliverability checklist', body: `☑ Send from a custom domain (not @gmail) with SPF + DKIM set\n☑ Keep image-to-text ratio low — this email is text-first by design\n☑ Include a real postal address + working unsubscribe\n☑ Warm up new domains: ≤50 emails/day for the first 2 weeks` },
     ],
   };
 }
@@ -277,6 +296,7 @@ async function runPr(i: Inputs): Promise<ToolOutput> {
       { title: 'Body', body: `The announcement follows a period of sustained growth for ${name}, driven by customer demand and consistent delivery. Early response from customers and partners has been strongly positive.\n\nCustomers can learn more or get started by contacting ${name} directly.` },
       { title: 'Boilerplate', body: `About ${name}:\n${name} is committed to delivering dependable, high-quality service with transparent pricing and a customer-first approach. For more information, contact the team.` },
       { title: 'Media contact', body: `${person}\n${name}\nEmail: [press contact email]\nPhone: [phone number]` },
+      { title: 'Pitch email (copy-paste)', body: `Subject: ${announcement.slice(0, 60)}\n\nHi [journalist name],\n\nSaw your recent piece on [related topic] — thought this might be relevant for your readers.\n\n${name} just announced: ${announcement.toLowerCase()}. Happy to share details, images or arrange a quick call with ${person}.\n\nFull release below. No pressure either way — thanks for reading.\n\n[your name]` },
       { title: 'Distribution tips', body: '• Send to local business journalists Tue–Thu mornings\n• Personalise the first line of every pitch email\n• Attach one high-res image (your logo or product shot)\n• Follow up once after 3 days — never more' },
     ],
   };
@@ -297,6 +317,7 @@ function runLaunch(i: Inputs): ToolOutput {
       { title: 'Phase 3 — Launch week', body: `• Day 1: announcement everywhere at 10am + email blast\n• Day 2-3: share behind-the-scenes and early reactions\n• Day 4: publish first testimonial + FAQ post\n• Day 5-7: retarget visitors, personally reply to every comment/DM` },
       { title: 'Phase 4 — Post-launch (Weeks 6-8)', body: `• Review the metric weekly against target\n• Double down on the single best-performing channel\n• Collect and publish 3 case studies\n• Run a "we listened" update announcing improvements from feedback` },
       { title: 'Budget guidance', body: budgetNote },
+      { title: 'Launch-day checklist', body: `☑ Payment/booking link tested end-to-end on a phone\n☑ Announcement post + email scheduled for 10am\n☑ 5 supporters briefed to comment/share within the first hour\n☑ FAQ doc ready — answer every DM with speed and warmth\n☑ One person owns metrics; screenshot numbers at 12pm, 6pm, 10pm` },
       { title: 'Risks to avoid', body: `• Launching without a working way to take payment/bookings\n• Spreading across 5 channels instead of winning 2\n• Silence after launch week — momentum dies in the follow-through\n• ${name} specific: keep brand voice consistent across every asset (see your AINOS Brand Kit)` },
     ],
   };
@@ -316,9 +337,12 @@ function runPoster(i: Inputs): ToolOutput {
       { label: 'Flyer (square)', url: img(`${base}, flyer layout`, 1024, 1024) },
       { label: 'Banner (landscape)', url: img(`${base}, wide banner billboard layout`, 1536, 640) },
       { label: 'Story / Standee', url: img(`${base}, vertical standee layout`, 768, 1344) },
+      { label: 'Instagram Story', url: img(`${base}, instagram story vertical layout, mobile-first`, 768, 1344) },
+      { label: 'WhatsApp / DP creative', url: img(`${base}, compact square announcement creative, whatsapp status style`, 1024, 1024) },
     ],
     sections: [
       { title: 'Print specs', body: '• Posters: export at 300 DPI, CMYK, 3mm bleed\n• A4 = 210×297mm · Standee = 850×2000mm · Billboard: consult printer\n• Keep headline ≥72pt and readable from 3 meters\n• For final print-ready files with your exact copy overlaid, the Yurekh design team can finish any concept.' },
+      { title: 'Suggested copy overlay', body: `Headline: ${message}\nSub-line: by ${name} — ${ind} you can trust\nCTA: Call now · Scan the QR · Visit us today\n\nTip: generate a matching QR with the AINOS QR tool and place it bottom-right at ≥2×2cm.` },
     ],
   };
 }
@@ -334,10 +358,12 @@ function runQr(i: Inputs): ToolOutput {
     images: [
       { label: 'Standard 500px', url: `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${enc}&color=${color}` },
       { label: 'High-res 1000px (print)', url: `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${enc}&color=${color}&margin=20` },
+      { label: 'Sticker-ready (framed)', url: `https://api.qrserver.com/v1/create-qr-code/?size=800x800&data=${enc}&color=${color}&margin=40&qzone=4` },
     ],
     sections: [
       { title: 'Encoded content', body: data },
       { title: 'Usage tips', body: '• Test the code with 2-3 different phones before printing\n• Keep a quiet white margin around the code\n• Minimum print size: 2×2 cm for close scanning, 10×10 cm for posters\n• Dark code on light background scans most reliably' },
+      { title: 'Where to place it', body: '• Table tents & counters — highest scan rate in shops\n• Packaging & delivery bags — turns buyers into followers\n• Visiting cards — link to WhatsApp or your AINOS website\n• Posters — pair with a reason to scan ("Scan for menu / offer / catalogue")' },
     ],
   };
 }

@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, Copy, Check, Download, RefreshCw, ExternalLink, Wand2, Users, Crown } from 'lucide-react';
+import { X, Sparkles, Copy, Check, Download, RefreshCw, ExternalLink, Wand2, Users, Crown, Lightbulb } from 'lucide-react';
 
 export type StudioToolId = 'logo' | 'brandkit' | 'social' | 'content' | 'seo' | 'email' | 'pr' | 'launch' | 'poster' | 'qr';
 
@@ -15,13 +15,13 @@ interface ToolConfig { name: string; tagline: string; fields: Field[]; steps: st
 
 const TOOL_CONFIGS: Record<StudioToolId, ToolConfig> = {
   logo: {
-    name: 'AI Logo Designer', tagline: 'Generates 4 logo concepts for your brand',
+    name: 'AI Logo Designer', tagline: 'Generates 6 logo concepts for your brand',
     fields: [
       { id: 'businessName', label: 'Business name', type: 'text', required: true },
       { id: 'industry', label: 'Industry', type: 'text', required: true, placeholder: 'e.g. restaurant, tech, salon' },
       { id: 'colors', label: 'Preferred colors', type: 'text', placeholder: 'e.g. teal and gold' },
     ],
-    steps: ['Studying your brand…', 'Sketching concepts…', 'Rendering 4 logo directions…'],
+    steps: ['Studying your brand…', 'Sketching concepts…', 'Rendering 6 logo directions…'],
   },
   brandkit: {
     name: 'AI Brand Kit Generator', tagline: 'Palette, taglines, voice, typography & usage rules',
@@ -102,7 +102,7 @@ const TOOL_CONFIGS: Record<StudioToolId, ToolConfig> = {
       { id: 'message', label: 'Campaign message', type: 'text', required: true, placeholder: 'e.g. Grand opening 50% off' },
       { id: 'style', label: 'Style', type: 'select', options: ['modern', 'luxury', 'minimalist', 'retro', 'bold'] },
     ],
-    steps: ['Setting the art direction…', 'Composing layouts…', 'Rendering 4 print formats…'],
+    steps: ['Setting the art direction…', 'Composing layouts…', 'Rendering 6 print formats…'],
   },
   qr: {
     name: 'QR Code Generator', tagline: 'Instant scannable QR codes, print-ready',
@@ -113,6 +113,34 @@ const TOOL_CONFIGS: Record<StudioToolId, ToolConfig> = {
     steps: ['Encoding your data…', 'Rendering QR codes…'],
   },
 };
+
+// One-tap example inputs so a new user can see real value in under 10 seconds
+const EXAMPLES: Record<StudioToolId, Record<string, string>> = {
+  logo: { businessName: 'Brew Theory', industry: 'specialty coffee cafe', colors: 'teal and cream' },
+  brandkit: { businessName: 'Brew Theory', industry: 'specialty coffee cafe', primaryColor: '#1BE1D3' },
+  social: { businessName: 'Brew Theory', industry: 'cafe', platform: 'Instagram', topic: 'new winter menu launch' },
+  content: { businessName: 'Brew Theory', industry: 'cafe', contentType: 'blog', topic: 'How to choose a great specialty coffee', keywords: 'specialty coffee, arabica, best cafe' },
+  seo: { businessName: 'Brew Theory', industry: 'cafe', pageTopic: 'specialty coffee cafe', location: 'Mumbai' },
+  email: { businessName: 'Brew Theory', industry: 'cafe', goal: 'promotion', audience: 'past customers', offer: '20% off the new winter menu this week' },
+  pr: { businessName: 'Brew Theory', announcement: 'launch of our second outlet in Bandra, Mumbai', spokesperson: 'Priya Shah, Founder', city: 'Mumbai' },
+  launch: { businessName: 'Brew Theory', productName: 'Winter specialty menu', budgetLevel: 'lean' },
+  poster: { businessName: 'Brew Theory', industry: 'cafe', message: 'Grand opening — 50% off all week', style: 'modern' },
+  qr: { qrData: 'https://yurekh.com', qrColor: '#000000' },
+};
+
+// Remembered business profile — fill once, prefilled in every tool afterwards
+const PROFILE_KEY = 'ainos-tool-profile';
+function savedProfile(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}'); } catch { return {}; }
+}
+function rememberProfile(inputs: Record<string, string>) {
+  try {
+    const keep: Record<string, string> = {};
+    for (const k of ['businessName', 'industry', 'location', 'city']) if (inputs[k]) keep[k] = inputs[k];
+    if (Object.keys(keep).length) localStorage.setItem(PROFILE_KEY, JSON.stringify({ ...savedProfile(), ...keep }));
+  } catch { /* storage unavailable — ignore */ }
+}
 
 interface ToolOutput {
   headline: string;
@@ -135,7 +163,13 @@ interface AIToolStudioProps {
 export default function AIToolStudio({ tool, serviceName, onClose, onRequestTeam, initialOutput, initialInputs }: AIToolStudioProps) {
   const config = TOOL_CONFIGS[tool];
   const [phase, setPhase] = useState<'form' | 'generating' | 'result'>(initialOutput ? 'result' : 'form');
-  const [inputs, setInputs] = useState<Record<string, string>>({ ...(tool === 'brandkit' ? { primaryColor: '#6d5df6' } : {}), ...(tool === 'qr' ? { qrColor: '#000000' } : {}), ...(initialInputs || {}) });
+  const [inputs, setInputs] = useState<Record<string, string>>(() => {
+    const profile = savedProfile();
+    const prefill: Record<string, string> = {};
+    // Only prefill fields this tool actually has
+    for (const f of TOOL_CONFIGS[tool].fields) if (profile[f.id]) prefill[f.id] = profile[f.id];
+    return { ...(tool === 'brandkit' ? { primaryColor: '#6d5df6' } : {}), ...(tool === 'qr' ? { qrColor: '#000000' } : {}), ...prefill, ...(initialInputs || {}) };
+  });
   const [output, setOutput] = useState<ToolOutput | null>(initialOutput || null);
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');
@@ -146,6 +180,7 @@ export default function AIToolStudio({ tool, serviceName, onClose, onRequestTeam
     e?.preventDefault();
     setError('');
     setUpgradeNeeded(false);
+    rememberProfile(inputs);
     setPhase('generating');
     setStep(0);
     const timer = setInterval(() => setStep((s) => Math.min(s + 1, config.steps.length - 1)), 1800);
@@ -191,6 +226,21 @@ export default function AIToolStudio({ tool, serviceName, onClose, onRequestTeam
     URL.revokeObjectURL(url);
   };
 
+  const downloadImage = async (url: string, label: string) => {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = `${(inputs.businessName || 'ainos').toLowerCase().replace(/\s+/g, '-')}-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.png`;
+      a.click();
+      URL.revokeObjectURL(objUrl);
+    } catch {
+      window.open(url, '_blank'); // CORS blocked — fall back to full-size view
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-3 sm:p-6" onClick={phase !== 'generating' ? onClose : undefined}>
       <motion.div initial={{ scale: 0.94, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} onClick={(e) => e.stopPropagation()}
@@ -215,7 +265,14 @@ export default function AIToolStudio({ tool, serviceName, onClose, onRequestTeam
         {/* ── Form ── */}
         {phase === 'form' && (
           <form onSubmit={run} className="p-5 space-y-3 overflow-y-auto">
-            <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{config.tagline}</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{config.tagline}</p>
+              <button type="button" onClick={() => setInputs({ ...inputs, ...EXAMPLES[tool] })}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold flex-shrink-0 border"
+                style={{ borderColor: 'hsl(var(--primary) / 0.3)', color: 'hsl(var(--primary))', background: 'hsl(var(--primary) / 0.06)' }}>
+                <Lightbulb className="w-3 h-3" /> Try an example
+              </button>
+            </div>
             {error && (
               <div className="text-xs px-3 py-2 rounded-lg space-y-2" style={{ background: 'rgba(244,63,94,0.12)', color: '#f43f5e' }}>
                 <p>{error}</p>
@@ -330,9 +387,14 @@ export default function AIToolStudio({ tool, serviceName, onClose, onRequestTeam
                       <img src={im.url} alt={im.label} className="w-full aspect-square object-cover bg-white" loading="lazy" />
                       <div className="flex items-center justify-between px-3 py-2">
                         <span className="text-xs font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{im.label}</span>
-                        <a href={im.url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:opacity-70" title="Open full size">
-                          <ExternalLink className="w-3.5 h-3.5" style={{ color: 'hsl(var(--primary))' }} />
-                        </a>
+                        <div className="flex items-center gap-0.5">
+                          <button onClick={() => downloadImage(im.url, im.label)} className="p-1.5 rounded-lg hover:opacity-70" title="Download PNG">
+                            <Download className="w-3.5 h-3.5" style={{ color: 'hsl(var(--primary))' }} />
+                          </button>
+                          <a href={im.url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:opacity-70" title="Open full size">
+                            <ExternalLink className="w-3.5 h-3.5" style={{ color: 'hsl(var(--primary))' }} />
+                          </a>
+                        </div>
                       </div>
                     </div>
                   ))}
