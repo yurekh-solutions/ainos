@@ -1,12 +1,10 @@
-Add AINOS Studio subscription business: plans, Razorpay billing, quotas & deliverables
+Early-access free mode: all tools free until BILLING_ENFORCED=true
 
-- Plans: Free (3 runs, 1 site/mo), Starter Rs.749 (150 runs, 5 sites), Growth Rs.2499 (unlimited runs, 25 sites)
-- lib/billing.ts: plan defs, monthly usage metering, quota checks, Razorpay REST helpers (order + HMAC verify)
-- /api/billing: GET plan+usage, POST createOrder/verify with signature validation; graceful fallback when keys not set
-- Quota enforcement (402 + upgrade flag) in /api/ai-tools and /api/ai-builder
-- ToolRun model: every AI tool output saved as a deliverable (also drives metering)
-- /api/ai-tools GET/DELETE: My Deliverables list, view & delete
-- New /billing page: AINOS Studio positioning, pricing cards, live usage meters, Razorpay checkout
-- Services page: plan chip with usage, My Deliverables section (reopen saved outputs in studio)
-- AIToolStudio: upgrade prompt on quota hit, opens saved deliverables via initialOutput/initialInputs
-- Sidebar: Plans & Billing nav entry
+- billingEnforced() flag in lib/billing.ts; checkQuota bypasses all limits
+  (no DB hit) while billing is off
+- /api/billing GET reports enforced flag + unlimited limits in free mode
+- Billing page: early-access banner, plan cards show 'Free during early
+  access' instead of upgrade buttons until billing goes live
+- Services page chip: 'Early access - ALL TOOLS FREE' badge
+- Flip to paid later by setting BILLING_ENFORCED=true (+ Razorpay keys)
+  in Render env - quotas and checkout activate instantly, no code change

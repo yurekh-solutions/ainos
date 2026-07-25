@@ -14,7 +14,7 @@ interface DeliverableItem { _id: string; tool: string; serviceName: string; busi
 
 interface ToolOutputData { headline: string; sections?: { title: string; body: string }[]; images?: { label: string; url: string }[]; palette?: { hex: string; name: string }[]; aiUsed?: boolean; }
 
-interface BillingChip { plan: string; usage: { toolRuns: number; websites: number }; limits: { toolRuns: number; websites: number }; }
+interface BillingChip { plan: string; usage: { toolRuns: number; websites: number }; limits: { toolRuns: number; websites: number }; enforced: boolean; }
 
 interface ServiceCategory { title: string; icon: React.ElementType; description: string; services: string[]; }
 
@@ -209,9 +209,18 @@ export default function YurekhServicesPage() {
               <Link href="/billing" className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold"
                 style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}>
                 <Crown className="w-3.5 h-3.5" style={{ color: 'hsl(var(--primary))' }} />
-                <span className="capitalize">{billing.plan} plan</span>
-                <span style={{ color: 'hsl(var(--muted-foreground))' }}>· {billing.usage.toolRuns}/{billing.limits.toolRuns >= 100000 ? '∞' : billing.limits.toolRuns} runs</span>
-                <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold text-white" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>UPGRADE</span>
+                {billing.enforced ? (
+                  <>
+                    <span className="capitalize">{billing.plan} plan</span>
+                    <span style={{ color: 'hsl(var(--muted-foreground))' }}>· {billing.usage.toolRuns}/{billing.limits.toolRuns >= 100000 ? '∞' : billing.limits.toolRuns} runs</span>
+                    <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold text-white" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>UPGRADE</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Early access</span>
+                    <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold" style={{ background: 'rgba(52,211,153,0.15)', color: '#34d399' }}>ALL TOOLS FREE</span>
+                  </>
+                )}
               </Link>
             )}
             <a href="https://yurekh.com/services" target="_blank" rel="noopener noreferrer"

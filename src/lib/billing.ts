@@ -72,6 +72,12 @@ export function razorpayConfigured(): boolean {
   return Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
 }
 
+// Early-access launch mode: all tools are fully free until BILLING_ENFORCED=true is set.
+// Flip it on in Render env once ready to monetize — quotas & checkout go live instantly.
+export function billingEnforced(): boolean {
+  return process.env.BILLING_ENFORCED === 'true';
+}
+
 // Active plan for a user — falls back to free when expired or missing.
 export async function getActivePlan(userId: string): Promise<{ plan: PlanId; periodEnd: Date | null }> {
   await connectDB();
@@ -107,6 +113,10 @@ export interface QuotaCheck {
 }
 
 export async function checkQuota(userId: string, kind: 'toolRun' | 'website'): Promise<QuotaCheck> {
+  // Early access — no limits while billing is not enforced
+  if (!billingEnforced()) {
+    return { allowed: true, plan: 'free', used: 0, limit: 100000 };
+  }
   const [{ plan }, usage] = await Promise.all([getActivePlan(userId), getUsage(userId)]);
   const limits = PLANS[plan].limits;
   const used = kind === 'toolRun' ? usage.toolRuns : usage.websites;
