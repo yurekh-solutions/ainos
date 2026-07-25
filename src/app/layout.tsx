@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AIONS - Smart Billing",
+  title: "AINOS - Business Suite",
   description: "Simple and powerful billing platform for businesses of all sizes",
 };
 

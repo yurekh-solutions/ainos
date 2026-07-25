@@ -1,10 +1,5 @@
-Add 5 new AI tools + AINOS robot logo branding
+Replace default Next.js favicon with AINOS robot logo
 
-- New engines in ai-tools.ts: Investor Pitch Deck, Product Listing Writer,
-  Business Plan + Financials (3-yr projections), Legal Pages Generator,
-  Yurekh Web Chat AI (embeddable website chatbot with FAQ + AI answers)
-- AIToolStudio: configs, guided fields and one-tap examples for all 5
-- Services page: new "Startup Essentials" flagship category + tool mapping
-- Billing: value strip updated to 15 AI tools
-- Branding: AINOS robot logo (public/ainos-robot.png) in sidebar + chatbot avatar
-- All 15 engines tested end-to-end; tsc + production build clean
+- src/app/icon.png: AINOS robot logo now served as the browser tab icon
+- Removed default src/app/favicon.ico
+- Fixed tab title typo: "AIONS - Smart Billing" -> "AINOS - Business Suite"
