@@ -1,14 +1,12 @@
-Turn every Yurekh service into a working AINOS AI tool
+Add AINOS Studio subscription business: plans, Razorpay billing, quotas & deliverables
 
-No more quotation forms - AINOS now executes the services itself:
-- New AI Tool Studio popup: form -> animated generation -> real deliverable
-  with copy/download, image assets and palette swatches
-- 10 tool engines in src/lib/ai-tools.ts: Logo Designer (4 concepts),
-  Brand Kit (palette/taglines/voice/typography), Social Media Engine
-  (7-day plan + creatives), Content & Ad Writer, SEO Toolkit, Email
-  Campaign Writer, Press Release Generator, Launch Blueprint, Print
-  Creative Maker, QR Code Generator
-- /api/ai-tools route (session-protected) with free AI enrichment and
-  guaranteed deterministic fallback
-- Services page: every service now opens its executing tool with a
-  tool badge; request form kept only as an optional team handoff
+- Plans: Free (3 runs, 1 site/mo), Starter Rs.749 (150 runs, 5 sites), Growth Rs.2499 (unlimited runs, 25 sites)
+- lib/billing.ts: plan defs, monthly usage metering, quota checks, Razorpay REST helpers (order + HMAC verify)
+- /api/billing: GET plan+usage, POST createOrder/verify with signature validation; graceful fallback when keys not set
+- Quota enforcement (402 + upgrade flag) in /api/ai-tools and /api/ai-builder
+- ToolRun model: every AI tool output saved as a deliverable (also drives metering)
+- /api/ai-tools GET/DELETE: My Deliverables list, view & delete
+- New /billing page: AINOS Studio positioning, pricing cards, live usage meters, Razorpay checkout
+- Services page: plan chip with usage, My Deliverables section (reopen saved outputs in studio)
+- AIToolStudio: upgrade prompt on quota hit, opens saved deliverables via initialOutput/initialInputs
+- Sidebar: Plans & Billing nav entry

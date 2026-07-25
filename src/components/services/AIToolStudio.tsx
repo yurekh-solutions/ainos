@@ -3,8 +3,9 @@
 // One config-driven modal for all tools: form → animated generation → real deliverable
 // (copy, download, image assets, palettes) produced instantly by AINOS.
 import { useState } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, Copy, Check, Download, RefreshCw, ExternalLink, Wand2, Users } from 'lucide-react';
+import { X, Sparkles, Copy, Check, Download, RefreshCw, ExternalLink, Wand2, Users, Crown } from 'lucide-react';
 
 export type StudioToolId = 'logo' | 'brandkit' | 'social' | 'content' | 'seo' | 'email' | 'pr' | 'launch' | 'poster' | 'qr';
 
@@ -126,29 +127,38 @@ interface AIToolStudioProps {
   serviceName: string;
   onClose: () => void;
   onRequestTeam?: (serviceName: string) => void;
+  // When provided, opens straight into the result phase (viewing a saved deliverable)
+  initialOutput?: ToolOutput;
+  initialInputs?: Record<string, string>;
 }
 
-export default function AIToolStudio({ tool, serviceName, onClose, onRequestTeam }: AIToolStudioProps) {
+export default function AIToolStudio({ tool, serviceName, onClose, onRequestTeam, initialOutput, initialInputs }: AIToolStudioProps) {
   const config = TOOL_CONFIGS[tool];
-  const [phase, setPhase] = useState<'form' | 'generating' | 'result'>('form');
-  const [inputs, setInputs] = useState<Record<string, string>>({ ...(tool === 'brandkit' ? { primaryColor: '#6d5df6' } : {}), ...(tool === 'qr' ? { qrColor: '#000000' } : {}) });
-  const [output, setOutput] = useState<ToolOutput | null>(null);
+  const [phase, setPhase] = useState<'form' | 'generating' | 'result'>(initialOutput ? 'result' : 'form');
+  const [inputs, setInputs] = useState<Record<string, string>>({ ...(tool === 'brandkit' ? { primaryColor: '#6d5df6' } : {}), ...(tool === 'qr' ? { qrColor: '#000000' } : {}), ...(initialInputs || {}) });
+  const [output, setOutput] = useState<ToolOutput | null>(initialOutput || null);
   const [step, setStep] = useState(0);
   const [error, setError] = useState('');
+  const [upgradeNeeded, setUpgradeNeeded] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
   const run = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setError('');
+    setUpgradeNeeded(false);
     setPhase('generating');
     setStep(0);
     const timer = setInterval(() => setStep((s) => Math.min(s + 1, config.steps.length - 1)), 1800);
     try {
       const res = await fetch('/api/ai-tools', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tool, inputs }),
+        body: JSON.stringify({ tool, inputs, serviceName }),
       });
-      if (!res.ok) throw new Error((await res.json()).error || 'Generation failed');
+      if (!res.ok) {
+        const data = await res.json();
+        if (res.status === 402) setUpgradeNeeded(true);
+        throw new Error(data.error || 'Generation failed');
+      }
       setOutput(await res.json());
       setPhase('result');
     } catch (err) {
@@ -206,7 +216,17 @@ export default function AIToolStudio({ tool, serviceName, onClose, onRequestTeam
         {phase === 'form' && (
           <form onSubmit={run} className="p-5 space-y-3 overflow-y-auto">
             <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{config.tagline}</p>
-            {error && <p className="text-xs px-3 py-2 rounded-lg" style={{ background: 'rgba(244,63,94,0.12)', color: '#f43f5e' }}>{error}</p>}
+            {error && (
+              <div className="text-xs px-3 py-2 rounded-lg space-y-2" style={{ background: 'rgba(244,63,94,0.12)', color: '#f43f5e' }}>
+                <p>{error}</p>
+                {upgradeNeeded && (
+                  <Link href="/billing" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-white"
+                    style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
+                    <Crown className="w-3 h-3" /> View plans & upgrade
+                  </Link>
+                )}
+              </div>
+            )}
             {config.fields.map((f) => (
               <div key={f.id}>
                 <label className="text-xs font-semibold block mb-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>{f.label}{f.required && ' *'}</label>
@@ -236,7 +256,7 @@ export default function AIToolStudio({ tool, serviceName, onClose, onRequestTeam
               style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
               <Sparkles className="w-4 h-4" /> Run Tool
             </button>
-            <p className="text-[11px] text-center" style={{ color: 'hsl(var(--muted-foreground))' }}>Free · Instant · Executed by AINOS AI</p>
+            <p className="text-[11px] text-center" style={{ color: 'hsl(var(--muted-foreground))' }}>Instant · Saved to My Deliverables · Executed by AINOS AI</p>
           </form>
         )}
 

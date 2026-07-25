@@ -1,13 +1,20 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { X, Globe, Palette, Megaphone, Rocket, Printer, BarChart3, Newspaper, Clock, Briefcase, ExternalLink, Wand2, Zap, Eye, Download, Trash2 } from 'lucide-react';
+import { X, Globe, Palette, Megaphone, Rocket, Printer, BarChart3, Newspaper, Clock, Briefcase, ExternalLink, Wand2, Zap, Eye, Download, Trash2, Crown } from 'lucide-react';
 import WebsiteBuilder from '@/components/services/WebsiteBuilder';
 import AIToolStudio, { StudioToolId } from '@/components/services/AIToolStudio';
 
 interface ServiceRequestItem { _id: string; serviceName: string; category: string; status: string; createdAt: string; }
 
 interface GeneratedSiteItem { _id: string; businessName: string; industry: string; siteType: string; theme: string; primaryColor: string; createdAt: string; }
+
+interface DeliverableItem { _id: string; tool: string; serviceName: string; businessName: string; createdAt: string; }
+
+interface ToolOutputData { headline: string; sections?: { title: string; body: string }[]; images?: { label: string; url: string }[]; palette?: { hex: string; name: string }[]; aiUsed?: boolean; }
+
+interface BillingChip { plan: string; usage: { toolRuns: number; websites: number }; limits: { toolRuns: number; websites: number }; }
 
 interface ServiceCategory { title: string; icon: React.ElementType; description: string; services: string[]; }
 
@@ -100,15 +107,17 @@ const serviceCategories: ServiceCategory[] = [
 export default function YurekhServicesPage() {
   const [requests, setRequests] = useState<ServiceRequestItem[]>([]);
   const [sites, setSites] = useState<GeneratedSiteItem[]>([]);
+  const [deliverables, setDeliverables] = useState<DeliverableItem[]>([]);
+  const [billing, setBilling] = useState<BillingChip | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<ServiceCategory | null>(null);
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [builderService, setBuilderService] = useState<string | null>(null);
-  const [studioTool, setStudioTool] = useState<{ tool: StudioToolId; service: string } | null>(null);
+  const [studioTool, setStudioTool] = useState<{ tool: StudioToolId; service: string; initialOutput?: ToolOutputData; initialInputs?: Record<string, string> } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ businessName: '', requirements: '', budgetRange: '', timeline: '' });
 
-  useEffect(() => { fetchRequests(); fetchSites(); }, []);
+  useEffect(() => { fetchRequests(); fetchSites(); fetchDeliverables(); fetchBilling(); }, []);
 
   const fetchRequests = async () => {
     try { const res = await fetch('/api/service-requests'); if (res.ok) setRequests(await res.json()); } catch (e) { console.error(e); }
@@ -117,6 +126,27 @@ export default function YurekhServicesPage() {
 
   const fetchSites = async () => {
     try { const res = await fetch('/api/ai-builder'); if (res.ok) setSites(await res.json()); } catch (e) { console.error(e); }
+  };
+
+  const fetchDeliverables = async () => {
+    try { const res = await fetch('/api/ai-tools'); if (res.ok) setDeliverables(await res.json()); } catch (e) { console.error(e); }
+  };
+
+  const fetchBilling = async () => {
+    try { const res = await fetch('/api/billing'); if (res.ok) setBilling(await res.json()); } catch (e) { console.error(e); }
+  };
+
+  const openDeliverable = async (d: DeliverableItem) => {
+    try {
+      const res = await fetch(`/api/ai-tools?id=${d._id}`);
+      if (!res.ok) return;
+      const full = await res.json();
+      setStudioTool({ tool: d.tool as StudioToolId, service: d.serviceName || TOOL_LABELS[d.tool as StudioToolId] || d.tool, initialOutput: full.output, initialInputs: full.inputs });
+    } catch (e) { console.error(e); }
+  };
+
+  const deleteDeliverable = async (id: string) => {
+    try { const res = await fetch(`/api/ai-tools?id=${id}`, { method: 'DELETE' }); if (res.ok) fetchDeliverables(); } catch (e) { console.error(e); }
   };
 
   const openSite = async (id: string, download = false) => {
@@ -172,13 +202,24 @@ export default function YurekhServicesPage() {
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>Yurekh Services</h1>
-            <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Every Yurekh service is a working AI tool — AINOS executes it and delivers the output instantly</p>
+            <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>AINOS Studio — every Yurekh service is a working AI tool that delivers the output instantly</p>
           </div>
-          <a href="https://yurekh.com/services" target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold self-start lg:self-auto"
-            style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))', border: '1px solid hsl(var(--primary) / 0.25)' }}>
-            Explore on yurekh.com <ExternalLink className="w-4 h-4" />
-          </a>
+          <div className="flex items-center gap-3 self-start lg:self-auto flex-wrap">
+            {billing && (
+              <Link href="/billing" className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold"
+                style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}>
+                <Crown className="w-3.5 h-3.5" style={{ color: 'hsl(var(--primary))' }} />
+                <span className="capitalize">{billing.plan} plan</span>
+                <span style={{ color: 'hsl(var(--muted-foreground))' }}>· {billing.usage.toolRuns}/{billing.limits.toolRuns >= 100000 ? '∞' : billing.limits.toolRuns} runs</span>
+                <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold text-white" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>UPGRADE</span>
+              </Link>
+            )}
+            <a href="https://yurekh.com/services" target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold"
+              style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))', border: '1px solid hsl(var(--primary) / 0.25)' }}>
+              Explore on yurekh.com <ExternalLink className="w-4 h-4" />
+            </a>
+          </div>
         </motion.div>
 
         {/* AI Website Builder hero banner */}
@@ -237,6 +278,40 @@ export default function YurekhServicesPage() {
             </div>
           </motion.div>
         )}
+        {/* My Deliverables — saved AI tool outputs */}
+        {deliverables.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+            <h2 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: 'hsl(var(--muted-foreground))' }}>My Deliverables</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {deliverables.map((d, i) => (
+                <motion.div key={d._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                  className="glass-card p-4 rounded-2xl">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
+                        <Wand2 className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-sm line-clamp-1" style={{ color: 'hsl(var(--foreground))' }}>{d.businessName || d.serviceName || TOOL_LABELS[d.tool as StudioToolId] || d.tool}</h3>
+                        <p className="text-xs line-clamp-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{TOOL_LABELS[d.tool as StudioToolId] || d.tool}{d.serviceName ? ` · ${d.serviceName}` : ''}</p>
+                      </div>
+                    </div>
+                    <button onClick={() => deleteDeliverable(d._id)} className="p-1.5 rounded-lg hover:opacity-70 flex-shrink-0" title="Delete">
+                      <Trash2 className="w-3.5 h-3.5" style={{ color: '#94a3b8' }} />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 mt-3">
+                    <button onClick={() => openDeliverable(d)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold flex-1 justify-center"
+                      style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}><Eye className="w-3.5 h-3.5" /> View deliverable</button>
+                  </div>
+                  <p className="text-[11px] flex items-center gap-1 mt-2.5" style={{ color: '#94a3b8' }}><Clock className="w-3 h-3" />{new Date(d.createdAt).toLocaleDateString()}</p>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
         {/* My Requests */}
         {!loading && requests.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
@@ -363,13 +438,14 @@ export default function YurekhServicesPage() {
 
         {/* AI Website Builder popup */}
         {builderService && (
-          <WebsiteBuilder siteType={builderService} onClose={() => setBuilderService(null)} onGenerated={fetchSites} />
+          <WebsiteBuilder siteType={builderService} onClose={() => setBuilderService(null)} onGenerated={() => { fetchSites(); fetchBilling(); }} />
         )}
 
         {/* AI Tool Studio popup — the service is executed by AINOS */}
         {studioTool && (
           <AIToolStudio tool={studioTool.tool} serviceName={studioTool.service}
-            onClose={() => setStudioTool(null)}
+            initialOutput={studioTool.initialOutput} initialInputs={studioTool.initialInputs}
+            onClose={() => { setStudioTool(null); fetchDeliverables(); fetchBilling(); }}
             onRequestTeam={(service) => {
               const cat = serviceCategories.find((c) => c.services.includes(service));
               setStudioTool(null);

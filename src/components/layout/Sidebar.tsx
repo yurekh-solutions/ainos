@@ -59,6 +59,7 @@ const mainItems: MenuItem[] = [
   { icon: Package, label: 'Products', href: '/products' },
   { icon: Building2, label: 'Company', href: '/company' },
   { icon: Briefcase, label: 'Yurekh Services', href: '/services' },
+  { icon: Zap, label: 'Plans & Billing', href: '/billing' },
   { icon: BarChart3, label: 'Reports', href: '/reports' },
   { icon: Sparkles, label: 'Automations', href: '/automations' },
   { icon: Settings, label: 'Settings', href: '/settings' },

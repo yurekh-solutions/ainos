@@ -3,6 +3,7 @@ import { getServerSession } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import GeneratedSite from '@/models/GeneratedSite';
 import { generateSite } from '@/lib/site-generator';
+import { checkQuota } from '@/lib/billing';
 
 export async function GET(req: NextRequest) {
   try {
@@ -33,6 +34,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     if (!body.businessName || !body.industry) {
       return NextResponse.json({ error: 'businessName and industry are required' }, { status: 400 });
+    }
+
+    // Plan quota — free: 1 website/month, paid plans get more
+    const quota = await checkQuota(session.user.id || session.user.email, 'website');
+    if (!quota.allowed) {
+      return NextResponse.json({ error: quota.message, upgrade: true, plan: quota.plan, used: quota.used, limit: quota.limit }, { status: 402 });
     }
     const brief = {
       businessName: String(body.businessName).slice(0, 80),
