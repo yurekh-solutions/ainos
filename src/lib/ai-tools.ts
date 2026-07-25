@@ -4,7 +4,7 @@
 // posters, QR codes, launch blueprints). Deterministic quality output guaranteed,
 // with best-effort free AI enrichment on top.
 
-export type ToolId = 'logo' | 'brandkit' | 'social' | 'content' | 'seo' | 'email' | 'pr' | 'launch' | 'poster' | 'qr';
+export type ToolId = 'logo' | 'brandkit' | 'social' | 'content' | 'seo' | 'email' | 'pr' | 'launch' | 'poster' | 'qr' | 'pitchdeck' | 'listing' | 'bizplan' | 'legal' | 'chatbot';
 
 export interface ToolSection { title: string; body: string; }
 export interface ToolImage { label: string; url: string; }
@@ -368,6 +368,198 @@ function runQr(i: Inputs): ToolOutput {
   };
 }
 
+// ─── Tool: Investor Pitch Deck ───────────────────────────────────────────────
+
+async function runPitchdeck(i: Inputs): Promise<ToolOutput> {
+  const name = i.businessName, ind = i.industry || 'business';
+  const problem = i.problem || `customers in ${ind} waste time and money on outdated solutions`;
+  const product = i.product || `${name}'s product`;
+  const ask = i.askAmount || '₹50 lakh';
+  const traction = i.traction || '';
+  let aiUsed = false;
+  let oneLiner = `${name} — fixing ${ind} for the next billion customers.`;
+  let diffs = ['10x faster than the current way of doing things', 'Priced for the mass market, built for scale', 'Founder-led distribution with early community pull'];
+  const ai = await aiJson(`You write investor pitch decks. Business: ${name}, industry: ${ind}, problem: ${problem}, product: ${product}. Reply JSON {"oneLiner": "one 12-word investor one-liner", "differentiators": ["3 sharp differentiators"]}`);
+  if (ai && typeof ai.oneLiner === 'string') { oneLiner = ai.oneLiner; aiUsed = true; }
+  if (ai && Array.isArray(ai.differentiators) && ai.differentiators.length >= 3) diffs = (ai.differentiators as string[]).slice(0, 3);
+  return {
+    headline: `Investor pitch deck: ${name}`,
+    aiUsed,
+    images: [{ label: 'Cover slide visual', url: img(`minimalist startup pitch deck cover slide, ${ind} theme, bold modern typography, dark gradient background, professional, "${name}"`, 1280, 720) }],
+    sections: [
+      { title: 'Slide 1 — Title', body: `${name}\n${oneLiner}\n\nDesign note: full-bleed cover image, logo top-left, one line only. No paragraphs on slide 1 — investors decide in 8 seconds.` },
+      { title: 'Slide 2 — Problem', body: `${problem}\n\nStructure it as 3 pains:\n1. The costly status quo (quantify: hours or ₹ wasted)\n2. Why existing options fail (too expensive / too complex / not local)\n3. Why now — what changed (smartphones, UPI, AI, new regulation)` },
+      { title: 'Slide 3 — Solution', body: `${product}\n\nWhy we win:\n• ${diffs[0]}\n• ${diffs[1]}\n• ${diffs[2]}\n\nShow, don't tell: one product screenshot beats three bullet points.` },
+      { title: 'Slide 4 — Market size', body: `Use the TAM → SAM → SOM funnel:\n• TAM: everyone who has this problem in your country\n• SAM: the segment you can reach with your model\n• SOM: what you can realistically capture in 3 years (be honest — 1-5% of SAM)\n\nSource every number (industry reports, government data). Investors check.` },
+      { title: 'Slide 5 — Product', body: `3-4 annotated screenshots or photos of ${product}.\n\nCaption each with the benefit, not the feature:\n✗ "Dashboard with analytics"\n✓ "See today's profit in one glance"` },
+      { title: 'Slide 6 — Business model', body: `How ${name} makes money:\n• Pricing: what you charge and why customers accept it\n• Unit economics: cost to acquire (CAC) vs lifetime value (LTV) — target LTV ≥ 3× CAC\n• Margins: gross margin % and how it improves with scale` },
+      { title: 'Slide 7 — Traction', body: traction ? `${traction}\n\nPresent as a growth chart (up and to the right). Even small numbers impress if the slope is steep — show month-on-month %.` : `Pre-launch? Show momentum anyway:\n• Waitlist signups / pilot customers / LOIs\n• Partnerships or distribution deals in progress\n• Founder credibility: past wins, domain years\n\nAny proof beats promises.` },
+      { title: 'Slide 8 — Competition', body: `Use a 2×2 grid (e.g. Affordable ↔ Premium vs Generic ↔ Specialised) and place ${name} top-right.\n\nNever say "we have no competition" — investors hear "no market". Name real alternatives (including "doing nothing") and why you beat each.` },
+      { title: 'Slide 9 — Team', body: `Photo + one line per founder: what makes THIS team unbeatable for THIS problem.\n\nFormula: [domain expertise] + [execution proof] + [unfair advantage]\nAdd advisors/mentors if they carry recognisable names.` },
+      { title: 'Slide 10 — The ask', body: `Raising: ${ask}\n\nUse of funds (typical split):\n• 40-50% — product & engineering\n• 30-40% — growth & customer acquisition\n• 10-20% — operations & buffer\n\nEnd with the milestone this money buys (e.g. "18 months runway to ₹X MRR") and your contact.` },
+      { title: 'Delivery playbook', body: `• Keep it to 10-12 slides, under 3 minutes if reading aloud\n• Export as PDF (decks break on other people's machines)\n• Send as a link so you can update after sending\n• Practise the 30-second verbal version — most pitches happen in hallways\n• Follow up within 48 hours with one metric update` },
+    ],
+  };
+}
+
+// ─── Tool: Product Listing Writer ────────────────────────────────────────────
+
+async function runListing(i: Inputs): Promise<ToolOutput> {
+  const name = i.businessName, product = i.productName || 'the product';
+  const cat = i.category || 'general', platform = i.platform || 'Amazon';
+  const feats = (i.features || '').split(',').map(s => s.trim()).filter(Boolean);
+  const price = i.price || '';
+  let aiUsed = false;
+  let titles = [
+    `${product} by ${name} — Premium ${cat} ${price ? `| ${price}` : ''}`.trim(),
+    `${name} ${product} | ${feats[0] || 'Top Quality'} ${cat}`,
+    `${product} — ${feats.slice(0, 2).join(', ') || `Best-in-class ${cat}`} | ${name}`,
+  ];
+  let bullets = [
+    `✔ PREMIUM QUALITY — ${feats[0] || `crafted to outlast anything else in the ${cat} aisle`}`,
+    `✔ DESIGNED FOR YOU — ${feats[1] || 'thoughtful details you notice from day one'}`,
+    `✔ EASY TO USE — ${feats[2] || 'works right out of the box, no setup headaches'}`,
+    `✔ TRUSTED BRAND — from ${name}, loved by real customers`,
+    `✔ RISK-FREE — responsive support and hassle-free replacement promise`,
+  ];
+  let description = `${product} from ${name} is built for people who refuse to settle. ${feats.length ? `With ${feats.join(', ')}, it` : 'It'} delivers everyday performance you can feel.\n\nWhether you're buying for yourself or gifting it, ${product} arrives ready to impress — quality materials, careful packaging, and the backing of a brand that answers its customers.\n\nAdd ${product} to your cart today and see why buyers keep coming back to ${name}.`;
+  const ai = await aiJson(`You write high-converting ${platform} listings. Product: ${product} (${cat}) by ${name}. Features: ${feats.join('; ') || 'not given'}. Price: ${price || 'n/a'}. Reply JSON {"titles": ["3 SEO titles max 150 chars"], "bullets": ["5 benefit-first bullets starting with a capitalised hook word"], "description": "3-paragraph persuasive description"}`);
+  if (ai && Array.isArray(ai.titles) && ai.titles.length >= 3) { titles = (ai.titles as string[]).slice(0, 3); aiUsed = true; }
+  if (ai && Array.isArray(ai.bullets) && ai.bullets.length >= 5) bullets = (ai.bullets as string[]).slice(0, 5);
+  if (ai && typeof ai.description === 'string' && ai.description.length > 80) description = ai.description;
+  const kw = [product, cat, `${cat} for ${name.toLowerCase()}`, `best ${cat}`, `${product} online`, `buy ${product}`, ...feats.slice(0, 2).map(f => `${cat} ${f.toLowerCase()}`)].slice(0, 7);
+  return {
+    headline: `${platform} listing: ${product}`,
+    aiUsed,
+    images: [
+      { label: 'Main image (white background)', url: img(`professional product photography of ${product}, ${cat}, pure white background, studio lighting, centered, e-commerce main image, ultra sharp`, 1024, 1024) },
+      { label: 'Lifestyle shot', url: img(`${product} being used in real life, ${cat} lifestyle photography, natural light, aspirational, e-commerce secondary image`, 1024, 1024) },
+    ],
+    sections: [
+      { title: 'Title options (pick one)', body: titles.map((t, n) => `${n + 1}. ${t}`).join('\n\n') },
+      { title: 'Bullet points (About this item)', body: bullets.join('\n\n') },
+      { title: 'Product description', body: description },
+      { title: 'Search keywords / backend terms', body: `${kw.join(', ')}\n\nBackend tip: don't repeat words already in your title — every character slot should add a NEW search term.` },
+      { title: `${platform} optimisation tips`, body: `• Main image: pure white background, product fills 85% of frame\n• Upload all 7-9 image slots — listings with 7+ images convert ~30% better\n• Price ending in 9 (₹499 not ₹500) still outperforms in ${cat}\n• Answer the first 5 customer questions yourself via seller account\n• Get your first 5 reviews fast: follow up politely with early buyers` },
+      { title: 'Reuse this listing', body: `• Flipkart/Meesho: same bullets, shorten title to 80 chars\n• Instagram shop: description paragraph 1 = caption\n• Your AINOS website: paste the whole pack into a product page\n• Google Shopping: title option 2 works best as the feed title` },
+    ],
+  };
+}
+
+// ─── Tool: Business Plan + Financials ────────────────────────────────────────
+
+function money(n: number): string { return `₹${Math.round(n).toLocaleString('en-IN')}`; }
+function num(s: string | undefined, fallback: number): number {
+  const v = parseInt((s || '').replace(/[^0-9]/g, ''), 10);
+  return Number.isFinite(v) && v > 0 ? v : fallback;
+}
+
+function runBizplan(i: Inputs): ToolOutput {
+  const name = i.businessName, ind = i.industry || 'business';
+  const desc = i.description || `a ${ind} venture serving local customers`;
+  const startup = num(i.startupCost, 200000);
+  const price = num(i.monthlyPrice, 1000);
+  const target = num(i.targetCustomers, 100);
+  const y1Avg = target / 2, y2Avg = (target + target * 2.5) / 2, y3Avg = (target * 2.5 + target * 5) / 2;
+  const rev = [y1Avg * price * 12, y2Avg * price * 12, y3Avg * price * 12];
+  const opex = [rev[0] * 0.55 + startup * 0.3, rev[1] * 0.5, rev[2] * 0.45];
+  const profit = rev.map((r, n) => r - opex[n]);
+  const breakevenMonth = Math.max(2, Math.ceil(startup / (((price * target) * 0.45) / 2)));
+  const table = ['Year | Customers (avg) | Revenue | Costs | Profit', '---- | ---- | ---- | ---- | ----',
+    `1 | ${Math.round(y1Avg)} | ${money(rev[0])} | ${money(opex[0])} | ${money(profit[0])}`,
+    `2 | ${Math.round(y2Avg)} | ${money(rev[1])} | ${money(opex[1])} | ${money(profit[1])}`,
+    `3 | ${Math.round(y3Avg)} | ${money(rev[2])} | ${money(opex[2])} | ${money(profit[2])}`].join('\n');
+  return {
+    headline: `Business plan: ${name}`,
+    sections: [
+      { title: 'Executive summary', body: `${name} is ${desc}.\n\nInvestment needed: ${money(startup)}\nRevenue model: ~${money(price)} per customer per month\nYear-1 goal: ${target} paying customers\nProjected year-3 revenue: ${money(rev[2])}\nEstimated breakeven: month ${Math.min(breakevenMonth, 36)}` },
+      { title: 'Market & customer', body: `Industry: ${ind}\n\nDefine your customer in one sentence: who they are, what they struggle with, what they pay today.\n\nValidate before scaling: talk to 20 potential customers, pre-sell to 5. If 5 people won't pre-pay, revisit the offer — not the marketing.` },
+      { title: 'Business model', body: `• Offer: ${desc}\n• Price point: ${money(price)}/customer/month (adjust after 10 real sales)\n• Sales channel: direct + referrals first, paid ads only after organic proof\n• Retention lever: monthly value delivery so customers stay 12+ months` },
+      { title: 'Go-to-market (first 12 months)', body: `Months 1-2: launch offer to your warmest 100 contacts, close first 10\nMonths 3-4: collect testimonials, publish 2 case studies\nMonths 5-8: double down on the ONE channel that brought most customers\nMonths 9-12: hire first helper, systemise delivery, push referral program (give 1 month free per referral)` },
+      { title: 'Operations & team', body: `Year 1: founder-led everything, outsource only design/legal\nYear 2: first 2 hires — one delivery, one sales\nYear 3: 5-8 people, founder moves to growth + partnerships\n\nRule: hire when a role is 20+ hrs/week of proven work, never before.` },
+      { title: '3-year financial projection', body: `${table}\n\nAssumptions:\n• Customers grow ~2.5× in year 2 and ~2× in year 3\n• Costs fall from 55% to 45% of revenue as you scale\n• ${money(startup)} startup cost amortised into year-1 costs\n\nThese are planning numbers — replace with actuals every quarter.` },
+      { title: 'Funding requirement', body: `Total needed: ${money(startup)}\n\nSuggested split:\n• 40% — product/setup (equipment, tech, inventory)\n• 35% — marketing & first-customer acquisition\n• 25% — working capital buffer (3 months of fixed costs)\n\nSources to consider: own savings, friends & family round, Mudra loan / MSME schemes, angel investors (only after traction).` },
+      { title: 'Risks & mitigation', body: `• Slow customer acquisition → pre-sell before spending on inventory/ads\n• Price resistance → offer a smaller starter tier instead of discounting\n• Founder burnout → systemise week 1; document every repeated task\n• Competition copies you → win on service speed and community, not features` },
+      { title: 'How to use this document', body: `• Bank/loan application: attach the executive summary + projection table\n• Investor conversations: pair with your AINOS pitch deck\n• Internal compass: re-read monthly, update numbers quarterly\n• Partners/co-founders: use it to align before any equity conversation` },
+    ],
+  };
+}
+
+// ─── Tool: Legal Pages Generator ─────────────────────────────────────────────
+
+function runLegal(i: Inputs): ToolOutput {
+  const name = i.businessName, url = i.websiteUrl || 'your website';
+  const email = i.contactEmail || 'your contact email';
+  const country = i.country || 'India';
+  const payments = (i.collectsPayments || 'yes').toLowerCase() !== 'no';
+  const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+  return {
+    headline: `Legal pages: ${name}`,
+    sections: [
+      { title: 'Privacy Policy', body: `PRIVACY POLICY — ${name}\nLast updated: ${today}\n\n1. WHO WE ARE\n${name} ("we", "us") operates ${url}. This policy explains how we handle your information under the laws of ${country}.\n\n2. WHAT WE COLLECT\n• Information you give us: name, email, phone, address when you contact us or place an order\n• Automatic data: IP address, browser type, pages visited (via cookies/analytics)\n${payments ? '• Payment data: processed securely by our payment providers — we never store full card numbers\n' : ''}\n3. HOW WE USE IT\n• To deliver products/services you request\n• To respond to enquiries and provide support\n• To send updates you've opted into (unsubscribe anytime)\n• To improve our website and services\n\n4. SHARING\nWe do not sell your personal data. We share it only with service providers who help us operate (hosting, payments, delivery), and when required by law.\n\n5. COOKIES\nWe use cookies for site functionality and analytics. You can disable cookies in your browser; some features may stop working.\n\n6. DATA SECURITY & RETENTION\nWe use reasonable safeguards to protect your data and keep it only as long as needed for the purposes above or as law requires.\n\n7. YOUR RIGHTS\nYou may request access, correction, or deletion of your personal data by emailing ${email}.\n\n8. CONTACT\nQuestions about this policy: ${email}` },
+      { title: 'Terms & Conditions', body: `TERMS & CONDITIONS — ${name}\nLast updated: ${today}\n\n1. ACCEPTANCE\nBy using ${url}, you agree to these terms. If you do not agree, please do not use the site.\n\n2. SERVICES\n${name} provides the products/services described on the website. We may update offerings and prices at any time.\n\n3. YOUR ACCOUNT & CONDUCT\nYou agree to provide accurate information and not to misuse the site (no unlawful, harmful, or infringing activity).\n\n4. ORDERS & PAYMENT\n${payments ? `Prices are shown in local currency and include applicable taxes unless stated. Payment is due at the time of order via the methods shown at checkout.` : `Where applicable, commercial terms will be agreed in writing before any engagement.`}\n\n5. INTELLECTUAL PROPERTY\nAll content on ${url} (text, logos, images) belongs to ${name} or its licensors. You may not copy or reuse it without written permission.\n\n6. LIABILITY\nTo the maximum extent permitted by law, ${name} is not liable for indirect or consequential losses arising from use of the site or services.\n\n7. GOVERNING LAW\nThese terms are governed by the laws of ${country}. Disputes fall under the exclusive jurisdiction of the courts of ${country}.\n\n8. CONTACT\n${email}` },
+      { title: 'Refund & Cancellation Policy', body: `REFUND & CANCELLATION POLICY — ${name}\nLast updated: ${today}\n\n1. CANCELLATIONS\nOrders can be cancelled before dispatch / before work begins. Contact ${email} with your order details.\n\n2. REFUNDS\n• Approved refunds are processed to the original payment method within 7-10 business days\n• Custom or personalised items/services are non-refundable once production/work has started\n• Digital products/services delivered instantly are non-refundable unless faulty\n\n3. DAMAGED OR WRONG ITEMS\nReport within 48 hours of delivery with photos to ${email} — we will replace or refund.\n\n4. HOW TO REQUEST\nEmail ${email} with your order number, reason, and any supporting photos.` },
+      { title: 'Cookie banner text', body: `Short version (banner):\n"We use cookies to make ${name} work better for you. By continuing, you accept our use of cookies. [Accept] [Learn more]"\n\nLink "Learn more" to your Privacy Policy page.` },
+      { title: 'How to publish', body: `• Create pages at ${url}/privacy-policy, /terms, /refund-policy\n• Link all three in your website footer (required by payment gateways like Razorpay/Stripe)\n• Add the cookie banner site-wide\n• Review the text and replace anything that doesn't match how you actually operate\n\n⚠ Disclaimer: these are professionally structured templates, not legal advice. For high-risk businesses (health, finance, data-heavy), have a lawyer review before publishing.` },
+    ],
+  };
+}
+
+// ─── Tool: Yurekh Web Chat AI (embeddable chatbot) ──────────────────────────
+
+const BOT_AVATAR = 'https://yurekh.vercel.app/ainos/ainos-robot.png';
+
+function parseFaqs(raw: string): { q: string; a: string }[] {
+  const out: { q: string; a: string }[] = [];
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  let pendingQ = '';
+  for (const line of lines) {
+    if (/^q[:.)]/i.test(line)) { pendingQ = line.replace(/^q[:.)]\s*/i, ''); continue; }
+    if (/^a[:.)]/i.test(line) && pendingQ) { out.push({ q: pendingQ, a: line.replace(/^a[:.)]\s*/i, '') }); pendingQ = ''; continue; }
+    const pipe = line.split('|');
+    if (pipe.length >= 2) out.push({ q: pipe[0].trim(), a: pipe.slice(1).join('|').trim() });
+  }
+  return out.slice(0, 12);
+}
+
+async function runChatbot(i: Inputs): Promise<ToolOutput> {
+  const name = i.businessName, ind = i.industry || 'business';
+  const site = i.websiteUrl || '';
+  const wa = (i.whatsapp || '').replace(/[^0-9]/g, '');
+  const color = /^#[0-9a-fA-F]{6}$/.test(i.brandColor || '') ? (i.brandColor as string) : '#6d5df6';
+  let faqs = parseFaqs(i.faqs || '');
+  let aiUsed = false;
+  if (faqs.length === 0) {
+    const ai = await aiJson(`Generate 5 realistic customer FAQs with answers for ${name}, a ${ind} business. Reply JSON {"faqs": [{"q": "question", "a": "answer under 40 words"}]}`);
+    if (ai && Array.isArray(ai.faqs)) {
+      faqs = (ai.faqs as { q: string; a: string }[]).filter(f => f && typeof f.q === 'string' && typeof f.a === 'string').slice(0, 5);
+      if (faqs.length) aiUsed = true;
+    }
+  }
+  if (faqs.length === 0) {
+    faqs = [
+      { q: 'What do you offer?', a: `${name} offers quality ${ind} products and services. Ask me anything specific!` },
+      { q: 'How can I contact you?', a: wa ? `Message us on WhatsApp at +${wa} — we reply fast!` : `Use the contact form on our website and we'll get back to you quickly.` },
+      { q: 'What are your timings?', a: 'We typically respond during business hours, Monday to Saturday.' },
+    ];
+  }
+  const ctx = `You are Yurekh AI, the friendly website assistant for ${name}, a ${ind} business${site ? ` (${site})` : ''}. Answer briefly (under 60 words), warmly, and always steer towards helping the visitor buy or get in touch.${wa ? ` For anything you cannot answer, share WhatsApp +${wa}.` : ''} Known FAQs: ${faqs.map(f => `${f.q} -> ${f.a}`).join(' | ')}`;
+  const faqJson = JSON.stringify(faqs);
+  const embed = `<script>\n(function(){\nvar C='${color}',AV='${BOT_AVATAR}',NAME=${JSON.stringify(name)},CTX=${JSON.stringify(ctx)},FAQS=${faqJson},WA='${wa}';\nvar st=document.createElement('style');st.textContent='#yrk-b{position:fixed;bottom:20px;right:20px;width:60px;height:60px;border-radius:50%;cursor:pointer;z-index:99998;box-shadow:0 4px 20px rgba(0,0,0,.35);border:2px solid '+C+';background:#12121a url('+AV+') center/cover;transition:transform .2s}#yrk-b:hover{transform:scale(1.08)}#yrk-p{position:fixed;bottom:92px;right:20px;width:min(360px,calc(100vw - 32px));height:480px;background:#12121a;border:1px solid '+C+'55;border-radius:16px;z-index:99999;display:none;flex-direction:column;overflow:hidden;font-family:system-ui,sans-serif;box-shadow:0 12px 40px rgba(0,0,0,.5)}#yrk-h{display:flex;align-items:center;gap:10px;padding:12px 14px;background:linear-gradient(135deg,'+C+',#1a1a24)}#yrk-h img{width:34px;height:34px;border-radius:50%}#yrk-h b{color:#fff;font-size:14px}#yrk-h span{color:#ffffffcc;font-size:11px;display:block}#yrk-m{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}.yrk-u,.yrk-a{max-width:82%;padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.45;white-space:pre-wrap}.yrk-u{align-self:flex-end;background:'+C+';color:#fff}.yrk-a{align-self:flex-start;background:#1e1e2a;color:#e8e8f0}#yrk-i{display:flex;gap:8px;padding:10px;border-top:1px solid #ffffff14}#yrk-i input{flex:1;background:#1e1e2a;border:1px solid #ffffff1a;border-radius:10px;padding:9px 12px;color:#fff;font-size:13px;outline:none}#yrk-i button{background:'+C+';border:0;border-radius:10px;padding:0 16px;color:#fff;font-size:13px;cursor:pointer}';document.head.appendChild(st);\nvar b=document.createElement('div');b.id='yrk-b';document.body.appendChild(b);\nvar p=document.createElement('div');p.id='yrk-p';p.innerHTML='<div id=\"yrk-h\"><img src=\"'+AV+'\" alt=\"\"><div><b>Yurekh AI</b><span>'+NAME+' assistant</span></div></div><div id=\"yrk-m\"></div><div id=\"yrk-i\"><input placeholder=\"Ask me anything...\"><button>Send</button></div>';document.body.appendChild(p);\nvar m=p.querySelector('#yrk-m'),inp=p.querySelector('input'),btn=p.querySelector('button');\nfunction add(cls,txt){var d=document.createElement('div');d.className=cls;d.textContent=txt;m.appendChild(d);m.scrollTop=m.scrollHeight;return d;}\nb.onclick=function(){p.style.display=p.style.display==='flex'?'none':'flex';if(!m.children.length)add('yrk-a','Hi! I\\'m the '+NAME+' assistant. How can I help you today?');};\nfunction faq(t){t=t.toLowerCase();var best=null,bs=0;FAQS.forEach(function(f){var s=0;f.q.toLowerCase().split(/\\W+/).forEach(function(w){if(w.length>3&&t.indexOf(w)>-1)s++;});if(s>bs){bs=s;best=f;}});return bs>0?best:null;}\nfunction send(){var t=inp.value.trim();if(!t)return;inp.value='';add('yrk-u',t);var f=faq(t);if(f){setTimeout(function(){add('yrk-a',f.a);},400);return;}var w=add('yrk-a','...');fetch('https://text.pollinations.ai/'+encodeURIComponent(CTX+' Question: '+t)).then(function(r){return r.text();}).then(function(x){w.textContent=x.slice(0,600);m.scrollTop=m.scrollHeight;}).catch(function(){w.textContent=WA?'I\\'m having trouble right now — message us on WhatsApp: +'+WA:'I\\'m having trouble right now — please use the contact form and we\\'ll reply fast!';});}\nbtn.onclick=send;inp.addEventListener('keydown',function(e){if(e.key==='Enter')send();});\n})();\n<\/script>`;
+  return {
+    headline: `Website chatbot: ${name}`,
+    aiUsed,
+    images: [{ label: 'Your chatbot avatar', url: BOT_AVATAR }],
+    sections: [
+      { title: 'Embed code (paste before </body>)', body: embed },
+      { title: 'What your visitors get', body: `• A floating chat bubble (bottom-right) in your brand colour ${color}\n• Instant answers to your FAQs — no typing delay, works offline\n• AI answers for everything else, in your business's voice\n• ${wa ? `WhatsApp handoff to +${wa} when AI can't help` : 'Contact-form fallback when AI can\'t help'}\n• Works on any website — WordPress, Shopify, Wix, or your AINOS site` },
+      { title: "Your chatbot's knowledge (FAQs)", body: faqs.map((f, n) => `${n + 1}. Q: ${f.q}\n   A: ${f.a}`).join('\n\n') },
+      { title: 'Install guide', body: `WordPress: Appearance → Theme Editor → footer.php → paste before </body> (or use the "Insert Headers and Footers" plugin)\n\nShopify: Online Store → Themes → Edit code → theme.liquid → paste before </body>\n\nAINOS-built / custom HTML site: paste at the bottom of your HTML file, just before </body>\n\nThat's it — refresh your site and the bubble appears.` },
+      { title: 'Pro tips', body: `• Add 8-12 FAQs covering price, delivery, timings, and location — FAQ answers are instant and always accurate\n• Re-generate this chatbot whenever your offers change; replace the old script\n• Watch what visitors ask — those questions are free market research\n• Put the same FAQs on your website's FAQ page for SEO` },
+    ],
+  };
+}
+
 // ─── Dispatcher ──────────────────────────────────────────────────────────────
 
 export async function runTool(tool: ToolId, inputs: Inputs): Promise<ToolOutput> {
@@ -382,8 +574,13 @@ export async function runTool(tool: ToolId, inputs: Inputs): Promise<ToolOutput>
     case 'launch': return runLaunch(inputs);
     case 'poster': return runPoster(inputs);
     case 'qr': return runQr(inputs);
+    case 'pitchdeck': return runPitchdeck(inputs);
+    case 'listing': return runListing(inputs);
+    case 'bizplan': return runBizplan(inputs);
+    case 'legal': return runLegal(inputs);
+    case 'chatbot': return runChatbot(inputs);
     default: throw new Error('Unknown tool');
   }
 }
 
-export const TOOL_IDS: ToolId[] = ['logo', 'brandkit', 'social', 'content', 'seo', 'email', 'pr', 'launch', 'poster', 'qr'];
+export const TOOL_IDS: ToolId[] = ['logo', 'brandkit', 'social', 'content', 'seo', 'email', 'pr', 'launch', 'poster', 'qr', 'pitchdeck', 'listing', 'bizplan', 'legal', 'chatbot'];

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { X, Globe, Palette, Megaphone, Rocket, Printer, BarChart3, Newspaper, Clock, Briefcase, ExternalLink, Wand2, Zap, Eye, Download, Trash2, Crown } from 'lucide-react';
+import { X, Globe, Palette, Megaphone, Rocket, Printer, BarChart3, Newspaper, Clock, Briefcase, ExternalLink, Wand2, Zap, Eye, Download, Trash2, Crown, Sparkles } from 'lucide-react';
 import WebsiteBuilder from '@/components/services/WebsiteBuilder';
 import AIToolStudio, { StudioToolId } from '@/components/services/AIToolStudio';
 
@@ -23,6 +23,7 @@ const AI_BUILDABLE = new Set(['Website Development', 'Responsive Website', 'Land
 
 // Every other service maps to the AINOS AI tool that executes it
 const CATEGORY_TOOL_DEFAULT: Record<string, StudioToolId> = {
+  'Startup Essentials': 'pitchdeck',
   'Development Services': 'launch',
   'Premium Digital Branding': 'brandkit',
   'Product Launch & Development': 'launch',
@@ -35,6 +36,11 @@ const CATEGORY_TOOL_DEFAULT: Record<string, StudioToolId> = {
 
 function toolForService(service: string, category: string): StudioToolId {
   const s = service.toLowerCase();
+  if (/pitch deck|investor deck/.test(s)) return 'pitchdeck';
+  if (/business plan|financial projection/.test(s)) return 'bizplan';
+  if (/product listing|marketplace listing/.test(s)) return 'listing';
+  if (/legal|privacy|terms|refund policy/.test(s)) return 'legal';
+  if (/chatbot|chat ai|web chat/.test(s)) return 'chatbot';
   if (/qr code/.test(s)) return 'qr';
   if (/logo|monogram/.test(s)) return 'logo';
   if (/social|influencer/.test(s)) return 'social';
@@ -51,9 +57,16 @@ function toolForService(service: string, category: string): StudioToolId {
 const TOOL_LABELS: Record<StudioToolId, string> = {
   logo: 'Logo AI', brandkit: 'Brand Kit AI', social: 'Social AI', content: 'Writer AI', seo: 'SEO AI',
   email: 'Email AI', pr: 'PR AI', launch: 'Blueprint AI', poster: 'Print AI', qr: 'QR Tool',
+  pitchdeck: 'Pitch Deck AI', listing: 'Listing AI', bizplan: 'Biz Plan AI', legal: 'Legal AI', chatbot: 'Chatbot AI',
 };
 
 const serviceCategories: ServiceCategory[] = [
+  {
+    title: 'Startup Essentials',
+    icon: Sparkles,
+    description: 'Pitch decks, business plans, listings, legal pages & AI chatbots',
+    services: ['Investor Pitch Deck', 'Business Plan + Financial Projections', 'E-commerce Product Listing Writer', 'Legal Pages (Privacy, Terms & Refund)', 'Yurekh Web Chat AI Chatbot'],
+  },
   {
     title: 'Development Services',
     icon: Globe,

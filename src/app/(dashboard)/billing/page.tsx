@@ -233,7 +233,7 @@ export default function BillingPage() {
         {/* Value strip */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { title: '10 AI tools', body: 'Logo, brand kit, social, SEO, email, PR, launch plans, print creatives, QR & website builder.' },
+            { title: '15 AI tools', body: 'Logo, brand kit, social, SEO, email, PR, pitch decks, business plans, product listings, legal pages, website chatbot & more.' },
             { title: 'Real deliverables', body: 'Download-ready copy, images, palettes and full websites — not just suggestions.' },
             { title: 'Humans on standby', body: 'One click hands any deliverable to the Yurekh team to take further.' },
           ].map((v) => (

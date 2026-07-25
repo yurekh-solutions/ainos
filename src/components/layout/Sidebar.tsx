@@ -284,15 +284,9 @@ export function Sidebar() {
         >
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{
-                  background:
-                    'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))',
-                }}
-              >
-                <Zap className="w-5 h-5 text-white" />
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/ainos/ainos-robot.png" alt="AINOS" className="w-9 h-9 rounded-xl object-cover"
+                style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }} />
               <div>
                 <h1 className="text-lg font-bold gradient-text">AINOS</h1>
                 <p className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
@@ -340,15 +334,9 @@ export function Sidebar() {
               style={{ borderBottom: '1px solid hsl(var(--sidebar-border) / 0.5)' }}
             >
               <div className="flex items-center gap-3">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{
-                    background:
-                      'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))',
-                  }}
-                >
-                  <Zap className="w-6 h-6 text-white" />
-                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/ainos/ainos-robot.png" alt="AINOS" className="w-10 h-10 rounded-xl object-cover"
+                  style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }} />
                 <div>
                   <h1 className="text-xl font-bold gradient-text">AINOS</h1>
                   <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
@@ -474,15 +462,9 @@ export function Sidebar() {
           className="p-5 flex items-center gap-3"
           style={{ borderBottom: '1px solid hsl(var(--sidebar-border) / 0.5)' }}
         >
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{
-              background:
-                'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))',
-            }}
-          >
-            <Zap className="w-6 h-6 text-white" />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/ainos/ainos-robot.png" alt="AINOS" className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }} />
           {!collapsed && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <h1 className="text-xl font-bold gradient-text">AINOS</h1>

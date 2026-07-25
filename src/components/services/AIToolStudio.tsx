@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Sparkles, Copy, Check, Download, RefreshCw, ExternalLink, Wand2, Users, Crown, Lightbulb } from 'lucide-react';
 
-export type StudioToolId = 'logo' | 'brandkit' | 'social' | 'content' | 'seo' | 'email' | 'pr' | 'launch' | 'poster' | 'qr';
+export type StudioToolId = 'logo' | 'brandkit' | 'social' | 'content' | 'seo' | 'email' | 'pr' | 'launch' | 'poster' | 'qr' | 'pitchdeck' | 'listing' | 'bizplan' | 'legal' | 'chatbot';
 
 interface Field { id: string; label: string; type: 'text' | 'textarea' | 'select' | 'color'; options?: string[]; required?: boolean; placeholder?: string; }
 
@@ -112,6 +112,65 @@ const TOOL_CONFIGS: Record<StudioToolId, ToolConfig> = {
     ],
     steps: ['Encoding your data…', 'Rendering QR codes…'],
   },
+  pitchdeck: {
+    name: 'Investor Pitch Deck', tagline: 'A 10-slide investor-ready deck, slide by slide',
+    fields: [
+      { id: 'businessName', label: 'Business name', type: 'text', required: true, placeholder: 'e.g. Brew Theory' },
+      { id: 'industry', label: 'Industry', type: 'text', placeholder: 'e.g. specialty coffee' },
+      { id: 'problem', label: 'Problem you solve', type: 'textarea', placeholder: 'What pain do your customers have today?' },
+      { id: 'product', label: 'Your product / solution', type: 'textarea', placeholder: 'What do you sell and how does it fix the problem?' },
+      { id: 'askAmount', label: 'How much are you raising?', type: 'text', placeholder: 'e.g. ₹50 lakh' },
+      { id: 'traction', label: 'Traction so far (optional)', type: 'textarea', placeholder: 'Customers, revenue, waitlist, pilots…' },
+    ],
+    steps: ['Studying your business…', 'Writing your investor story…', 'Building 10 slides + delivery playbook…'],
+  },
+  listing: {
+    name: 'Product Listing Writer', tagline: 'Amazon/Flipkart-ready titles, bullets & description',
+    fields: [
+      { id: 'businessName', label: 'Brand name', type: 'text', required: true, placeholder: 'e.g. Brew Theory' },
+      { id: 'productName', label: 'Product name', type: 'text', required: true, placeholder: 'e.g. Cold Brew Concentrate 500ml' },
+      { id: 'category', label: 'Category', type: 'text', placeholder: 'e.g. coffee & beverages' },
+      { id: 'platform', label: 'Platform', type: 'select', options: ['Amazon', 'Flipkart', 'Meesho', 'Shopify', 'Etsy'] },
+      { id: 'features', label: 'Key features (comma separated)', type: 'textarea', placeholder: 'e.g. 100% arabica, no added sugar, 15 servings' },
+      { id: 'price', label: 'Price (optional)', type: 'text', placeholder: 'e.g. ₹499' },
+    ],
+    steps: ['Researching buyer keywords…', 'Writing titles & bullets…', 'Rendering product shots…'],
+  },
+  bizplan: {
+    name: 'Business Plan + Financials', tagline: 'Bank & investor-ready plan with 3-year projections',
+    fields: [
+      { id: 'businessName', label: 'Business name', type: 'text', required: true, placeholder: 'e.g. Brew Theory' },
+      { id: 'industry', label: 'Industry', type: 'text', placeholder: 'e.g. specialty coffee cafe' },
+      { id: 'description', label: 'What does the business do?', type: 'textarea', placeholder: 'One or two lines about your offer' },
+      { id: 'startupCost', label: 'Startup cost (₹)', type: 'text', placeholder: 'e.g. 200000' },
+      { id: 'monthlyPrice', label: 'Avg revenue per customer / month (₹)', type: 'text', placeholder: 'e.g. 1000' },
+      { id: 'targetCustomers', label: 'Year-1 customer target', type: 'text', placeholder: 'e.g. 100' },
+    ],
+    steps: ['Structuring your plan…', 'Running 3-year projections…', 'Writing funding & risk sections…'],
+  },
+  legal: {
+    name: 'Legal Pages Generator', tagline: 'Privacy policy, T&C, refund policy — ready to publish',
+    fields: [
+      { id: 'businessName', label: 'Business name', type: 'text', required: true, placeholder: 'e.g. Brew Theory' },
+      { id: 'websiteUrl', label: 'Website URL', type: 'text', placeholder: 'e.g. https://brewtheory.com' },
+      { id: 'contactEmail', label: 'Contact email', type: 'text', placeholder: 'e.g. hello@brewtheory.com' },
+      { id: 'country', label: 'Country', type: 'text', placeholder: 'e.g. India' },
+      { id: 'collectsPayments', label: 'Do you take payments online?', type: 'select', options: ['yes', 'no'] },
+    ],
+    steps: ['Drafting your privacy policy…', 'Writing terms & refund policy…', 'Preparing publish checklist…'],
+  },
+  chatbot: {
+    name: 'Yurekh Web Chat AI', tagline: 'An AI chatbot for your website — copy, paste, live',
+    fields: [
+      { id: 'businessName', label: 'Business name', type: 'text', required: true, placeholder: 'e.g. Brew Theory' },
+      { id: 'industry', label: 'Industry', type: 'text', placeholder: 'e.g. cafe' },
+      { id: 'websiteUrl', label: 'Website URL (optional)', type: 'text', placeholder: 'e.g. https://brewtheory.com' },
+      { id: 'whatsapp', label: 'WhatsApp number (optional)', type: 'text', placeholder: 'e.g. 919876543210' },
+      { id: 'brandColor', label: 'Brand color', type: 'color' },
+      { id: 'faqs', label: 'Your FAQs (optional — one per line: question | answer)', type: 'textarea', placeholder: 'What are your timings? | 8am to 10pm daily\nDo you deliver? | Yes, within 5 km via Swiggy' },
+    ],
+    steps: ['Teaching the bot your business…', 'Building the chat widget…', 'Packaging your embed code…'],
+  },
 };
 
 // One-tap example inputs so a new user can see real value in under 10 seconds
@@ -126,6 +185,11 @@ const EXAMPLES: Record<StudioToolId, Record<string, string>> = {
   launch: { businessName: 'Brew Theory', productName: 'Winter specialty menu', budgetLevel: 'lean' },
   poster: { businessName: 'Brew Theory', industry: 'cafe', message: 'Grand opening — 50% off all week', style: 'modern' },
   qr: { qrData: 'https://yurekh.com', qrColor: '#000000' },
+  pitchdeck: { businessName: 'Brew Theory', industry: 'specialty coffee', problem: 'Office workers waste 40 minutes a day queuing for average coffee', product: 'A subscription cafe with 2-minute pickup and app pre-ordering', askAmount: '₹50 lakh', traction: '2,400 monthly orders, ₹3.2L MRR, 38% repeat rate' },
+  listing: { businessName: 'Brew Theory', productName: 'Cold Brew Concentrate 500ml', category: 'coffee & beverages', platform: 'Amazon', features: '100% arabica, no added sugar, 15 servings, brew in 10 seconds', price: '₹499' },
+  bizplan: { businessName: 'Brew Theory', industry: 'specialty coffee cafe', description: 'a subscription-first specialty cafe with app pre-ordering', startupCost: '500000', monthlyPrice: '1200', targetCustomers: '150' },
+  legal: { businessName: 'Brew Theory', websiteUrl: 'https://brewtheory.com', contactEmail: 'hello@brewtheory.com', country: 'India', collectsPayments: 'yes' },
+  chatbot: { businessName: 'Brew Theory', industry: 'cafe', websiteUrl: 'https://brewtheory.com', whatsapp: '919876543210', brandColor: '#1BE1D3', faqs: 'What are your timings? | 8am to 10pm, all days\nDo you deliver? | Yes, within 5 km via Swiggy and Zomato\nDo you have vegan options? | Yes — oat and almond milk for every drink' },
 };
 
 // Remembered business profile — fill once, prefilled in every tool afterwards
