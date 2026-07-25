@@ -1,18 +1,16 @@
-Make every AI tool worth paying for: richer deliverables + effortless entry
+Fix production build blocker: invalid /api rewrite kept Render on an old deploy
 
-Engines (all 10 verified end-to-end, ALL PASS):
-- Logo: 6 concepts (adds Mascot + Luxury Wordmark) + direction guide + deliverable checklist
-- Brand kit: moodboard image, brand applications, do's & don'ts
-- Social: reels/story ideas + 30-day scaling plan
-- Content: ad placement/budget guide + testing checklist; blog publishing checklist
-- SEO: FAQ schema starters + Google Business Profile boosters
-- Email: 3-touch follow-up sequence + deliverability checklist
-- PR: copy-paste journalist pitch email
-- Launch: launch-day checklist
-- Poster: 6 formats (adds IG Story + WhatsApp creative) + copy overlay suggestions
-- QR: sticker-ready variant + placement guide
+Root cause: rewrites() used a relative destination outside the basePath
+("/api/:path*" -> "/ainos/api/:path*" with basePath:false), which is invalid
+in `next build`. Every Render deploy since the AI tools were added failed at
+build time, so the live site silently kept serving the oldest services page
+(request forms instead of executing AI tools).
 
-Studio entry made effortless:
-- Business profile remembered (localStorage) - fill once, prefilled in every tool
-- One-tap "Try an example" fills realistic sample inputs
-- One-click PNG download on every generated image (blob fetch, fallback to full-size)
+- next.config.js: rewrite destination now absolute via RENDER_EXTERNAL_URL
+  (auto-set on Render), NEXTAUTH_URL fallback, localhost for dev
+- turbopack.root: use __dirname (removes build warning)
+- Verified: npm run build passes; all routes present incl /api/ai-tools,
+  /api/ai-builder, /api/billing
+
+This deploy brings live: AI tool execution for all 70+ services, AI Website
+Builder, My Deliverables, plans & billing.

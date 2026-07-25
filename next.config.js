@@ -3,12 +3,15 @@ const nextConfig = {
   basePath: '/ainos',
   trailingSlash: true,
   output: 'standalone',
-  // Pages fetch '/api/...' (without the /ainos basePath) — route those to the real API
+  // Pages fetch '/api/...' (without the /ainos basePath) — route those to the real API.
+  // Destination must be absolute when it lives outside the basePath, otherwise `next build` fails
+  // (this exact error blocked every Render deploy). RENDER_EXTERNAL_URL is set automatically on Render.
   async rewrites() {
+    const self = process.env.RENDER_EXTERNAL_URL || process.env.NEXTAUTH_URL?.replace(/\/ainos.*$/, '') || 'http://localhost:3000';
     return [
       {
         source: '/api/:path*',
-        destination: '/ainos/api/:path*',
+        destination: `${self}/ainos/api/:path*`,
         basePath: false,
       },
     ];
@@ -24,7 +27,7 @@ const nextConfig = {
     ],
   },
   turbopack: {
-    root: '.',
+    root: __dirname,
   },
   // Disable Turbopack for production builds to avoid memory issues
   webpack: (config, { isServer }) => {
