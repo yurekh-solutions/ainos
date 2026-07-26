@@ -128,6 +128,60 @@ const sections: MenuSection[] = [
   },
 ];
 
+// Glowing AINOS logo mark with live status dot
+function LogoMark({ size = 'w-10 h-10' }: { size?: string }) {
+  return (
+    <div className="relative flex-shrink-0">
+      <div
+        className="absolute -inset-1 rounded-2xl blur-md opacity-50 animate-pulse"
+        style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}
+      />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/ainos/ainos-robot.png"
+        alt="AINOS"
+        className={`relative ${size} rounded-xl object-cover ring-1 ring-white/20`}
+        style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}
+      />
+      <span
+        className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
+        style={{ background: '#22c55e', boxShadow: '0 0 0 2px hsl(var(--card-bg)), 0 0 6px #22c55e' }}
+      />
+    </div>
+  );
+}
+
+// AI Studio promo card pinned above the user profile
+function StudioCard() {
+  return (
+    <Link
+      href="/services"
+      className="block relative overflow-hidden rounded-2xl p-3.5 group transition-transform duration-200 hover:scale-[1.02]"
+      style={{
+        background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))',
+        boxShadow: '0 8px 24px hsl(var(--primary) / 0.35)',
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/ainos/ainos-robot.png"
+        alt=""
+        className="absolute -right-3 -bottom-3 w-20 h-20 rounded-2xl object-cover opacity-30 rotate-12 transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110"
+      />
+      <div className="relative">
+        <div className="flex items-center gap-1.5 text-white">
+          <Sparkles className="w-4 h-4" />
+          <span className="text-sm font-bold">AI Tool Studio</span>
+        </div>
+        <p className="text-[11px] text-white/85 mt-1 leading-snug">15 AI tools — logos, pitch decks, chatbots & more</p>
+        <span className="inline-flex items-center gap-1 mt-2 text-[11px] font-semibold text-white">
+          Open Studio <ChevronRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+        </span>
+      </div>
+    </Link>
+  );
+}
+
 function SectionGroup({
   section,
   collapsed,
@@ -284,9 +338,7 @@ export function Sidebar() {
         >
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/ainos/ainos-robot.png" alt="AINOS" className="w-9 h-9 rounded-xl object-cover"
-                style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }} />
+              <LogoMark size="w-9 h-9" />
               <div>
                 <h1 className="text-lg font-bold gradient-text">AINOS</h1>
                 <p className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
@@ -334,9 +386,7 @@ export function Sidebar() {
               style={{ borderBottom: '1px solid hsl(var(--sidebar-border) / 0.5)' }}
             >
               <div className="flex items-center gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/ainos/ainos-robot.png" alt="AINOS" className="w-10 h-10 rounded-xl object-cover"
-                  style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }} />
+                <LogoMark />
                 <div>
                   <h1 className="text-xl font-bold gradient-text">AINOS</h1>
                   <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
@@ -366,7 +416,9 @@ export function Sidebar() {
                     href={item.href}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200"
                     style={{
-                      background: isActive ? 'hsl(var(--primary) / 0.1)' : 'transparent',
+                      background: isActive
+                        ? 'linear-gradient(90deg, hsl(var(--primary) / 0.15), hsl(var(--primary) / 0.04))'
+                        : 'transparent',
                       color: isActive ? 'hsl(var(--primary))' : 'hsl(var(--foreground))',
                     }}
                   >
@@ -408,6 +460,7 @@ export function Sidebar() {
               className="p-4 space-y-3"
               style={{ borderTop: '1px solid hsl(var(--sidebar-border) / 0.5)' }}
             >
+              <StudioCard />
               <div
                 className="flex items-center gap-3 p-3 rounded-xl"
                 style={{ background: 'hsl(var(--muted))' }}
@@ -462,9 +515,7 @@ export function Sidebar() {
           className="p-5 flex items-center gap-3"
           style={{ borderBottom: '1px solid hsl(var(--sidebar-border) / 0.5)' }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/ainos/ainos-robot.png" alt="AINOS" className="w-10 h-10 rounded-xl object-cover flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }} />
+          <LogoMark />
           {!collapsed && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <h1 className="text-xl font-bold gradient-text">AINOS</h1>
@@ -486,14 +537,26 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group"
+                className="relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group"
                 style={{
-                  background: isActive ? 'hsl(var(--primary) / 0.1)' : 'transparent',
+                  background: isActive
+                    ? 'linear-gradient(90deg, hsl(var(--primary) / 0.15), hsl(var(--primary) / 0.04))'
+                    : 'transparent',
                 }}
               >
+                {isActive && (
+                  <motion.span
+                    layoutId="desktopActiveBar"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full"
+                    style={{
+                      background: 'linear-gradient(180deg, hsl(var(--primary)), hsl(var(--primary-glow)))',
+                      boxShadow: '0 0 8px hsl(var(--primary) / 0.6)',
+                    }}
+                  />
+                )}
                 <div
                   className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 ${
-                    isActive ? 'bg-white shadow-md' : 'group-hover:bg-white/50'
+                    isActive ? 'bg-white shadow-md' : 'group-hover:bg-white/50 group-hover:scale-105'
                   }`}
                 >
                   <Icon
@@ -553,6 +616,7 @@ export function Sidebar() {
           className="p-3 space-y-2"
           style={{ borderTop: '1px solid hsl(var(--sidebar-border) / 0.5)' }}
         >
+          {!collapsed && <StudioCard />}
           <div
             className="flex items-center gap-3 p-2 rounded-xl"
             style={{ background: 'hsl(var(--muted))' }}

@@ -1,5 +1,8 @@
-Replace default Next.js favicon with AINOS robot logo
+Make sidebar more attractive: glowing logo, active accent bar, AI Studio card
 
-- src/app/icon.png: AINOS robot logo now served as the browser tab icon
-- Removed default src/app/favicon.ico
-- Fixed tab title typo: "AIONS - Smart Billing" -> "AINOS - Business Suite"
+- LogoMark component: robot logo with animated gradient glow, ring, and
+  live green status dot (all 3 logo spots: mobile bar, drawer, desktop)
+- Active nav items: gradient background + sliding glowing accent bar
+  (desktop), gradient background on mobile; icons scale on hover
+- New AI Tool Studio promo card pinned above the user profile (desktop +
+  mobile) with robot artwork, "15 AI tools" pitch and Open Studio CTA
