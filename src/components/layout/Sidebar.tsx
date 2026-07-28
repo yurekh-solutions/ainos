@@ -162,12 +162,12 @@ function StudioCard() {
         boxShadow: '0 8px 24px hsl(var(--primary) / 0.35)',
       }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/ainos/ainos-robot.png"
-        alt=""
-        className="absolute -right-3 -bottom-3 w-20 h-20 rounded-2xl object-cover opacity-30 rotate-12 transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110"
-      />
+      {/* Soft decorative glows instead of image patch */}
+      <div className="absolute -right-6 -bottom-8 w-24 h-24 rounded-full bg-white/15 blur-2xl transition-transform duration-300 group-hover:scale-125" />
+      <div className="absolute -right-2 -top-6 w-16 h-16 rounded-full bg-white/10 blur-xl" />
+      <div className="absolute right-3 bottom-3 w-9 h-9 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center rotate-6 transition-transform duration-300 group-hover:rotate-0">
+        <Sparkles className="w-4.5 h-4.5 text-white" />
+      </div>
       <div className="relative">
         <div className="flex items-center gap-1.5 text-white">
           <Sparkles className="w-4 h-4" />

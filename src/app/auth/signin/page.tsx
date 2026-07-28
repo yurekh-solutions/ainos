@@ -2,7 +2,7 @@
 
 import { signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import { Zap, Shield, FileText, Users, Sparkles, ArrowRight, Check, Star, TrendingUp, Globe } from 'lucide-react';
+import { Shield, FileText, Users, Sparkles, ArrowRight, Check, Star, TrendingUp, Globe } from 'lucide-react';
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20">
@@ -113,19 +113,20 @@ export default function SignInPage() {
               className="relative"
             >
               <div 
-                className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                className="w-16 h-16 rounded-2xl overflow-hidden"
                 style={{
                   background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #4f46e5 100%)',
                   boxShadow: '0 20px 50px -15px rgba(99,102,241,0.5), 0 10px 20px -10px rgba(99,102,241,0.3)'
                 }}
               >
-                <Zap className="w-8 h-8 text-white" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/ainos/ainos-robot.png" alt="AINOS" className="w-full h-full object-cover" />
               </div>
               <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 opacity-30 blur-lg -z-10" />
             </motion.div>
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-white">AINOS</h1>
-              <p className="text-sm font-medium text-slate-400">Smart Billing Platform</p>
+              <p className="text-sm font-medium text-slate-400">Business Suite</p>
             </div>
           </motion.div>
 
@@ -225,17 +226,18 @@ export default function SignInPage() {
             className="lg:hidden flex items-center justify-center gap-3 mb-8"
           >
             <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              className="w-12 h-12 rounded-xl overflow-hidden"
               style={{
                 background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
                 boxShadow: '0 12px 30px -8px rgba(99,102,241,0.4)'
               }}
             >
-              <Zap className="w-6 h-6 text-white" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/ainos/ainos-robot.png" alt="AINOS" className="w-full h-full object-cover" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">AINOS</h1>
-              <p className="text-xs text-slate-400">Smart Billing</p>
+              <p className="text-xs text-slate-400">Business Suite</p>
             </div>
           </motion.div>
 
