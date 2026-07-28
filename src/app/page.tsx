@@ -3,14 +3,34 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Sparkles, FileText, Users, TrendingUp, 
+  Sparkles, FileText, Users, 
   Plus, ArrowRight, Activity, DollarSign 
 } from 'lucide-react';
 import Link from 'next/link';
 
 interface Invoice {
+  _id?: string;
+  invoiceNumber?: string;
+  customerName?: string;
   status: string;
   totalAmount: number;
+  createdAt?: string;
+  paidAt?: string;
+}
+
+interface Customer {
+  _id?: string;
+  name?: string;
+  createdAt?: string;
+}
+
+interface ActivityItem {
+  title: string;
+  desc: string;
+  date: Date;
+  icon: typeof FileText;
+  color: string;
+  bgColor: string;
 }
 
 interface DashboardStats {
@@ -33,13 +53,26 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 }
 };
 
+function timeAgo(date: Date): string {
+  const diff = Date.now() - date.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days} day${days > 1 ? 's' : ''} ago`;
+  return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
 export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats>({
-    totalAutomations: 5,
+    totalAutomations: 0,
     totalInvoices: 0,
     totalCustomers: 0,
     totalRevenue: 0,
   });
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,24 +81,54 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const [invoicesRes, customersRes] = await Promise.all([
+      const [invoicesRes, customersRes, automationsRes] = await Promise.all([
         fetch('/api/invoices'),
         fetch('/api/customers'),
+        fetch('/api/automations'),
       ]);
 
       const invoices: Invoice[] = invoicesRes.ok ? await invoicesRes.json() : [];
-      const customers = customersRes.ok ? await customersRes.json() : [];
+      const customers: Customer[] = customersRes.ok ? await customersRes.json() : [];
+      const automationsData = automationsRes.ok ? await automationsRes.json() : [];
+      const automations = Array.isArray(automationsData) ? automationsData : [];
 
       const revenue = invoices
         .filter((inv) => inv.status === 'paid')
         .reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
 
       setStats({
-        totalAutomations: 5,
+        totalAutomations: automations.length,
         totalInvoices: invoices.length,
         totalCustomers: customers.length,
         totalRevenue: revenue,
       });
+
+      // Build a real activity feed from the freshest invoices and customers
+      const items: ActivityItem[] = [];
+      for (const inv of invoices) {
+        if (!inv.createdAt) continue;
+        items.push({
+          title: inv.status === 'paid' ? 'Payment received' : 'Invoice created',
+          desc: `${inv.invoiceNumber || 'Invoice'}${inv.customerName ? ` \u2022 ${inv.customerName}` : ''} \u2014 \u20B9${(inv.totalAmount || 0).toLocaleString('en-IN')}`,
+          date: new Date(inv.status === 'paid' && inv.paidAt ? inv.paidAt : inv.createdAt),
+          icon: inv.status === 'paid' ? DollarSign : FileText,
+          color: inv.status === 'paid' ? '#00b894' : '#6c5ce7',
+          bgColor: inv.status === 'paid' ? 'bg-[#00b894]/10' : 'bg-[#6c5ce7]/10',
+        });
+      }
+      for (const cust of customers) {
+        if (!cust.createdAt) continue;
+        items.push({
+          title: 'New customer added',
+          desc: cust.name || 'Customer',
+          date: new Date(cust.createdAt),
+          icon: Users,
+          color: '#6c5ce7',
+          bgColor: 'bg-[#6c5ce7]/10',
+        });
+      }
+      items.sort((a, b) => b.date.getTime() - a.date.getTime());
+      setActivity(items.slice(0, 5));
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -97,7 +160,7 @@ export default function Dashboard() {
     },
     { 
       label: 'Revenue', 
-      value: `$${stats.totalRevenue.toLocaleString()}`, 
+      value: `\u20B9${stats.totalRevenue.toLocaleString('en-IN')}`, 
       icon: DollarSign, 
       color: '#6c5ce7',
       bgGlow: 'bg-[#6c5ce7]/10'
@@ -152,12 +215,8 @@ export default function Dashboard() {
                       {stat.label}
                     </p>
                     <p className="text-xl sm:text-2xl font-bold mt-1" style={{ color: 'hsl(var(--foreground))' }}>
-                      {stat.value}
+                      {loading ? '\u2014' : stat.value}
                     </p>
-                    <div className="flex items-center gap-1 mt-2">
-                      <TrendingUp className="w-3 h-3 text-emerald-500" />
-                      <span className="text-emerald-500 text-xs font-medium">+12%</span>
-                    </div>
                   </div>
                   <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ${stat.bgGlow} flex items-center justify-center`}>
                     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shadow-lg" style={{ background: stat.color }}>
@@ -187,40 +246,20 @@ export default function Dashboard() {
               </Link>
             </div>
             <div className="space-y-3">
-              {[
-                { 
-                  title: 'New invoice created', 
-                  desc: 'Invoice #INV-001 for $1,250', 
-                  time: '2 min ago', 
-                  icon: FileText,
-                  color: '#6c5ce7',
-                  bgColor: 'bg-[#6c5ce7]/10'
-                },
-                { 
-                  title: 'Payment received', 
-                  desc: '$850 from John Smith', 
-                  time: '1 hour ago', 
-                  icon: DollarSign,
-                  color: '#00b894',
-                  bgColor: 'bg-[#00b894]/10'
-                },
-                { 
-                  title: 'New customer added', 
-                  desc: 'Sarah Johnson joined', 
-                  time: '3 hours ago', 
-                  icon: Users,
-                  color: '#6c5ce7',
-                  bgColor: 'bg-[#6c5ce7]/10'
-                },
-                { 
-                  title: 'Automation triggered', 
-                  desc: 'Invoice reminder sent', 
-                  time: '5 hours ago', 
-                  icon: Sparkles,
-                  color: '#6c5ce7',
-                  bgColor: 'bg-[#6c5ce7]/10'
-                },
-              ].map((item, index) => (
+              {!loading && activity.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                  <div className="w-12 h-12 rounded-xl bg-[#6c5ce7]/10 flex items-center justify-center mb-3">
+                    <Activity className="w-5 h-5" style={{ color: '#6c5ce7' }} />
+                  </div>
+                  <p className="text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>
+                    No activity yet
+                  </p>
+                  <p className="text-xs mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                    Create your first invoice or add a customer to get started.
+                  </p>
+                </div>
+              )}
+              {activity.map((item, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, x: -10 }}
@@ -242,7 +281,7 @@ export default function Dashboard() {
                     </p>
                   </div>
                   <span className="text-xs whitespace-nowrap" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                    {item.time}
+                    {timeAgo(item.date)}
                   </span>
                 </motion.div>
               ))}
