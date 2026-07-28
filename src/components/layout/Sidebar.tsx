@@ -487,7 +487,7 @@ export function Sidebar() {
                 </div>
               </div>
               <button
-                onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+                onClick={() => signOut({ callbackUrl: '/ainos/auth/signin/' })}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl w-full transition-colors"
                 style={{ background: 'hsl(var(--muted))' }}
               >
@@ -646,7 +646,7 @@ export function Sidebar() {
             )}
           </div>
           <button
-            onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+            onClick={() => signOut({ callbackUrl: '/ainos/auth/signin/' })}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors w-full ${
               collapsed ? 'justify-center' : ''
             }`}
