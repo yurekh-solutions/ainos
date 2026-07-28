@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Subscription, { PlanKey, ISubscription } from '@/models/Subscription';
+import ToolRun from '@/models/ToolRun';
+import GeneratedSite from '@/models/GeneratedSite';
+import User from '@/models/User';
 
 // ============ Plan Catalog ============
 
@@ -145,4 +148,54 @@ export async function activateSubscription(
     { plan, status: 'active', currentPeriodEnd },
     { new: true, upsert: true, sort: { createdAt: -1 } }
   );
+}
+
+// ============ AI Studio Quotas (per user, per calendar month) ============
+
+const AI_LIMITS: Record<PlanKey | 'none', { toolRuns: number; websites: number }> = {
+  none: { toolRuns: 3, websites: 1 }, // taste of the tools before subscribing
+  starter: { toolRuns: 150, websites: 5 },
+  growth: { toolRuns: 500, websites: 10 },
+  scale: { toolRuns: 100000, websites: 25 }, // effectively unlimited (fair use)
+};
+
+export interface QuotaCheck {
+  allowed: boolean;
+  plan: string;
+  used: number;
+  limit: number;
+  message?: string;
+}
+
+/** Monthly AI usage quota for a user (id or email), based on their company's plan. */
+export async function checkQuota(
+  userId: string,
+  kind: 'toolRun' | 'website'
+): Promise<QuotaCheck> {
+  await connectDB();
+
+  const user = await User.findOne(
+    userId.includes('@') ? { email: userId } : { _id: userId }
+  ).catch(() => null);
+  const plan = user?.companyId ? await getActivePlan(user.companyId) : null;
+  const planName: PlanKey | 'none' = plan?.key ?? 'none';
+  const limits = AI_LIMITS[planName];
+
+  const now = new Date();
+  const since = new Date(now.getFullYear(), now.getMonth(), 1);
+  const used =
+    kind === 'toolRun'
+      ? await ToolRun.countDocuments({ createdBy: userId, createdAt: { $gte: since } })
+      : await GeneratedSite.countDocuments({ createdBy: userId, createdAt: { $gte: since } });
+  const limit = kind === 'toolRun' ? limits.toolRuns : limits.websites;
+
+  if (used >= limit) {
+    const what = kind === 'toolRun' ? 'AI tool runs' : 'AI websites';
+    const message =
+      planName === 'none'
+        ? `You've used all ${limit} ${what} included this month. Subscribe to a plan to keep creating.`
+        : `You've used all ${limit} ${what} on the ${PLANS[planName].name} plan this month. Upgrade to keep creating.`;
+    return { allowed: false, plan: planName, used, limit, message };
+  }
+  return { allowed: true, plan: planName, used, limit };
 }
