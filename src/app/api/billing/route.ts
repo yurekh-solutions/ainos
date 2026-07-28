@@ -1,75 +1,109 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
-import {
-  PLANS, PlanId, getActivePlan, getUsage, razorpayConfigured,
-  createRazorpayOrder, verifyRazorpaySignature, activatePlan,
-} from '@/lib/billing';
+import connectDB from '@/lib/mongodb';
+import Subscription, { PlanKey } from '@/models/Subscription';
+import User from '@/models/User';
+import { PLANS, PAYMENT_DETAILS } from '@/lib/billing';
 
-// GET → current plan, usage & available plans
+// GET /api/billing — current subscription + plan catalog
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(req);
-    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const userId = session.user.id || session.user.email;
-    const [{ plan, periodEnd }, usage] = await Promise.all([getActivePlan(userId), getUsage(userId)]);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    await connectDB();
+
+    const user = await User.findOne({ email: session.user.email });
+    const plansList = Object.values(PLANS).map((p) => ({
+      key: p.key,
+      name: p.name,
+      priceInr: p.priceInr,
+      features: p.features,
+    }));
+
+    if (!user?.companyId) {
+      return NextResponse.json({ subscription: null, plans: plansList });
+    }
+
+    const sub = await Subscription.findOne({ companyId: user.companyId }).sort({
+      createdAt: -1,
+    });
+
     return NextResponse.json({
-      plan,
-      periodEnd,
-      usage,
-      limits: PLANS[plan].limits,
-      plans: Object.values(PLANS),
-      paymentsEnabled: razorpayConfigured(),
-      keyId: process.env.RAZORPAY_KEY_ID || null,
+      subscription: sub
+        ? {
+            plan: sub.plan,
+            status: sub.status,
+            currentPeriodEnd: sub.currentPeriodEnd,
+            trialEndsAt: sub.trialEndsAt,
+          }
+        : null,
+      plans: plansList,
     });
   } catch (error) {
-    console.error('Error fetching billing status:', error);
+    console.error('Error fetching billing:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// POST { action: 'createOrder', plan } → Razorpay order for checkout
-// POST { action: 'verify', plan, razorpay_order_id, razorpay_payment_id, razorpay_signature } → activate plan
+// POST /api/billing — choose a plan, get bank transfer details
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(req);
-    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const userId = session.user.id || session.user.email;
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await req.json();
-    const plan = body.plan as PlanId;
-    if (!['starter', 'growth'].includes(plan)) {
+    const planKey = body?.plan as PlanKey;
+    const plan = PLANS[planKey];
+    if (!plan) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
     }
 
-    if (body.action === 'createOrder') {
-      if (!razorpayConfigured()) {
-        return NextResponse.json({ error: 'Payments are being activated. Contact the Yurekh team to upgrade manually.', setupRequired: true }, { status: 503 });
-      }
-      const order = await createRazorpayOrder(PLANS[plan].priceInr, `ainos_${plan}_${Date.now()}`);
-      if (!order) return NextResponse.json({ error: 'Could not create payment order. Try again.' }, { status: 502 });
-      return NextResponse.json({
-        orderId: order.id,
-        amount: order.amount,
-        currency: order.currency,
-        keyId: process.env.RAZORPAY_KEY_ID,
-        plan,
+    await connectDB();
+
+    const user = await User.findOne({ email: session.user.email });
+    if (!user?.companyId) {
+      return NextResponse.json(
+        { error: 'Complete onboarding before choosing a plan' },
+        { status: 400 }
+      );
+    }
+
+    // Mark intent as pending — activation happens after payment verification
+    const existing = await Subscription.findOne({ companyId: user.companyId }).sort({
+      createdAt: -1,
+    });
+    if (existing && existing.status !== 'active') {
+      existing.plan = planKey;
+      existing.status = 'pending';
+      await existing.save();
+    } else if (!existing) {
+      await Subscription.create({
+        companyId: user.companyId,
+        userId: String(user._id),
+        plan: planKey,
+        status: 'pending',
       });
     }
 
-    if (body.action === 'verify') {
-      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
-      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-        return NextResponse.json({ error: 'Missing payment details' }, { status: 400 });
-      }
-      if (!verifyRazorpaySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature)) {
-        return NextResponse.json({ error: 'Payment verification failed' }, { status: 400 });
-      }
-      await activatePlan(userId, plan, razorpay_order_id, razorpay_payment_id);
-      return NextResponse.json({ success: true, plan });
-    }
+    const message =
+      `Hi, I want to activate the AINOS ${plan.name} plan (Rs.${plan.priceInr}/month). ` +
+      `My registered email: ${session.user.email}. I am making the bank transfer now.`;
+    const whatsappUrl = `https://wa.me/${PAYMENT_DETAILS.whatsapp}?text=${encodeURIComponent(message)}`;
 
-    return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+    return NextResponse.json({
+      plan: plan.key,
+      planName: plan.name,
+      amountInr: plan.priceInr,
+      payment: PAYMENT_DETAILS,
+      whatsappUrl,
+    });
   } catch (error) {
-    console.error('Error processing billing action:', error);
+    console.error('Error creating billing request:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,249 +1,337 @@
 'use client';
-// AINOS Studio — plans & billing. Razorpay checkout (one-time monthly orders),
-// live usage meters and upgrade flow for the AI tool subscription business.
-import { useCallback, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Check, Crown, Sparkles, Zap, Rocket, ShieldCheck, RefreshCw } from 'lucide-react';
 
-interface PlanDef {
-  id: 'free' | 'starter' | 'growth';
+import { useEffect, useState } from 'react';
+import {
+  Rocket,
+  Zap,
+  Crown,
+  CheckCircle,
+  Clock,
+  Copy,
+  Check,
+  MessageCircle,
+  Landmark,
+} from 'lucide-react';
+
+interface SubscriptionInfo {
+  plan: string;
+  status: string;
+  currentPeriodEnd?: string;
+  trialEndsAt?: string;
+}
+
+interface PlanInfo {
+  key: string;
   name: string;
   priceInr: number;
-  priceLabel: string;
-  tagline: string;
   features: string[];
-  limits: { toolRuns: number; websites: number };
-  popular?: boolean;
 }
 
-interface BillingStatus {
-  plan: 'free' | 'starter' | 'growth';
-  periodEnd: string | null;
-  usage: { toolRuns: number; websites: number };
-  limits: { toolRuns: number; websites: number };
-  plans: PlanDef[];
-  paymentsEnabled: boolean;
-  keyId: string | null;
+interface PaymentInfo {
+  accountName: string;
+  accountNumber: string;
+  bankName: string;
+  ifsc: string;
+  upiId: string;
+  whatsapp: string;
 }
 
-interface RazorpayResponse { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string; }
-
-const PLAN_ICONS: Record<string, React.ElementType> = { free: Sparkles, starter: Zap, growth: Crown };
-
-function loadRazorpayScript(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (typeof window === 'undefined') return resolve(false);
-    if ((window as unknown as { Razorpay?: unknown }).Razorpay) return resolve(true);
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
+interface PaymentInstructions {
+  planName: string;
+  amountInr: number;
+  payment: PaymentInfo;
+  whatsappUrl: string;
 }
+
+const PLAN_ICONS: Record<string, typeof Rocket> = {
+  starter: Rocket,
+  growth: Zap,
+  scale: Crown,
+};
+
+const FEATURE_LABELS: Record<string, string> = {
+  crm: 'CRM: Contacts, Deals & Follow-ups',
+  invoicing: 'Invoicing & Payment Tracking',
+  customers: 'Customer Management',
+  reports_basic: 'Basic Reports',
+  hr: 'HR: Employees, Attendance & Leaves',
+  payroll: 'Payroll Runs',
+  compliance: 'Compliance Calendar & Documents',
+  automations: 'Workflow Automations',
+  ai_studio: 'AI Studio: Chat, Content & Media',
+  inventory: 'Inventory, Warehouses & Purchase Orders',
+  helpdesk: 'Helpdesk & Ticketing',
+  reports_advanced: 'Advanced Reports & Insights',
+};
 
 export default function BillingPage() {
-  const [status, setStatus] = useState<BillingStatus | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
+  const [plans, setPlans] = useState<PlanInfo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [paying, setPaying] = useState<string | null>(null);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [choosing, setChoosing] = useState<string | null>(null);
+  const [instructions, setInstructions] = useState<PaymentInstructions | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  const fetchStatus = useCallback(async () => {
-    try {
-      const res = await fetch('/api/billing');
-      if (res.ok) setStatus(await res.json());
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+  useEffect(() => {
+    fetchBilling();
   }, []);
 
-  useEffect(() => { fetchStatus(); }, [fetchStatus]);
+  const fetchBilling = async () => {
+    try {
+      const res = await fetch('/api/billing');
+      if (res.ok) {
+        const data = await res.json();
+        setSubscription(data.subscription);
+        setPlans(data.plans || []);
+      }
+    } catch (error) {
+      console.error('Error fetching billing:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const upgrade = async (plan: PlanDef) => {
-    if (!status || plan.id === 'free' || plan.id === status.plan) return;
-    setMessage(null);
-    setPaying(plan.id);
+  const choosePlan = async (planKey: string) => {
+    setChoosing(planKey);
     try {
       const res = await fetch('/api/billing', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'createOrder', plan: plan.id }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: planKey }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setMessage({ type: 'error', text: data.error || 'Could not start checkout.' });
-        return;
+      if (res.ok) {
+        setInstructions(data);
+        fetchBilling();
+      } else {
+        alert(data.error || 'Something went wrong');
       }
-      const ok = await loadRazorpayScript();
-      if (!ok) { setMessage({ type: 'error', text: 'Could not load payment gateway. Check your connection.' }); return; }
-      const Razorpay = (window as unknown as { Razorpay: new (opts: Record<string, unknown>) => { open: () => void } }).Razorpay;
-      const rzp = new Razorpay({
-        key: data.keyId,
-        amount: data.amount,
-        currency: data.currency,
-        name: 'AINOS Studio by Yurekh',
-        description: `${plan.name} plan — 1 month`,
-        order_id: data.orderId,
-        theme: { color: '#6d5df6' },
-        handler: async (response: RazorpayResponse) => {
-          try {
-            const verifyRes = await fetch('/api/billing', {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'verify', plan: plan.id, ...response }),
-            });
-            if (verifyRes.ok) {
-              setMessage({ type: 'success', text: `You're on the ${plan.name} plan now. Enjoy!` });
-              fetchStatus();
-            } else {
-              setMessage({ type: 'error', text: (await verifyRes.json()).error || 'Payment verification failed.' });
-            }
-          } catch { setMessage({ type: 'error', text: 'Payment verification failed. Contact support.' }); }
-        },
-      });
-      rzp.open();
-    } catch (e) {
-      console.error(e);
-      setMessage({ type: 'error', text: 'Something went wrong. Try again.' });
-    } finally { setPaying(null); }
+    } catch (error) {
+      console.error('Error choosing plan:', error);
+    } finally {
+      setChoosing(null);
+    }
   };
 
-  const meter = (label: string, used: number, limit: number) => {
-    const unlimited = limit >= 100000;
-    const pct = unlimited ? 8 : Math.min(100, Math.round((used / Math.max(limit, 1)) * 100));
+  const copyValue = async (field: string, value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
+
+  const formatDate = (d?: string) =>
+    d
+      ? new Date(d).toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+      : '';
+
+  if (loading) {
     return (
-      <div key={label}>
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{label}</span>
-          <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{used} / {unlimited ? '∞' : limit} this month</span>
-        </div>
-        <div className="h-2 rounded-full overflow-hidden" style={{ background: 'hsl(var(--muted))' }}>
-          <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: pct >= 100 ? '#f43f5e' : 'linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }} />
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1BE1D3]" />
       </div>
     );
-  };
+  }
 
   return (
-    <div className="p-4 md:p-6 h-full overflow-auto" style={{ background: 'var(--page-gradient)' }}>
-      <div className="max-w-[1100px] mx-auto">
-        {/* Positioning header */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold text-white mb-4"
-            style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
-            <Rocket className="w-3.5 h-3.5" /> AINOS STUDIO
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>Your startup&apos;s marketing team, as software</h1>
-          <p className="text-sm mt-2 max-w-xl mx-auto" style={{ color: 'hsl(var(--muted-foreground))' }}>
-            Website, logo, brand kit, social content, SEO, emails and launch plans — generated in minutes by AINOS AI tools, not weeks by an agency.
-          </p>
-        </motion.div>
+    <div className="p-6 max-w-6xl mx-auto space-y-8">
+      <div>
+        <h1 className="text-2xl font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
+          Billing & Plans
+        </h1>
+        <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          Manage your AINOS subscription
+        </p>
+      </div>
 
-        {message && (
-          <div className="mb-6 px-4 py-3 rounded-xl text-sm font-medium text-center"
-            style={message.type === 'success'
-              ? { background: 'rgba(52,211,153,0.12)', color: '#34d399' }
-              : { background: 'rgba(244,63,94,0.12)', color: '#f43f5e' }}>
-            {message.text}
+      {/* Current plan status */}
+      {subscription && (
+        <div
+          className="rounded-xl border p-5 flex flex-wrap items-center gap-4"
+          style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card))' }}
+        >
+          <div className="flex-1 min-w-[200px]">
+            <p className="text-xs uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>
+              Current Plan
+            </p>
+            <p className="text-lg font-medium capitalize" style={{ color: 'hsl(var(--foreground))' }}>
+              {subscription.plan}
+            </p>
           </div>
-        )}
+          {subscription.status === 'pending' && (
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-500 border border-amber-500/30">
+              <Clock className="w-3.5 h-3.5" /> Awaiting payment confirmation
+            </span>
+          )}
+          {subscription.status === 'trialing' && (
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-[#1BE1D3]/10 text-[#1BE1D3] border border-[#1BE1D3]/30">
+              <Clock className="w-3.5 h-3.5" /> Trial ends {formatDate(subscription.trialEndsAt)}
+            </span>
+          )}
+          {subscription.status === 'active' && (
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
+              <CheckCircle className="w-3.5 h-3.5" /> Active until {formatDate(subscription.currentPeriodEnd)}
+            </span>
+          )}
+          {['past_due', 'halted', 'cancelled'].includes(subscription.status) && (
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-red-500/10 text-red-500 border border-red-500/30 capitalize">
+              {subscription.status.replace('_', ' ')}
+            </span>
+          )}
+        </div>
+      )}
 
-        {/* Current plan + usage */}
-        {status && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-2xl p-6 mb-8">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
-                  <ShieldCheck className="w-5 h-5 text-white" />
-                </div>
+      {/* Payment instructions panel */}
+      {instructions && (
+        <div className="rounded-xl border-2 border-[#1BE1D3]/50 p-6 space-y-5" style={{ background: 'hsl(var(--card))' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-[#1BE1D3]/10 flex items-center justify-center">
+              <Landmark className="w-5 h-5 text-[#1BE1D3]" />
+            </div>
+            <div>
+              <h2 className="font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
+                Complete Your Payment — {instructions.planName} Plan
+              </h2>
+              <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                Transfer <span className="text-[#1BE1D3] font-medium">₹{instructions.amountInr.toLocaleString('en-IN')}</span> to
+                the account below, then confirm on WhatsApp.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { label: 'Account Name', value: instructions.payment.accountName },
+              { label: 'Account Number', value: instructions.payment.accountNumber },
+              { label: 'Bank', value: instructions.payment.bankName },
+              { label: 'IFSC Code', value: instructions.payment.ifsc },
+              ...(instructions.payment.upiId
+                ? [{ label: 'UPI ID', value: instructions.payment.upiId }]
+                : []),
+            ].map((row) => (
+              <div
+                key={row.label}
+                className="flex items-center justify-between rounded-lg border px-4 py-3"
+                style={{ borderColor: 'hsl(var(--border))' }}
+              >
                 <div>
-                  <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Current plan</p>
-                  <p className="font-bold capitalize" style={{ color: 'hsl(var(--foreground))' }}>{status.plan}
-                    {status.periodEnd && <span className="text-xs font-normal ml-2" style={{ color: 'hsl(var(--muted-foreground))' }}>renews by {new Date(status.periodEnd).toLocaleDateString()}</span>}
+                  <p className="text-[11px] uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                    {row.label}
+                  </p>
+                  <p className="text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>
+                    {row.value}
                   </p>
                 </div>
-              </div>
-              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {meter('AI tool runs', status.usage.toolRuns, status.limits.toolRuns)}
-                {meter('AI websites', status.usage.websites, status.limits.websites)}
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Plans */}
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <RefreshCw className="w-6 h-6 animate-spin" style={{ color: 'hsl(var(--primary))' }} />
-          </div>
-        ) : status && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-            {status.plans.map((plan, i) => {
-              const Icon = PLAN_ICONS[plan.id] || Sparkles;
-              const isCurrent = plan.id === status.plan;
-              return (
-                <motion.div key={plan.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
-                  className="glass-card rounded-2xl p-6 relative flex flex-col"
-                  style={plan.popular ? { border: '1px solid hsl(var(--primary) / 0.5)' } : undefined}>
-                  {plan.popular && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-bold text-white"
-                      style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>MOST POPULAR</span>
-                  )}
-                  <div className="flex items-center gap-2.5 mb-3">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                      style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
-                      <Icon className="w-5 h-5 text-white" />
-                    </div>
-                    <h3 className="font-bold" style={{ color: 'hsl(var(--foreground))' }}>{plan.name}</h3>
-                  </div>
-                  <p className="text-2xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>{plan.priceLabel}</p>
-                  <p className="text-xs mt-1 mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>{plan.tagline}</p>
-                  <ul className="space-y-2 mb-6 flex-1">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2 text-xs" style={{ color: 'hsl(var(--foreground))' }}>
-                        <Check className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: '#34d399' }} /> {f}
-                      </li>
-                    ))}
-                  </ul>
-                  {isCurrent ? (
-                    <div className="w-full py-2.5 rounded-xl text-center text-sm font-semibold"
-                      style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }}>Current plan</div>
-                  ) : plan.id === 'free' ? (
-                    <div className="w-full py-2.5 rounded-xl text-center text-sm font-semibold"
-                      style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }}>Included forever</div>
+                <button
+                  onClick={() => copyValue(row.label, row.value)}
+                  className="p-2 rounded-md hover:bg-[#1BE1D3]/10 transition-colors"
+                  title={`Copy ${row.label}`}
+                >
+                  {copiedField === row.label ? (
+                    <Check className="w-4 h-4 text-emerald-500" />
                   ) : (
-                    <button onClick={() => upgrade(plan)} disabled={paying !== null}
-                      className="w-full py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-60"
-                      style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
-                      {paying === plan.id ? 'Opening checkout…' : status.paymentsEnabled ? `Upgrade to ${plan.name}` : 'Contact team to upgrade'}
-                    </button>
+                    <Copy className="w-4 h-4 text-[#1BE1D3]" />
                   )}
-                </motion.div>
-              );
-            })}
+                </button>
+              </div>
+            ))}
           </div>
-        )}
 
-        {/* Payments-not-live note */}
-        {status && !status.paymentsEnabled && (
-          <p className="text-xs text-center mb-8" style={{ color: 'hsl(var(--muted-foreground))' }}>
-            Online payments are being activated. To upgrade today, reach the Yurekh team via{' '}
-            <a href="https://yurekh.com/contact" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: 'hsl(var(--primary))' }}>yurekh.com/contact</a> — your plan is enabled manually within hours.
+          <a
+            href={instructions.whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#1BE1D3] text-black text-sm font-medium hover:bg-[#1BE1D3]/90 transition-colors"
+          >
+            <MessageCircle className="w-4 h-4" /> I&apos;ve Paid — Confirm on WhatsApp
+          </a>
+          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+            Your plan is activated within a few hours of payment verification, usually much faster.
           </p>
-        )}
-
-        {/* Value strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[
-            { title: '15 AI tools', body: 'Logo, brand kit, social, SEO, email, PR, pitch decks, business plans, product listings, legal pages, website chatbot & more.' },
-            { title: 'Real deliverables', body: 'Download-ready copy, images, palettes and full websites — not just suggestions.' },
-            { title: 'Humans on standby', body: 'One click hands any deliverable to the Yurekh team to take further.' },
-          ].map((v) => (
-            <div key={v.title} className="glass-card rounded-2xl p-5">
-              <h4 className="text-sm font-bold mb-1" style={{ color: 'hsl(var(--foreground))' }}>{v.title}</h4>
-              <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{v.body}</p>
-            </div>
-          ))}
         </div>
+      )}
+
+      {/* Plans grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {plans.map((plan) => {
+          const Icon = PLAN_ICONS[plan.key] || Rocket;
+          const isCurrent =
+            subscription?.plan === plan.key &&
+            ['active', 'trialing'].includes(subscription?.status || '');
+          const isPopular = plan.key === 'growth';
+          return (
+            <div
+              key={plan.key}
+              className={`relative flex flex-col rounded-xl border p-6 ${
+                isPopular ? 'border-[#1BE1D3]/60' : ''
+              }`}
+              style={{
+                borderColor: isPopular ? undefined : 'hsl(var(--border))',
+                background: 'hsl(var(--card))',
+              }}
+            >
+              {isPopular && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-[#1BE1D3] text-black text-xs font-medium">
+                  Most Popular
+                </span>
+              )}
+              <div className="flex items-center gap-2 mb-3">
+                <Icon className="w-5 h-5 text-[#1BE1D3]" />
+                <h3 className="font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
+                  {plan.name}
+                </h3>
+              </div>
+              <div className="mb-4">
+                <span className="text-3xl font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
+                  ₹{plan.priceInr.toLocaleString('en-IN')}
+                </span>
+                <span className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  {' '}/month
+                </span>
+              </div>
+              <ul className="space-y-2.5 mb-6 flex-grow">
+                {plan.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-[#1BE1D3] mt-0.5 shrink-0" />
+                    <span className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                      {FEATURE_LABELS[f] || f}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => choosePlan(plan.key)}
+                disabled={choosing !== null || isCurrent}
+                className={`w-full py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  isCurrent
+                    ? 'bg-emerald-500/10 text-emerald-500 cursor-default'
+                    : isPopular
+                    ? 'bg-[#1BE1D3] text-black hover:bg-[#1BE1D3]/90'
+                    : 'border border-[#1BE1D3]/40 text-[#1BE1D3] hover:bg-[#1BE1D3]/10'
+                } disabled:opacity-60`}
+              >
+                {isCurrent
+                  ? 'Current Plan'
+                  : choosing === plan.key
+                  ? 'Preparing...'
+                  : 'Choose Plan'}
+              </button>
+            </div>
+          );
+        })}
       </div>
+
+      <p className="text-xs text-center" style={{ color: 'hsl(var(--muted-foreground))' }}>
+        All prices in INR, billed monthly via direct bank transfer or UPI. Cancel anytime —
+        your plan stays active until the end of the paid period.
+      </p>
     </div>
   );
 }

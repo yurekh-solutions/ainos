@@ -1,159 +1,148 @@
-// AINOS Studio billing — plans, quotas & Razorpay helpers.
-// Payments use one-time Razorpay orders that grant 31 days of access
-// (no Razorpay dashboard plan setup needed — just API keys in env).
-import crypto from 'crypto';
+import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import Subscription from '@/models/Subscription';
-import ToolRun from '@/models/ToolRun';
-import GeneratedSite from '@/models/GeneratedSite';
+import Subscription, { PlanKey, ISubscription } from '@/models/Subscription';
 
-export type PlanId = 'free' | 'starter' | 'growth';
+// ============ Plan Catalog ============
 
 export interface PlanDef {
-  id: PlanId;
+  key: PlanKey;
   name: string;
-  priceInr: number; // per month, 0 for free
-  priceLabel: string;
-  tagline: string;
+  priceInr: number;
+  rank: number;
   features: string[];
-  limits: { toolRuns: number; websites: number }; // per calendar month
-  popular?: boolean;
 }
 
-export const PLANS: Record<PlanId, PlanDef> = {
-  free: {
-    id: 'free',
-    name: 'Free',
-    priceInr: 0,
-    priceLabel: '₹0',
-    tagline: 'Try the AINOS Studio tools',
-    features: [
-      '3 AI tool runs / month',
-      '1 AI website / month',
-      'All 10 tools unlocked',
-      'Download & copy deliverables',
-    ],
-    limits: { toolRuns: 3, websites: 1 },
-  },
+export const PLANS: Record<PlanKey, PlanDef> = {
   starter: {
-    id: 'starter',
+    key: 'starter',
     name: 'Starter',
-    priceInr: 749,
-    priceLabel: '₹749/mo',
-    tagline: 'For solo founders getting to market',
-    features: [
-      '150 AI tool runs / month',
-      '5 AI websites / month',
-      'Logo, brand kit, SEO, social & more',
-      'Deliverables history',
-      'Email support',
-    ],
-    limits: { toolRuns: 150, websites: 5 },
-    popular: true,
+    priceInr: 1999,
+    rank: 1,
+    features: ['crm', 'invoicing', 'customers', 'reports_basic'],
   },
   growth: {
-    id: 'growth',
+    key: 'growth',
     name: 'Growth',
-    priceInr: 2499,
-    priceLabel: '₹2,499/mo',
-    tagline: 'Your startup’s full marketing engine',
+    priceInr: 4999,
+    rank: 2,
     features: [
-      'Unlimited AI tool runs (fair use)',
-      '25 AI websites / month',
-      'Priority Yurekh team handoff',
-      'Monthly strategy call with Yurekh',
-      'Priority support',
+      'crm', 'invoicing', 'customers', 'reports_basic',
+      'hr', 'payroll', 'compliance', 'automations',
     ],
-    limits: { toolRuns: 100000, websites: 25 },
+  },
+  scale: {
+    key: 'scale',
+    name: 'Scale',
+    priceInr: 9999,
+    rank: 3,
+    features: [
+      'crm', 'invoicing', 'customers', 'reports_basic',
+      'hr', 'payroll', 'compliance', 'automations',
+      'ai_studio', 'inventory', 'helpdesk', 'reports_advanced',
+    ],
   },
 };
 
-export function razorpayConfigured(): boolean {
-  return Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
-}
+export const TRIAL_DAYS = 14;
+export const TRIAL_PLAN: PlanKey = 'growth';
 
-// Active plan for a user — falls back to free when expired or missing.
-export async function getActivePlan(userId: string): Promise<{ plan: PlanId; periodEnd: Date | null }> {
+// ============ Payment Details (manual bank transfer) ============
+
+export const PAYMENT_DETAILS = {
+  accountName: 'YUREKH SOLUTIONS',
+  accountNumber: '30026040000899',
+  bankName: 'SVC Co-operative Bank, Vakola Branch',
+  ifsc: 'SVCB0000026',
+  upiId: process.env.NEXT_PUBLIC_UPI_ID || '',
+  whatsapp: '919136242706',
+};
+
+// ============ Subscription Helpers ============
+
+export async function getSubscription(companyId: string): Promise<ISubscription | null> {
   await connectDB();
-  const sub = await Subscription.findOne({ userId });
-  if (!sub || sub.plan === 'free' || sub.status !== 'active') return { plan: 'free', periodEnd: null };
-  if (sub.currentPeriodEnd && new Date(sub.currentPeriodEnd).getTime() < Date.now()) {
-    return { plan: 'free', periodEnd: null };
-  }
-  return { plan: sub.plan as PlanId, periodEnd: sub.currentPeriodEnd || null };
+  return Subscription.findOne({ companyId }).sort({ createdAt: -1 });
 }
 
-function monthStart(): Date {
+/**
+ * Returns the currently usable plan for a company, or null if none.
+ * - active requires currentPeriodEnd in the future
+ * - trialing requires trialEndsAt in the future
+ */
+export async function getActivePlan(companyId: string): Promise<PlanDef | null> {
+  const sub = await getSubscription(companyId);
+  if (!sub) return null;
+
   const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), 1);
-}
-
-export async function getUsage(userId: string): Promise<{ toolRuns: number; websites: number }> {
-  await connectDB();
-  const since = monthStart();
-  const [toolRuns, websites] = await Promise.all([
-    ToolRun.countDocuments({ createdBy: userId, createdAt: { $gte: since } }),
-    GeneratedSite.countDocuments({ createdBy: userId, createdAt: { $gte: since } }),
-  ]);
-  return { toolRuns, websites };
-}
-
-export interface QuotaCheck {
-  allowed: boolean;
-  plan: PlanId;
-  used: number;
-  limit: number;
-  message?: string;
-}
-
-export async function checkQuota(userId: string, kind: 'toolRun' | 'website'): Promise<QuotaCheck> {
-  const [{ plan }, usage] = await Promise.all([getActivePlan(userId), getUsage(userId)]);
-  const limits = PLANS[plan].limits;
-  const used = kind === 'toolRun' ? usage.toolRuns : usage.websites;
-  const limit = kind === 'toolRun' ? limits.toolRuns : limits.websites;
-  if (used >= limit) {
-    const what = kind === 'toolRun' ? 'AI tool runs' : 'AI websites';
-    return {
-      allowed: false, plan, used, limit,
-      message: `You've used all ${limit} ${what} on the ${PLANS[plan].name} plan this month. Upgrade to keep creating.`,
-    };
+  if (sub.status === 'active' && sub.currentPeriodEnd && sub.currentPeriodEnd > now) {
+    return PLANS[sub.plan];
   }
-  return { allowed: true, plan, used, limit };
+  if (sub.status === 'trialing' && sub.trialEndsAt && sub.trialEndsAt > now) {
+    return PLANS[sub.plan];
+  }
+  return null;
 }
 
-// ── Razorpay REST helpers (no SDK needed) ──────────────────────────────
-export async function createRazorpayOrder(amountInr: number, receipt: string): Promise<{ id: string; amount: number; currency: string } | null> {
-  if (!razorpayConfigured()) return null;
-  const auth = Buffer.from(`${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`).toString('base64');
-  const res = await fetch('https://api.razorpay.com/v1/orders', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
-    body: JSON.stringify({ amount: amountInr * 100, currency: 'INR', receipt }),
-  });
-  if (!res.ok) {
-    console.error('Razorpay order creation failed:', await res.text());
+export async function hasFeature(companyId: string, feature: string): Promise<boolean> {
+  const plan = await getActivePlan(companyId);
+  return !!plan && plan.features.includes(feature);
+}
+
+/**
+ * Gate an API route by minimum plan. Returns null if allowed,
+ * or a 402 NextResponse to return directly.
+ */
+export async function requirePlan(
+  companyId: string,
+  minPlan: PlanKey
+): Promise<NextResponse | null> {
+  const plan = await getActivePlan(companyId);
+  if (plan && plan.rank >= PLANS[minPlan].rank) {
     return null;
   }
-  return res.json();
+  return NextResponse.json(
+    {
+      error: 'Plan upgrade required',
+      requiredPlan: minPlan,
+      currentPlan: plan?.key || null,
+      upgradeUrl: '/ainos/billing',
+    },
+    { status: 402 }
+  );
 }
 
-export function verifyRazorpaySignature(orderId: string, paymentId: string, signature: string): boolean {
-  const secret = process.env.RAZORPAY_KEY_SECRET;
-  if (!secret) return false;
-  const expected = crypto.createHmac('sha256', secret).update(`${orderId}|${paymentId}`).digest('hex');
-  try {
-    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
-  } catch {
-    return false;
-  }
-}
-
-export async function activatePlan(userId: string, plan: PlanId, orderId: string, paymentId: string): Promise<void> {
+/** Starts a trial for a new company. No-op if a subscription already exists. */
+export async function startTrial(
+  companyId: string,
+  userId: string,
+  partnerCode?: string
+): Promise<ISubscription> {
   await connectDB();
-  const periodEnd = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000);
-  await Subscription.findOneAndUpdate(
-    { userId },
-    { plan, status: 'active', provider: 'razorpay', razorpayOrderId: orderId, razorpayPaymentId: paymentId, currentPeriodEnd: periodEnd },
-    { upsert: true, new: true }
+  const existing = await Subscription.findOne({ companyId });
+  if (existing) return existing;
+
+  const trialEndsAt = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
+  return Subscription.create({
+    companyId,
+    userId,
+    plan: TRIAL_PLAN,
+    status: 'trialing',
+    trialEndsAt,
+    partnerCode,
+  });
+}
+
+/** Admin-side activation after verifying a bank transfer. */
+export async function activateSubscription(
+  companyId: string,
+  plan: PlanKey,
+  months = 1
+): Promise<ISubscription> {
+  await connectDB();
+  const currentPeriodEnd = new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000);
+  return Subscription.findOneAndUpdate(
+    { companyId },
+    { plan, status: 'active', currentPeriodEnd },
+    { new: true, upsert: true, sort: { createdAt: -1 } }
   );
 }
