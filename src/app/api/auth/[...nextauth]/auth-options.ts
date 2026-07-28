@@ -99,7 +99,9 @@ export const authOptions: NextAuthOptions = {
       options: {
         httpOnly: true,
         sameSite: 'lax',
-        path: '/ainos',
+        // Must be '/' (not '/ainos'): pages fetch '/api/...' without the basePath,
+        // and a '/ainos'-scoped cookie is never sent with those requests -> 401s.
+        path: '/',
         secure: process.env.NODE_ENV === 'production',
       },
     },
@@ -108,7 +110,7 @@ export const authOptions: NextAuthOptions = {
       options: {
         httpOnly: true,
         sameSite: 'lax',
-        path: '/ainos',
+        path: '/',
         secure: process.env.NODE_ENV === 'production',
       },
     },
@@ -117,7 +119,7 @@ export const authOptions: NextAuthOptions = {
       options: {
         httpOnly: true,
         sameSite: 'lax',
-        path: '/ainos',
+        path: '/',
         secure: process.env.NODE_ENV === 'production',
       },
     },
@@ -126,7 +128,7 @@ export const authOptions: NextAuthOptions = {
       options: {
         httpOnly: true,
         sameSite: 'lax',
-        path: '/ainos',
+        path: '/',
         secure: process.env.NODE_ENV === 'production',
         maxAge: 900,
       },
@@ -136,7 +138,7 @@ export const authOptions: NextAuthOptions = {
       options: {
         httpOnly: true,
         sameSite: 'lax',
-        path: '/ainos',
+        path: '/',
         secure: process.env.NODE_ENV === 'production',
         maxAge: 900,
       },
