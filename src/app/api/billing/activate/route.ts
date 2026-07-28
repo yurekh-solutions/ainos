@@ -5,10 +5,15 @@ import User from '@/models/User';
 import { PLANS, activateSubscription } from '@/lib/billing';
 import { PlanKey } from '@/models/Subscription';
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
-  .split(',')
-  .map((e) => e.trim().toLowerCase())
-  .filter(Boolean);
+// yurekhsolutions@gmail.com is always an admin; ADMIN_EMAILS env can add more
+const DEFAULT_ADMIN = 'yurekhsolutions@gmail.com';
+const ADMIN_EMAILS = [
+  DEFAULT_ADMIN,
+  ...(process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean),
+];
 
 // POST /api/billing/activate — admin-only: activate a plan after verifying payment
 // body: { customerEmail, plan, months? }
