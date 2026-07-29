@@ -9,6 +9,7 @@ import {
   ONE_BUNDLE,
   PAYMENT_DETAILS,
   priceForSelection,
+  getAiUsage,
 } from '@/lib/billing';
 
 // GET /api/billing — current subscription + app catalog
@@ -41,9 +42,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ subscription: null, apps: appsList, bundle });
     }
 
-    const sub = await Subscription.findOne({ companyId: user.companyId }).sort({
-      createdAt: -1,
-    });
+    const owner = session.user.id || session.user.email;
+    const [sub, ai] = await Promise.all([
+      Subscription.findOne({ companyId: user.companyId }).sort({ createdAt: -1 }),
+      getAiUsage(owner),
+    ]);
 
     return NextResponse.json({
       subscription: sub
@@ -57,6 +60,7 @@ export async function GET(req: NextRequest) {
         : null,
       apps: appsList,
       bundle,
+      ai,
     });
   } catch (error) {
     console.error('Error fetching billing:', error);

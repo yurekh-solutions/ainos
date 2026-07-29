@@ -261,3 +261,26 @@ export async function checkQuota(
   }
   return { allowed: true, plan: planName, used, limit };
 }
+
+/** Current-month AI usage + limits for a user — powers the usage chip on the services page. */
+export async function getAiUsage(userId: string) {
+  await connectDB();
+
+  const user = await User.findOne(
+    userId.includes('@') ? { email: userId } : { _id: userId }
+  ).catch(() => null);
+  const apps = user?.companyId
+    ? await getActiveApps(user.companyId)
+    : new Set<AppKey>();
+  const hasAiStudio = apps.has('ai_studio');
+  const limits = hasAiStudio ? AI_LIMITS.ai_studio : AI_LIMITS.none;
+
+  const now = new Date();
+  const since = new Date(now.getFullYear(), now.getMonth(), 1);
+  const [toolRuns, websites] = await Promise.all([
+    ToolRun.countDocuments({ createdBy: userId, createdAt: { $gte: since } }),
+    GeneratedSite.countDocuments({ createdBy: userId, createdAt: { $gte: since } }),
+  ]);
+
+  return { hasAiStudio, usage: { toolRuns, websites }, limits };
+}
