@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
-import { PLANS, activateSubscription } from '@/lib/billing';
-import { PlanKey } from '@/models/Subscription';
+import { ALL_APP_KEYS, activateSubscription } from '@/lib/billing';
+import { AppKey } from '@/models/Subscription';
 
 // yurekhsolutions@gmail.com is always an admin; ADMIN_EMAILS env can add more
 const DEFAULT_ADMIN = 'yurekhsolutions@gmail.com';
@@ -15,8 +15,8 @@ const ADMIN_EMAILS = [
     .filter(Boolean),
 ];
 
-// POST /api/billing/activate — admin-only: activate a plan after verifying payment
-// body: { customerEmail, plan, months? }
+// POST /api/billing/activate — admin-only: activate after verifying payment
+// body: { customerEmail, plan: 'one', months? } | { customerEmail, apps: AppKey[], months? }
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(req);
@@ -29,12 +29,17 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const customerEmail = String(body?.customerEmail || '').trim().toLowerCase();
-    const planKey = body?.plan as PlanKey;
+    const wantsOne = body?.plan === 'one';
+    const apps: AppKey[] = wantsOne
+      ? []
+      : [...new Set((Array.isArray(body?.apps) ? body.apps : []) as AppKey[])].filter(
+          (k) => ALL_APP_KEYS.includes(k)
+        );
     const months = Number(body?.months) || 1;
 
-    if (!customerEmail || !PLANS[planKey]) {
+    if (!customerEmail || (!wantsOne && apps.length === 0)) {
       return NextResponse.json(
-        { error: 'customerEmail and valid plan are required' },
+        { error: "customerEmail and either plan:'one' or apps[] are required" },
         { status: 400 }
       );
     }
@@ -49,12 +54,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const sub = await activateSubscription(customer.companyId, planKey, months);
+    const sub = await activateSubscription(
+      customer.companyId,
+      wantsOne ? { plan: 'one' } : { apps },
+      months
+    );
 
     return NextResponse.json({
       activated: true,
       companyId: customer.companyId,
-      plan: sub.plan,
+      plan: sub.plan || null,
+      apps: sub.apps || [],
       currentPeriodEnd: sub.currentPeriodEnd,
     });
   } catch (error) {

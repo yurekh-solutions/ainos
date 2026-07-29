@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import connectDB from '@/lib/mongodb';
-import Subscription, { PlanKey } from '@/models/Subscription';
+import Subscription, { AppKey } from '@/models/Subscription';
 import User from '@/models/User';
-import { PLANS, PAYMENT_DETAILS } from '@/lib/billing';
+import {
+  APPS,
+  ALL_APP_KEYS,
+  ONE_BUNDLE,
+  PAYMENT_DETAILS,
+  priceForSelection,
+} from '@/lib/billing';
 
-// GET /api/billing — current subscription + plan catalog
+// GET /api/billing — current subscription + app catalog
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(req);
@@ -16,15 +22,23 @@ export async function GET(req: NextRequest) {
     await connectDB();
 
     const user = await User.findOne({ email: session.user.email });
-    const plansList = Object.values(PLANS).map((p) => ({
-      key: p.key,
-      name: p.name,
-      priceInr: p.priceInr,
-      features: p.features,
+    const appsList = Object.values(APPS).map((a) => ({
+      key: a.key,
+      name: a.name,
+      tagline: a.tagline,
+      priceInr: a.priceInr,
+      features: a.features,
     }));
+    const bundle = {
+      key: ONE_BUNDLE.key,
+      name: ONE_BUNDLE.name,
+      tagline: ONE_BUNDLE.tagline,
+      priceInr: ONE_BUNDLE.priceInr,
+      apps: ONE_BUNDLE.apps,
+    };
 
     if (!user?.companyId) {
-      return NextResponse.json({ subscription: null, plans: plansList });
+      return NextResponse.json({ subscription: null, apps: appsList, bundle });
     }
 
     const sub = await Subscription.findOne({ companyId: user.companyId }).sort({
@@ -34,13 +48,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       subscription: sub
         ? {
-            plan: sub.plan,
+            plan: sub.plan || null,
+            apps: sub.apps || [],
             status: sub.status,
             currentPeriodEnd: sub.currentPeriodEnd,
             trialEndsAt: sub.trialEndsAt,
           }
         : null,
-      plans: plansList,
+      apps: appsList,
+      bundle,
     });
   } catch (error) {
     console.error('Error fetching billing:', error);
@@ -48,7 +64,8 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/billing — choose a plan, get bank transfer details
+// POST /api/billing — choose the One bundle or individual apps, get bank transfer details
+// body: { plan: 'one' } | { apps: AppKey[] }
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(req);
@@ -57,11 +74,23 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const planKey = body?.plan as PlanKey;
-    const plan = PLANS[planKey];
-    if (!plan) {
-      return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
+    const wantsOne = body?.plan === 'one';
+    const pickedApps: AppKey[] = wantsOne
+      ? []
+      : [...new Set((Array.isArray(body?.apps) ? body.apps : []) as AppKey[])].filter(
+          (k) => ALL_APP_KEYS.includes(k)
+        );
+
+    if (!wantsOne && pickedApps.length === 0) {
+      return NextResponse.json(
+        { error: 'Choose AINOS One or at least one app' },
+        { status: 400 }
+      );
     }
+
+    const selection = wantsOne ? { plan: 'one' as const } : { apps: pickedApps };
+    const amountInr = priceForSelection(selection);
+    const oneIsCheaper = !wantsOne && amountInr >= ONE_BUNDLE.priceInr;
 
     await connectDB();
 
@@ -77,28 +106,34 @@ export async function POST(req: NextRequest) {
     const existing = await Subscription.findOne({ companyId: user.companyId }).sort({
       createdAt: -1,
     });
+    const pendingFields = wantsOne
+      ? { plan: 'one', apps: undefined, status: 'pending' }
+      : { plan: undefined, apps: pickedApps, status: 'pending' };
     if (existing && existing.status !== 'active') {
-      existing.plan = planKey;
-      existing.status = 'pending';
+      Object.assign(existing, pendingFields);
       await existing.save();
     } else if (!existing) {
       await Subscription.create({
         companyId: user.companyId,
         userId: String(user._id),
-        plan: planKey,
-        status: 'pending',
+        ...pendingFields,
       });
     }
 
+    const label = wantsOne
+      ? ONE_BUNDLE.name
+      : pickedApps.map((k) => APPS[k].name).join(', ');
     const message =
-      `Hi, I want to activate the AINOS ${plan.name} plan (Rs.${plan.priceInr}/month). ` +
+      `Hi, I want to activate ${label} (Rs.${amountInr}/month). ` +
       `My registered email: ${session.user.email}. I am making the bank transfer now.`;
     const whatsappUrl = `https://wa.me/${PAYMENT_DETAILS.whatsapp}?text=${encodeURIComponent(message)}`;
 
     return NextResponse.json({
-      plan: plan.key,
-      planName: plan.name,
-      amountInr: plan.priceInr,
+      plan: wantsOne ? 'one' : null,
+      apps: pickedApps,
+      label,
+      amountInr,
+      oneIsCheaper,
       payment: PAYMENT_DETAILS,
       whatsappUrl,
     });

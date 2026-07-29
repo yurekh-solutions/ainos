@@ -35,6 +35,9 @@ import {
   PenLine,
   ShieldCheck,
   FolderOpen,
+  FolderKanban,
+  ListTodo,
+  GraduationCap,
   MessageSquare,
   Headphones,
   Briefcase,
@@ -73,6 +76,13 @@ const sections: MenuSection[] = [
       { icon: Users, label: 'Contacts', href: '/crm/contacts' },
       { icon: Target, label: 'Deals', href: '/crm/deals' },
       { icon: Clock, label: 'Follow-ups', href: '/crm/follow-ups' },
+    ],
+  },
+  {
+    title: 'Projects',
+    icon: FolderKanban,
+    items: [
+      { icon: ListTodo, label: 'Projects & Tasks', href: '/projects' },
     ],
   },
   {
@@ -117,6 +127,7 @@ const sections: MenuSection[] = [
       { icon: MessageSquare, label: 'Chat', href: '/ai/chat' },
       { icon: Sparkles, label: 'Media Studio', href: '/ai/media' },
       { icon: Headphones, label: 'Lip Sync', href: '/ai/lipsync' },
+      { icon: GraduationCap, label: 'AI Skills', href: '/ai/skills' },
     ],
   },
   {
