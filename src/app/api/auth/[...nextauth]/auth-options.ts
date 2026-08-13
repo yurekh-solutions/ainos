@@ -4,10 +4,10 @@ import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 
 // Build the base site URL dynamically:
-// 1. RENDER_EXTERNAL_URL — auto-set by Render, always correct (e.g. https://ainos-ywu0.onrender.com)
-// 2. NEXTAUTH_URL_BASE — manual override, origin only (e.g. http://localhost:3000)
-// 3. NEXTAUTH_URL — fallback, strip /api/auth and trailing slash
-const siteUrl = (process.env.RENDER_EXTERNAL_URL || process.env.NEXTAUTH_URL_BASE || process.env.NEXTAUTH_URL || 'http://localhost:3000')
+// 1. NEXTAUTH_URL_BASE — origin only (e.g. http://localhost:3000 or https://ainos-ywu0.onrender.com)
+// 2. NEXTAUTH_URL — fallback, strip /api/auth and trailing slash
+// NOTE: Do NOT use RENDER_EXTERNAL_URL — it lacks /ainos basePath and breaks callback URLs
+const siteUrl = (process.env.NEXTAUTH_URL_BASE || process.env.NEXTAUTH_URL || 'http://localhost:3000')
   .replace(/\/api\/auth.*$/, '')
   .replace(/\/$/, '');
 
