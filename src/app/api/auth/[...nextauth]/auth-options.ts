@@ -3,24 +3,12 @@ import GoogleProvider from 'next-auth/providers/google';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 
-// Build the base site URL dynamically:
-// 1. NEXTAUTH_URL_BASE — origin only (e.g. http://localhost:3000 or https://ainos-ywu0.onrender.com)
-// 2. NEXTAUTH_URL — fallback, strip /api/auth and trailing slash
-// NOTE: Do NOT use RENDER_EXTERNAL_URL — it lacks /ainos basePath and breaks callback URLs
-const siteUrl = (process.env.NEXTAUTH_URL_BASE || process.env.NEXTAUTH_URL || 'http://localhost:3000')
-  .replace(/\/api\/auth.*$/, '')
-  .replace(/\/$/, '');
-
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          redirect_uri: `${siteUrl}/ainos/api/auth/callback/google`,
-        },
-      },
+      // redirect_uri derived automatically from NEXTAUTH_URL
     }),
   ],
   debug: process.env.NODE_ENV === 'development',
