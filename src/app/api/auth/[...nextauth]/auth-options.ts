@@ -3,11 +3,13 @@ import GoogleProvider from 'next-auth/providers/google';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 
-// Fix: NextAuth v4 constructs callback URL as ${NEXTAUTH_URL}/callback/google
-// We need NEXTAUTH_URL to include /api/auth for correct internal URL construction
-if (process.env.NEXTAUTH_URL && !process.env.NEXTAUTH_URL.includes('/api/auth')) {
-  process.env.NEXTAUTH_URL = process.env.NEXTAUTH_URL.replace(/\/$/, '') + '/api/auth';
-}
+// Build the base site URL dynamically:
+// 1. RENDER_EXTERNAL_URL — auto-set by Render, always correct (e.g. https://ainos-ywu0.onrender.com)
+// 2. NEXTAUTH_URL_BASE — manual override, origin only (e.g. http://localhost:3000)
+// 3. NEXTAUTH_URL — fallback, strip /api/auth and trailing slash
+const siteUrl = (process.env.RENDER_EXTERNAL_URL || process.env.NEXTAUTH_URL_BASE || process.env.NEXTAUTH_URL || 'http://localhost:3000')
+  .replace(/\/api\/auth.*$/, '')
+  .replace(/\/$/, '');
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -16,7 +18,7 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          redirect_uri: 'https://yurekh.vercel.app/ainos/api/auth/callback/google',
+          redirect_uri: `${siteUrl}/ainos/api/auth/callback/google`,
         },
       },
     }),
