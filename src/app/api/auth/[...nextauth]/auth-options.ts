@@ -3,18 +3,11 @@ import GoogleProvider from 'next-auth/providers/google';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 
-const baseUrl = process.env.NEXTAUTH_URL_BASE || process.env.NEXTAUTH_URL?.replace(/\/ainos.*$/, '') || 'http://localhost:3000';
-
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          redirect_uri: `${baseUrl}/ainos/api/auth/callback/google`,
-        },
-      },
     }),
   ],
   debug: true,
@@ -82,8 +75,8 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: '/ainos/auth/signin',
-    error: '/ainos/error',
+    signIn: '/auth/signin',
+    error: '/error',
   },
   session: {
     strategy: 'jwt',
