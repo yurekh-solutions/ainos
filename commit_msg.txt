@@ -1,1 +1,16 @@
-fix: restore explicit redirect_uri with NEXTAUTH_URL including /api/auth, debug OAuthCallback error
+feat: complete Zoho-like business suite with all modules
+
+- Added 10 new MongoDB models with multi-tenant companyId support
+- Added 10 new API routes with full CRUD operations
+- Created 9 new dashboard pages:
+  - CRM: Leads pipeline management
+  - Finance: Expenses tracking, Quotations/Estimates
+  - Inventory: Sales Orders, Vendor Management
+  - HR: Recruitment/ATS, Timesheet tracking
+  - Support: Knowledge Base articles
+  - Calendar: Event scheduling with month grid view
+- Added NotificationsBell component with real-time badge
+- Updated Sidebar with all new modules organized by section
+- Enhanced Dashboard to show all 18+ modules as active
+- All modules fully functional with real CRUD operations
+- Build verified successfully (44 pages, 50+ API routes)

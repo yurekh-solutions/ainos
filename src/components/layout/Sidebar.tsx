@@ -43,6 +43,14 @@ import {
   Briefcase,
   Sun,
   Moon,
+  UserPlus,
+  DollarSign,
+  FileSpreadsheet,
+  Truck,
+  BookOpen,
+  Calendar,
+  Timer,
+  ClipboardList,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -63,6 +71,7 @@ const mainItems: MenuItem[] = [
   { icon: FileText, label: 'Invoices', href: '/invoices' },
   { icon: Users, label: 'Customers', href: '/customers' },
   { icon: Package, label: 'Products', href: '/products' },
+  { icon: Calendar, label: 'Calendar', href: '/calendar' },
   { icon: Building2, label: 'Company', href: '/company' },
   { icon: Briefcase, label: 'Yurekh Services', href: '/services' },
   { icon: Zap, label: 'Plans & Billing', href: '/billing' },
@@ -76,9 +85,18 @@ const sections: MenuSection[] = [
     title: 'Sales & CRM',
     icon: Target,
     items: [
+      { icon: UserPlus, label: 'Leads', href: '/crm/leads' },
       { icon: Users, label: 'Contacts', href: '/crm/contacts' },
       { icon: Target, label: 'Deals', href: '/crm/deals' },
       { icon: Clock, label: 'Follow-ups', href: '/crm/follow-ups' },
+    ],
+  },
+  {
+    title: 'Finance',
+    icon: DollarSign,
+    items: [
+      { icon: DollarSign, label: 'Expenses', href: '/finance/expenses' },
+      { icon: FileSpreadsheet, label: 'Quotations', href: '/finance/quotes' },
     ],
   },
   {
@@ -93,7 +111,9 @@ const sections: MenuSection[] = [
     icon: UserCheck,
     items: [
       { icon: Users, label: 'Employees', href: '/hr/employees' },
+      { icon: UserPlus, label: 'Recruitment', href: '/hr/recruitment' },
       { icon: CalendarDays, label: 'Attendance', href: '/hr/attendance' },
+      { icon: Timer, label: 'Timesheet', href: '/hr/timesheet' },
       { icon: Wallet, label: 'Payroll', href: '/hr/payroll' },
       { icon: CalendarOff, label: 'Leaves', href: '/hr/leaves' },
     ],
@@ -105,6 +125,8 @@ const sections: MenuSection[] = [
       { icon: Boxes, label: 'Stock', href: '/inventory/stock' },
       { icon: MapPin, label: 'Warehouses', href: '/inventory/warehouses' },
       { icon: ShoppingCart, label: 'Purchase Orders', href: '/inventory/orders' },
+      { icon: Truck, label: 'Sales Orders', href: '/inventory/sales-orders' },
+      { icon: Building2, label: 'Vendors', href: '/inventory/vendors' },
     ],
   },
   {
@@ -138,6 +160,7 @@ const sections: MenuSection[] = [
     icon: Headphones,
     items: [
       { icon: Headphones, label: 'Helpdesk', href: '/support/helpdesk' },
+      { icon: BookOpen, label: 'Knowledge Base', href: '/support/knowledge-base' },
     ],
   },
 ];

@@ -10,8 +10,12 @@ import {
   TrendingUp, FileText, Target, Mail,
   Package, UserPlus, ShieldCheck, Headphones,
   BarChart3, Layers, Lock, RefreshCw,
-  ArrowRight, Zap,
+  ArrowRight, Zap, DollarSign, ShoppingCart,
+  Building2, BookOpen, Calendar, Timer,
+  FileSpreadsheet, Truck, Briefcase,
 } from 'lucide-react';
+
+import { NotificationsBell } from '@/components/layout/NotificationsBell';
 
 interface DashboardStats {
   totalInvoices: number;
@@ -20,6 +24,14 @@ interface DashboardStats {
   totalRevenue: number;
   pendingInvoices: number;
   paidInvoices: number;
+  totalLeads: number;
+  totalExpenses: number;
+  totalQuotes: number;
+  totalCandidates: number;
+  totalOrders: number;
+  totalVendors: number;
+  totalArticles: number;
+  totalEvents: number;
 }
 
 interface AppCard {
@@ -39,6 +51,9 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
     totalInvoices: 0, totalCustomers: 0, totalProducts: 0,
     totalRevenue: 0, pendingInvoices: 0, paidInvoices: 0,
+    totalLeads: 0, totalExpenses: 0, totalQuotes: 0,
+    totalCandidates: 0, totalOrders: 0, totalVendors: 0,
+    totalArticles: 0, totalEvents: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -46,12 +61,23 @@ export default function DashboardPage() {
 
   const fetchStats = async () => {
     try {
-      const [invoicesRes, customersRes, productsRes] = await Promise.all([
+      const [invoicesRes, customersRes, productsRes, leadsRes, expensesRes, quotesRes, candidatesRes, ordersRes, vendorsRes, articlesRes, eventsRes] = await Promise.all([
         fetch('/api/invoices'), fetch('/api/customers'), fetch('/api/products'),
+        fetch('/api/leads'), fetch('/api/expenses'), fetch('/api/quotes'),
+        fetch('/api/candidates'), fetch('/api/sales-orders'), fetch('/api/vendors'),
+        fetch('/api/knowledge-base'), fetch('/api/calendar'),
       ]);
       const invoices = invoicesRes.ok ? await invoicesRes.json() : [];
       const customers = customersRes.ok ? await customersRes.json() : [];
       const products = productsRes.ok ? await productsRes.json() : [];
+      const leads = leadsRes.ok ? await leadsRes.json() : [];
+      const expenses = expensesRes.ok ? await expensesRes.json() : [];
+      const quotes = quotesRes.ok ? await quotesRes.json() : [];
+      const candidates = candidatesRes.ok ? await candidatesRes.json() : [];
+      const orders = ordersRes.ok ? await ordersRes.json() : [];
+      const vendors = vendorsRes.ok ? await vendorsRes.json() : [];
+      const articles = articlesRes.ok ? await articlesRes.json() : [];
+      const events = eventsRes.ok ? await eventsRes.json() : [];
       const revenue = invoices.filter((inv: { status: string }) => inv.status === 'paid')
         .reduce((sum: number, inv: { totalAmount: number }) => sum + inv.totalAmount, 0);
       setStats({
@@ -59,6 +85,10 @@ export default function DashboardPage() {
         totalProducts: products.length, totalRevenue: revenue,
         pendingInvoices: invoices.filter((inv: { status: string }) => inv.status === 'pending').length,
         paidInvoices: invoices.filter((inv: { status: string }) => inv.status === 'paid').length,
+        totalLeads: leads.length, totalExpenses: expenses.length,
+        totalQuotes: quotes.length, totalCandidates: candidates.length,
+        totalOrders: orders.length, totalVendors: vendors.length,
+        totalArticles: articles.length, totalEvents: events.length,
       });
     } catch (error) { console.error('Error:', error); }
     finally { setLoading(false); }
@@ -73,14 +103,23 @@ export default function DashboardPage() {
 
   const appCards: AppCard[] = [
     { category: 'INTELLIGENCE', title: 'Ainos Analytics', description: 'Deep predictive insights and unified data visualization.', icon: TrendingUp, href: '/reports', status: 'active', stat: `${stats.totalInvoices} events today`, statLabel: 'events', color: '#6c5ce7' },
-    { category: 'SALES', title: 'Smart CRM', description: 'AI-driven customer relationship and pipeline management.', icon: Target, href: '/crm/contacts', status: 'active', stat: `${stats.totalCustomers} active contacts`, statLabel: 'contacts', color: '#6c5ce7' },
+    { category: 'SALES', title: 'Smart CRM', description: 'AI-driven customer relationship and pipeline management.', icon: Target, href: '/crm/contacts', status: 'active', stat: `${stats.totalCustomers} contacts`, statLabel: 'contacts', color: '#6c5ce7' },
+    { category: 'CRM', title: 'Leads Pipeline', description: 'Track and convert leads through your sales funnel.', icon: UserPlus, href: '/crm/leads', status: 'active', stat: `${stats.totalLeads} leads`, statLabel: 'leads', color: '#0984e3' },
+    { category: 'FINANCE', title: 'Expenses', description: 'Track, approve and manage all business expenses.', icon: DollarSign, href: '/finance/expenses', status: 'active', stat: `${stats.totalExpenses} entries`, statLabel: 'entries', color: '#00b894' },
+    { category: 'FINANCE', title: 'Quotations', description: 'Create and send professional quotes to clients.', icon: FileSpreadsheet, href: '/finance/quotes', status: 'active', stat: `${stats.totalQuotes} quotes`, statLabel: 'quotes', color: '#fdcb6e' },
     { category: 'INTELLIGENCE', title: 'AI Chat Assistant', description: 'Autonomous customer support and internal query resolution.', icon: Sparkles, href: '/ai/chat', status: 'active', stat: '98% resolution rate', statLabel: 'rate', color: '#6c5ce7' },
     { category: 'MARKETING', title: 'Email Marketing', description: 'Automated campaigns with generative copywriting.', icon: Mail, href: '/marketing/email', status: 'active', stat: 'Next campaign in 2h', statLabel: 'scheduled', color: '#6c5ce7' },
     { category: 'MARKETING', title: 'Automated Blog', description: 'SEO-optimized content generation and publishing.', icon: FileText, href: '/marketing/blog', status: 'active', stat: '4 drafts ready', statLabel: 'drafts', color: '#6c5ce7' },
-    { category: 'OPERATIONS', title: 'Inventory OS', description: 'Real-time stock tracking and automated reordering.', icon: Package, href: '/inventory/stock', status: 'expired', stat: 'Requires renewal', statLabel: 'expired', color: '#e17055' },
-    { category: 'FINANCE', title: 'Accounting ERP', description: 'Intelligent ledger, invoicing, and financial forecasting.', icon: FileText, href: '/invoices', status: 'locked', stat: 'Starting at $49/mo', statLabel: 'price', color: '#636e72' },
-    { category: 'OPERATIONS', title: 'HR & Payroll', description: 'Unified employee lifecycle and automated payroll.', icon: UserPlus, href: '/hr/employees', status: 'locked', stat: 'Starting at $49/mo', statLabel: 'price', color: '#636e72' },
-    { category: 'OPERATIONS', title: 'IT Helpdesk', description: 'Internal ticketing and asset management.', icon: Headphones, href: '/support/helpdesk', status: 'locked', stat: 'Starting at $49/mo', statLabel: 'price', color: '#636e72' },
+    { category: 'OPERATIONS', title: 'Inventory OS', description: 'Real-time stock tracking and automated reordering.', icon: Package, href: '/inventory/stock', status: 'active', stat: `${stats.totalProducts} products`, statLabel: 'products', color: '#6c5ce7' },
+    { category: 'OPERATIONS', title: 'Sales Orders', description: 'Manage orders, fulfillment and delivery tracking.', icon: Truck, href: '/inventory/sales-orders', status: 'active', stat: `${stats.totalOrders} orders`, statLabel: 'orders', color: '#6c5ce7' },
+    { category: 'OPERATIONS', title: 'Vendor Management', description: 'Manage suppliers, contracts and payment terms.', icon: Building2, href: '/inventory/vendors', status: 'active', stat: `${stats.totalVendors} vendors`, statLabel: 'vendors', color: '#0984e3' },
+    { category: 'FINANCE', title: 'Accounting ERP', description: 'Intelligent ledger, invoicing, and financial forecasting.', icon: FileText, href: '/invoices', status: 'active', stat: `₹${stats.totalRevenue.toLocaleString('en-IN')}`, statLabel: 'revenue', color: '#6c5ce7' },
+    { category: 'HR', title: 'HR & Payroll', description: 'Unified employee lifecycle and automated payroll.', icon: UserPlus, href: '/hr/employees', status: 'active', stat: 'Active employees', statLabel: 'team', color: '#6c5ce7' },
+    { category: 'HR', title: 'Recruitment', description: 'Applicant tracking and hiring pipeline management.', icon: Briefcase, href: '/hr/recruitment', status: 'active', stat: `${stats.totalCandidates} candidates`, statLabel: 'candidates', color: '#6c5ce7' },
+    { category: 'HR', title: 'Timesheets', description: 'Track employee hours and project time allocation.', icon: Timer, href: '/hr/timesheet', status: 'active', stat: 'Time entries', statLabel: 'tracked', color: '#00b894' },
+    { category: 'SUPPORT', title: 'IT Helpdesk', description: 'Internal ticketing and asset management.', icon: Headphones, href: '/support/helpdesk', status: 'active', stat: 'Open tickets', statLabel: 'tickets', color: '#6c5ce7' },
+    { category: 'SUPPORT', title: 'Knowledge Base', description: 'Internal documentation and help articles.', icon: BookOpen, href: '/support/knowledge-base', status: 'active', stat: `${stats.totalArticles} articles`, statLabel: 'articles', color: '#0984e3' },
+    { category: 'SCHEDULING', title: 'Calendar', description: 'Schedule events, meetings and manage your time.', icon: Calendar, href: '/calendar', status: 'active', stat: `${stats.totalEvents} events`, statLabel: 'events', color: '#6c5ce7' },
   ];
 
   const statusConfig = {
@@ -103,13 +142,16 @@ export default function DashboardPage() {
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
 
         {/* Greeting Header */}
-        <motion.header initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>
-            {getGreeting()}, <span style={{ color: 'hsl(var(--foreground-muted))' }}>{session?.user?.name?.split(' ')[0] || 'User'}</span>.
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
-            Your ecosystem is running smoothly. {stats.totalInvoices} active tools, {stats.pendingInvoices} alerts.
-          </p>
+        <motion.header initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>
+              {getGreeting()}, <span style={{ color: 'hsl(var(--foreground-muted))' }}>{session?.user?.name?.split(' ')[0] || 'User'}</span>.
+            </h1>
+            <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
+              Your ecosystem is running smoothly. {stats.totalInvoices} active tools, {stats.pendingInvoices} alerts.
+            </p>
+          </div>
+          <NotificationsBell />
         </motion.header>
 
         {/* Stats Cards */}
