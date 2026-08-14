@@ -17,8 +17,7 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
-  trustHost: true,
-  debug: process.env.NODE_ENV === 'development',
+  debug: true,
   callbacks: {
     async signIn({ user, account }) {
       console.log('SignIn callback called:', { email: user.email, provider: account?.provider });
