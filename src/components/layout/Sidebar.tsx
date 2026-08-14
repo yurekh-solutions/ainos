@@ -41,7 +41,10 @@ import {
   MessageSquare,
   Headphones,
   Briefcase,
+  Sun,
+  Moon,
 } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface MenuItem {
   icon: React.ElementType;
@@ -222,7 +225,7 @@ function SectionGroup({
       >
         <div
           className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${
-            hasActive ? 'bg-white/80 shadow-sm' : 'group-hover:bg-white/30'
+            hasActive ? 'bg-white dark:bg-white/80 shadow-sm' : 'group-hover:bg-black/5 dark:group-hover:bg-white/30'
           }`}
         >
           <SectionIcon
@@ -275,8 +278,8 @@ function SectionGroup({
                     <div
                       className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
                         isActive
-                          ? 'bg-white shadow-md'
-                          : 'group-hover:bg-white/40'
+                          ? 'bg-white dark:bg-white shadow-md'
+                          : 'group-hover:bg-black/5 dark:group-hover:bg-white/40'
                       }`}
                     >
                       <Icon
@@ -323,6 +326,7 @@ export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const { data: session } = useSession();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     if (mobileOpen) {
@@ -435,7 +439,7 @@ export function Sidebar() {
                   >
                     <div
                       className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-                        isActive ? 'bg-white shadow-md' : 'bg-transparent'
+                        isActive ? 'bg-white dark:bg-white shadow-md' : 'bg-transparent'
                       }`}
                     >
                       <Icon className="w-5 h-5" />
@@ -472,6 +476,21 @@ export function Sidebar() {
               style={{ borderTop: '1px solid hsl(var(--sidebar-border) / 0.5)' }}
             >
               <StudioCard />
+              {/* Theme Toggle Mobile */}
+              <button
+                onClick={toggleTheme}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full transition-colors"
+                style={{ background: 'hsl(var(--muted))' }}
+              >
+                {theme === 'dark' ? (
+                  <Sun className="w-5 h-5" style={{ color: 'hsl(var(--muted-foreground))' }} />
+                ) : (
+                  <Moon className="w-5 h-5" style={{ color: 'hsl(var(--muted-foreground))' }} />
+                )}
+                <span className="font-medium text-sm" style={{ color: 'hsl(var(--foreground))' }}>
+                  {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                </span>
+              </button>
               <div
                 className="flex items-center gap-3 p-3 rounded-xl"
                 style={{ background: 'hsl(var(--muted))' }}
@@ -567,7 +586,7 @@ export function Sidebar() {
                 )}
                 <div
                   className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 ${
-                    isActive ? 'bg-white shadow-md' : 'group-hover:bg-white/50 group-hover:scale-105'
+                    isActive ? 'bg-white dark:bg-white shadow-md' : 'group-hover:bg-black/5 dark:group-hover:bg-white/50 group-hover:scale-105'
                   }`}
                 >
                   <Icon
@@ -619,6 +638,23 @@ export function Sidebar() {
             <ChevronRight className="w-4 h-4" style={{ color: 'hsl(var(--foreground))' }} />
           ) : (
             <ChevronLeft className="w-4 h-4" style={{ color: 'hsl(var(--foreground))' }} />
+          )}
+        </button>
+
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="absolute -right-3 top-[calc(50%+40px)] w-6 h-12 rounded-full flex items-center justify-center transition-all shadow-lg"
+          style={{
+            background: 'hsl(var(--card-bg))',
+            border: '1px solid hsl(var(--border) / 0.5)',
+          }}
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {theme === 'dark' ? (
+            <Sun className="w-3.5 h-3.5" style={{ color: 'hsl(var(--foreground))' }} />
+          ) : (
+            <Moon className="w-3.5 h-3.5" style={{ color: 'hsl(var(--foreground))' }} />
           )}
         </button>
 

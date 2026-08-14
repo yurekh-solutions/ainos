@@ -91,7 +91,7 @@ export default function CustomersPage() {
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
           {[
             { label: 'Total Customers', value: customers.length, icon: Users, gradient: 'from-violet-500 to-purple-600', bgGlow: 'bg-violet-500/10' },
             { label: 'Active', value: activeCustomers, icon: TrendingUp, gradient: 'from-emerald-500 to-teal-600', bgGlow: 'bg-emerald-500/10' },
@@ -103,38 +103,59 @@ export default function CustomersPage() {
               initial={{ opacity: 0, y: 20 }} 
               animate={{ opacity: 1, y: 0 }} 
               transition={{ delay: i * 0.1 }}
-              className="glass-card p-4"
+              whileHover={{ y: -6, transition: { duration: 0.2 } }}
+              className="relative p-5 rounded-2xl overflow-hidden group"
+              style={{
+                background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)',
+                border: '1px solid hsl(var(--border) / 0.5)',
+                boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
+              }}
             >
+              {/* Gradient Accent Bar */}
+              <div className={`absolute top-0 left-0 w-1 h-full bg-gradient-to-b ${stat.gradient} rounded-l-2xl`} />
+              
               <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>{stat.label}</p>
-                  <p className="text-xl font-bold mt-1" style={{ color: 'hsl(var(--foreground))' }}>{stat.value}</p>
+                <div className="flex-1">
+                  <p className="text-xs font-medium uppercase tracking-wide mb-2" style={{ color: 'hsl(var(--muted-foreground))' }}>{stat.label}</p>
+                  <p className="text-3xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>{stat.value}</p>
                 </div>
-                <div className={`w-10 h-10 rounded-xl ${stat.bgGlow} flex items-center justify-center`}>
-                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-lg`}>
-                    <stat.icon className="w-4 h-4 text-white" />
+                <motion.div 
+                  whileHover={{ scale: 1.1, rotate: 10 }}
+                  className={`w-12 h-12 rounded-xl ${stat.bgGlow} flex items-center justify-center`}
+                >
+                  <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-lg`}>
+                    <stat.icon className="w-5 h-5 text-white" />
                   </div>
-                </div>
+                </motion.div>
               </div>
             </motion.div>
           ))}
         </div>
 
         {/* Chart & Recent */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Pie Chart */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }} 
             animate={{ opacity: 1, y: 0 }} 
             transition={{ delay: 0.4 }}
-            className="glass-card p-5"
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            className="p-6 rounded-2xl"
+            style={{
+              background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)',
+              border: '1px solid hsl(var(--border) / 0.5)',
+              boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
+            }}
           >
-            <h3 className="font-semibold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--foreground))' }}>
-              <Users className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} /> Customer Distribution
+            <h3 className="font-bold mb-5 flex items-center gap-2" style={{ color: 'hsl(var(--foreground))' }}>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg">
+                <Users className="w-4 h-4 text-white" />
+              </div>
+              Customer Distribution
             </h3>
-            <ResponsiveContainer width="100%" height={180}>
+            <ResponsiveContainer width="100%" height={200}>
               <PieChart>
-                <Pie data={customerData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} dataKey="value" stroke="none">
+                <Pie data={customerData} cx="50%" cy="50%" innerRadius={55} outerRadius={75} dataKey="value" stroke="none">
                   {customerData.map((_, index) => (<Cell key={index} fill={COLORS[index % COLORS.length]} />))}
                 </Pie>
                 <Tooltip 
@@ -147,10 +168,10 @@ export default function CustomersPage() {
                 />
               </PieChart>
             </ResponsiveContainer>
-            <div className="flex justify-center gap-3 mt-2">
+            <div className="flex justify-center gap-4 mt-3">
               {customerData.map((item, i) => (
-                <div key={item.name} className="flex items-center gap-1.5 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                  <span className="w-2 h-2 rounded-full" style={{ background: COLORS[i] }} />
+                <div key={item.name} className="flex items-center gap-2 text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: COLORS[i] }} />
                   <span>{item.name}</span>
                 </div>
               ))}
@@ -162,33 +183,47 @@ export default function CustomersPage() {
             initial={{ opacity: 0, y: 20 }} 
             animate={{ opacity: 1, y: 0 }} 
             transition={{ delay: 0.5 }}
-            className="lg:col-span-2 glass-card p-5"
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            className="lg:col-span-2 p-6 rounded-2xl"
+            style={{
+              background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)',
+              border: '1px solid hsl(var(--border) / 0.5)',
+              boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
+            }}
           >
-            <h3 className="font-semibold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--foreground))' }}>
-              <TrendingUp className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} /> Recent Activity
+            <h3 className="font-bold mb-5 flex items-center gap-2" style={{ color: 'hsl(var(--foreground))' }}>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
+                <TrendingUp className="w-4 h-4 text-white" />
+              </div>
+              Recent Activity
             </h3>
             <div className="space-y-3">
               {customers.slice(0, 4).map((customer, i) => (
-                <div 
+                <motion.div 
                   key={customer._id || customer.id || i} 
-                  className="flex items-center gap-3 p-3 rounded-xl transition-colors hover:bg-[hsl(var(--muted))]"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.6 + i * 0.1 }}
+                  whileHover={{ x: 4, transition: { duration: 0.2 } }}
+                  className="flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer"
+                  style={{ background: 'hsl(var(--muted) / 0.5)' }}
                 >
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-semibold"
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-semibold shadow-lg"
                     style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
                     {customer.name[0]}
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>{customer.name}</p>
+                    <p className="text-sm font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{customer.name}</p>
                     <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Added recently</p>
                   </div>
-                  <span className="text-xs font-medium px-2 py-1 rounded-full"
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
                     style={{ 
                       background: 'hsl(142 76% 36% / 0.1)',
                       color: 'hsl(142 76% 36%)'
                     }}>
                     + New
                   </span>
-                </div>
+                </motion.div>
               ))}
               {customers.length === 0 && (
                 <div className="text-center py-8">
@@ -201,7 +236,12 @@ export default function CustomersPage() {
         </div>
 
         {/* Search */}
-        <div className="glass-card p-4">
+        <div className="p-4 rounded-2xl"
+          style={{
+            background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)',
+            border: '1px solid hsl(var(--border) / 0.5)',
+            boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
+          }}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
             <input 
@@ -305,9 +345,14 @@ export default function CustomersPage() {
               style={{ borderColor: 'hsl(var(--border))', borderTopColor: 'hsl(var(--primary))' }} />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredCustomers.length === 0 ? (
-              <div className="col-span-full flex flex-col items-center justify-center py-16 glass-card">
+              <div className="col-span-full flex flex-col items-center justify-center py-16 p-8 rounded-2xl"
+                style={{
+                  background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)',
+                  border: '1px solid hsl(var(--border) / 0.5)',
+                  boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
+                }}>
                 <Users className="w-12 h-12 mb-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
                 <p style={{ color: 'hsl(var(--foreground))' }}>No customers found</p>
                 <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Add your first customer to get started</p>
@@ -319,17 +364,28 @@ export default function CustomersPage() {
                   initial={{ opacity: 0, y: 20 }} 
                   animate={{ opacity: 1, y: 0 }} 
                   transition={{ delay: index * 0.05 }}
-                  className="glass-card p-4 group"
+                  whileHover={{ y: -6, transition: { duration: 0.2 } }}
+                  className="relative p-5 rounded-2xl group"
+                  style={{
+                    background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)',
+                    border: '1px solid hsl(var(--border) / 0.5)',
+                    boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
+                  }}
                 >
-                  <div className="flex items-start justify-between mb-3">
+                  {/* Gradient Accent Bar */}
+                  <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-violet-500 to-purple-600 rounded-l-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  
+                  <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg"
+                      <motion.div 
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg"
                         style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
                         <span className="text-white font-bold text-lg">{customer.name[0]}</span>
-                      </div>
+                      </motion.div>
                       <div>
-                        <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>{customer.name}</p>
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full"
+                        <p className="font-bold" style={{ color: 'hsl(var(--foreground))' }}>{customer.name}</p>
+                        <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
                           style={{ 
                             background: 'hsl(142 76% 36% / 0.1)',
                             color: 'hsl(142 76% 36%)'

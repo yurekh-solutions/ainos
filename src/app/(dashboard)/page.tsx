@@ -84,66 +84,95 @@ export default function DashboardPage() {
   ];
 
   const statusConfig = {
-    active: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', dot: 'bg-emerald-400', border: 'border-emerald-500/20', label: 'Active' },
-    expired: { bg: 'bg-amber-500/10', text: 'text-amber-400', dot: 'bg-amber-400', border: 'border-amber-500/20', label: 'Expired' },
-    locked: { bg: 'bg-gray-500/10', text: 'text-gray-400', dot: 'bg-gray-400', border: 'border-gray-500/20', label: 'Locked' },
+    active: { bg: 'bg-emerald-500/10 dark:bg-emerald-500/15', text: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500', border: 'border-emerald-500/20', label: 'Active' },
+    expired: { bg: 'bg-amber-500/10 dark:bg-amber-500/15', text: 'text-amber-600 dark:text-amber-400', dot: 'bg-amber-500', border: 'border-amber-500/20', label: 'Expired' },
+    locked: { bg: 'bg-gray-500/10 dark:bg-gray-500/15', text: 'text-gray-500 dark:text-gray-400', dot: 'bg-gray-400', border: 'border-gray-500/20', label: 'Locked' },
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(180deg, hsl(230 20% 5%) 0%, hsl(230 20% 7%) 100%)' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--page-gradient)' }}>
         <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
-          className="w-12 h-12 rounded-full border-2 border-[hsl(230_12%_20%)] border-t-[hsl(252_60%_55%)]" />
+          className="w-12 h-12 rounded-full border-2 border-[hsl(var(--border))] border-t-[hsl(var(--primary))]" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(180deg, hsl(230 20% 5%) 0%, hsl(230 20% 7%) 50%, hsl(230 18% 9%) 100%)' }}>
+    <div className="min-h-screen" style={{ background: 'var(--page-gradient)' }}>
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
 
         {/* Greeting Header */}
         <motion.header initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">
-            {getGreeting()}, <span className="text-white/90">{session?.user?.name?.split(' ')[0] || 'User'}</span>.
+          <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>
+            {getGreeting()}, <span style={{ color: 'hsl(var(--foreground-muted))' }}>{session?.user?.name?.split(' ')[0] || 'User'}</span>.
           </h1>
-          <p className="text-sm text-white/50 mt-1">
+          <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
             Your ecosystem is running smoothly. {stats.totalInvoices} active tools, {stats.pendingInvoices} alerts.
           </p>
         </motion.header>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
           {[
-            { label: 'System Health', value: '100%', sub: 'All systems operational', icon: Activity, color: '#00b894', glow: 'rgba(0,184,148,0.15)' },
-            { label: 'Active Users', value: `${stats.totalCustomers}`, sub: `Across ${Math.ceil(stats.totalInvoices / 5)} tools`, icon: Users, color: '#6c5ce7', glow: 'rgba(108,92,231,0.15)' },
-            { label: 'AI Operations', value: `${(stats.totalInvoices * 10).toLocaleString()}`, sub: 'Tasks automated this week', icon: Sparkles, color: '#6c5ce7', glow: 'rgba(108,92,231,0.2)' },
+            { label: 'System Health', value: '100%', sub: 'All systems operational', icon: Activity, color: '#00b894', gradient: 'from-emerald-500 to-teal-600' },
+            { label: 'Active Users', value: `${stats.totalCustomers}`, sub: `Across ${Math.ceil(stats.totalInvoices / 5)} tools`, icon: Users, color: '#6c5ce7', gradient: 'from-violet-500 to-purple-600' },
+            { label: 'AI Operations', value: `${(stats.totalInvoices * 10).toLocaleString()}`, sub: 'Tasks automated this week', icon: Sparkles, color: '#6c5ce7', gradient: 'from-purple-500 to-indigo-600' },
           ].map((stat, i) => (
-            <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.05 }}
-              className="relative p-5 rounded-xl overflow-hidden"
-              style={{ background: 'hsl(230 18% 10%)', border: '1px solid hsl(230 12% 18%)' }}>
-              <div className="absolute top-0 right-0 w-32 h-32 -translate-y-4 translate-x-4 opacity-20">
+            <motion.div 
+              key={stat.label} 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ delay: 0.1 + i * 0.08 }}
+              whileHover={{ y: -8, transition: { duration: 0.2 } }}
+              className="relative p-6 rounded-2xl overflow-hidden group"
+              style={{ 
+                background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)',
+                border: '1px solid hsl(var(--border) / 0.5)',
+                boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
+              }}>
+              {/* Animated Background Icon */}
+              <motion.div 
+                animate={{ rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute top-0 right-0 w-36 h-36 -translate-y-6 translate-x-6 opacity-10 group-hover:opacity-20 transition-opacity"
+              >
                 <stat.icon className="w-full h-full" style={{ color: stat.color }} />
+              </motion.div>
+              
+              {/* Gradient Accent Bar */}
+              <div className={`absolute top-0 left-0 w-1 h-full bg-gradient-to-b ${stat.gradient} rounded-l-2xl`} />
+              
+              {/* Content */}
+              <div className="relative">
+                <div className="flex items-center gap-2 mb-3">
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 10 }}
+                    className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-lg`}
+                  >
+                    <stat.icon className="w-5 h-5 text-white" />
+                  </motion.div>
+                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>{stat.label}</p>
+                </div>
+                <p className="text-4xl font-bold mb-2" style={{ color: 'hsl(var(--foreground))' }}>{stat.value}</p>
+                <p className="text-xs font-medium" style={{ color: stat.color }}>{stat.sub}</p>
               </div>
-              <p className="text-xs text-white/50 mb-1">{stat.label}</p>
-              <p className="text-3xl font-bold text-white">{stat.value}</p>
-              <p className="text-xs mt-1" style={{ color: stat.color }}>{stat.sub}</p>
             </motion.div>
           ))}
         </div>
 
         {/* Apps & ERPs Section */}
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold text-white">Your Apps & ERPs</h2>
+          <h2 className="text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Your Apps & ERPs</h2>
           <div className="flex items-center gap-4 text-xs">
-            <span className="flex items-center gap-1.5 text-white/60"><span className="w-2 h-2 rounded-full bg-emerald-400" /> Active</span>
-            <span className="flex items-center gap-1.5 text-white/60"><span className="w-2 h-2 rounded-full bg-amber-400" /> Expired</span>
-            <span className="flex items-center gap-1.5 text-white/60"><Lock className="w-3 h-3" /> Locked</span>
+            <span className="flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}><span className="w-2 h-2 rounded-full bg-emerald-500" /> Active</span>
+            <span className="flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}><span className="w-2 h-2 rounded-full bg-amber-500" /> Expired</span>
+            <span className="flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}><Lock className="w-3 h-3" /> Locked</span>
           </div>
         </div>
 
         {/* App Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {appCards.map((app, i) => {
             const Icon = app.icon;
             const status = statusConfig[app.status];
@@ -151,53 +180,83 @@ export default function DashboardPage() {
             const isExpired = app.status === 'expired';
 
             return (
-              <motion.div key={app.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + i * 0.04 }}
-                className="relative p-5 rounded-xl flex flex-col h-full"
+              <motion.div 
+                key={app.title} 
+                initial={{ opacity: 0, y: 20 }} 
+                animate={{ opacity: 1, y: 0 }} 
+                transition={{ delay: 0.15 + i * 0.04 }}
+                whileHover={{ y: -6, transition: { duration: 0.25 } }}
+                className="relative p-6 rounded-2xl flex flex-col h-full group overflow-hidden"
                 style={{
-                  background: isExpired ? 'linear-gradient(135deg, hsl(25 60% 12%) 0%, hsl(25 40% 8%) 100%)' : 'hsl(230 18% 10%)',
-                  border: `1px solid ${isLocked ? 'hsl(230 12% 16%)' : isExpired ? 'hsl(25 40% 25%)' : 'hsl(230 12% 18%)'}`,
+                  background: isExpired 
+                    ? 'linear-gradient(135deg, hsl(25 60% 95%) 0%, hsl(25 40% 92%) 100%)' 
+                    : 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)',
+                  border: `1px solid ${isLocked ? 'hsl(var(--border) / 0.5)' : isExpired ? 'hsl(25 40% 85%)' : 'hsl(var(--border) / 0.5)'}`,
+                  boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
                 }}>
 
                 {/* Top Row: Icon + Status */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center"
-                    style={{ background: `${app.color}15` }}>
-                    <Icon className="w-5 h-5" style={{ color: app.color }} />
-                  </div>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${status.bg} ${status.text} border ${status.border}`}>
-                    {app.status === 'locked' ? <Lock className="w-2.5 h-2.5" /> : <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />}
+                <div className="flex items-start justify-between mb-5">
+                  <motion.div 
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg"
+                    style={{ 
+                      background: `linear-gradient(135deg, ${app.color}20 0%, ${app.color}10 100%)`,
+                      border: `1px solid ${app.color}30`,
+                    }}>
+                    <Icon className="w-6 h-6" style={{ color: app.color }} />
+                  </motion.div>
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold ${status.bg} ${status.text} border ${status.border} backdrop-blur-sm`}>
+                    {app.status === 'locked' ? <Lock className="w-3 h-3" /> : <span className={`w-2 h-2 rounded-full ${status.dot} animate-pulse`} />}
                     {status.label}
                   </span>
                 </div>
 
                 {/* Content */}
-                <p className="text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-1">{app.category}</p>
-                <h3 className="text-sm font-semibold text-white mb-1.5">{app.title}</h3>
-                <p className="text-xs text-white/40 leading-relaxed mb-4 flex-1">{app.description}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: 'hsl(var(--muted-foreground))' }}>{app.category}</p>
+                <h3 className="text-base font-bold mb-2" style={{ color: 'hsl(var(--foreground))' }}>{app.title}</h3>
+                <p className="text-xs leading-relaxed mb-5 flex-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{app.description}</p>
 
                 {/* Bottom: Stat + Action */}
                 {isLocked ? (
                   <div className="mt-auto">
-                    <button className="w-full py-2.5 rounded-lg text-sm font-semibold text-white flex items-center justify-center gap-2"
-                      style={{ background: 'linear-gradient(135deg, hsl(252 60% 55%) 0%, hsl(252 65% 65%) 100%)', boxShadow: '0 4px 14px hsl(252 60% 55% / 0.3)' }}>
-                      <Lock className="w-3.5 h-3.5" /> Subscribe to Unlock
-                    </button>
-                    <p className="text-[10px] text-white/30 text-center mt-2">{app.stat}</p>
+                    <motion.button 
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="w-full py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all"
+                      style={{ 
+                        background: 'linear-gradient(135deg, hsl(252 60% 55%) 0%, hsl(252 65% 65%) 100%)', 
+                        boxShadow: '0 4px 14px hsl(252 60% 55% / 0.4)',
+                      }}>
+                      <Lock className="w-4 h-4" /> Subscribe to Unlock
+                    </motion.button>
+                    <p className="text-[10px] text-center mt-3 font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>{app.stat}</p>
                   </div>
                 ) : isExpired ? (
                   <div className="mt-auto flex items-center justify-between">
-                    <p className="text-xs text-amber-400/70">{app.stat}</p>
-                    <button className="px-3 py-1.5 rounded-lg text-xs font-medium text-amber-400 border border-amber-500/30 hover:bg-amber-500/10 transition-colors">
+                    <p className="text-xs font-medium text-amber-600">{app.stat}</p>
+                    <motion.button 
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="px-4 py-2 rounded-xl text-xs font-semibold text-amber-600 border-2 border-amber-500/30 hover:bg-amber-500/10 transition-all">
                       Renew
-                    </button>
+                    </motion.button>
                   </div>
                 ) : (
                   <div className="mt-auto flex items-center justify-between">
-                    <p className="text-xs text-white/40">{app.stat}</p>
+                    <p className="text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>{app.stat}</p>
                     <Link href={app.href}>
-                      <button className="px-3 py-1.5 rounded-lg text-xs font-medium text-white/70 bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center gap-1">
-                        Open <ArrowRight className="w-3 h-3" />
-                      </button>
+                      <motion.button 
+                        whileHover={{ scale: 1.05, x: 3 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all"
+                        style={{ 
+                          color: 'hsl(var(--primary))', 
+                          background: 'hsl(var(--primary) / 0.1)', 
+                          border: '1px solid hsl(var(--primary) / 0.2)',
+                        }}>
+                        Open <ArrowRight className="w-3.5 h-3.5" />
+                      </motion.button>
                     </Link>
                   </div>
                 )}
