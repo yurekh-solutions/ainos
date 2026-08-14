@@ -1,4 +1,1 @@
-chore(marketing): add LinkedIn organic post assets and copy
-
-- 4 branded carousel images under public/linkedin-organic
-- README-post.txt with post copy, captions, alt text, and crawl targeting notes
+fix: restore explicit redirect_uri with NEXTAUTH_URL including /api/auth, debug OAuthCallback error

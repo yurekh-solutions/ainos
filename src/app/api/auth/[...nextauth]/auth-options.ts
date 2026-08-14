@@ -18,6 +18,17 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   debug: true,
+  logger: {
+    error(code, metadata) {
+      console.error('NextAuth ERROR:', code, JSON.stringify(metadata));
+    },
+    warn(code) {
+      console.warn('NextAuth WARN:', code);
+    },
+    debug(code, metadata) {
+      console.log('NextAuth DEBUG:', code, JSON.stringify(metadata));
+    },
+  },
   callbacks: {
     async signIn({ user, account }) {
       console.log('SignIn callback called:', { email: user.email, provider: account?.provider });
