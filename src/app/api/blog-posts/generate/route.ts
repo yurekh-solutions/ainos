@@ -12,13 +12,13 @@ export async function POST(req: NextRequest) {
 
     const wordCount = length === 'short' ? '400-500' : length === 'long' ? '1200-1500' : '700-900';
 
-    const systemPrompt = `You are an expert SEO content writer and blog agent. You write highly engaging, SEO-optimized blog posts that rank on Google and drive organic traffic.
+    const systemPrompt = `You are an expert SEO and AEO (Answer Engine Optimization) content writer and blog agent. You write highly engaging, SEO-optimized blog posts that rank on Google, get cited by AI (ChatGPT, Perplexity, Gemini), and drive organic traffic.
 
 Rules:
 - Write in ${tone || 'professional'} tone
 - Target industry: ${industry || 'general business'}
 - Word count: ${wordCount} words
-- Include a compelling meta description (150-160 characters)
+- Include a compelling meta description (150-160 characters) with primary keyword
 - Include 5-8 relevant tags
 - Use proper H2 and H3 headings for structure
 - Include an engaging introduction and strong conclusion with CTA
@@ -26,22 +26,33 @@ Rules:
 - Write in markdown format with proper headings (# for title, ## for H2, ### for H3)
 - Make it actionable and valuable for readers
 - Suggest a category for this post (e.g., Technology, Marketing, Business, SEO, AI, Startups, etc.)
+- Include FAQ section (3-5 questions) for AEO/AI citation optimization
+- Use EEAT signals (expertise, experience, authoritativeness, trustworthiness)
+- Include internal linking suggestions and external authority links
 
 You must respond in this exact JSON format (no other text):
 {
-  "title": "SEO-optimized compelling title",
+  "title": "SEO-optimized compelling title with keyword",
   "slug": "url-friendly-slug",
-  "excerpt": "150-160 char meta description for SEO",
-  "content": "Full blog post in markdown format with headings",
+  "excerpt": "150-160 char meta description with primary keyword",
+  "content": "Full blog post in markdown with headings, FAQ section, and CTA",
   "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
-  "category": "Most relevant category"
+  "category": "Most relevant category",
+  "seoScore": 85,
+  "seoTips": ["Tip 1", "Tip 2", "Tip 3"]
 }`;
 
-    const userPrompt = `Write an SEO-optimized blog post about: "${topic}"
+    const userPrompt = `Write an SEO and AEO optimized blog post about: "${topic}"
 ${keywords ? `Primary keywords: ${keywords}` : ''}
 ${industry ? `Industry: ${industry}` : ''}
 
-Make it rank on Google, engage readers, and drive organic traffic. Include a strong CTA at the end.`;
+Requirements:
+- Optimize for Google search ranking (SEO)
+- Optimize for AI citation by ChatGPT, Perplexity, Gemini (AEO)
+- Include FAQ section with 3-5 commonly asked questions
+- Use EEAT signals throughout
+- Include a strong CTA at the end
+- Make it rank on Google AND get cited by AI engines.`;
 
     // Generate blog content and featured image in parallel
     const [pollinationsRes, imageUrl] = await Promise.all([
@@ -97,8 +108,21 @@ Make it rank on Google, engage readers, and drive organic traffic. Include a str
       };
     }
 
-    // Attach the generated featured image URL
+    // Attach the generated featured image URL and ensure SEO fields exist
     result.featuredImage = imageUrl;
+    if (!result.seoScore) {
+      // Calculate basic SEO score
+      let score = 50;
+      const tips: string[] = [];
+      if (result.title && result.title.length >= 40 && result.title.length <= 60) { score += 10; } else { tips.push('Title should be 40-60 characters'); }
+      if (result.excerpt && result.excerpt.length >= 140 && result.excerpt.length <= 160) { score += 10; } else { tips.push('Meta description should be 140-160 characters'); }
+      if (result.content && result.content.includes('## ')) { score += 10; } else { tips.push('Add H2 headings for structure'); }
+      if (result.content && result.content.length > 1000) { score += 10; } else { tips.push('Content should be longer (800+ words)'); }
+      if (result.tags && result.tags.length >= 5) { score += 5; } else { tips.push('Add more tags (5-8 recommended)'); }
+      if (result.content && /FAQ|faq|frequently/i.test(result.content)) { score += 5; tips.push('Great: FAQ section detected for AEO'); } else { tips.push('Add FAQ section for AI citation (AEO)'); }
+      result.seoScore = Math.min(score, 98);
+      result.seoTips = tips.length > 0 ? tips : ['Looking good! All SEO checks passed.'];
+    }
 
     return NextResponse.json(result);
   } catch (error) {

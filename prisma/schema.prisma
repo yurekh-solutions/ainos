@@ -472,6 +472,7 @@ model BlogPost {
   category      String?
   status        String    @default("draft")
   publishedAt   DateTime? @map("published_at")
+  scheduledAt   DateTime? @map("scheduled_at")
   tags          Json?
   companyId     String?   @map("company_id")
   createdAt     DateTime  @default(now()) @map("created_at")

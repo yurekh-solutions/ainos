@@ -4,18 +4,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, FileText, Eye, Calendar, Sparkles, Wand2, Search,
   Clock, Trash2, Edit3, CheckCircle, Send, ArrowLeft,
-  BookOpen, Layers
+  BookOpen, Layers, ExternalLink, Globe, CalendarRange, TrendingUp, Shield
 } from 'lucide-react';
 
 interface BlogPost {
   id: string; title: string; slug: string; content: string; excerpt: string | null;
   status: string; author: string | null; featuredImage: string | null;
-  category: string | null; publishedAt: string | null;
+  category: string | null; publishedAt: string | null; scheduledAt: string | null;
   tags: string[] | null; views?: number; createdAt: string;
 }
 interface GeneratedPost {
   title: string; slug: string; excerpt: string; content: string;
   tags: string[]; category: string; featuredImage: string;
+  seoScore?: number; seoTips?: string[];
 }
 
 const tones = ['Professional', 'Casual', 'Authoritative', 'Friendly', 'Technical', 'Conversational'];
@@ -50,6 +51,8 @@ export default function BlogPage() {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [statusFilter, setStatusFilter] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
+  const [scheduleDate, setScheduleDate] = useState('');
 
   const [aiForm, setAiForm] = useState({
     topic: '', keywords: '', tone: 'Professional', length: 'medium', industry: 'General Business'
@@ -118,7 +121,26 @@ export default function BlogPage() {
         body: JSON.stringify({ ...generated, status: 'published', publishedAt: new Date().toISOString() }),
       });
       if (res.ok) {
-        setGenerated(null); setShowAI(false);
+        setGenerated(null); setShowAI(false); setScheduleDate('');
+        setAiForm({ topic: '', keywords: '', tone: 'Professional', length: 'medium', industry: 'General Business' });
+        fetchPosts();
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  // Schedule post
+  const handleSchedule = async () => {
+    if (!generated || !scheduleDate) return;
+    try {
+      const res = await fetch('/api/blog-posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...generated, status: 'scheduled', scheduledAt: new Date(scheduleDate).toISOString(),
+        }),
+      });
+      if (res.ok) {
+        setGenerated(null); setShowAI(false); setScheduleDate('');
         setAiForm({ topic: '', keywords: '', tone: 'Professional', length: 'medium', industry: 'General Business' });
         fetchPosts();
       }
@@ -157,9 +179,35 @@ export default function BlogPage() {
   const totalViews = posts.reduce((s, p) => s + (p.views || 0), 0);
   const publishedCount = posts.filter(p => p.status === 'published').length;
   const draftCount = posts.filter(p => p.status === 'draft').length;
+  const scheduledCount = posts.filter(p => p.status === 'scheduled').length;
 
   // All categories for tabs
   const allCategories = ['All', ...categories];
+
+  // Calendar helper: group posts by date
+  const getCalendarDays = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const days: { date: Date; posts: BlogPost[] }[] = [];
+    // Pad start
+    for (let i = 0; i < firstDay.getDay(); i++) {
+      const d = new Date(year, month, -firstDay.getDay() + i + 1);
+      days.push({ date: d, posts: [] });
+    }
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      const date = new Date(year, month, d);
+      const dateStr = date.toISOString().split('T')[0];
+      const dayPosts = posts.filter(p => {
+        const pDate = (p.scheduledAt || p.publishedAt || '').split('T')[0];
+        return pDate === dateStr;
+      });
+      days.push({ date, posts: dayPosts });
+    }
+    return days;
+  };
 
   return (
     <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-950">
@@ -183,6 +231,10 @@ export default function BlogPage() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <a href="/ainos/blog/" target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-3 rounded-xl text-white/80 text-sm font-medium bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 transition-all">
+                <Globe className="w-4 h-4" /> View Blog
+              </a>
               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                 onClick={() => { setShowAI(true); setGenerated(null); }}
                 className="flex items-center gap-2 px-6 py-3 rounded-xl text-white text-sm font-semibold bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/20 transition-all shadow-lg">
@@ -192,10 +244,11 @@ export default function BlogPage() {
           </div>
 
           {/* Stats Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-8">
             {[
               { label: 'Total Posts', value: posts.length, icon: FileText },
               { label: 'Published', value: publishedCount, icon: CheckCircle },
+              { label: 'Scheduled', value: scheduledCount, icon: CalendarRange },
               { label: 'Drafts', value: draftCount, icon: Edit3 },
               { label: 'Total Views', value: totalViews, icon: Eye },
             ].map((s) => (
@@ -225,7 +278,19 @@ export default function BlogPage() {
             <option value="">All Status</option>
             <option value="draft">Drafts</option>
             <option value="published">Published</option>
+            <option value="scheduled">Scheduled</option>
           </select>
+          {/* View Toggle */}
+          <div className="flex items-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
+            <button onClick={() => setViewMode('grid')}
+              className={`px-3 py-2.5 text-sm font-medium transition-colors ${viewMode === 'grid' ? 'bg-purple-600 text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>
+              <FileText className="w-4 h-4" />
+            </button>
+            <button onClick={() => setViewMode('calendar')}
+              className={`px-3 py-2.5 text-sm font-medium transition-colors ${viewMode === 'calendar' ? 'bg-purple-600 text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>
+              <CalendarRange className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Category Tabs */}
@@ -242,8 +307,42 @@ export default function BlogPage() {
           ))}
         </div>
 
-        {/* Blog Posts Grid */}
-        {loading ? (
+        {/* Blog Posts Grid / Calendar View */}
+        {viewMode === 'calendar' ? (
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+              <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <CalendarRange className="w-5 h-5 text-purple-600" />
+                Content Calendar — {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </h3>
+            </div>
+            <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-800">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                <div key={d} className="bg-gray-50 dark:bg-gray-900 p-2 text-center text-xs font-semibold text-gray-500">{d}</div>
+              ))}
+              {getCalendarDays().map((day, i) => {
+                const isToday = day.date.toDateString() === new Date().toDateString();
+                const isCurrentMonth = day.date.getMonth() === new Date().getMonth();
+                return (
+                  <div key={i} className={`bg-white dark:bg-gray-900 p-1.5 min-h-[80px] ${!isCurrentMonth ? 'opacity-40' : ''}`}>
+                    <span className={`text-xs font-medium ${isToday ? 'w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center' : 'text-gray-500'}`}>
+                      {day.date.getDate()}
+                    </span>
+                    {day.posts.map(p => (
+                      <div key={p.id} className={`mt-1 px-1.5 py-0.5 rounded text-[10px] truncate cursor-pointer ${
+                        p.status === 'published' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
+                        : p.status === 'scheduled' ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400'
+                        : 'bg-gray-50 dark:bg-gray-800 text-gray-500'
+                      }`} onClick={() => setShowReader(p)} title={p.title}>
+                        {p.title}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : loading ? (
           <div className="text-center py-20">
             <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-3" />
             <p className="text-sm text-gray-500">Loading articles...</p>
@@ -327,6 +426,13 @@ export default function BlogPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {post.status === 'published' && (
+                        <a href={`/ainos/blog/${post.slug}/`} target="_blank" rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View Public Post">
+                          <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
+                        </a>
+                      )}
                       {post.status === 'draft' && (
                         <button onClick={(e) => { e.stopPropagation(); handleUpdateStatus(post.id, 'published'); }}
                           className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20" title="Publish">
@@ -454,6 +560,35 @@ export default function BlogPage() {
                       <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70">Review and edit below, then publish or save as draft</p>
                     </div>
 
+                    {/* SEO Score */}
+                    {generated.seoScore && (
+                      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4 text-purple-600" />
+                            <span className="text-sm font-semibold text-gray-900 dark:text-white">SEO / AEO Score</span>
+                          </div>
+                          <span className={`text-2xl font-bold ${
+                            generated.seoScore >= 80 ? 'text-emerald-600' : generated.seoScore >= 60 ? 'text-amber-600' : 'text-red-600'
+                          }`}>{generated.seoScore}/100</span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-3">
+                          <div className={`h-2 rounded-full transition-all ${
+                            generated.seoScore >= 80 ? 'bg-emerald-500' : generated.seoScore >= 60 ? 'bg-amber-500' : 'bg-red-500'
+                          }`} style={{ width: `${generated.seoScore}%` }} />
+                        </div>
+                        {generated.seoTips && generated.seoTips.length > 0 && (
+                          <div className="space-y-1">
+                            {generated.seoTips.map((tip, i) => (
+                              <p key={i} className="text-xs text-gray-500 flex items-center gap-1.5">
+                                <Shield className="w-3 h-3 text-purple-400 flex-shrink-0" /> {tip}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Featured Image Preview */}
                     {generated.featuredImage && (
                       <div>
@@ -513,15 +648,32 @@ export default function BlogPage() {
                       }} className="w-full px-4 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
                     </div>
 
+                    {/* Schedule Date */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        <CalendarRange className="w-3.5 h-3.5 inline mr-1" /> Schedule Publish (optional)
+                      </label>
+                      <input type="datetime-local" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                      <p className="text-[10px] text-gray-400 mt-1">Leave empty to publish now or save as draft</p>
+                    </div>
+
                     <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">
                       <button onClick={handleSaveDraft}
                         className="flex-1 py-3 rounded-xl text-sm font-semibold border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                        Save as Draft
+                        Save Draft
                       </button>
-                      <button onClick={handlePublish}
-                        className="flex-1 py-3 rounded-xl text-white text-sm font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-600/20">
-                        <Send className="w-4 h-4" /> Publish Now
-                      </button>
+                      {scheduleDate ? (
+                        <button onClick={handleSchedule}
+                          className="flex-1 py-3 rounded-xl text-white text-sm font-semibold bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-violet-600/20">
+                          <CalendarRange className="w-4 h-4" /> Schedule
+                        </button>
+                      ) : (
+                        <button onClick={handlePublish}
+                          className="flex-1 py-3 rounded-xl text-white text-sm font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-600/20">
+                          <Send className="w-4 h-4" /> Publish Now
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
