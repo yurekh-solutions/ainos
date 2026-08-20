@@ -154,6 +154,52 @@ export default function DashboardPage() {
           <NotificationsBell />
         </motion.header>
 
+        {/* AINOS Robot Helper Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-8 p-6 rounded-2xl border border-purple-100 dark:border-purple-900/30 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30"
+        >
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0">
+              <img
+                src="/ainos-robot.png"
+                alt="AINOS Assistant"
+                className="w-16 h-16 rounded-xl object-cover shadow-md"
+              />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-base font-bold text-purple-900 dark:text-purple-100 mb-1">
+                Welcome to AINOS Business Suite
+              </h3>
+              <p className="text-sm text-purple-700 dark:text-purple-300 mb-3">
+                Your complete business operating system. Start by exploring the modules below or ask me anything using the AI Chat.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Link href="/ai/chat">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 transition-colors shadow-sm"
+                  >
+                     Ask AI Assistant
+                  </motion.button>
+                </Link>
+                <Link href="/ai/tools">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-4 py-2 rounded-lg text-xs font-semibold text-purple-700 dark:text-purple-300 bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                     Explore AI Tools
+                  </motion.button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
           {[
@@ -173,18 +219,6 @@ export default function DashboardPage() {
                 border: '1px solid hsl(var(--border) / 0.5)',
                 boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
               }}>
-              {/* Animated Background Icon */}
-              <motion.div 
-                animate={{ rotate: [0, 5, -5, 0] }}
-                transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-                className="absolute top-0 right-0 w-36 h-36 -translate-y-6 translate-x-6 opacity-10 group-hover:opacity-20 transition-opacity"
-              >
-                <stat.icon className="w-full h-full" style={{ color: stat.color }} />
-              </motion.div>
-              
-              {/* Gradient Accent Bar */}
-              <div className={`absolute top-0 left-0 w-1 h-full bg-gradient-to-b ${stat.gradient} rounded-l-2xl`} />
-              
               {/* Content */}
               <div className="relative">
                 <div className="flex items-center gap-2 mb-3">
