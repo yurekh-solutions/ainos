@@ -1,23 +1,45 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { AlertCircle, ArrowLeft, RefreshCw } from 'lucide-react';
-import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 export default function ErrorPage() {
   const searchParams = useSearchParams();
-  const error = searchParams.get('error') || 'Unknown error';
+  const router = useRouter();
+  const error = searchParams.get('error');
+  const [countdown, setCountdown] = useState(5);
 
   const errorMessages: Record<string, string> = {
-    OAuthCallback: 'Google authentication failed. Please try again.',
+    OAuthCallback: 'Google authentication timed out. Retrying automatically...',
+    OAuthSignin: 'Sign-in was cancelled. Redirecting back...',
     OAuthAccountNotLinked: 'This email is already associated with another account.',
     AccessDenied: 'Access denied. You do not have permission to sign in.',
-    Configuration: 'There is a problem with the server configuration.',
-    Default: 'An authentication error occurred.',
+    Configuration: 'Server configuration issue. Please contact support.',
+    Default: 'Authentication failed. Retrying automatically...',
   };
 
-  const message = errorMessages[error] || errorMessages.Default;
+  const message = error ? (errorMessages[error] || errorMessages.Default) : errorMessages.Default;
+
+  // Auto-redirect to sign-in after 5 seconds (with countdown)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          router.push('/auth/signin');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [router]);
+
+  const handleRetry = () => {
+    router.push('/auth/signin');
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #0a0a0f 0%, #111118 100%)' }}>
@@ -42,11 +64,12 @@ export default function ErrorPage() {
 
         <h1 className="text-2xl font-bold text-white mb-3">Authentication Error</h1>
         <p className="text-slate-400 mb-2">{message}</p>
-        <p className="text-xs text-slate-600 mb-8">Error: {error}</p>
+        {error && <p className="text-xs text-slate-600 mb-4">Error code: {error}</p>}
+        <p className="text-xs text-purple-400 mb-8">Redirecting to sign-in in {countdown}s...</p>
 
         <div className="flex gap-3 justify-center">
-          <Link
-            href="/ainos/auth/signin"
+          <button
+            onClick={handleRetry}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all"
             style={{
               background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
@@ -55,10 +78,10 @@ export default function ErrorPage() {
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Sign In
-          </Link>
+          </button>
           
           <button
-            onClick={() => window.location.reload()}
+            onClick={handleRetry}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all bg-slate-800 text-slate-300 hover:bg-slate-700"
           >
             <RefreshCw className="w-4 h-4" />
