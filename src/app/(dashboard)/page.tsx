@@ -186,7 +186,7 @@ export default function DashboardPage() {
                      Ask AI Assistant
                   </motion.button>
                 </Link>
-                <Link href="/ai/tools">
+                <Link href="/ai/skills">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
