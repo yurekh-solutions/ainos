@@ -28,28 +28,28 @@ const stats = [
 
 export default function SignInPage() {
   return (
-    <div className="min-h-screen flex relative overflow-hidden">
+    <div className="min-h-screen flex relative overflow-hidden bg-gray-50">
       {/* Animated Background */}
       <div className="absolute inset-0">
         <div 
           className="absolute inset-0"
           style={{
-            background: 'linear-gradient(135deg, #0a0a0f 0%, #111118 25%, #0d0d14 50%, #15151f 75%, #0a0a10 100%)'
+            background: 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 25%, #f9fafb 50%, #f3f4f6 75%, #f9fafb 100%)'
           }}
         />
         
-        {/* Mesh Gradient Orbs */}
+        {/* Subtle Gradient Orbs */}
         <motion.div
           animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
           className="absolute top-0 left-0 w-[800px] h-[800px] -translate-x-1/2 -translate-y-1/2"
-          style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 50%)' }}
+          style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 50%)' }}
         />
         <motion.div
           animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.4, 0.2] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
           className="absolute bottom-0 right-0 w-[900px] h-[900px] translate-x-1/3 translate-y-1/3"
-          style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 50%)' }}
+          style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 50%)' }}
         />
         <motion.div
           animate={{ x: [0, 100, 0], y: [0, -50, 0] }}
@@ -63,8 +63,8 @@ export default function SignInPage() {
           className="absolute inset-0 opacity-[0.03]"
           style={{
             backgroundImage: `
-              linear-gradient(rgba(148,163,184,1) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(148,163,184,1) 1px, transparent 1px)
+              linear-gradient(rgba(100,100,100,1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(100,100,100,1) 1px, transparent 1px)
             `,
             backgroundSize: '80px 80px'
           }}
@@ -74,7 +74,7 @@ export default function SignInPage() {
         {[...Array(6)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-1 h-1 rounded-full bg-indigo-500/30"
+            className="absolute w-1 h-1 rounded-full bg-purple-400/30"
             style={{
               top: `${20 + i * 15}%`,
               left: `${10 + i * 12}%`,
@@ -125,8 +125,8 @@ export default function SignInPage() {
               <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 opacity-30 blur-lg -z-10" />
             </motion.div>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-white">AINOS</h1>
-              <p className="text-sm font-medium text-slate-400">Business Suite</p>
+              <h1 className="text-3xl font-bold tracking-tight text-gray-900">AINOS</h1>
+              <p className="text-sm font-medium text-gray-500">Business Suite</p>
             </div>
           </motion.div>
 
@@ -137,7 +137,7 @@ export default function SignInPage() {
             transition={{ delay: 0.3, duration: 0.6 }}
             className="mb-8"
           >
-            <h2 className="text-4xl xl:text-5xl font-bold leading-[1.15] mb-5 text-white">
+            <h2 className="text-4xl xl:text-5xl font-bold leading-[1.15] mb-5 text-gray-900">
               Transform Your
               <span className="block mt-2">
                 <span 
@@ -150,7 +150,7 @@ export default function SignInPage() {
                 </span>
               </span>
             </h2>
-            <p className="text-lg leading-relaxed text-slate-400">
+            <p className="text-lg leading-relaxed text-gray-600">
               Streamline invoicing, automate payments, and grow your business with intelligent automation.
             </p>
           </motion.div>
@@ -175,7 +175,7 @@ export default function SignInPage() {
                 transition={{ delay: 0.5 + i * 0.1 }}
                 className="flex items-center gap-3 p-3 rounded-xl"
                 style={{ 
-                  background: 'linear-gradient(135deg, rgba(30,30,45,0.8) 0%, rgba(20,20,35,0.6) 100%)',
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(249,250,251,0.6) 100%)',
                   border: '1px solid rgba(99,102,241,0.15)',
                   backdropFilter: 'blur(10px)'
                 }}
@@ -186,7 +186,7 @@ export default function SignInPage() {
                 >
                   <Check className="w-4 h-4" style={{ color: item.color }} />
                 </div>
-                <span className="text-sm font-medium text-slate-300">{item.text}</span>
+                <span className="text-sm font-medium text-gray-700">{item.text}</span>
               </motion.div>
             ))}
           </motion.div>
@@ -201,10 +201,10 @@ export default function SignInPage() {
             {stats.map((stat, i) => (
               <div key={stat.label} className="text-center">
                 <div className="flex items-center justify-center gap-1">
-                  <span className="text-2xl font-bold text-indigo-400">{stat.value}</span>
-                  {stat.icon && <Star className="w-4 h-4 fill-indigo-400 text-indigo-400" />}
+                  <span className="text-2xl font-bold text-purple-600">{stat.value}</span>
+                  {stat.icon && <Star className="w-4 h-4 fill-purple-600 text-purple-600" />}
                 </div>
-                <span className="text-xs font-medium text-slate-500">{stat.label}</span>
+                <span className="text-xs font-medium text-gray-500">{stat.label}</span>
               </div>
             ))}
           </motion.div>
@@ -236,24 +236,20 @@ export default function SignInPage() {
               <img src="/ainos/ainos-robot.png" alt="AINOS" className="w-full h-full object-cover" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">AINOS</h1>
-              <p className="text-xs text-slate-400">Business Suite</p>
+              <h1 className="text-xl font-bold text-gray-900">AINOS</h1>
+              <p className="text-xs text-gray-500">Business Suite</p>
             </div>
           </motion.div>
 
           {/* Glass Card */}
           <div
-            className="relative p-6 sm:p-8 rounded-[28px] overflow-hidden"
+            className="relative p-6 sm:p-8 rounded-[28px] overflow-hidden bg-white"
             style={{
-              background: 'linear-gradient(165deg, rgba(20,20,35,0.95) 0%, rgba(15,15,28,0.9) 50%, rgba(10,10,20,0.85) 100%)',
-              backdropFilter: 'blur(40px)',
-              WebkitBackdropFilter: 'blur(40px)',
               border: '1px solid rgba(99,102,241,0.15)',
               boxShadow: `
-                0 50px 100px -30px rgba(0,0,0,0.5),
-                0 30px 60px -20px rgba(99,102,241,0.1),
-                inset 0 1px 0 0 rgba(255,255,255,0.05),
-                inset 0 -1px 0 0 rgba(99,102,241,0.05)
+                0 50px 100px -30px rgba(0,0,0,0.1),
+                0 30px 60px -20px rgba(99,102,241,0.08),
+                inset 0 1px 0 0 rgba(255,255,255,0.8)
               `
             }}
           >
@@ -275,15 +271,15 @@ export default function SignInPage() {
                   border: '1px solid rgba(99,102,241,0.2)'
                 }}
               >
-                <Sparkles className="w-4 h-4 text-indigo-400" />
-                <span className="text-sm font-semibold text-indigo-400">Welcome back</span>
+                <Sparkles className="w-4 h-4 text-purple-600" />
+                <span className="text-sm font-semibold text-purple-600">Welcome back</span>
               </motion.div>
               
               <motion.h2
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="text-2xl sm:text-3xl font-bold mb-2 text-white"
+                className="text-2xl sm:text-3xl font-bold mb-2 text-gray-900"
               >
                 Sign in to continue
               </motion.h2>
@@ -292,7 +288,7 @@ export default function SignInPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.35 }}
-                className="text-sm text-slate-400"
+                className="text-sm text-gray-600"
               >
                 Access your invoices, customers & analytics
               </motion.p>
@@ -305,21 +301,11 @@ export default function SignInPage() {
               transition={{ delay: 0.4 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => signIn('google', { callbackUrl: '/ainos/' })}
-              className="relative w-full py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all group overflow-hidden"
-              style={{
-                background: 'linear-gradient(135deg, rgba(30,30,50,0.8) 0%, rgba(20,20,40,0.6) 100%)',
-                border: '1px solid rgba(99,102,241,0.2)',
-                boxShadow: '0 4px 20px -5px rgba(0,0,0,0.3), 0 2px 8px -3px rgba(99,102,241,0.1)'
-              }}
+              onClick={() => signIn('google', { callbackUrl: '/' })}
+              className="relative w-full py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all group overflow-hidden bg-white border border-gray-200 hover:border-purple-300 hover:shadow-md"
             >
-              <div 
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(139,92,246,0.05) 100%)' }}
-              />
               <GoogleIcon />
-              <span className="relative font-semibold text-slate-200">Continue with Google</span>
-              <ArrowRight className="w-4 h-4 text-slate-500 opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+              <span className="relative font-semibold text-gray-700">Continue with Google</span>
             </motion.button>
 
             {/* Divider */}
@@ -330,7 +316,7 @@ export default function SignInPage() {
               className="flex items-center gap-4 my-7"
             >
               <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.2), transparent)' }} />
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Why AINOS</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">Why AINOS</span>
               <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.2), transparent)' }} />
             </motion.div>
 
@@ -344,7 +330,7 @@ export default function SignInPage() {
                   transition={{ delay: 0.55 + i * 0.08 }}
                   className="p-3 rounded-xl text-center group cursor-default"
                   style={{
-                    background: 'linear-gradient(135deg, rgba(30,30,50,0.6) 0%, rgba(20,20,40,0.4) 100%)',
+                    background: 'linear-gradient(135deg, rgba(249,250,251,0.8) 0%, rgba(243,244,246,0.6) 100%)',
                     border: '1px solid rgba(99,102,241,0.1)'
                   }}
                 >
@@ -352,10 +338,10 @@ export default function SignInPage() {
                     className="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center transition-transform group-hover:scale-110"
                     style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(139,92,246,0.1) 100%)' }}
                   >
-                    <feature.icon className="w-5 h-5 text-indigo-400" />
+                    <feature.icon className="w-5 h-5 text-purple-600" />
                   </div>
-                  <p className="text-xs font-semibold mb-0.5 text-slate-300">{feature.title}</p>
-                  <p className="text-[10px] text-slate-500">{feature.desc}</p>
+                  <p className="text-xs font-semibold mb-0.5 text-gray-900">{feature.title}</p>
+                  <p className="text-[10px] text-gray-500">{feature.desc}</p>
                 </motion.div>
               ))}
             </div>
@@ -365,12 +351,12 @@ export default function SignInPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
-              className="text-center text-[11px] leading-relaxed text-slate-500"
+              className="text-center text-[11px] leading-relaxed text-gray-500"
             >
               By continuing, you agree to our{' '}
-              <a href="#" className="text-indigo-400 hover:underline font-medium">Terms</a>
+              <a href="#" className="text-purple-600 hover:underline font-medium">Terms</a>
               {' & '}
-              <a href="#" className="text-indigo-400 hover:underline font-medium">Privacy Policy</a>
+              <a href="#" className="text-purple-600 hover:underline font-medium">Privacy Policy</a>
             </motion.p>
           </div>
 
@@ -381,9 +367,9 @@ export default function SignInPage() {
             transition={{ delay: 0.9 }}
             className="flex items-center justify-center gap-2 mt-6"
           >
-            <Globe className="w-3.5 h-3.5 text-slate-600" />
-            <span className="text-xs text-slate-500">
-              Trusted by <span className="font-semibold text-indigo-400">10,000+</span> businesses worldwide
+            <Globe className="w-3.5 h-3.5 text-gray-400" />
+            <span className="text-xs text-gray-500">
+              Trusted by <span className="font-semibold text-purple-600">10,000+</span> businesses worldwide
             </span>
           </motion.div>
         </motion.div>
