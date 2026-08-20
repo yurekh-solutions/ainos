@@ -164,7 +164,7 @@ export default function DashboardPage() {
           <div className="flex items-start gap-4">
             <div className="flex-shrink-0">
               <img
-                src="/ainos-robot.png"
+                src="/icon.png"
                 alt="AINOS Assistant"
                 className="w-16 h-16 rounded-xl object-cover shadow-md"
               />
