@@ -13,13 +13,24 @@ export function getRedis(): Redis | null {
     return null;
   }
 
-  // Upstash uses token as password in the connection URL
-  const upstashUrl = REDIS_URL.replace('https://', 'rediss://default:').replace('.upstash.io', `.upstash.io:6379`) + `/${REDIS_TOKEN}`;
-  // Fallback: construct proper Upstash URL
-  const connectionString = `rediss://default:${REDIS_TOKEN}@${REDIS_URL.replace('https://', '')}:6379`;
+  // Upstash provides a REST URL (https://...) but ioredis needs rediss://...
+  // Extract hostname from REST URL and build proper Redis connection string
+  let hostname: string;
+  try {
+    const url = new URL(REDIS_URL);
+    hostname = url.hostname;
+  } catch {
+    hostname = REDIS_URL.replace('https://', '').replace('http://', '');
+  }
+
+  const connectionString = `rediss://default:${REDIS_TOKEN}@${hostname}:6379`;
+
+  // Only disable cert verification in development/sandbox environments
+  // Production (Render) should use proper TLS verification
+  const isProduction = process.env.NODE_ENV === 'production';
 
   redis = new Redis(connectionString, {
-    tls: {},  // Upstash requires TLS
+    tls: isProduction ? {} : { rejectUnauthorized: false },
     maxRetriesPerRequest: 3,
     retryStrategy(times) {
       if (times > 3) return null; // Stop retrying
@@ -28,6 +39,8 @@ export function getRedis(): Redis | null {
     lazyConnect: true,
     enableAutoPipelining: true,
     maxLoadingRetryTime: 5000,
+    connectTimeout: 10000,
+    commandTimeout: 5000,
   });
 
   redis.on('error', (err) => {
