@@ -14,10 +14,10 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 function getStoredTheme(): Theme {
-  if (typeof window === 'undefined') return 'dark';
+  if (typeof window === 'undefined') return 'light';
   const stored = localStorage.getItem('ainos-theme');
   if (stored === 'light' || stored === 'dark') return stored;
-  return 'dark';
+  return 'light'; // Light theme by default
 }
 
 let currentTheme: Theme = getStoredTheme();
