@@ -19,24 +19,22 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     }
   }, [status, router]);
 
-  if (status === 'loading') {
+  // Show loading for both 'loading' and 'unauthenticated' states
+  // This prevents blank screen while redirect happens
+  if (status !== 'authenticated') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="text-center"
         >
-          <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-white/60">Loading...</p>
+          <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500 text-sm">Loading...</p>
         </motion.div>
       </div>
     );
   }
 
-  if (status === 'authenticated') {
-    return <>{children}</>;
-  }
-
-  return null;
+  return <>{children}</>;
 }
