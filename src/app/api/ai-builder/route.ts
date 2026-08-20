@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
-import connectDB from '@/lib/mongodb';
-import GeneratedSite from '@/models/GeneratedSite';
+import { prisma } from '@/lib/prisma';
 import { generateSite } from '@/lib/site-generator';
 import { checkQuota } from '@/lib/billing';
 
@@ -9,17 +8,21 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    await connectDB();
     const userId = session.user.id || session.user.email;
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (id) {
-      const site = await GeneratedSite.findOne({ _id: id, createdBy: userId });
+      const site = await prisma.generatedSite.findFirst({ where: { id, createdBy: userId } });
       if (!site) return NextResponse.json({ error: 'Not found' }, { status: 404 });
       return NextResponse.json(site);
     }
-    const sites = await GeneratedSite.find({ createdBy: userId }).select('-html').sort({ createdAt: -1 });
-    return NextResponse.json(sites);
+    const sites = await prisma.generatedSite.findMany({
+      where: { createdBy: userId },
+      orderBy: { createdAt: 'desc' },
+    });
+    // Return without heavy HTML body for list view
+    const lite = sites.map(({ html, ...rest }) => rest);
+    return NextResponse.json(lite);
   } catch (error) {
     console.error('Error fetching generated sites:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -30,7 +33,6 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    await connectDB();
     const body = await req.json();
     if (!body.businessName || !body.industry) {
       return NextResponse.json({ error: 'businessName and industry are required' }, { status: 400 });
@@ -53,17 +55,20 @@ export async function POST(req: NextRequest) {
       address: body.address ? String(body.address).slice(0, 200) : '',
     };
     const { html, aiUsed } = await generateSite(brief);
-    const site = await GeneratedSite.create({
-      businessName: brief.businessName,
-      industry: brief.industry,
-      description: brief.description,
-      siteType: brief.siteType,
-      theme: brief.theme,
-      primaryColor: brief.primaryColor,
-      html,
-      createdBy: session.user.id || session.user.email,
+    const site = await prisma.generatedSite.create({
+      data: {
+        name: brief.businessName,
+        businessName: brief.businessName,
+        industry: brief.industry,
+        description: brief.description,
+        siteType: brief.siteType,
+        theme: brief.theme,
+        primaryColor: brief.primaryColor,
+        html,
+        createdBy: session.user.id || session.user.email,
+      },
     });
-    return NextResponse.json({ _id: site._id, html, aiUsed }, { status: 201 });
+    return NextResponse.json({ id: site.id, html, aiUsed }, { status: 201 });
   } catch (error) {
     console.error('Error generating site:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -74,13 +79,13 @@ export async function DELETE(req: NextRequest) {
   try {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    await connectDB();
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
     const userId = session.user.id || session.user.email;
-    const deleted = await GeneratedSite.findOneAndDelete({ _id: id, createdBy: userId });
-    if (!deleted) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const site = await prisma.generatedSite.findFirst({ where: { id, createdBy: userId } });
+    if (!site) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    await prisma.generatedSite.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting generated site:', error);

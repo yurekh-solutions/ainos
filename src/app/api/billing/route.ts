@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
-import connectDB from '@/lib/mongodb';
-import Subscription, { AppKey } from '@/models/Subscription';
-import User from '@/models/User';
+import { prisma } from '@/lib/prisma';
 import {
   APPS,
   ALL_APP_KEYS,
@@ -10,6 +8,7 @@ import {
   PAYMENT_DETAILS,
   priceForSelection,
   getAiUsage,
+  type AppKey,
 } from '@/lib/billing';
 
 // GET /api/billing — current subscription + app catalog
@@ -20,9 +19,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-
-    const user = await User.findOne({ email: session.user.email });
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     const appsList = Object.values(APPS).map((a) => ({
       key: a.key,
       name: a.name,
@@ -44,7 +41,10 @@ export async function GET(req: NextRequest) {
 
     const owner = session.user.id || session.user.email;
     const [sub, ai] = await Promise.all([
-      Subscription.findOne({ companyId: user.companyId }).sort({ createdAt: -1 }),
+      prisma.subscription.findFirst({
+        where: { companyId: user.companyId },
+        orderBy: { createdAt: 'desc' },
+      }),
       getAiUsage(owner),
     ]);
 
@@ -96,9 +96,7 @@ export async function POST(req: NextRequest) {
     const amountInr = priceForSelection(selection);
     const oneIsCheaper = !wantsOne && amountInr >= ONE_BUNDLE.priceInr;
 
-    await connectDB();
-
-    const user = await User.findOne({ email: session.user.email });
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     if (!user?.companyId) {
       return NextResponse.json(
         { error: 'Complete onboarding before choosing a plan' },
@@ -107,21 +105,36 @@ export async function POST(req: NextRequest) {
     }
 
     // Mark intent as pending — activation happens after payment verification
-    const existing = await Subscription.findOne({ companyId: user.companyId }).sort({
-      createdAt: -1,
+    const existing = await prisma.subscription.findFirst({
+      where: { companyId: user.companyId },
+      orderBy: { createdAt: 'desc' },
     });
-    const pendingFields = wantsOne
-      ? { plan: 'one', apps: undefined, status: 'pending' }
-      : { plan: undefined, apps: pickedApps, status: 'pending' };
+
     if (existing && existing.status !== 'active') {
-      Object.assign(existing, pendingFields);
-      await existing.save();
-    } else if (!existing) {
-      await Subscription.create({
-        companyId: user.companyId,
-        userId: String(user._id),
-        ...pendingFields,
+      const updateData: Record<string, unknown> = { status: 'pending' };
+      if (wantsOne) {
+        updateData.plan = 'one';
+        updateData.apps = null;
+      } else {
+        updateData.plan = null;
+        updateData.apps = pickedApps;
+      }
+      await prisma.subscription.update({
+        where: { id: existing.id },
+        data: updateData,
       });
+    } else if (!existing) {
+      const createData: Record<string, unknown> = {
+        companyId: user.companyId,
+        userId: user.id,
+        status: 'pending',
+      };
+      if (wantsOne) {
+        createData.plan = 'one';
+      } else {
+        createData.apps = pickedApps;
+      }
+      await prisma.subscription.create({ data: createData });
     }
 
     const label = wantsOne

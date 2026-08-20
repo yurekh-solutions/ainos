@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { startTrial } from '@/lib/billing';
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,6 +25,13 @@ export async function POST(req: NextRequest) {
       where: { id: user.id },
       data: { companyId: company.id }
     });
+
+    // Start 14-day AINOS One trial for new company
+    try {
+      await startTrial(company.id, user.id);
+    } catch (e) {
+      console.error('Failed to start trial:', e);
+    }
 
     return NextResponse.json(company, { status: 201 });
   } catch (error) {

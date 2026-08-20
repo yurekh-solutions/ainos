@@ -51,11 +51,14 @@ export async function executeTool(
   // Log the tool run
   await prisma.toolRun.create({
     data: {
+      tool: tool.slug,
       toolName: tool.name,
       input: JSON.parse(JSON.stringify(input)),
+      inputs: JSON.parse(JSON.stringify(input)),
       output: JSON.parse(JSON.stringify(output)),
       status: 'completed',
       userId,
+      createdBy: userId,
       companyId
     }
   })

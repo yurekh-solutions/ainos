@@ -1,9 +1,23 @@
 import { NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import Subscription, { AppKey, PlanKey, ISubscription } from '@/models/Subscription';
-import ToolRun from '@/models/ToolRun';
-import GeneratedSite from '@/models/GeneratedSite';
-import User from '@/models/User';
+import { prisma } from '@/lib/prisma';
+
+// ============ Types (previously from Mongoose Subscription model) ============
+
+export type AppKey = 'crm' | 'books' | 'hr' | 'inventory' | 'marketing' | 'desk' | 'projects' | 'ai_studio';
+export type PlanKey = 'one' | 'starter' | 'growth' | 'scale';
+
+export interface ISubscription {
+  id: string;
+  companyId: string | null;
+  userId: string | null;
+  plan: string | null;
+  apps: AppKey[] | null;
+  status: string;
+  currentPeriodEnd: Date | null;
+  trialEndsAt: Date | null;
+  partnerCode: string | null;
+  createdAt: Date;
+}
 
 // ============ App Catalog (Zoho-style: each app sold separately) ============
 
@@ -108,8 +122,12 @@ export const PAYMENT_DETAILS = {
 // ============ Subscription Helpers ============
 
 export async function getSubscription(companyId: string): Promise<ISubscription | null> {
-  await connectDB();
-  return Subscription.findOne({ companyId }).sort({ createdAt: -1 });
+  const sub = await prisma.subscription.findFirst({
+    where: { companyId },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (!sub) return null;
+  return mapSubscription(sub);
 }
 
 /** Legacy tier -> app set, so pre-existing subscriptions keep working. */
@@ -170,19 +188,21 @@ export async function startTrial(
   userId: string,
   partnerCode?: string
 ): Promise<ISubscription> {
-  await connectDB();
-  const existing = await Subscription.findOne({ companyId });
-  if (existing) return existing;
+  const existing = await prisma.subscription.findFirst({ where: { companyId } });
+  if (existing) return mapSubscription(existing);
 
   const trialEndsAt = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
-  return Subscription.create({
-    companyId,
-    userId,
-    plan: 'one',
-    status: 'trialing',
-    trialEndsAt,
-    partnerCode,
+  const sub = await prisma.subscription.create({
+    data: {
+      companyId,
+      userId,
+      plan: 'one',
+      status: 'trialing',
+      trialEndsAt,
+      partnerCode,
+    },
   });
+  return mapSubscription(sub);
 }
 
 export interface PlanSelection {
@@ -198,17 +218,44 @@ export async function activateSubscription(
   selection: PlanSelection,
   months = 1
 ): Promise<ISubscription> {
-  await connectDB();
   const currentPeriodEnd = new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000);
-  const update =
-    selection.plan === 'one'
-      ? { plan: 'one', apps: undefined, status: 'active', currentPeriodEnd }
-      : { plan: undefined, apps: selection.apps || [], status: 'active', currentPeriodEnd };
-  return Subscription.findOneAndUpdate(
-    { companyId },
-    update,
-    { new: true, upsert: true, sort: { createdAt: -1 } }
-  );
+
+  const existing = await prisma.subscription.findFirst({
+    where: { companyId },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (existing) {
+    const updateData: Record<string, unknown> = {
+      status: 'active',
+      currentPeriodEnd,
+    };
+    if (selection.plan === 'one') {
+      updateData.plan = 'one';
+      updateData.apps = null;
+    } else {
+      updateData.plan = null;
+      updateData.apps = selection.apps || [];
+    }
+    const sub = await prisma.subscription.update({
+      where: { id: existing.id },
+      data: updateData,
+    });
+    return mapSubscription(sub);
+  }
+
+  const createData: Record<string, unknown> = {
+    companyId,
+    status: 'active',
+    currentPeriodEnd,
+  };
+  if (selection.plan === 'one') {
+    createData.plan = 'one';
+  } else {
+    createData.apps = selection.apps || [];
+  }
+  const sub = await prisma.subscription.create({ data: createData });
+  return mapSubscription(sub);
 }
 
 // ============ AI Studio Quotas (per user, per calendar month) ============
@@ -232,11 +279,10 @@ export async function checkQuota(
   userId: string,
   kind: 'toolRun' | 'website'
 ): Promise<QuotaCheck> {
-  await connectDB();
+  const user = await prisma.user.findFirst({
+    where: userId.includes('@') ? { email: userId } : { id: userId },
+  }).catch(() => null);
 
-  const user = await User.findOne(
-    userId.includes('@') ? { email: userId } : { _id: userId }
-  ).catch(() => null);
   const apps = user?.companyId
     ? await getActiveApps(user.companyId)
     : new Set<AppKey>();
@@ -248,8 +294,8 @@ export async function checkQuota(
   const since = new Date(now.getFullYear(), now.getMonth(), 1);
   const used =
     kind === 'toolRun'
-      ? await ToolRun.countDocuments({ createdBy: userId, createdAt: { $gte: since } })
-      : await GeneratedSite.countDocuments({ createdBy: userId, createdAt: { $gte: since } });
+      ? await prisma.toolRun.count({ where: { createdBy: userId, createdAt: { gte: since } } })
+      : await prisma.generatedSite.count({ where: { createdBy: userId, createdAt: { gte: since } } });
   const limit = kind === 'toolRun' ? limits.toolRuns : limits.websites;
 
   if (used >= limit) {
@@ -264,11 +310,10 @@ export async function checkQuota(
 
 /** Current-month AI usage + limits for a user — powers the usage chip on the services page. */
 export async function getAiUsage(userId: string) {
-  await connectDB();
+  const user = await prisma.user.findFirst({
+    where: userId.includes('@') ? { email: userId } : { id: userId },
+  }).catch(() => null);
 
-  const user = await User.findOne(
-    userId.includes('@') ? { email: userId } : { _id: userId }
-  ).catch(() => null);
   const apps = user?.companyId
     ? await getActiveApps(user.companyId)
     : new Set<AppKey>();
@@ -278,9 +323,37 @@ export async function getAiUsage(userId: string) {
   const now = new Date();
   const since = new Date(now.getFullYear(), now.getMonth(), 1);
   const [toolRuns, websites] = await Promise.all([
-    ToolRun.countDocuments({ createdBy: userId, createdAt: { $gte: since } }),
-    GeneratedSite.countDocuments({ createdBy: userId, createdAt: { $gte: since } }),
+    prisma.toolRun.count({ where: { createdBy: userId, createdAt: { gte: since } } }),
+    prisma.generatedSite.count({ where: { createdBy: userId, createdAt: { gte: since } } }),
   ]);
 
   return { hasAiStudio, usage: { toolRuns, websites }, limits };
+}
+
+// ============ Helper to map Prisma Subscription to ISubscription ============
+
+function mapSubscription(sub: {
+  id: string;
+  companyId: string | null;
+  userId: string | null;
+  plan: string | null;
+  apps: unknown;
+  status: string;
+  currentPeriodEnd: Date | null;
+  trialEndsAt: Date | null;
+  partnerCode: string | null;
+  createdAt: Date;
+}): ISubscription {
+  return {
+    id: sub.id,
+    companyId: sub.companyId,
+    userId: sub.userId,
+    plan: sub.plan,
+    apps: Array.isArray(sub.apps) ? sub.apps as AppKey[] : null,
+    status: sub.status,
+    currentPeriodEnd: sub.currentPeriodEnd,
+    trialEndsAt: sub.trialEndsAt,
+    partnerCode: sub.partnerCode,
+    createdAt: sub.createdAt,
+  };
 }

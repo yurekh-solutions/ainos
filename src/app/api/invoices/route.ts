@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
-import connectDB from '@/lib/mongodb';
-import Invoice from '@/models/Invoice';
-import User from '@/models/User';
-import Customer from '@/models/Customer';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,15 +9,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-    
-    const user = await User.findOne({ email: session.user.email });
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     if (!user?.companyId) {
       return NextResponse.json([]);
     }
 
-    const invoices = await Invoice.find({ companyId: user.companyId })
-      .sort({ createdAt: -1 });
+    const invoices = await prisma.invoice.findMany({
+      where: { companyId: user.companyId },
+      orderBy: { createdAt: 'desc' },
+    });
 
     return NextResponse.json(invoices);
   } catch (error) {
@@ -36,9 +33,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-    
-    const user = await User.findOne({ email: session.user.email });
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     if (!user?.companyId) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
@@ -57,23 +52,25 @@ export async function POST(req: NextRequest) {
     // Find or create customer
     let customer = null;
     if (body.customerEmail) {
-      customer = await Customer.findOne({ 
-        companyId: user.companyId,
-        email: body.customerEmail 
+      customer = await prisma.customer.findFirst({ 
+        where: {
+          companyId: user.companyId,
+          email: body.customerEmail,
+        },
       });
     }
     
     if (!customer) {
-      customer = await Customer.create({
-        companyId: user.companyId,
-        name: body.customerName,
-        email: body.customerEmail || null,
-        createdBy: user._id.toString(),
+      customer = await prisma.customer.create({
+        data: {
+          companyId: user.companyId,
+          name: body.customerName,
+          email: body.customerEmail || null,
+        },
       });
     }
 
     // Calculate invoice items with custom GST rate
-    // Use provided GST rate (can be 0 for no tax), default to 18 only if undefined/null
     const GST_RATE = body.gstRate !== undefined && body.gstRate !== null ? body.gstRate : 18;
     const items = body.items.map((item: { productName: string; description: string; quantity: number; price: number }) => {
       const itemSubtotal = item.price * item.quantity;
@@ -102,23 +99,25 @@ export async function POST(req: NextRequest) {
     const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
     const invoiceNumber = `INV-${timestamp}-${randomSuffix}`;
 
-    const invoice = await Invoice.create({
-      companyId: user.companyId,
-      customerId: customer._id.toString(),
-      customerName: body.customerName,
-      customerEmail: body.customerEmail,
-      customerAddress: body.customerAddress,
-      customerGstNumber: body.customerGst,
-      invoiceNumber,
-      invoiceDate: new Date(),
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-      items,
-      subtotal,
-      taxTotal,
-      totalAmount,
-      taxRate: GST_RATE,
-      status: 'draft',
-      createdBy: user._id.toString(),
+    const invoice = await prisma.invoice.create({
+      data: {
+        companyId: user.companyId,
+        customerId: customer.id,
+        customerName: body.customerName,
+        customerEmail: body.customerEmail,
+        customerAddress: body.customerAddress,
+        customerGstNumber: body.customerGst,
+        invoiceNumber,
+        invoiceDate: new Date(),
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        items,
+        subtotal,
+        taxTotal,
+        totalAmount,
+        taxRate: GST_RATE,
+        status: 'draft',
+        createdBy: user.id,
+      },
     });
 
     return NextResponse.json(invoice, { status: 201 });
@@ -128,4 +127,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Internal server error', details: errorMessage }, { status: 500 });
   }
 }
-

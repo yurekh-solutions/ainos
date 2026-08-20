@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
-import connectDB from '@/lib/mongodb';
-import Product from '@/models/Product';
-import User from '@/models/User';
+import { prisma } from '@/lib/prisma';
 
 // PUT - Update product
 export async function PUT(
@@ -11,44 +9,22 @@ export async function PUT(
 ) {
   try {
     const session = await getServerSession(req);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    await connectDB();
-    
-    const user = await User.findOne({ email: session.user.email });
-    if (!user?.companyId) {
-      return NextResponse.json({ error: 'Company not found' }, { status: 404 });
-    }
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
 
     const body = await req.json();
     const { id } = await params;
 
-    // Find product and verify ownership
-    const product = await Product.findOne({ 
-      _id: id,
-      companyId: user.companyId 
-    });
+    const data: Record<string, unknown> = {};
+    if (body.name !== undefined) data.name = body.name;
+    if (body.description !== undefined) data.description = body.description;
+    if (body.price !== undefined) data.price = body.price;
+    if (body.sku !== undefined) data.sku = body.sku;
 
-    if (!product) {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
-    }
-
-    // Update product
-    const updatedProduct = await Product.findByIdAndUpdate(
-      id,
-      {
-        name: body.name,
-        description: body.description,
-        price: body.price,
-        taxRate: body.taxRate,
-        sku: body.sku,
-      },
-      { new: true }
-    );
-
-    return NextResponse.json(updatedProduct);
+    const product = await prisma.product.update({ where: { id }, data });
+    return NextResponse.json(product);
   } catch (error) {
     console.error('Error updating product:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -62,32 +38,10 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(req);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    await connectDB();
-    
-    const user = await User.findOne({ email: session.user.email });
-    if (!user?.companyId) {
-      return NextResponse.json({ error: 'Company not found' }, { status: 404 });
-    }
+    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { id } = await params;
-
-    // Find product and verify ownership
-    const product = await Product.findOne({ 
-      _id: id,
-      companyId: user.companyId 
-    });
-
-    if (!product) {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
-    }
-
-    // Delete product
-    await Product.findByIdAndDelete(id);
-
+    await prisma.product.delete({ where: { id } });
     return NextResponse.json({ message: 'Product deleted successfully' });
   } catch (error) {
     console.error('Error deleting product:', error);

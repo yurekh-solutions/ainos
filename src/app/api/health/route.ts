@@ -1,19 +1,17 @@
 import { NextResponse } from 'next/server';
 import { getRedis } from '@/lib/redis';
-import connectDB from '@/lib/mongodb';
-import mongoose from 'mongoose';
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   const checks: Record<string, { status: string; latency?: number }> = {};
 
-  // Check MongoDB
+  // Check PostgreSQL (via Prisma)
   try {
     const start = Date.now();
-    await connectDB();
-    await mongoose.connection.db?.admin().ping();
-    checks.mongodb = { status: 'healthy', latency: Date.now() - start };
+    await prisma.$queryRaw`SELECT 1`;
+    checks.postgresql = { status: 'healthy', latency: Date.now() - start };
   } catch (error) {
-    checks.mongodb = { status: 'unhealthy' };
+    checks.postgresql = { status: 'unhealthy' };
   }
 
   // Check Redis

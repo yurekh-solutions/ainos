@@ -233,26 +233,35 @@ model Product {
 
 // Invoices
 model Invoice {
-  id              String    @id @default(uuid())
-  invoiceNumber   String    @unique @map("invoice_number")
-  customerId      String?   @map("customer_id")
-  customerName    String?   @map("customer_name")
-  items           Json?
-  subtotal        Float?
-  tax             Float?
-  discount        Float?    @default(0)
-  total           Float?
-  status          String    @default("draft")
-  dueDate         DateTime? @map("due_date")
-  paidDate        DateTime? @map("paid_date")
-  notes           String?   @db.Text
-  companyId       String?   @map("company_id")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  id                String    @id @default(uuid())
+  invoiceNumber     String    @unique @map("invoice_number")
+  customerId        String?   @map("customer_id")
+  customerName      String?   @map("customer_name")
+  customerEmail     String?   @map("customer_email")
+  customerAddress   String?   @map("customer_address")
+  customerGstNumber String?   @map("customer_gst_number")
+  invoiceDate       DateTime? @map("invoice_date")
+  items             Json?
+  subtotal          Float?
+  tax               Float?
+  taxTotal          Float?    @map("tax_total")
+  taxRate           Float?    @map("tax_rate")
+  discount          Float?    @default(0)
+  total             Float?
+  totalAmount       Float?    @map("total_amount")
+  status            String    @default("draft")
+  dueDate           DateTime? @map("due_date")
+  paidDate          DateTime? @map("paid_date")
+  notes             String?   @db.Text
+  createdBy         String?   @map("created_by")
+  companyId         String?   @map("company_id")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
   
-  company         Company?  @relation(fields: [companyId], references: [id])
+  company           Company?  @relation(fields: [companyId], references: [id])
   
   @@index([companyId])
+  @@index([createdBy])
   @@map("invoices")
 }
 
@@ -413,20 +422,21 @@ model Vendor {
 
 // Stock Items
 model StockItem {
-  id          String    @id @default(uuid())
-  name        String
-  sku         String?
-  quantity    Int       @default(0)
-  unit        String?   @default("pcs")
-  minStock    Int       @default(0) @map("min_stock")
-  maxStock    Int?      @map("max_stock")
-  location    String?
-  status      String    @default("active")
-  companyId   String?   @map("company_id")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  id           String    @id @default(uuid())
+  name         String
+  sku          String?
+  quantity     Int       @default(0)
+  unit         String?   @default("pcs")
+  minStock     Int       @default(0) @map("min_stock")
+  maxStock     Int?      @map("max_stock")
+  reorderLevel Int       @default(0) @map("reorder_level")
+  location     String?
+  status       String    @default("active")
+  companyId    String?   @map("company_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
   
-  company     Company?  @relation(fields: [companyId], references: [id])
+  company      Company?  @relation(fields: [companyId], references: [id])
   
   @@index([companyId])
   @@map("stock_items")
@@ -594,12 +604,17 @@ model Notification {
 // Subscriptions
 model Subscription {
   id              String    @id @default(uuid())
-  plan            String
-  status          String    @default("active")
-  startDate       DateTime  @map("start_date")
+  plan            String?
+  apps            Json?
+  status          String    @default("pending")
+  userId          String?   @map("user_id")
+  currentPeriodEnd DateTime? @map("current_period_end")
+  trialEndsAt     DateTime? @map("trial_ends_at")
+  partnerCode     String?   @map("partner_code")
+  startDate       DateTime? @map("start_date")
   endDate         DateTime? @map("end_date")
   amount          Float?
-  billingCycle    String    @map("billing_cycle")
+  billingCycle    String?   @map("billing_cycle")
   paymentMethod   String?   @map("payment_method")
   companyId       String?   @map("company_id")
   createdAt       DateTime  @default(now()) @map("created_at")
@@ -619,6 +634,7 @@ model Automation {
   trigger     String?
   actions     Json?
   status      String    @default("active")
+  createdBy   String?   @map("created_by")
   companyId   String?   @map("company_id")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
@@ -626,6 +642,7 @@ model Automation {
   company     Company?  @relation(fields: [companyId], references: [id])
   
   @@index([companyId])
+  @@index([createdBy])
   @@map("automations")
 }
 
@@ -791,17 +808,25 @@ model FollowUp {
 
 // Generated Sites
 model GeneratedSite {
-  id          String    @id @default(uuid())
-  name        String
-  domain      String?
-  template    String?
-  config      Json?
-  status      String    @default("active")
-  companyId   String?   @map("company_id")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  id           String    @id @default(uuid())
+  name         String?
+  businessName String?   @map("business_name")
+  industry     String?
+  description  String?   @db.Text
+  siteType     String?   @map("site_type")
+  theme        String?
+  primaryColor String?   @map("primary_color")
+  html         String?   @db.Text
+  domain       String?
+  template     String?
+  config       Json?
+  status       String    @default("active")
+  createdBy    String?   @map("created_by")
+  companyId    String?   @map("company_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
   
-  company     Company?  @relation(fields: [companyId], references: [id])
+  company      Company?  @relation(fields: [companyId], references: [id])
   
   @@index([companyId])
   @@map("generated_sites")
@@ -812,6 +837,7 @@ model AIChatSession {
   id          String    @id @default(uuid())
   title       String?
   messages    Json?
+  context     Json?
   status      String    @default("active")
   userId      String?   @map("user_id")
   companyId   String?   @map("company_id")
@@ -826,19 +852,26 @@ model AIChatSession {
 
 // Tool Runs
 model ToolRun {
-  id          String    @id @default(uuid())
-  toolName    String    @map("tool_name")
-  input       Json?
-  output      Json?
-  status      String    @default("completed")
-  duration    Int?
-  userId      String?   @map("user_id")
-  companyId   String?   @map("company_id")
-  createdAt   DateTime  @default(now()) @map("created_at")
+  id           String    @id @default(uuid())
+  tool         String?
+  toolName     String?   @map("tool_name")
+  serviceName  String?   @map("service_name")
+  businessName String?   @map("business_name")
+  input        Json?
+  inputs       Json?
+  output       Json?
+  aiUsed       Boolean   @default(false) @map("ai_used")
+  status       String    @default("completed")
+  duration     Int?
+  userId       String?   @map("user_id")
+  createdBy    String?   @map("created_by")
+  companyId    String?   @map("company_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
   
-  company     Company?  @relation(fields: [companyId], references: [id])
+  company      Company?  @relation(fields: [companyId], references: [id])
   
   @@index([companyId])
+  @@index([createdBy])
   @@map("tool_runs")
 }
 

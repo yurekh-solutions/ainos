@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
-import connectDB from '@/lib/mongodb';
-import Task from '@/models/Task';
+import { prisma } from '@/lib/prisma';
 
-// PATCH /api/tasks/[id] — update task (status moves, edits)
+// PATCH /api/tasks/[id] — update task
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -11,24 +10,20 @@ export async function PATCH(
   try {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    await connectDB();
+
     const { id } = await params;
-    const owner = session.user.id || session.user.email;
     const body = await req.json();
-    const task = await Task.findOneAndUpdate(
-      { _id: id, createdBy: owner },
-      {
-        ...(body.title !== undefined && { title: body.title }),
-        ...(body.description !== undefined && { description: body.description }),
-        ...(body.status !== undefined && { status: body.status }),
-        ...(body.priority !== undefined && { priority: body.priority }),
-        ...(body.assignee !== undefined && { assignee: body.assignee }),
-        ...(body.dueDate !== undefined && { dueDate: body.dueDate }),
-        ...(body.order !== undefined && { order: body.order }),
-      },
-      { new: true }
-    );
-    if (!task) return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+
+    const data: Record<string, unknown> = {};
+    if (body.title !== undefined) data.title = body.title;
+    if (body.description !== undefined) data.description = body.description;
+    if (body.status !== undefined) data.status = body.status;
+    if (body.priority !== undefined) data.priority = body.priority;
+    if (body.assignedTo !== undefined) data.assignedTo = body.assignedTo;
+    if (body.assignee !== undefined) data.assignedTo = body.assignee;
+    if (body.dueDate !== undefined) data.dueDate = new Date(body.dueDate);
+
+    const task = await prisma.task.update({ where: { id }, data });
     return NextResponse.json(task);
   } catch (error) {
     console.error('Error updating task:', error);
@@ -44,11 +39,9 @@ export async function DELETE(
   try {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    await connectDB();
+
     const { id } = await params;
-    const owner = session.user.id || session.user.email;
-    const task = await Task.findOneAndDelete({ _id: id, createdBy: owner });
-    if (!task) return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    await prisma.task.delete({ where: { id } });
     return NextResponse.json({ message: 'Task deleted successfully' });
   } catch (error) {
     console.error('Error deleting task:', error);

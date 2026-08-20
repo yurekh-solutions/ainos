@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
-import connectDB from '@/lib/mongodb';
-import User from '@/models/User';
-import { ALL_APP_KEYS, activateSubscription } from '@/lib/billing';
-import { AppKey } from '@/models/Subscription';
+import { prisma } from '@/lib/prisma';
+import { ALL_APP_KEYS, activateSubscription, type AppKey } from '@/lib/billing';
 
 // yurekhsolutions@gmail.com is always an admin; ADMIN_EMAILS env can add more
 const DEFAULT_ADMIN = 'yurekhsolutions@gmail.com';
@@ -44,9 +42,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await connectDB();
-
-    const customer = await User.findOne({ email: customerEmail });
+    const customer = await prisma.user.findUnique({ where: { email: customerEmail } });
     if (!customer?.companyId) {
       return NextResponse.json(
         { error: 'No user with a company found for that email' },

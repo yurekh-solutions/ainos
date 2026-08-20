@@ -1,19 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
-import connectDB from '@/lib/mongodb';
-import StockItem from '@/models/StockItem';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    await connectDB();
-    const { searchParams } = new URL(req.url);
-    const lowStock = searchParams.get('lowStock');
-    const query: Record<string, unknown> = { createdBy: session.user.id || session.user.email };
-    if (lowStock === 'true') query.quantity = { $lte: { $ref: 'reorderLevel' } };
-    const items = await StockItem.find(query).sort({ createdAt: -1 });
-    const lowStockItems = items.filter(i => i.quantity <= i.reorderLevel);
+
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+
+    const items = await prisma.stockItem.findMany({
+      where: { companyId: user.companyId },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const lowStockItems = items.filter(i => i.quantity <= i.minStock);
+
     return NextResponse.json({ items, lowStockItems, lowStockCount: lowStockItems.length });
   } catch (error) {
     console.error('Error fetching stock:', error);
@@ -25,9 +28,14 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    await connectDB();
+
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+
     const body = await req.json();
-    const item = await StockItem.create({ ...body, createdBy: session.user.id || session.user.email });
+    const item = await prisma.stockItem.create({
+      data: { ...body, companyId: user.companyId }
+    });
     return NextResponse.json(item, { status: 201 });
   } catch (error) {
     console.error('Error creating stock item:', error);

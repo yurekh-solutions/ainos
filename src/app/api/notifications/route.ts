@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
-import connectDB from '@/lib/mongodb';
-import Notification from '@/models/Notification';
-import User from '@/models/User';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    await connectDB();
-    const user = await User.findOne({ email: session.user.email });
+
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
-    const notifications = await Notification.find({ userId: user._id }).sort({ createdAt: -1 }).limit(50);
+
+    const notifications = await prisma.notification.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 50
+    });
     return NextResponse.json(notifications);
   } catch (error) {
     console.error('Error fetching notifications:', error);
@@ -23,11 +26,14 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    await connectDB();
-    const user = await User.findOne({ email: session.user.email });
+
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+
     const body = await req.json();
-    const notification = await Notification.create({ ...body, companyId: user.companyId, userId: user._id });
+    const notification = await prisma.notification.create({
+      data: { ...body, companyId: user.companyId, userId: user.id }
+    });
     return NextResponse.json(notification, { status: 201 });
   } catch (error) {
     console.error('Error creating notification:', error);
@@ -39,10 +45,12 @@ export async function PUT(req: NextRequest) {
   try {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    await connectDB();
+
     const body = await req.json();
     const { id, ...data } = body;
-    const notification = await Notification.findByIdAndUpdate(id, data, { new: true });
+    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+
+    const notification = await prisma.notification.update({ where: { id }, data });
     return NextResponse.json(notification);
   } catch (error) {
     console.error('Error updating notification:', error);
@@ -54,10 +62,12 @@ export async function PATCH(req: NextRequest) {
   try {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    await connectDB();
+
     const body = await req.json();
     const { id } = body;
-    await Notification.findByIdAndUpdate(id, { read: true });
+    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+
+    await prisma.notification.update({ where: { id }, data: { read: true } });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error marking notification as read:', error);

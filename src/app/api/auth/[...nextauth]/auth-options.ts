@@ -1,7 +1,6 @@
 import { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import connectDB from '@/lib/mongodb';
-import User from '@/models/User';
+import { prisma } from '@/lib/prisma';
 
 const baseUrl = process.env.NEXTAUTH_URL_BASE || process.env.NEXTAUTH_URL?.replace(/\/ainos.*$/, '') || 'http://localhost:3000';
 
@@ -35,23 +34,21 @@ export const authOptions: NextAuthOptions = {
       
       if (account?.provider === 'google') {
         try {
-          console.log('Connecting to MongoDB...');
-          await connectDB();
-          console.log('MongoDB connected successfully');
-
-          const existingUser = await User.findOne({ email: user.email });
+          const existingUser = await prisma.user.findUnique({ where: { email: user.email! } });
           console.log('Existing user check:', existingUser ? 'Found' : 'Not found');
           
           if (!existingUser) {
             console.log('Creating new user...');
-            const newUser = await User.create({
-              email: user.email,
-              name: user.name || user.email,
-              googleId: user.id,
-              image: user.image,
-              role: 'user',
+            const newUser = await prisma.user.create({
+              data: {
+                email: user.email!,
+                name: user.name || user.email!,
+                googleId: user.id,
+                image: user.image,
+                role: 'user',
+              },
             });
-            console.log('New user created:', newUser._id);
+            console.log('New user created:', newUser.id);
           }
 
           return true;
@@ -68,12 +65,11 @@ export const authOptions: NextAuthOptions = {
       
       if (session.user?.email) {
         try {
-          await connectDB();
-          const dbUser = await User.findOne({ email: session.user.email });
+          const dbUser = await prisma.user.findUnique({ where: { email: session.user.email } });
           if (dbUser) {
-            session.user.id = dbUser._id.toString();
+            session.user.id = dbUser.id;
             session.user.role = dbUser.role;
-            session.user.companyId = dbUser.companyId;
+            session.user.companyId = dbUser.companyId || undefined;
             console.log('Session enriched with user data');
           }
         } catch (error) {
