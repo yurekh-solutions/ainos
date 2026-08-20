@@ -2,7 +2,9 @@
 
 import { signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import { Shield, FileText, Users, Sparkles, ArrowRight, Check, Star, TrendingUp, Globe } from 'lucide-react';
+import { Shield, FileText, Users, Sparkles, ArrowRight, Check, Star, TrendingUp, Globe, Loader2, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20">
@@ -26,7 +28,30 @@ const stats = [
   { value: '4.9', label: 'User Rating', icon: Star },
 ];
 
+const errorMessages: Record<string, string> = {
+  OAuthCallback: 'Google sign-in failed. The server might be starting up. Please try again in a few seconds.',
+  OAuthSignin: 'Please try signing in again.',
+  Callback: 'Authentication callback failed. Please try again.',
+  Default: 'An error occurred during sign-in.',
+};
+
 export default function SignInPage() {
+  const searchParams = useSearchParams();
+  const urlError = searchParams.get('error');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(urlError ? errorMessages[urlError] || errorMessages.Default : null);
+
+  const handleSignIn = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await signIn('google', { callbackUrl: '/' });
+    } catch (err) {
+      setError('Sign-in failed. Please try again.');
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex relative overflow-hidden bg-gray-50">
       {/* Animated Background */}
@@ -299,14 +324,36 @@ export default function SignInPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              whileHover={{ scale: 1.02, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => signIn('google', { callbackUrl: '/ainos/' })}
-              className="relative w-full py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all group overflow-hidden bg-white border border-gray-200 hover:border-purple-300 hover:shadow-md"
+              whileHover={{ scale: loading ? 1 : 1.02, y: loading ? 0 : -2 }}
+              whileTap={{ scale: loading ? 1 : 0.98 }}
+              onClick={handleSignIn}
+              disabled={loading}
+              className="relative w-full py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all group overflow-hidden bg-white border border-gray-200 hover:border-purple-300 hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              <GoogleIcon />
-              <span className="relative font-semibold text-gray-700">Continue with Google</span>
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 text-purple-600 animate-spin" />
+                  <span className="relative font-semibold text-gray-700">Connecting to Google...</span>
+                </>
+              ) : (
+                <>
+                  <GoogleIcon />
+                  <span className="relative font-semibold text-gray-700">Continue with Google</span>
+                </>
+              )}
             </motion.button>
+
+            {/* Error Message */}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-2 p-3 mt-4 rounded-xl bg-red-50 border border-red-100"
+              >
+                <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                <p className="text-sm text-red-700">{error}</p>
+              </motion.div>
+            )}
 
             {/* Divider */}
             <motion.div

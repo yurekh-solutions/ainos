@@ -28,9 +28,9 @@ const nextConfig = {
   },
   turbopack: {
     root: __dirname,
-    experimental: {
-      useSystemTlsCerts: true,
-    },
+  },
+  experimental: {
+    turbopackUseSystemTlsCerts: true,
   },
   // Disable Turbopack for production builds to avoid memory issues
   webpack: (config, { isServer }) => {
