@@ -3,7 +3,7 @@
 import { signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { Shield, FileText, Users, Sparkles, ArrowRight, Check, Star, TrendingUp, Globe, Loader2, AlertCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 const GoogleIcon = () => (
@@ -29,28 +29,82 @@ const stats = [
 ];
 
 const errorMessages: Record<string, string> = {
-  OAuthCallback: 'Google sign-in failed. The server might be starting up. Please try again in a few seconds.',
+  OAuthCallback: 'Connection timed out. Retrying automatically...',
   OAuthSignin: 'Please try signing in again.',
   Callback: 'Authentication callback failed. Please try again.',
   Default: 'An error occurred during sign-in.',
 };
 
+// Ping the server to wake it up before OAuth starts (prevents cold start failures)
+async function warmUpServer(): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000); // 30s for cold start
+    const res = await fetch('/api/health', { signal: controller.signal });
+    clearTimeout(timeout);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export default function SignInPage() {
   const searchParams = useSearchParams();
   const urlError = searchParams.get('error');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(urlError ? errorMessages[urlError] || errorMessages.Default : null);
+  const [status, setStatus] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const autoRetried = useRef(false);
 
   const handleSignIn = async () => {
     setLoading(true);
     setError(null);
+
+    // Step 1: Wake up the server BEFORE starting OAuth
+    setStatus('Preparing server...');
+    const awake = await warmUpServer();
+
+    if (!awake) {
+      // Server is still starting - wait a bit and retry the warm-up
+      setStatus('Server is starting up, please wait...');
+      await new Promise(r => setTimeout(r, 5000));
+      await warmUpServer(); // Second attempt
+    }
+
+    // Step 2: Server is awake - start OAuth flow
+    setStatus('Connecting to Google...');
+
+    // Small delay to ensure server is fully ready for callback
+    await new Promise(r => setTimeout(r, 1000));
+
     try {
       await signIn('google', { callbackUrl: '/' });
     } catch (err) {
-      setError('Sign-in failed. Please try again.');
-      setLoading(false);
+      // If OAuth callback fails, auto-retry once after brief wait
+      setStatus('Retrying...');
+      await new Promise(r => setTimeout(r, 3000));
+      try {
+        await signIn('google', { callbackUrl: '/' });
+      } catch {
+        setError('Sign-in failed. Please try again.');
+        setLoading(false);
+        setStatus('');
+      }
     }
   };
+
+  // Auto-retry when redirected back with OAuthCallback error (cold start recovery)
+  useEffect(() => {
+    if (urlError === 'OAuthCallback' && !autoRetried.current) {
+      autoRetried.current = true;
+      // Wait a moment then auto-retry sign-in (server is now awake)
+      const timer = setTimeout(() => {
+        handleSignIn();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlError]);
 
   return (
     <div className="min-h-screen flex relative overflow-hidden bg-gray-50">
@@ -333,7 +387,7 @@ export default function SignInPage() {
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 text-purple-600 animate-spin" />
-                  <span className="relative font-semibold text-gray-700">Connecting to Google...</span>
+                  <span className="relative font-semibold text-gray-700">{status || 'Connecting...'}</span>
                 </>
               ) : (
                 <>
