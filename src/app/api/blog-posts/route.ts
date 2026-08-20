@@ -12,14 +12,24 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
+    const category = searchParams.get('category');
     const where: Record<string, unknown> = { companyId: user.companyId };
     if (status) where.status = status;
+    if (category && category !== 'All') where.category = category;
 
     const posts = await prisma.blogPost.findMany({
       where,
       orderBy: { createdAt: 'desc' }
     });
-    return NextResponse.json(posts);
+
+    // Get distinct categories for filtering
+    const allPosts = await prisma.blogPost.findMany({
+      where: { companyId: user.companyId },
+      select: { category: true },
+    });
+    const categories = [...new Set(allPosts.map((p: { category: string | null }) => p.category).filter(Boolean))] as string[];
+
+    return NextResponse.json({ posts, categories });
   } catch (error) {
     console.error('Error fetching blog posts:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
