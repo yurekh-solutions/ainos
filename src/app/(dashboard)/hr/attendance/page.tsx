@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, X, Calendar, Users } from 'lucide-react';
 
-interface Attendance { _id: string; employee: { name: string }; date: string; checkIn?: string; checkOut?: string; status: string; }
-interface Employee { _id: string; name: string; }
+interface Attendance { id: string; employee: { name: string }; date: string; checkIn?: string; checkOut?: string; status: string; }
+interface Employee { id: string; name: string; }
 
 export default function AttendancePage() {
   const [attendance, setAttendance] = useState<Attendance[]>([]);
@@ -79,7 +79,7 @@ export default function AttendancePage() {
                 </thead>
                 <tbody>
                   {attendance.map((att) => (
-                    <tr key={att._id} className="transition-colors" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                    <tr key={att.id} className="transition-colors" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
                       <td className="px-6 py-4 text-sm" style={{ color: 'hsl(var(--foreground))' }}>{att.employee?.name || 'N/A'}</td>
                       <td className="px-6 py-4 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>{new Date(att.date).toLocaleDateString()}</td>
                       <td className="px-6 py-4 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>{att.checkIn || '-'}</td>
@@ -106,7 +106,7 @@ export default function AttendancePage() {
                 <select required value={form.employee} onChange={e => setForm({ ...form, employee: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl glass-input text-sm" style={{ color: 'hsl(var(--foreground))' }}>
                   <option value="">Select Employee *</option>
-                  {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.name}</option>)}
+                  {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
                 </select>
                 <input required type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl glass-input text-sm" style={{ color: 'hsl(var(--foreground))' }} />

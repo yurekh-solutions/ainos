@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, X, Target, TrendingUp } from 'lucide-react';
 
-interface Deal { _id: string; title: string; contact: { name: string }; value: number; stage: string; probability: number; closeDate?: string; }
+interface Deal { id: string; title: string; contact: { name: string }; value: number; stage: string; probability: number; closeDate?: string; }
 interface DealStats { total: number; byStage: Record<string, number>; totalValue: number; winRate: number; }
 
 const stages = ['lead', 'qualified', 'proposal', 'negotiation', 'won', 'lost'];
@@ -83,7 +83,7 @@ export default function DealsPage() {
                       <span className="ml-auto text-[10px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>{stageDeals.length}</span>
                     </div>
                     {stageDeals.map(deal => (
-                      <motion.div key={deal._id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
+                      <motion.div key={deal.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
                         className="glass-card p-3 rounded-xl cursor-pointer hover:shadow-md transition-shadow">
                         <p className="text-sm font-semibold truncate" style={{ color: 'hsl(var(--foreground))' }}>{deal.title}</p>
                         <p className="text-xs mt-1 truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>{deal.contact?.name || 'No contact'}</p>

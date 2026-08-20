@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Send, Bot, User, Sparkles } from 'lucide-react';
 
 interface Message { role: 'user' | 'assistant'; content: string; }
-interface ChatSession { _id: string; messages: Message[]; createdAt: string; }
+interface ChatSession { id: string; messages: Array<{ role: string; content: string }>; createdAt: string; }
 
 export default function AIChatPage() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -118,8 +118,8 @@ export default function AIChatPage() {
               ) : (
                 <div className="space-y-2">
                   {sessions.slice(0, 10).map(session => (
-                    <div key={session._id} className="p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-xs text-gray-600 dark:text-gray-400">
-                      <p className="truncate">{session.messages[0]?.content}</p>
+                    <div key={session.id} className="p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-xs text-gray-600 dark:text-gray-400">
+                      <p className="truncate">{session.messages?.[0]?.content || 'Chat'}</p>
                       <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{new Date(session.createdAt).toLocaleDateString()}</p>
                     </div>
                   ))}

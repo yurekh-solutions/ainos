@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, X, FileText, Download, Calendar } from 'lucide-react';
 
-interface Document { _id: string; name: string; type: string; url?: string; expiryDate?: string; uploadedAt: string; }
+interface Document { id: string; name: string; type: string; url?: string; expiryDate?: string; uploadedAt: string; }
 
 export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -49,7 +49,7 @@ export default function DocumentsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {documents.map((doc, i) => (
-                <motion.div key={doc._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                <motion.div key={doc.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                   className="glass-card p-5">
                   <div className="flex items-start gap-3 mb-3">
                     <div className="text-2xl">{typeIcons[doc.type] || '📁'}</div>

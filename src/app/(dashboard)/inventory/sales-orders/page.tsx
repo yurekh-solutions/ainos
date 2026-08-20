@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, ShoppingCart, Search, Truck, Package } from 'lucide-react';
 
-interface SalesOrder { _id: string; orderNumber: string; customer: string; items: { product: string; quantity: number; rate: number }[]; totalAmount: number; status: string; paymentStatus: string; deliveryDate?: string; createdAt: string; }
+interface SalesOrder { id: string; orderNumber: string; customer: string; items: { product: string; quantity: number; rate: number }[]; totalAmount: number; status: string; paymentStatus: string; deliveryDate?: string; createdAt: string; }
 
 const statusColors: Record<string, string> = { draft: '#636e72', confirmed: '#0984e3', processing: '#fdcb6e', shipped: '#6c5ce7', delivered: '#00b894', cancelled: '#d63031' };
 const payColors: Record<string, string> = { unpaid: '#d63031', partial: '#fdcb6e', paid: '#00b894' };
@@ -115,7 +115,7 @@ export default function SalesOrdersPage() {
                 </thead>
                 <tbody>
                   {filtered.map((o) => (
-                    <tr key={o._id} style={{ borderBottom: '1px solid hsl(var(--border) / 0.3)' }} className="hover:opacity-80 transition-opacity">
+                    <tr key={o.id} style={{ borderBottom: '1px solid hsl(var(--border) / 0.3)' }} className="hover:opacity-80 transition-opacity">
                       <td className="px-4 py-3 text-sm font-mono font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{o.orderNumber}</td>
                       <td className="px-4 py-3 text-sm" style={{ color: 'hsl(var(--foreground))' }}>{o.customer}</td>
                       <td className="px-4 py-3 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>{o.items?.length || 0} items</td>
@@ -123,7 +123,7 @@ export default function SalesOrdersPage() {
                       <td className="px-4 py-3"><span className="px-2.5 py-1 rounded-full text-[10px] font-semibold text-white capitalize" style={{ background: statusColors[o.status] }}>{o.status}</span></td>
                       <td className="px-4 py-3"><span className="px-2.5 py-1 rounded-full text-[10px] font-semibold text-white capitalize" style={{ background: payColors[o.paymentStatus] }}>{o.paymentStatus}</span></td>
                       <td className="px-4 py-3">
-                        <select value={o.status} onChange={(e) => updateStatus(o._id, e.target.value)}
+                        <select value={o.status} onChange={(e) => updateStatus(o.id, e.target.value)}
                           className="text-[10px] font-semibold px-2 py-1 rounded-lg border-0 cursor-pointer" style={{ background: 'hsl(var(--muted))', color: statusColors[o.status] }}>
                           <option value="draft">Draft</option><option value="confirmed">Confirmed</option><option value="processing">Processing</option><option value="shipped">Shipped</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option>
                         </select>

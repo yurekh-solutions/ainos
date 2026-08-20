@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 interface ProjectItem {
-  _id: string;
+  id: string;
   name: string;
   description?: string;
   status: 'active' | 'on_hold' | 'completed';
@@ -225,11 +225,11 @@ export default function ProjectsPage() {
               : 0;
             return (
               <div
-                key={project._id}
+                key={project.id}
                 className="group relative rounded-xl border p-5 hover:border-[#1BE1D3]/40 transition-colors"
                 style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card))' }}
               >
-                <Link href={`/projects/${project._id}`} className="block space-y-3">
+                <Link href={`/projects/${project.id}`} className="block space-y-3">
                   <div className="flex items-center gap-3">
                     <span className="w-10 h-10 rounded-lg bg-[#1BE1D3]/10 flex items-center justify-center shrink-0">
                       <FolderKanban className="w-5 h-5 text-[#1BE1D3]" />
@@ -271,7 +271,7 @@ export default function ProjectsPage() {
                   )}
                 </Link>
                 <button
-                  onClick={() => deleteProject(project._id, project.name)}
+                  onClick={() => deleteProject(project.id, project.name)}
                   className="absolute top-3 right-3 p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-red-500/10 transition-all"
                   title="Delete project"
                 >

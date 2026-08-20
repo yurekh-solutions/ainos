@@ -20,7 +20,7 @@ import {
 type TaskStatus = 'todo' | 'in_progress' | 'done';
 
 interface TaskItem {
-  _id: string;
+  id: string;
   title: string;
   description?: string;
   status: TaskStatus;
@@ -31,7 +31,7 @@ interface TaskItem {
 }
 
 interface ProjectDetail {
-  _id: string;
+  id: string;
   name: string;
   description?: string;
   status: 'active' | 'on_hold' | 'completed';
@@ -116,9 +116,9 @@ export default function ProjectBoardPage() {
     const next = STATUS_ORDER[idx + direction];
     if (!next) return;
     // optimistic update
-    setTasks((prev) => prev.map((t) => (t._id === task._id ? { ...t, status: next } : t)));
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: next } : t)));
     try {
-      await fetch(`/api/tasks/${task._id}`, {
+      await fetch(`/api/tasks/${task.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: next }),
@@ -131,9 +131,9 @@ export default function ProjectBoardPage() {
 
   const setTaskStatus = async (task: TaskItem, status: TaskStatus) => {
     if (task.status === status) return;
-    setTasks((prev) => prev.map((t) => (t._id === task._id ? { ...t, status } : t)));
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status } : t)));
     try {
-      await fetch(`/api/tasks/${task._id}`, {
+      await fetch(`/api/tasks/${task.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
@@ -147,8 +147,8 @@ export default function ProjectBoardPage() {
   const deleteTask = async (task: TaskItem) => {
     if (!confirm(`Delete task "${task.title}"?`)) return;
     try {
-      const res = await fetch(`/api/tasks/${task._id}`, { method: 'DELETE' });
-      if (res.ok) setTasks((prev) => prev.filter((t) => t._id !== task._id));
+      const res = await fetch(`/api/tasks/${task.id}`, { method: 'DELETE' });
+      if (res.ok) setTasks((prev) => prev.filter((t) => t.id !== task.id));
     } catch (error) {
       console.error('Error deleting task:', error);
     }
@@ -169,7 +169,7 @@ export default function ProjectBoardPage() {
     if (!editTask || !editForm.title.trim()) return;
     setSaving(true);
     try {
-      const res = await fetch(`/api/tasks/${editTask._id}`, {
+      const res = await fetch(`/api/tasks/${editTask.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -355,7 +355,7 @@ export default function ProjectBoardPage() {
                 const pri = PRIORITY_META[task.priority] || PRIORITY_META.medium;
                 return (
                   <div
-                    key={task._id}
+                    key={task.id}
                     className="group rounded-lg border p-3 space-y-2 hover:border-[#1BE1D3]/40 transition-colors"
                     style={{ borderColor: 'hsl(var(--border))' }}
                   >

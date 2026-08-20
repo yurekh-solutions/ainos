@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, X, Package, AlertTriangle, Search } from 'lucide-react';
 
-interface StockItem { _id: string; name: string; sku: string; quantity: number; reorderLevel: number; unitCost: number; warehouse?: { _id?: string; name: string }; category?: string; }
+interface StockItem { id: string; name: string; sku: string; quantity: number; reorderLevel: number; unitCost: number; warehouse?: { id?: string; name: string }; category?: string; }
 
 export default function StockPage() {
   const [stock, setStock] = useState<StockItem[]>([]);
@@ -59,7 +59,7 @@ export default function StockPage() {
           {[{ l: 'Total Items', v: stock.length, c: 'hsl(252 60% 55%)' },
             { l: 'Low Stock', v: lowStockCount, c: '#a78bfa' },
             { l: 'Total Value', v: `Rs.${totalValue.toLocaleString('en-IN')}`, c: '#34d399' },
-            { l: 'Warehouses', v: [...new Set(stock.map(s => s.warehouse?._id))].length, c: '#94a3b8' }].map((s, i) => (
+            { l: 'Warehouses', v: [...new Set(stock.map(s => s.warehouse?.id))].length, c: '#94a3b8' }].map((s, i) => (
             <motion.div key={s.l} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               className="glass-card p-5">
               <p className="text-xs font-medium uppercase tracking-wider" style={{ color: 'hsl(var(--muted-foreground))' }}>{s.l}</p>
@@ -87,7 +87,7 @@ export default function StockPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map((item, i) => (
-                <motion.div key={item._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                <motion.div key={item.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                   className="glass-card p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div><h3 className="font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{item.name}</h3><p className="text-xs mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>SKU: {item.sku}</p></div>

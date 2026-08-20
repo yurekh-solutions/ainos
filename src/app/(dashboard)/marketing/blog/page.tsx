@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, X, FileText, Eye, Calendar } from 'lucide-react';
 
-interface BlogPost { _id: string; title: string; slug: string; content: string; status: string; author?: string; publishedAt?: string; views?: number; }
+interface BlogPost { id: string; title: string; slug: string; content: string; status: string; author?: string; publishedAt?: string; views?: number; }
 
 export default function BlogPage() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -62,7 +62,7 @@ export default function BlogPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {posts.map((post, i) => (
-                <motion.div key={post._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                <motion.div key={post.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                   className="glass-card p-5 rounded-2xl">
                   <div className="flex items-start justify-between mb-3">
                     <h3 className="font-semibold line-clamp-2" style={{ color: 'hsl(var(--foreground))' }}>{post.title}</h3>

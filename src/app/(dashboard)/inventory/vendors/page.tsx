@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, Building2, Mail, Phone, Search, Star } from 'lucide-react';
 
-interface Vendor { _id: string; name: string; email: string; phone?: string; company?: string; category: string; status: string; gstin?: string; rating?: number; paymentTerms?: string; totalSpend?: number; createdAt: string; }
+interface Vendor { id: string; name: string; email: string; phone?: string; company?: string; category: string; status: string; gstin?: string; rating?: number; paymentTerms?: string; totalSpend?: number; createdAt: string; }
 
 const statusColors: Record<string, string> = { active: '#00b894', inactive: '#636e72', blacklisted: '#d63031' };
 const categoryColors: Record<string, string> = { supplier: '#6c5ce7', contractor: '#0984e3', service: '#00b894', other: '#636e72' };
@@ -98,7 +98,7 @@ export default function VendorsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map((vendor, i) => (
-                <motion.div key={vendor._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                <motion.div key={vendor.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                   whileHover={{ y: -4 }} className="relative p-5 rounded-2xl group"
                   style={{ background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)', border: '1px solid hsl(var(--border) / 0.5)', boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08)' }}>
                   <div className="absolute top-0 left-0 w-1 h-full rounded-l-2xl opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: categoryColors[vendor.category] || '#6c5ce7' }} />
@@ -120,7 +120,7 @@ export default function VendorsPage() {
                   {vendor.gstin && <p className="text-xs mb-2 font-mono" style={{ color: 'hsl(var(--muted-foreground))' }}>GSTIN: {vendor.gstin}</p>}
                   <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: 'hsl(var(--border) / 0.3)' }}>
                     <span className="text-[10px] font-medium px-2 py-0.5 rounded-full capitalize" style={{ background: `${categoryColors[vendor.category]}20`, color: categoryColors[vendor.category] }}>{vendor.category}</span>
-                    <select value={vendor.status} onChange={(e) => updateStatus(vendor._id, e.target.value)}
+                    <select value={vendor.status} onChange={(e) => updateStatus(vendor.id, e.target.value)}
                       className="text-[10px] font-semibold px-2 py-1 rounded-lg border-0 cursor-pointer" style={{ background: 'hsl(var(--muted))', color: statusColors[vendor.status] }}>
                       <option value="active">Active</option><option value="inactive">Inactive</option><option value="blacklisted">Blacklisted</option>
                     </select>

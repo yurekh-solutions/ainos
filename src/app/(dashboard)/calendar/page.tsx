@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, Calendar as CalIcon, Search, ChevronLeft, ChevronRight, Clock, MapPin } from 'lucide-react';
 
-interface CalendarEvent { _id: string; title: string; type: string; startDate: string; endDate?: string; allDay: boolean; location?: string; attendees?: string[]; color: string; description?: string; createdAt: string; }
+interface CalendarEvent { id: string; title: string; type: string; startDate: string; endDate?: string; allDay: boolean; location?: string; attendees?: string[]; color: string; description?: string; createdAt: string; }
 
 const typeColors: Record<string, string> = { meeting: '#0984e3', task: '#6c5ce7', reminder: '#fdcb6e', event: '#00b894', holiday: '#d63031' };
 
@@ -154,7 +154,7 @@ export default function CalendarPage() {
                   </span>
                   <div className="mt-1 space-y-0.5">
                     {dayEvents.slice(0, 2).map(ev => (
-                      <div key={ev._id} className="text-[9px] font-medium px-1.5 py-0.5 rounded truncate text-white" style={{ background: typeColors[ev.type] || ev.color || '#6c5ce7' }}>
+                      <div key={ev.id} className="text-[9px] font-medium px-1.5 py-0.5 rounded truncate text-white" style={{ background: typeColors[ev.type] || ev.color || '#6c5ce7' }}>
                         {ev.title}
                       </div>
                     ))}
@@ -179,7 +179,7 @@ export default function CalendarPage() {
               ) : (
                 <div className="space-y-2">
                   {selectedDateEvents.map(ev => (
-                    <div key={ev._id} className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'hsl(var(--muted) / 0.5)', border: '1px solid hsl(var(--border) / 0.3)' }}>
+                    <div key={ev.id} className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'hsl(var(--muted) / 0.5)', border: '1px solid hsl(var(--border) / 0.3)' }}>
                       <div className="flex items-center gap-3">
                         <div className="w-3 h-3 rounded-full" style={{ background: typeColors[ev.type] || ev.color }} />
                         <div>
@@ -191,7 +191,7 @@ export default function CalendarPage() {
                           </div>
                         </div>
                       </div>
-                      <button onClick={() => deleteEvent(ev._id)} className="text-[10px] px-2 py-1 rounded-lg hover:opacity-70" style={{ color: '#d63031', background: 'hsl(0 70% 55% / 0.1)' }}>Delete</button>
+                      <button onClick={() => deleteEvent(ev.id)} className="text-[10px] px-2 py-1 rounded-lg hover:opacity-70" style={{ color: '#d63031', background: 'hsl(0 70% 55% / 0.1)' }}>Delete</button>
                     </div>
                   ))}
                 </div>

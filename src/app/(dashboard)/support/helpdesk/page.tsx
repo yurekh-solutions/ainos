@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, X, Headphones, AlertCircle, Clock, CheckCircle } from 'lucide-react';
 
-interface Ticket { _id: string; subject: string; description: string; priority: string; status: string; category?: string; createdAt: string; }
+interface Ticket { id: string; subject: string; description: string; priority: string; status: string; category?: string; createdAt: string; }
 
 export default function HelpdeskPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -63,7 +63,7 @@ export default function HelpdeskPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {tickets.map((ticket, i) => (
-                <motion.div key={ticket._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                <motion.div key={ticket.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                   className="glass-card p-5 rounded-2xl">
                   <div className="flex items-start justify-between mb-3">
                     <h3 className="font-semibold line-clamp-1" style={{ color: 'hsl(var(--foreground))' }}>{ticket.subject}</h3>

@@ -6,11 +6,11 @@ import { X, Globe, Palette, Megaphone, Rocket, Printer, BarChart3, Newspaper, Cl
 import WebsiteBuilder from '@/components/services/WebsiteBuilder';
 import AIToolStudio, { StudioToolId } from '@/components/services/AIToolStudio';
 
-interface ServiceRequestItem { _id: string; serviceName: string; category: string; status: string; createdAt: string; }
+interface ServiceRequestItem { id: string; serviceName: string; category: string; status: string; createdAt: string; }
 
-interface GeneratedSiteItem { _id: string; businessName: string; industry: string; siteType: string; theme: string; primaryColor: string; createdAt: string; }
+interface GeneratedSiteItem { id: string; businessName: string; industry: string; siteType: string; theme: string; primaryColor: string; createdAt: string; }
 
-interface DeliverableItem { _id: string; tool: string; serviceName: string; businessName: string; createdAt: string; }
+interface DeliverableItem { id: string; tool: string; serviceName: string; businessName: string; createdAt: string; }
 
 interface ToolOutputData { headline: string; sections?: { title: string; body: string }[]; images?: { label: string; url: string }[]; palette?: { hex: string; name: string }[]; aiUsed?: boolean; }
 
@@ -151,7 +151,7 @@ export default function YurekhServicesPage() {
 
   const openDeliverable = async (d: DeliverableItem) => {
     try {
-      const res = await fetch(`/api/ai-tools?id=${d._id}`);
+      const res = await fetch(`/api/ai-tools?id=${d.id}`);
       if (!res.ok) return;
       const full = await res.json();
       setStudioTool({ tool: d.tool as StudioToolId, service: d.serviceName || TOOL_LABELS[d.tool as StudioToolId] || d.tool, initialOutput: full.output, initialInputs: full.inputs });
@@ -267,7 +267,7 @@ export default function YurekhServicesPage() {
             <h2 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: 'hsl(var(--muted-foreground))' }}>My Websites</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {sites.map((s, i) => (
-                <motion.div key={s._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                <motion.div key={s.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                   className="glass-card p-4 rounded-2xl">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3 min-w-0">
@@ -277,14 +277,14 @@ export default function YurekhServicesPage() {
                         <p className="text-xs capitalize" style={{ color: 'hsl(var(--muted-foreground))' }}>{s.industry} · {s.theme}</p>
                       </div>
                     </div>
-                    <button onClick={() => deleteSite(s._id)} className="p-1.5 rounded-lg hover:opacity-70 flex-shrink-0" title="Delete">
+                    <button onClick={() => deleteSite(s.id)} className="p-1.5 rounded-lg hover:opacity-70 flex-shrink-0" title="Delete">
                       <Trash2 className="w-3.5 h-3.5" style={{ color: '#94a3b8' }} />
                     </button>
                   </div>
                   <div className="flex items-center gap-2 mt-3">
-                    <button onClick={() => openSite(s._id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold flex-1 justify-center"
+                    <button onClick={() => openSite(s.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold flex-1 justify-center"
                       style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}><Eye className="w-3.5 h-3.5" /> Preview</button>
-                    <button onClick={() => openSite(s._id, true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white flex-1 justify-center"
+                    <button onClick={() => openSite(s.id, true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white flex-1 justify-center"
                       style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}><Download className="w-3.5 h-3.5" /> Download</button>
                   </div>
                   <p className="text-[11px] flex items-center gap-1 mt-2.5" style={{ color: '#94a3b8' }}><Clock className="w-3 h-3" />{new Date(s.createdAt).toLocaleDateString()}</p>
@@ -299,7 +299,7 @@ export default function YurekhServicesPage() {
             <h2 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: 'hsl(var(--muted-foreground))' }}>My Deliverables</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {deliverables.map((d, i) => (
-                <motion.div key={d._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                <motion.div key={d.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                   className="glass-card p-4 rounded-2xl">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3 min-w-0">
@@ -312,7 +312,7 @@ export default function YurekhServicesPage() {
                         <p className="text-xs line-clamp-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{TOOL_LABELS[d.tool as StudioToolId] || d.tool}{d.serviceName ? ` · ${d.serviceName}` : ''}</p>
                       </div>
                     </div>
-                    <button onClick={() => deleteDeliverable(d._id)} className="p-1.5 rounded-lg hover:opacity-70 flex-shrink-0" title="Delete">
+                    <button onClick={() => deleteDeliverable(d.id)} className="p-1.5 rounded-lg hover:opacity-70 flex-shrink-0" title="Delete">
                       <Trash2 className="w-3.5 h-3.5" style={{ color: '#94a3b8' }} />
                     </button>
                   </div>
@@ -333,7 +333,7 @@ export default function YurekhServicesPage() {
             <h2 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: 'hsl(var(--muted-foreground))' }}>My Service Requests</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {requests.map((r, i) => (
-                <motion.div key={r._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                <motion.div key={r.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                   className="glass-card p-4 rounded-2xl">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">

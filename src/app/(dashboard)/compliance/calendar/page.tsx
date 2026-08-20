@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, X, Calendar, AlertTriangle, CheckCircle } from 'lucide-react';
 
-interface ComplianceTask { _id: string; title: string; category: string; dueDate: string; status: string; description?: string; }
+interface ComplianceTask { id: string; title: string; category: string; dueDate: string; status: string; description?: string; }
 
 export default function ComplianceCalendarPage() {
   const [tasks, setTasks] = useState<ComplianceTask[]>([]);
@@ -72,7 +72,7 @@ export default function ComplianceCalendarPage() {
               {tasks.map((task, i) => {
                 const isOverdue = task.status === 'pending' && new Date(task.dueDate) < new Date();
                 return (
-                  <motion.div key={task._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                  <motion.div key={task.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                     className="glass-card p-5">
                     <div className="flex items-start justify-between mb-3">
                       <h3 className="font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{task.title}</h3>

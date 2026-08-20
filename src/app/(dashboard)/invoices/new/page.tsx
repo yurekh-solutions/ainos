@@ -17,7 +17,6 @@ interface InvoiceItem {
 }
 
 interface Product {
-  _id?: string;
   id: string;
   name: string;
   description?: string;
@@ -404,7 +403,7 @@ export default function NewInvoicePage() {
                         <div className="absolute z-10 w-full mt-1 glass-card rounded-lg shadow-lg max-h-48 overflow-auto">
                           {products.map((product) => (
                             <div
-                              key={product.id || product._id}
+                              key={product.id}
                               className="px-3 py-2 hover:bg-[#F5F1EB] cursor-pointer text-sm"
                               onClick={() => selectProduct(item.id, product)}
                             >

@@ -43,7 +43,7 @@ export default function ProductsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const url = editingProduct ? `/api/products/${editingProduct._id}` : '/api/products';
+      const url = editingProduct ? `/api/products/${editingProduct.id}` : '/api/products';
       const method = editingProduct ? 'PUT' : 'POST';
       
       const res = await fetch(url, {
@@ -376,7 +376,7 @@ export default function ProductsPage() {
             ) : (
               filteredProducts.map((product, index) => (
                 <motion.div 
-                  key={product._id} 
+                  key={product.id} 
                   initial={{ opacity: 0, y: 20 }} 
                   animate={{ opacity: 1, y: 0 }} 
                   transition={{ delay: index * 0.05 }}
@@ -419,7 +419,7 @@ export default function ProductsPage() {
                             <Edit2 className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
                           </button>
                           <button
-                            onClick={() => setShowDeleteConfirm(product._id || '')}
+                            onClick={() => setShowDeleteConfirm(product.id || '')}
                             className="p-1.5 rounded-lg transition-colors hover:bg-red-500/10"
                             title="Delete"
                           >

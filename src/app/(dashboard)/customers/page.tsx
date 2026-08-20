@@ -200,7 +200,7 @@ export default function CustomersPage() {
             <div className="space-y-3">
               {customers.slice(0, 4).map((customer, i) => (
                 <motion.div 
-                  key={customer._id || customer.id || i} 
+                  key={customer.id || i}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.6 + i * 0.1 }}
@@ -360,7 +360,7 @@ export default function CustomersPage() {
             ) : (
               filteredCustomers.map((customer, index) => (
                 <motion.div 
-                  key={customer._id || customer.id || index} 
+                  key={customer.id || index}
                   initial={{ opacity: 0, y: 20 }} 
                   animate={{ opacity: 1, y: 0 }} 
                   transition={{ delay: index * 0.05 }}

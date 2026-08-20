@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, FileText, TrendingUp, Search, Calendar, DollarSign } from 'lucide-react';
 
-interface Quote { _id: string; quoteNumber: string; clientName: string; items: { description: string; quantity: number; rate: number }[]; subtotal: number; tax: number; discount: number; totalAmount: number; status: string; validUntil: string; notes?: string; createdAt: string; }
+interface Quote { id: string; quoteNumber: string; clientName: string; items: { description: string; quantity: number; rate: number }[]; subtotal: number; tax: number; discount: number; totalAmount: number; status: string; validUntil: string; notes?: string; createdAt: string; }
 
 const statusColors: Record<string, string> = { draft: '#636e72', sent: '#0984e3', viewed: '#fdcb6e', accepted: '#00b894', rejected: '#d63031', expired: '#636e72', converted: '#6c5ce7' };
 
@@ -116,14 +116,14 @@ export default function QuotesPage() {
                 </thead>
                 <tbody>
                   {filtered.map((q) => (
-                    <tr key={q._id} style={{ borderBottom: '1px solid hsl(var(--border) / 0.3)' }} className="hover:opacity-80 transition-opacity">
+                    <tr key={q.id} style={{ borderBottom: '1px solid hsl(var(--border) / 0.3)' }} className="hover:opacity-80 transition-opacity">
                       <td className="px-4 py-3 text-sm font-mono font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{q.quoteNumber}</td>
                       <td className="px-4 py-3 text-sm" style={{ color: 'hsl(var(--foreground))' }}>{q.clientName}</td>
                       <td className="px-4 py-3 text-sm font-bold" style={{ color: 'hsl(var(--primary))' }}>₹{q.totalAmount.toLocaleString('en-IN')}</td>
                       <td className="px-4 py-3 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>{q.validUntil ? new Date(q.validUntil).toLocaleDateString('en-IN') : '-'}</td>
                       <td className="px-4 py-3"><span className="px-2.5 py-1 rounded-full text-[10px] font-semibold text-white capitalize" style={{ background: statusColors[q.status] }}>{q.status}</span></td>
                       <td className="px-4 py-3">
-                        <select value={q.status} onChange={(e) => updateStatus(q._id, e.target.value)}
+                        <select value={q.status} onChange={(e) => updateStatus(q.id, e.target.value)}
                           className="text-[10px] font-semibold px-2 py-1 rounded-lg border-0 cursor-pointer" style={{ background: 'hsl(var(--muted))', color: statusColors[q.status] }}>
                           <option value="draft">Draft</option><option value="sent">Sent</option><option value="viewed">Viewed</option><option value="accepted">Accepted</option><option value="rejected">Rejected</option><option value="expired">Expired</option>
                         </select>

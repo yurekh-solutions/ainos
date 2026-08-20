@@ -7,7 +7,7 @@ import Link from 'next/link';
 import jsPDF from 'jspdf';
 
 interface Invoice {
-  _id: string;
+  id: string;
   invoiceNumber: string;
   customerName: string;
   customerEmail: string;
@@ -474,7 +474,7 @@ export default function InvoicesPage() {
                 <tbody>
                   {filteredInvoices.map((invoice, index) => (
                     <motion.tr
-                      key={invoice._id}
+                      key={invoice.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}

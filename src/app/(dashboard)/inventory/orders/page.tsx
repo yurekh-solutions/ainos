@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, X, ShoppingCart, Package } from 'lucide-react';
 
-interface PurchaseOrder { _id: string; orderNumber: string; supplier: string; status: string; totalAmount: number; orderDate: string; expectedDelivery?: string; items: Array<{ item: string; quantity: number; unitPrice: number }>; }
+interface PurchaseOrder { id: string; orderNumber: string; supplier: string; status: string; totalAmount: number; orderDate: string; expectedDelivery?: string; items: Array<{ item: string; quantity: number; unitPrice: number }>; }
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
@@ -64,7 +64,7 @@ export default function OrdersPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {orders.map((order, i) => (
-                <motion.div key={order._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                <motion.div key={order.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                   className="glass-card p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div><h3 className="font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{order.orderNumber}</h3><p className="text-xs mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>{order.supplier}</p></div>

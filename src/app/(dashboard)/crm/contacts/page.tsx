@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Plus, X, Search, Users, Tag, Phone, Mail, Building2, Target } from 'lucide-react';
 
 interface Contact {
-  _id: string; name: string; email?: string; phone?: string; company?: string;
+  id: string; name: string; email?: string; phone?: string; company?: string;
   tags: string[]; source: string; dealValue?: number; stage: string; lastContacted?: string;
 }
 
@@ -19,8 +19,6 @@ export default function ContactsPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', tags: '', source: 'manual', dealValue: '', stage: 'lead' });
 
-  useEffect(() => { fetchContacts(); }, []);
-
   const fetchContacts = async () => {
     try {
       const params = new URLSearchParams();
@@ -31,6 +29,8 @@ export default function ContactsPage() {
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
+
+  useEffect(() => { fetchContacts(); }, []); // eslint-disable-line
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,7 +94,7 @@ export default function ContactsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map((contact, i) => (
-                <motion.div key={contact._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                <motion.div key={contact.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                   className="glass-card p-5 rounded-2xl hover:shadow-lg transition-shadow">
                   <div className="flex items-start justify-between mb-3">
                     <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-semibold"

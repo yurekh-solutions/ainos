@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, BookOpen, Search, Eye, ThumbsUp, Tag } from 'lucide-react';
 
-interface Article { _id: string; title: string; content: string; category: string; status: string; visibility: string; views: number; helpful: number; tags?: string[]; slug: string; createdAt: string; }
+interface Article { id: string; title: string; content: string; category: string; status: string; visibility: string; views: number; helpful: number; tags?: string[]; slug: string; createdAt: string; }
 
 const statusColors: Record<string, string> = { draft: '#636e72', published: '#00b894', archived: '#636e72' };
 const visColors: Record<string, string> = { public: '#0984e3', internal: '#6c5ce7' };
@@ -103,7 +103,7 @@ export default function KnowledgeBasePage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map((article, i) => (
-                <motion.div key={article._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                <motion.div key={article.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                   whileHover={{ y: -4 }} className="relative p-5 rounded-2xl group"
                   style={{ background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)', border: '1px solid hsl(var(--border) / 0.5)', boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08)' }}>
                   <div className="absolute top-0 left-0 w-1 h-full rounded-l-2xl opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: '#6c5ce7' }} />
@@ -128,7 +128,7 @@ export default function KnowledgeBasePage() {
                       <span className="text-[10px] flex items-center gap-1" style={{ color: 'hsl(var(--muted-foreground))' }}><ThumbsUp className="w-3 h-3" /> {article.helpful}</span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: `${visColors[article.visibility]}20`, color: visColors[article.visibility] }}>{article.visibility}</span>
                     </div>
-                    <select value={article.status} onChange={(e) => updateStatus(article._id, e.target.value)}
+                    <select value={article.status} onChange={(e) => updateStatus(article.id, e.target.value)}
                       className="text-[10px] font-semibold px-2 py-1 rounded-lg border-0 cursor-pointer" style={{ background: 'hsl(var(--muted))', color: statusColors[article.status] }}>
                       <option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option>
                     </select>

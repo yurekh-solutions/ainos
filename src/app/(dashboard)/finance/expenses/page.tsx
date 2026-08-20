@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, DollarSign, TrendingUp, Filter, Search, Calendar } from 'lucide-react';
 
-interface Expense { _id: string; title: string; amount: number; category: string; date: string; vendor?: string; description?: string; status: string; createdAt: string; }
+interface Expense { id: string; title: string; amount: number; category: string; date: string; vendor?: string; description?: string; status: string; createdAt: string; }
 
 const statusColors: Record<string, string> = { pending: '#f59e0b', approved: '#10b981', rejected: '#ef4444', reimbursed: '#6c5ce7' };
 const categories = ['Travel', 'Food', 'Office Supplies', 'Software', 'Marketing', 'Utilities', 'Rent', 'Salary', 'Other'];
@@ -130,14 +130,14 @@ export default function ExpensesPage() {
                 </thead>
                 <tbody>
                   {filteredExpenses.map((expense) => (
-                    <tr key={expense._id} style={{ borderBottom: '1px solid hsl(var(--border) / 0.3)' }} className="hover:opacity-80 transition-opacity">
+                    <tr key={expense.id} style={{ borderBottom: '1px solid hsl(var(--border) / 0.3)' }} className="hover:opacity-80 transition-opacity">
                       <td className="px-4 py-3 text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>{expense.title}</td>
                       <td className="px-4 py-3 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>{expense.category}</td>
                       <td className="px-4 py-3 text-sm font-bold" style={{ color: 'hsl(var(--primary))' }}>Rs.{expense.amount.toLocaleString('en-IN')}</td>
                       <td className="px-4 py-3 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>{new Date(expense.date).toLocaleDateString('en-IN')}</td>
                       <td className="px-4 py-3"><span className="px-2.5 py-1 rounded-full text-[10px] font-semibold text-white capitalize" style={{ background: statusColors[expense.status] }}>{expense.status}</span></td>
                       <td className="px-4 py-3">
-                        <select value={expense.status} onChange={(e) => updateStatus(expense._id, e.target.value)}
+                        <select value={expense.status} onChange={(e) => updateStatus(expense.id, e.target.value)}
                           className="text-[10px] font-semibold px-2 py-1 rounded-lg border-0 cursor-pointer" style={{ background: 'hsl(var(--muted))', color: statusColors[expense.status] }}>
                           <option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="reimbursed">Reimbursed</option>
                         </select>

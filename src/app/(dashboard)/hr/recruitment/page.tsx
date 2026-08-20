@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, Users, Mail, Phone, Briefcase, Search, Star } from 'lucide-react';
 
-interface Candidate { _id: string; name: string; email: string; phone?: string; position: string; department?: string; source: string; status: string; experience?: number; expectedSalary?: number; skills?: string[]; rating?: number; createdAt: string; }
+interface Candidate { id: string; name: string; email: string; phone?: string; position: string; department?: string; source: string; status: string; experience?: number; expectedSalary?: number; skills?: string[]; rating?: number; createdAt: string; }
 
 const statusColors: Record<string, string> = { applied: '#636e72', screening: '#0984e3', interview: '#fdcb6e', offer: '#6c5ce7', hired: '#00b894', rejected: '#d63031' };
 
@@ -100,7 +100,7 @@ export default function RecruitmentPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map((c, i) => (
-                <motion.div key={c._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                <motion.div key={c.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                   whileHover={{ y: -4 }} className="relative p-5 rounded-2xl group"
                   style={{ background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)', border: '1px solid hsl(var(--border) / 0.5)', boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08)' }}>
                   <div className="absolute top-0 left-0 w-1 h-full rounded-l-2xl opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: statusColors[c.status] || '#6c5ce7' }} />
@@ -130,7 +130,7 @@ export default function RecruitmentPage() {
                   )}
                   <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: 'hsl(var(--border) / 0.3)' }}>
                     <span className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>{c.experience || 0} yrs exp</span>
-                    <select value={c.status} onChange={(e) => updateStatus(c._id, e.target.value)}
+                    <select value={c.status} onChange={(e) => updateStatus(c.id, e.target.value)}
                       className="text-[10px] font-semibold px-2 py-1 rounded-lg border-0 cursor-pointer" style={{ background: 'hsl(var(--muted))', color: statusColors[c.status] }}>
                       <option value="applied">Applied</option><option value="screening">Screening</option><option value="interview">Interview</option><option value="offer">Offer</option><option value="hired">Hired</option><option value="rejected">Rejected</option>
                     </select>

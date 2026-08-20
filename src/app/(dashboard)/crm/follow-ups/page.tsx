@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Clock, Plus, X, CheckCircle, Mail, Phone, AlertCircle } from 'lucide-react';
 
 interface FollowUp {
-  _id: string;
+  id: string;
   contact: { name: string; email?: string; phone?: string };
   type: string;
   scheduledDate: string;
@@ -23,8 +23,6 @@ export default function FollowUpsPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ contact: '', type: 'call' as const, scheduledDate: '', message: '' });
 
-  useEffect(() => { fetchFollowUps(); }, []);
-
   const fetchFollowUps = async () => {
     try {
       const res = await fetch('/api/follow-ups');
@@ -32,6 +30,8 @@ export default function FollowUpsPage() {
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
+
+  useEffect(() => { fetchFollowUps(); }, []); // eslint-disable-line
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,7 +101,7 @@ export default function FollowUpsPage() {
             {followUps.map((fu, i) => {
               const Icon = typeIcons[fu.type] || Phone;
               return (
-                <motion.div key={fu._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                <motion.div key={fu.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                   className="glass-card p-4 rounded-2xl flex items-center gap-4"
                   style={{ opacity: fu.status === 'done' ? 0.6 : 1 }}>
                   <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${typeColors[fu.type] || 'hsl(var(--primary))'}15` }}>
@@ -116,7 +116,7 @@ export default function FollowUpsPage() {
                     {fu.message && <p className="text-xs mt-1 truncate" style={{ color: '#94a3b8' }}>{fu.message}</p>}
                   </div>
                   {fu.status === 'pending' && (
-                    <button onClick={() => markDone(fu._id)} className="p-2 rounded-xl hover:opacity-70 transition-opacity flex-shrink-0">
+                    <button onClick={() => markDone(fu.id)} className="p-2 rounded-xl hover:opacity-70 transition-opacity flex-shrink-0">
                       <CheckCircle className="w-5 h-5" style={{ color: '#34d399' }} />
                     </button>
                   )}

@@ -44,3 +44,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export async function PUT(req: NextRequest) {
+  try {
+    const session = await getServerSession(req);
+    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+
+    const run = await prisma.payrollRun.update({
+      where: { id },
+      data: { status: 'paid' },
+    });
+    return NextResponse.json(run);
+  } catch (error) {
+    console.error('Error updating payroll:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

@@ -26,7 +26,6 @@ const MODULE_COLORS: Record<string, { bg: string; text: string; border: string }
 };
 
 interface Automation {
-  _id?: string;
   id?: string;
   name: string;
   description: string;

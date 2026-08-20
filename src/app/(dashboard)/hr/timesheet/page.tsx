@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, Clock, Search, Calendar, CheckCircle } from 'lucide-react';
 
-interface Timesheet { _id: string; employee: string; project: string; task: string; date: string; startTime: string; endTime: string; duration: number; billable: boolean; status: string; createdAt: string; }
+interface Timesheet { id: string; employee: string; project: string; task: string; date: string; startTime: string; endTime: string; duration: number; billable: boolean; status: string; createdAt: string; }
 
 const statusColors: Record<string, string> = { draft: '#636e72', submitted: '#0984e3', approved: '#00b894', rejected: '#d63031' };
 
@@ -112,7 +112,7 @@ export default function TimesheetPage() {
                 </thead>
                 <tbody>
                   {filtered.map((t) => (
-                    <tr key={t._id} style={{ borderBottom: '1px solid hsl(var(--border) / 0.3)' }} className="hover:opacity-80 transition-opacity">
+                    <tr key={t.id} style={{ borderBottom: '1px solid hsl(var(--border) / 0.3)' }} className="hover:opacity-80 transition-opacity">
                       <td className="px-4 py-3 text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>{t.employee}</td>
                       <td className="px-4 py-3 text-sm" style={{ color: 'hsl(var(--foreground))' }}>{t.project}</td>
                       <td className="px-4 py-3 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>{t.task}</td>
@@ -121,7 +121,7 @@ export default function TimesheetPage() {
                       <td className="px-4 py-3">{t.billable ? <CheckCircle className="w-4 h-4" style={{ color: '#00b894' }} /> : <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>No</span>}</td>
                       <td className="px-4 py-3"><span className="px-2.5 py-1 rounded-full text-[10px] font-semibold text-white capitalize" style={{ background: statusColors[t.status] }}>{t.status}</span></td>
                       <td className="px-4 py-3">
-                        <select value={t.status} onChange={(e) => updateStatus(t._id, e.target.value)}
+                        <select value={t.status} onChange={(e) => updateStatus(t.id, e.target.value)}
                           className="text-[10px] font-semibold px-2 py-1 rounded-lg border-0 cursor-pointer" style={{ background: 'hsl(var(--muted))', color: statusColors[t.status] }}>
                           <option value="draft">Draft</option><option value="submitted">Submitted</option><option value="approved">Approved</option><option value="rejected">Rejected</option>
                         </select>

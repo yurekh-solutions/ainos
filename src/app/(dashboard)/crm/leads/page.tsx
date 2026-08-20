@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, Users, Mail, Phone, Building2, TrendingUp, Filter, Search } from 'lucide-react';
 
-interface Lead { _id: string; name: string; email: string; phone?: string; company?: string; designation?: string; source: string; status: string; score?: number; estimatedValue?: number; notes?: string; tags?: string[]; createdAt: string; }
+interface Lead { id: string; name: string; email: string; phone?: string; company?: string; designation?: string; source: string; status: string; score?: number; estimatedValue?: number; notes?: string; tags?: string[]; createdAt: string; }
 
 const statusColors: Record<string, string> = { new: '#6c5ce7', contacted: '#0984e3', qualified: '#00b894', proposal: '#fdcb6e', negotiation: '#e17055', converted: '#00b894', lost: '#636e72' };
 const sourceIcons: Record<string, string> = { website: '🌐', referral: '', social: '📱', email: '📧', cold_call: '📞', event: '🎪', other: '' };
@@ -124,7 +124,7 @@ export default function LeadsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredLeads.map((lead, i) => (
-                <motion.div key={lead._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                <motion.div key={lead.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                   whileHover={{ y: -4 }} className="relative p-5 rounded-2xl group"
                   style={{ background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)', border: '1px solid hsl(var(--border) / 0.5)', boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08)' }}>
                   <div className="absolute top-0 left-0 w-1 h-full rounded-l-2xl opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: statusColors[lead.status] || '#6c5ce7' }} />
@@ -152,7 +152,7 @@ export default function LeadsPage() {
                   
                   <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: 'hsl(var(--border) / 0.3)' }}>
                     <span className="text-[10px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>{sourceIcons[lead.source] || '📋'} {lead.source.replace('_', ' ')}</span>
-                    <select value={lead.status} onChange={(e) => updateStatus(lead._id, e.target.value)}
+                    <select value={lead.status} onChange={(e) => updateStatus(lead.id, e.target.value)}
                       className="text-[10px] font-semibold px-2 py-1 rounded-lg border-0 cursor-pointer"
                       style={{ background: 'hsl(var(--muted))', color: statusColors[lead.status] }}>
                       <option value="new">New</option>

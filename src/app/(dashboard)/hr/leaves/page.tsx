@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, X, Calendar, Clock } from 'lucide-react';
 
-interface Leave { _id: string; employee: { name: string }; leaveType: string; startDate: string; endDate: string; days: number; reason?: string; status: string; }
-interface Employee { _id: string; name: string; }
+interface Leave { id: string; employee: { name: string }; leaveType: string; startDate: string; endDate: string; days: number; reason?: string; status: string; }
+interface Employee { id: string; name: string; }
 
 export default function LeavesPage() {
   const [leaves, setLeaves] = useState<Leave[]>([]);
@@ -71,7 +71,7 @@ export default function LeavesPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {leaves.map((leave, i) => (
-                <motion.div key={leave._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+                <motion.div key={leave.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                   className="glass-card p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div><h3 className="font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{leave.employee?.name || 'N/A'}</h3>
@@ -100,7 +100,7 @@ export default function LeavesPage() {
                 <select required value={form.employee} onChange={e => setForm({ ...form, employee: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl glass-input text-sm" style={{ color: 'hsl(var(--foreground))' }}>
                   <option value="">Select Employee *</option>
-                  {employees.map(emp => <option key={emp._id} value={emp._id}>{emp.name}</option>)}
+                  {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
                 </select>
                 <select value={form.leaveType} onChange={e => setForm({ ...form, leaveType: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl glass-input text-sm" style={{ color: 'hsl(var(--foreground))' }}>
