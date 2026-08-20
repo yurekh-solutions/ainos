@@ -301,7 +301,7 @@ export default function SignInPage() {
               transition={{ delay: 0.4 }}
               whileHover={{ scale: 1.02, y: -2 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => signIn('google', { callbackUrl: '/' })}
+              onClick={() => signIn('google', { callbackUrl: '/ainos/' })}
               className="relative w-full py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all group overflow-hidden bg-white border border-gray-200 hover:border-purple-300 hover:shadow-md"
             >
               <GoogleIcon />
