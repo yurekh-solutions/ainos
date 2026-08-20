@@ -12,6 +12,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@prisma/client": "^6.0.0",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-tabs": "^1.1.13",
@@ -42,6 +43,7 @@
   },
   "devDependencies": {
     "eslint": "^9",
-    "eslint-config-next": "16.1.6"
+    "eslint-config-next": "16.1.6",
+    "prisma": "^6.0.0"
   }
 }

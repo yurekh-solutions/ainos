@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
-import connectDB from '@/lib/mongodb';
-import Company from '@/models/Company';
-import User from '@/models/User';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,23 +9,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-    
-    const user = await User.findOne({ email: session.user.email });
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const body = await req.json();
     
-    const company = await Company.create({
-      ...body,
-      createdBy: user._id.toString(),
+    const company = await prisma.company.create({
+      data: { ...body, createdBy: user.id }
     });
 
-    // Update user with companyId
-    user.companyId = company._id.toString();
-    await user.save();
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { companyId: company.id }
+    });
 
     return NextResponse.json(company, { status: 201 });
   } catch (error) {
@@ -43,14 +39,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-    
-    const user = await User.findOne({ email: session.user.email });
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     if (!user?.companyId) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
 
-    const company = await Company.findById(user.companyId);
+    const company = await prisma.company.findUnique({ where: { id: user.companyId } });
     if (!company) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
@@ -69,24 +63,17 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-    
-    const user = await User.findOne({ email: session.user.email });
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     if (!user?.companyId) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
 
     const body = await req.json();
     
-    const company = await Company.findByIdAndUpdate(
-      user.companyId,
-      { $set: body },
-      { new: true }
-    );
-
-    if (!company) {
-      return NextResponse.json({ error: 'Company not found' }, { status: 404 });
-    }
+    const company = await prisma.company.update({
+      where: { id: user.companyId },
+      data: body
+    });
 
     return NextResponse.json(company);
   } catch (error) {
@@ -94,4 +81,3 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getAllTools, getToolBySlug } from '@/lib/tool-runner';
 
 export async function GET(req: NextRequest) {
   try {
@@ -8,21 +9,26 @@ export async function GET(req: NextRequest) {
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
-    const stage = searchParams.get('stage');
-    const search = searchParams.get('search');
+    const category = searchParams.get('category');
+    const slug = searchParams.get('slug');
 
-    const where: Record<string, unknown> = { createdBy: session.user.id || session.user.email };
-    if (stage) where.stage = stage;
-    if (search) where.name = { contains: search, mode: 'insensitive' };
+    if (slug) {
+      const tool = await getToolBySlug(slug);
+      return NextResponse.json(tool);
+    }
 
-    const contacts = await prisma.contact.findMany({
-      where,
-      orderBy: { createdAt: 'desc' }
-    });
+    if (category) {
+      const tools = await prisma.tool.findMany({
+        where: { isActive: true, category },
+        orderBy: { name: 'asc' }
+      });
+      return NextResponse.json(tools);
+    }
 
-    return NextResponse.json(contacts);
+    const tools = await getAllTools();
+    return NextResponse.json(tools);
   } catch (error) {
-    console.error('Error fetching contacts:', error);
+    console.error('Error fetching tools:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -33,13 +39,10 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    const contact = await prisma.contact.create({
-      data: { ...body, createdBy: session.user.id || session.user.email }
-    });
-
-    return NextResponse.json(contact, { status: 201 });
+    const tool = await prisma.tool.create({ data: body });
+    return NextResponse.json(tool, { status: 201 });
   } catch (error) {
-    console.error('Error creating contact:', error);
+    console.error('Error creating tool:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
