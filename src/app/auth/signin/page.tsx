@@ -40,7 +40,7 @@ async function warmUpServer(): Promise<boolean> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 45000); // 45s for cold start
-    const res = await fetch('/api/health', { signal: controller.signal });
+    const res = await fetch('/api/ping', { signal: controller.signal });
     clearTimeout(timeout);
     return res.ok;
   } catch {
@@ -52,21 +52,40 @@ export default function SignInPage() {
   const searchParams = useSearchParams();
   const urlError = searchParams.get('error');
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState('Waking up server...');
   const [error, setError] = useState<string | null>(null);
+  const [serverReady, setServerReady] = useState(false);
   const autoRetried = useRef(false);
 
-  // Keep server awake while user is on sign-in page (prevents sleep during OAuth flow)
+  // Warm up server BEFORE showing the sign-in button
+  // Only enables the Google button once server is confirmed warm
   useEffect(() => {
-    // Initial warm-up
-    warmUpServer();
+    let mounted = true;
+    
+    const attemptWarmUp = async () => {
+      if (!mounted) return;
+      const awake = await warmUpServer();
+      if (awake) {
+        setServerReady(true);
+        setStatus('');
+      } else {
+        setStatus('Server is starting up, please wait...');
+        // Retry every 3 seconds until server responds
+        setTimeout(attemptWarmUp, 3000);
+      }
+    };
+    
+    attemptWarmUp();
     
     // Keep pinging every 20 seconds to prevent server from sleeping
     const keepAlive = setInterval(() => {
       warmUpServer();
     }, 20000);
     
-    return () => clearInterval(keepAlive);
+    return () => {
+      mounted = false;
+      clearInterval(keepAlive);
+    };
   }, []);
 
   const handleSignIn = async () => {
@@ -375,16 +394,16 @@ export default function SignInPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              whileHover={{ scale: loading ? 1 : 1.02, y: loading ? 0 : -2 }}
-              whileTap={{ scale: loading ? 1 : 0.98 }}
+              whileHover={{ scale: loading || !serverReady ? 1 : 1.02, y: loading || !serverReady ? 0 : -2 }}
+              whileTap={{ scale: loading || !serverReady ? 1 : 0.98 }}
               onClick={handleSignIn}
-              disabled={loading}
+              disabled={loading || !serverReady}
               className="relative w-full py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all group overflow-hidden bg-white border border-gray-200 hover:border-purple-300 hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {loading ? (
+              {loading || !serverReady ? (
                 <>
                   <Loader2 className="w-5 h-5 text-purple-600 animate-spin" />
-                  <span className="relative font-semibold text-gray-700">{status || 'Connecting...'}</span>
+                  <span className="relative font-semibold text-gray-700">{loading ? (status || 'Connecting...') : 'Preparing server...'}</span>
                 </>
               ) : (
                 <>
