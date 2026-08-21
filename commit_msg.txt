@@ -1,8 +1,8 @@
-fix: error page auto-retry + mobile sign-in improvements
+fix: continuous server keep-alive on sign-in page for smooth OAuth
 
-- Fixed "Error: undefined" display on error page
-- Error page now auto-redirects to sign-in after 5 seconds (with countdown)
-- Both "Back to Sign In" and "Try Again" buttons now work properly
-- Better error messages for OAuthCallback, OAuthSignin, etc.
-- Error code only shown when available (not "undefined")
+- Sign-in page now pings server every 20 seconds to keep it awake
+- Server stays warm during entire OAuth flow (user selects Google account)
+- Simplified handleSignIn - no more multi-step warm-up delays
+- One-click sign-in: tap button → Google popup → signed in
+- Cold start timeout increased to 45s for slow connections
 - Build verified: 99 routes compiled successfully
