@@ -36,16 +36,29 @@ const errorMessages: Record<string, string> = {
 };
 
 // Ping the server to wake it up before OAuth starts (prevents cold start failures)
+// Tries multiple URLs because basePath '/ainos' affects how routes resolve from the client
 async function warmUpServer(): Promise<boolean> {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 45000); // 45s for cold start
-    const res = await fetch('/api/ping', { signal: controller.signal });
-    clearTimeout(timeout);
-    return res.ok;
-  } catch {
-    return false;
+  const urls = ['/ainos/api/ping', '/api/ping', '/'];
+  for (const url of urls) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000); // 15s per attempt
+      const res = await fetch(url, {
+        signal: controller.signal,
+        cache: 'no-store',
+        credentials: 'include',
+        redirect: 'manual',
+      });
+      clearTimeout(timeout);
+      // Any non-5xx response means server is alive (even 302 redirect from wrapper)
+      if (res.status > 0 && res.status < 500) {
+        return true;
+      }
+    } catch {
+      // Try next URL
+    }
   }
+  return false;
 }
 
 export default function SignInPage() {
@@ -61,7 +74,7 @@ export default function SignInPage() {
   // Only enables the Google button once server is confirmed warm
   useEffect(() => {
     let mounted = true;
-    
+
     const attemptWarmUp = async () => {
       if (!mounted) return;
       const awake = await warmUpServer();
@@ -74,17 +87,27 @@ export default function SignInPage() {
         setTimeout(attemptWarmUp, 3000);
       }
     };
-    
+
     attemptWarmUp();
-    
+
     // Keep pinging every 20 seconds to prevent server from sleeping
     const keepAlive = setInterval(() => {
       warmUpServer();
     }, 20000);
-    
+
+    // Safety net: enable the button after 60 seconds regardless
+    // so the user can still try to sign in even if warm-up detection fails
+    const safetyTimeout = setTimeout(() => {
+      if (mounted) {
+        setServerReady(true);
+        setStatus('');
+      }
+    }, 60000);
+
     return () => {
       mounted = false;
       clearInterval(keepAlive);
+      clearTimeout(safetyTimeout);
     };
   }, []);
 
