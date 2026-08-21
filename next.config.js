@@ -2,7 +2,6 @@
 const nextConfig = {
   basePath: '/ainos',
   trailingSlash: true,
-  output: 'standalone',
   // Pages fetch '/api/...' (without the /ainos basePath) — route those to the real API.
   // Destination must be absolute when it lives outside the basePath, otherwise `next build` fails
   // (this exact error blocked every Render deploy). RENDER_EXTERNAL_URL is set automatically on Render.
