@@ -39,7 +39,7 @@ const errorMessages: Record<string, string> = {
 async function warmUpServer(): Promise<boolean> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000); // 30s for cold start
+    const timeout = setTimeout(() => controller.abort(), 45000); // 45s for cold start
     const res = await fetch('/api/health', { signal: controller.signal });
     clearTimeout(timeout);
     return res.ok;
@@ -56,33 +56,30 @@ export default function SignInPage() {
   const [error, setError] = useState<string | null>(null);
   const autoRetried = useRef(false);
 
+  // Keep server awake while user is on sign-in page (prevents sleep during OAuth flow)
+  useEffect(() => {
+    // Initial warm-up
+    warmUpServer();
+    
+    // Keep pinging every 20 seconds to prevent server from sleeping
+    const keepAlive = setInterval(() => {
+      warmUpServer();
+    }, 20000);
+    
+    return () => clearInterval(keepAlive);
+  }, []);
+
   const handleSignIn = async () => {
     setLoading(true);
     setError(null);
-
-    // Step 1: Wake up the server BEFORE starting OAuth
-    setStatus('Preparing server...');
-    const awake = await warmUpServer();
-
-    if (!awake) {
-      // Server is still starting - wait a bit and retry the warm-up
-      setStatus('Server is starting up, please wait...');
-      await new Promise(r => setTimeout(r, 5000));
-      await warmUpServer(); // Second attempt
-    }
-
-    // Step 2: Server is awake - start OAuth flow
     setStatus('Connecting to Google...');
-
-    // Small delay to ensure server is fully ready for callback
-    await new Promise(r => setTimeout(r, 1000));
 
     try {
       await signIn('google', { callbackUrl: '/' });
-    } catch (err) {
-      // If OAuth callback fails, auto-retry once after brief wait
+    } catch {
+      // Auto-retry once if callback fails
       setStatus('Retrying...');
-      await new Promise(r => setTimeout(r, 3000));
+      await new Promise(r => setTimeout(r, 2000));
       try {
         await signIn('google', { callbackUrl: '/' });
       } catch {
