@@ -1,7 +1,6 @@
-fix: blank dashboard page - invisible spinner and hanging auth check
+fix: break redirect loop between sign-in and dashboard
 
-- Spinner used undefined CSS variables (var(--page-gradient), var(--border), var(--primary))
-- Made spinner visible with hardcoded colors (bg-gray-50, border-gray-200, border-t-purple-600)
-- Added 5-second timeout to force redirect if session check hangs
-- Separated loading and unauthenticated states for better UX
-- Prevents blank page when SessionProvider can't reach auth endpoint
+- Changed sign-in page redirect from router.replace('/') to window.location.href('/ainos/')
+- Added session.user.email validation before redirecting (prevents loop with invalid sessions)
+- Full page navigation breaks the client-side routing loop
+- Dashboard still redirects unauthenticated users to sign-in

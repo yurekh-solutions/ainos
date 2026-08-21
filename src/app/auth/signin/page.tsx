@@ -39,10 +39,10 @@ export default function SignInPage() {
 
   // If already authenticated, redirect to dashboard
   useEffect(() => {
-    if (status === 'authenticated') {
-      router.replace('/');
+    if (status === 'authenticated' && session?.user?.email) {
+      window.location.href = '/ainos/';
     }
-  }, [status, router]);
+  }, [status, session]);
 
   // Fire-and-forget warm-up: best effort, never blocks the user.
   // The GitHub Actions keep-alive pings the server every 5 minutes,
