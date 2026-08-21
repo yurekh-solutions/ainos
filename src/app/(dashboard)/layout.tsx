@@ -1,8 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/auth-options';
+import { cookies } from 'next/headers';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { SessionKeepAlive } from '@/components/auth/SessionKeepAlive';
 import { AuthProvider } from '@/components/auth/AuthProvider';
@@ -12,27 +11,53 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Server-side session check — 100% reliable, no client-side fetch race condition
-  const session = await getServerSession(authOptions);
+  const cookieJar = await cookies();
+
+  // ── Manual JWE decrypt (same method NextAuth v4 uses internally) ──
+  let session = null;
+  const tokenCookie =
+    cookieJar.get('__Secure-next-auth.session-token') ??
+    cookieJar.get('next-auth.session-token');
+
+  if (tokenCookie?.value) {
+    try {
+      const secret =
+        process.env.NEXTAUTH_SECRET ||
+        'ainos-stable-signing-secret-9f2c71b4d8e64a0fb35d1c9e8a726453';
+
+      // Derive encryption key exactly like NextAuth v4:
+      // HKDF-SHA256(secret, salt="", info="NextAuth.js Generated Encryption Key", len=32)
+      const hkdf = (await import('@panva/hkdf')).default;
+      const encryptionKey = await hkdf(
+        'sha256',
+        secret,
+        '',
+        'NextAuth.js Generated Encryption Key',
+        32
+      );
+
+      const jose = await import('jose');
+      const { payload } = await jose.jwtDecrypt(tokenCookie.value, encryptionKey, {
+        clockTolerance: 15,
+      });
+
+      if (payload?.email) {
+        session = {
+          user: {
+            name: payload.name as string,
+            email: payload.email as string,
+            image: payload.picture as string,
+            id: payload.sub as string,
+          },
+        };
+      }
+    } catch (err) {
+      console.error('[dashboard] JWE decrypt error:', err);
+    }
+  }
 
   if (!session) {
-    // TEMP DEBUG: show cookie state instead of redirecting
-    const { cookies } = await import('next/headers');
-    const cookieJar = await cookies();
-    const allCookies = cookieJar.getAll().map(c => ({ name: c.name, len: c.value.length }));
-    const sessionCookie = cookieJar.get('__Secure-next-auth.session-token');
-    console.error('[dashboard layout] session is null! cookies:', JSON.stringify(allCookies), 'sessionCookie:', sessionCookie ? `len=${sessionCookie.value.length}` : 'NOT FOUND');
-    return (
-      <div style={{ padding: '40px', fontFamily: 'monospace', background: '#1a1a2e', color: '#eee', minHeight: '100vh' }}>
-        <h2 style={{ color: '#e74c3c' }}>🔍 Dashboard Debug — Session Missing</h2>
-        <p><strong>getServerSession() returned:</strong> null</p>
-        <p><strong>Cookies found ({allCookies.length}):</strong></p>
-        <pre>{JSON.stringify(allCookies, null, 2)}</pre>
-        <p><strong>Session cookie:</strong> {sessionCookie ? `FOUND (len=${sessionCookie.value.length})` : 'NOT FOUND'}</p>
-        <hr style={{ margin: '20px 0' }} />
-        <p>If you see session-token in the list above, getServerSession failed to decode the JWT. Check the secret.</p>
-      </div>
-    );
+    redirect('/auth/signin');
   }
 
   return (
