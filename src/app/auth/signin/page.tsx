@@ -28,134 +28,72 @@ const stats = [
   { value: '4.9', label: 'User Rating', icon: Star },
 ];
 
-const errorMessages: Record<string, string> = {
-  OAuthCallback: 'Connection timed out. Retrying automatically...',
-  OAuthSignin: 'Please try signing in again.',
-  Callback: 'Authentication callback failed. Please try again.',
-  Default: 'An error occurred during sign-in.',
-};
-
-// Ping the server to wake it up before OAuth starts (prevents cold start failures)
-// Tries multiple URLs because basePath '/ainos' affects how routes resolve from the client
-async function warmUpServer(): Promise<boolean> {
-  const urls = ['/ainos/api/ping', '/api/ping', '/'];
-  for (const url of urls) {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000); // 15s per attempt
-      const res = await fetch(url, {
-        signal: controller.signal,
-        cache: 'no-store',
-        credentials: 'include',
-        redirect: 'manual',
-      });
-      clearTimeout(timeout);
-      // Any non-5xx response means server is alive (even 302 redirect from wrapper)
-      if (res.status > 0 && res.status < 500) {
-        return true;
-      }
-    } catch {
-      // Try next URL
-    }
-  }
-  return false;
-}
-
 export default function SignInPage() {
   const searchParams = useSearchParams();
   const urlError = searchParams.get('error');
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState('Waking up server...');
   const [error, setError] = useState<string | null>(null);
-  const [serverReady, setServerReady] = useState(false);
   const autoRetried = useRef(false);
 
-  // Warm up server BEFORE showing the sign-in button
-  // Only enables the Google button once server is confirmed warm
+  // Fire-and-forget warm-up: best effort, never blocks the user.
+  // The GitHub Actions keep-alive pings the server every 5 minutes,
+  // so this is just an extra nudge and is not required for the flow to work.
   useEffect(() => {
-    let mounted = true;
-
-    const attemptWarmUp = async () => {
-      if (!mounted) return;
-      const awake = await warmUpServer();
-      if (awake) {
-        setServerReady(true);
-        setStatus('');
-      } else {
-        setStatus('Server is starting up, please wait...');
-        // Retry every 3 seconds until server responds
-        setTimeout(attemptWarmUp, 3000);
-      }
-    };
-
-    attemptWarmUp();
-
-    // Keep pinging every 20 seconds to prevent server from sleeping
-    const keepAlive = setInterval(() => {
-      warmUpServer();
-    }, 20000);
-
-    // Safety net: enable the button after 60 seconds regardless
-    // so the user can still try to sign in even if warm-up detection fails
-    const safetyTimeout = setTimeout(() => {
-      if (mounted) {
-        setServerReady(true);
-        setStatus('');
-      }
-    }, 60000);
-
+    // Best effort: 3s timeout, no retries, no UI blocking
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 3000);
+    fetch('/ainos/api/ping', { signal: controller.signal, cache: 'no-store' }).catch(() => {});
     return () => {
-      mounted = false;
-      clearInterval(keepAlive);
-      clearTimeout(safetyTimeout);
+      clearTimeout(t);
+      controller.abort();
     };
   }, []);
 
   const handleSignIn = async () => {
     setLoading(true);
     setError(null);
-    setStatus('Connecting to Google...');
+
+    // If the server is cold, the request will take a few seconds.
+    // Show a clear status so the user knows it's working.
+    const startTs = Date.now();
+    const statusTimer = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTs) / 1000);
+      // (no state used; spinner is enough)
+    }, 1000);
 
     try {
+      // signIn() does a full page navigation, so the loading state will reset on its own.
       await signIn('google', { callbackUrl: '/' });
     } catch {
-      // Auto-retry once if callback fails
-      setStatus('Retrying...');
-      await new Promise(r => setTimeout(r, 2000));
-      try {
-        await signIn('google', { callbackUrl: '/' });
-      } catch {
-        setError('Sign-in failed. Please try again.');
-        setLoading(false);
-        setStatus('');
-      }
+      clearInterval(statusTimer);
+      setError('Sign-in failed. Please try again.');
+      setLoading(false);
     }
   };
 
-  // Auto-retry when redirected back with OAuthCallback error (cold start recovery)
+  // Auto-retry once if the user lands back here with OAuthCallback error.
   useEffect(() => {
     if (urlError === 'OAuthCallback' && !autoRetried.current) {
       autoRetried.current = true;
-      // Wait a moment then auto-retry sign-in (server is now awake)
       const timer = setTimeout(() => {
         handleSignIn();
-      }, 2000);
+      }, 1500);
       return () => clearTimeout(timer);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlError]);
 
   return (
     <div className="min-h-screen flex relative overflow-hidden bg-gray-50">
       {/* Animated Background */}
       <div className="absolute inset-0">
-        <div 
+        <div
           className="absolute inset-0"
           style={{
             background: 'linear-gradient(135deg, #f9fafb 0%, #f3f4f6 25%, #f9fafb 50%, #f3f4f6 75%, #f9fafb 100%)'
           }}
         />
-        
+
         {/* Subtle Gradient Orbs */}
         <motion.div
           animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
@@ -175,9 +113,9 @@ export default function SignInPage() {
           className="absolute top-1/3 right-1/4 w-[400px] h-[400px]"
           style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 50%)' }}
         />
-        
+
         {/* Subtle Grid */}
-        <div 
+        <div
           className="absolute inset-0 opacity-[0.03]"
           style={{
             backgroundImage: `
@@ -187,7 +125,7 @@ export default function SignInPage() {
             backgroundSize: '80px 80px'
           }}
         />
-        
+
         {/* Floating Particles */}
         {[...Array(6)].map((_, i) => (
           <motion.div
@@ -219,7 +157,7 @@ export default function SignInPage() {
           className="max-w-xl"
         >
           {/* Logo */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
@@ -230,7 +168,7 @@ export default function SignInPage() {
               transition={{ duration: 0.5 }}
               className="relative"
             >
-              <div 
+              <div
                 className="w-16 h-16 rounded-2xl overflow-hidden"
                 style={{
                   background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #4f46e5 100%)',
@@ -258,9 +196,9 @@ export default function SignInPage() {
             <h2 className="text-4xl xl:text-5xl font-bold leading-[1.15] mb-5 text-gray-900">
               Transform Your
               <span className="block mt-2">
-                <span 
+                <span
                   className="bg-clip-text text-transparent"
-                  style={{ 
+                  style={{
                     backgroundImage: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%)',
                   }}
                 >
@@ -292,13 +230,13 @@ export default function SignInPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.5 + i * 0.1 }}
                 className="flex items-center gap-3 p-3 rounded-xl"
-                style={{ 
+                style={{
                   background: 'linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(249,250,251,0.6) 100%)',
                   border: '1px solid rgba(99,102,241,0.15)',
                   backdropFilter: 'blur(10px)'
                 }}
               >
-                <div 
+                <div
                   className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
                   style={{ background: `${item.color}20` }}
                 >
@@ -338,12 +276,12 @@ export default function SignInPage() {
           className="w-full max-w-md"
         >
           {/* Mobile Logo */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="lg:hidden flex items-center justify-center gap-3 mb-8"
           >
-            <div 
+            <div
               className="w-12 h-12 rounded-xl overflow-hidden"
               style={{
                 background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
@@ -372,7 +310,7 @@ export default function SignInPage() {
             }}
           >
             {/* Decorative Corner Glow */}
-            <div 
+            <div
               className="absolute top-0 right-0 w-40 h-40 -translate-y-1/2 translate-x-1/2 pointer-events-none"
               style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.1) 0%, transparent 70%)' }}
             />
@@ -392,7 +330,7 @@ export default function SignInPage() {
                 <Sparkles className="w-4 h-4 text-purple-600" />
                 <span className="text-sm font-semibold text-purple-600">Welcome back</span>
               </motion.div>
-              
+
               <motion.h2
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -401,7 +339,7 @@ export default function SignInPage() {
               >
                 Sign in to continue
               </motion.h2>
-              
+
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -412,21 +350,21 @@ export default function SignInPage() {
               </motion.p>
             </div>
 
-            {/* Google Sign In */}
+            {/* Google Sign In - always enabled, no warm-up gate */}
             <motion.button
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              whileHover={{ scale: loading || !serverReady ? 1 : 1.02, y: loading || !serverReady ? 0 : -2 }}
-              whileTap={{ scale: loading || !serverReady ? 1 : 0.98 }}
+              whileHover={{ scale: loading ? 1 : 1.02, y: loading ? 0 : -2 }}
+              whileTap={{ scale: loading ? 1 : 0.98 }}
               onClick={handleSignIn}
-              disabled={loading || !serverReady}
+              disabled={loading}
               className="relative w-full py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all group overflow-hidden bg-white border border-gray-200 hover:border-purple-300 hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {loading || !serverReady ? (
+              {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 text-purple-600 animate-spin" />
-                  <span className="relative font-semibold text-gray-700">{loading ? (status || 'Connecting...') : 'Preparing server...'}</span>
+                  <span className="relative font-semibold text-gray-700">Connecting to Google…</span>
                 </>
               ) : (
                 <>
@@ -474,7 +412,7 @@ export default function SignInPage() {
                     border: '1px solid rgba(99,102,241,0.1)'
                   }}
                 >
-                  <div 
+                  <div
                     className="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center transition-transform group-hover:scale-110"
                     style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(139,92,246,0.1) 100%)' }}
                   >
