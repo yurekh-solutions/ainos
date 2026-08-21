@@ -1,8 +1,1 @@
-fix: continuous server keep-alive on sign-in page for smooth OAuth
-
-- Sign-in page now pings server every 20 seconds to keep it awake
-- Server stays warm during entire OAuth flow (user selects Google account)
-- Simplified handleSignIn - no more multi-step warm-up delays
-- One-click sign-in: tap button → Google popup → signed in
-- Cold start timeout increased to 45s for slow connections
-- Build verified: 99 routes compiled successfully
+fix: middleware redirect loop blocking Google Sign-In
