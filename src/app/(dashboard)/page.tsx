@@ -103,17 +103,7 @@ export default function DashboardPage() {
     }
   }, [status, router]);
   
-  // Force redirect after 5 seconds if still loading (prevents blank page)
-  useEffect(() => {
-    if (status === 'loading') {
-      const timer = setTimeout(() => {
-        router.replace('/auth/signin/');
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [status, router]);
-  
-  // Show loading spinner with visible fallback colors
+  // Show loading spinner while checking auth status
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -122,7 +112,7 @@ export default function DashboardPage() {
       </div>
     );
   }
-  
+    
   // Redirect unauthenticated users
   if (status === 'unauthenticated') {
     return (

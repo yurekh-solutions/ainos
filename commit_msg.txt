@@ -1,6 +1,8 @@
-fix: break redirect loop between sign-in and dashboard
+fix: completely break sign-in/dashboard redirect loop
 
-- Changed sign-in page redirect from router.replace('/') to window.location.href('/ainos/')
-- Added session.user.email validation before redirecting (prevents loop with invalid sessions)
-- Full page navigation breaks the client-side routing loop
-- Dashboard still redirects unauthenticated users to sign-in
+- Removed ALL auto-redirect from sign-in page
+- Sign-in page now always shows the Google button
+- Removed 5-second loading timeout from dashboard that caused loop
+- Dashboard only redirects when session status is definitely 'unauthenticated'
+- Loading state shows visible spinner without redirecting
+- This prevents the pages from flashing/looping between each other
