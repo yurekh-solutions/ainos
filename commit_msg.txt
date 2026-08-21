@@ -1,10 +1,10 @@
-fix: auth flow - remove strict provider check, fix session timing, remove duplicate auth guards
+fix: replace all Framer Motion with plain HTML on sign-in page
 
-- signIn callback: removed strict provider check that was blocking sign-in
-- signIn callback: now accepts any OAuth provider with valid email
-- session callback: removed async DB enrichment (was causing timing issues)
-- session callback: now builds session purely from JWT synchronously
-- dashboard page: removed duplicate auth guard (ProtectedRoute handles it)
-- dashboard page: replaced CSS variable spinner with hardcoded Tailwind colors
-- dashboard page: uses simple bg-gray-50 instead of CSS variable gradients
-- These fixes together resolve the redirect loop and blank page issues after Google sign-in
+Root cause: Framer Motion initial={{ opacity: 0 }} animations were not
+firing on the deployed site, leaving the entire sign-in page invisible.
+The Google button existed in the DOM but had opacity: 0, making it
+impossible to click.
+
+Fix: Replaced all motion.* elements with regular HTML elements.
+The page now renders immediately with full visibility - no animation
+dependency. CSS hover effects preserved via Tailwind classes.
