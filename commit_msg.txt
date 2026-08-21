@@ -1,6 +1,6 @@
-fix: Google Sign-In redirect to dashboard after authentication
+fix: remove double basePath prefix from all client-side redirects
 
-- Removed middleware token check that was failing silently
-- Added client-side auth guard on dashboard page
-- Added auto-redirect on sign-in page for authenticated users
-- Google Sign-In now smoothly redirects to dashboard after login
+- router.replace('/ainos/') was becoming /ainos/ainos/ (404)
+- Use '/' for client-side router calls — basePath auto-prepends /ainos
+- Fixed sign-in page redirect and dashboard auth guard redirect
+- Fixed fetch URL to use /api/ping instead of /ainos/api/ping

@@ -99,7 +99,7 @@ export default function DashboardPage() {
   // Redirect unauthenticated users to sign-in
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.replace('/ainos/auth/signin/');
+      router.replace('/auth/signin/');
     }
   }, [status, router]);
 

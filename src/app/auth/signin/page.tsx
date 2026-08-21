@@ -40,7 +40,7 @@ export default function SignInPage() {
   // If already authenticated, redirect to dashboard
   useEffect(() => {
     if (status === 'authenticated') {
-      router.replace('/ainos/');
+      router.replace('/');
     }
   }, [status, router]);
 
@@ -51,7 +51,7 @@ export default function SignInPage() {
     // Best effort: 3s timeout, no retries, no UI blocking
     const controller = new AbortController();
     const t = setTimeout(() => controller.abort(), 3000);
-    fetch('/ainos/api/ping', { signal: controller.signal, cache: 'no-store' }).catch(() => {});
+    fetch('/api/ping', { signal: controller.signal, cache: 'no-store' }).catch(() => {});
     return () => {
       clearTimeout(t);
       controller.abort();
