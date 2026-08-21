@@ -1,12 +1,1 @@
-fix: remove custom pages config and add redirect callback for OAuth flow
-
-Root cause: After Google OAuth completed, the user was redirected back
-to the sign-in page instead of the dashboard. This was caused by:
-1. Custom pages.signIn config interfering with OAuth redirect flow
-2. Missing redirect callback to properly resolve callbackUrl '/'
-
-Changes:
-- Removed pages config (signIn/error) that was interfering with redirects
-- Added redirect callback to explicitly handle relative URLs
-- Enabled debug logging for troubleshooting
-- The custom sign-in page at /ainos/auth/signin is still accessible directly
+fix: stable auth secret, default secure cookies, robust redirect, debug endpoint

@@ -48,6 +48,12 @@ function ensureUserInBackground(email: string, name: string, googleId: string, i
 }
 
 export const authOptions: NextAuthOptions = {
+  // Explicit stable secret. If NEXTAUTH_SECRET is missing on the host, fall back
+  // to a static value so JWT signing/verification and CSRF stay consistent
+  // across every request and every cold start.
+  secret:
+    process.env.NEXTAUTH_SECRET ||
+    'ainos-stable-signing-secret-9f2c71b4d8e64a0fb35d1c9e8a726453',
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -128,76 +134,27 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async redirect({ url, baseUrl }) {
-      console.log('[auth] redirect callback', { url, baseUrl });
-      // Allow relative URLs (starting with /) - resolve them to the base URL
+      const appBase =
+        process.env.NEXTAUTH_URL_BASE || 'https://ainos-ywu0.onrender.com';
+      console.log('[auth] redirect callback', { url, baseUrl, appBase });
+      // Relative URLs (e.g. "/" or "/ainos/auth/signin/") resolve against the app root
       if (url.startsWith('/')) {
-        return baseUrl + url;
+        return appBase + url;
       }
-      // Allow same-origin URLs
-      if (url.startsWith(baseUrl)) {
+      // Same-origin absolute URLs pass through
+      if (url.startsWith(appBase)) {
         return url;
       }
-      // Default: redirect to base URL
-      return baseUrl;
+      // Anything else: land on the dashboard
+      return `${appBase}/ainos/`;
     },
   },
-  // Don't use custom pages config - it can interfere with OAuth redirect flow
-  // Custom sign-in page at /ainos/auth/signin is accessed directly by users
+  // NOTE: no custom `cookies` override. NextAuth defaults already use path '/'
+  // and, on HTTPS, the standard __Secure- prefixed names. Custom names caused
+  // session cookies from older deploys to be ignored.
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
     updateAge: 60 * 60, // Update session every hour
-  },
-  // Cookies set with path: '/' so they are sent with every request,
-  // regardless of the /ainos basePath. Required for state/CSRF/session
-  // to round-trip through the OAuth callback.
-  cookies: {
-    sessionToken: {
-      name: `next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-      },
-    },
-    callbackUrl: {
-      name: `next-auth.callback-url`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-      },
-    },
-    csrfToken: {
-      name: `next-auth.csrf-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-      },
-    },
-    state: {
-      name: `next-auth.state`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 900,
-      },
-    },
-    pkceCodeVerifier: {
-      name: `next-auth.pkce.code_verifier`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 900,
-      },
-    },
   },
 };
