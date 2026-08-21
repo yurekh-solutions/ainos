@@ -1,8 +1,10 @@
-fix: completely break sign-in/dashboard redirect loop
+fix: auth flow - remove strict provider check, fix session timing, remove duplicate auth guards
 
-- Removed ALL auto-redirect from sign-in page
-- Sign-in page now always shows the Google button
-- Removed 5-second loading timeout from dashboard that caused loop
-- Dashboard only redirects when session status is definitely 'unauthenticated'
-- Loading state shows visible spinner without redirecting
-- This prevents the pages from flashing/looping between each other
+- signIn callback: removed strict provider check that was blocking sign-in
+- signIn callback: now accepts any OAuth provider with valid email
+- session callback: removed async DB enrichment (was causing timing issues)
+- session callback: now builds session purely from JWT synchronously
+- dashboard page: removed duplicate auth guard (ProtectedRoute handles it)
+- dashboard page: replaced CSS variable spinner with hardcoded Tailwind colors
+- dashboard page: uses simple bg-gray-50 instead of CSS variable gradients
+- These fixes together resolve the redirect loop and blank page issues after Google sign-in

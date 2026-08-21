@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
   Search, Bell, ChevronDown,
   Activity, Users, Sparkles,
@@ -48,8 +47,7 @@ interface AppCard {
 }
 
 export default function DashboardPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { data: session } = useSession();
   const [stats, setStats] = useState<DashboardStats>({
     totalInvoices: 0, totalCustomers: 0, totalProducts: 0,
     totalRevenue: 0, pendingInvoices: 0, paidInvoices: 0,
@@ -96,33 +94,6 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
 
-  // Redirect unauthenticated users to sign-in
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.replace('/auth/signin/');
-    }
-  }, [status, router]);
-  
-  // Show loading spinner while checking auth status
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
-          className="w-12 h-12 rounded-full border-2 border-gray-200 border-t-purple-600" />
-      </div>
-    );
-  }
-    
-  // Redirect unauthenticated users
-  if (status === 'unauthenticated') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
-          className="w-12 h-12 rounded-full border-2 border-gray-200 border-t-purple-600" />
-      </div>
-    );
-  }
-
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good Morning';
@@ -159,15 +130,15 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--page-gradient)' }}>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
-          className="w-12 h-12 rounded-full border-2 border-[hsl(var(--border))] border-t-[hsl(var(--primary))]" />
+          className="w-12 h-12 rounded-full border-2 border-gray-200 border-t-purple-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--page-gradient)' }}>
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
 
         {/* Greeting Header */}

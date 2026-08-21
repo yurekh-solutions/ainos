@@ -79,18 +79,28 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     // CRITICAL: This callback MUST return true on success.
     // We do all DB work in the background so the OAuth callback never times out.
-    async signIn({ user, account }) {
-      console.log('[auth] signIn callback', { email: user?.email, provider: account?.provider });
-      if (account?.provider !== 'google') return false;
-      if (!user?.email) return false;
+    async signIn({ user, account, profile }) {
+      console.log('[auth] signIn callback', { 
+        email: user?.email, 
+        provider: account?.provider,
+        hasAccount: !!account,
+        hasProfile: !!profile,
+      });
+      
+      // Allow sign-in if user has an email (from any OAuth provider)
+      if (!user?.email) {
+        console.error('[auth] No email in user object, denying sign-in');
+        return false;
+      }
 
       // Fire-and-forget user creation. Do NOT await - we want the OAuth flow to complete immediately.
-      ensureUserInBackground(user.email, user.name || user.email!, user.id, user.image);
+      const googleId = user.id || account?.providerAccountId || '';
+      ensureUserInBackground(user.email, user.name || user.email!, googleId, user.image);
 
+      console.log('[auth] Sign-in successful for', user.email);
       return true;
     },
-    // Build the session purely from the JWT. We optionally enrich with DB data
-    // in the background, but we always return a valid session synchronously.
+    // Build the session purely from the JWT - no DB calls that could cause timing issues
     async session({ session, token }) {
       if (session.user && token) {
         // Sync values from the JWT - always available, no DB needed
@@ -102,25 +112,7 @@ export const authOptions: NextAuthOptions = {
         if (token.companyId) session.user.companyId = token.companyId as string;
       }
 
-      if (session.user?.email) {
-        // Best-effort enrichment from the DB. If it fails, the session is still valid.
-        getPrisma()
-          .then(async (prisma) => {
-            if (!prisma) return;
-            try {
-              const dbUser = await prisma.user.findUnique({ where: { email: session.user!.email! } });
-              if (dbUser) {
-                session.user!.id = dbUser.id;
-                session.user!.role = dbUser.role;
-                session.user!.companyId = dbUser.companyId || undefined;
-              }
-            } catch (err) {
-              console.error('[auth] Session enrichment failed (non-fatal):', err);
-            }
-          })
-          .catch(() => {});
-      }
-
+      console.log('[auth] Session built for', session.user?.email);
       return session;
     },
     async jwt({ token, user, account }) {
