@@ -15,7 +15,7 @@ export function SessionKeepAlive() {
 
     // Ping session endpoint every 5 minutes to keep alive
     const interval = setInterval(() => {
-      fetch('/api/auth/session').catch(() => {
+      fetch('/ainos/api/auth/session').catch(() => {
         // Silently fail - session will just expire naturally if server is down
       });
     }, 5 * 60 * 1000); // 5 minutes
