@@ -16,9 +16,9 @@ app.prepare().then(() => {
     try {
       const parsedUrl = parse(req.url, true);
 
-      // Redirect root "/" to "/ainos/" (sign-in page)
+      // Redirect root "/" to "/ainos" (dashboard entry point)
       if (parsedUrl.pathname === '/') {
-        res.writeHead(302, { Location: '/ainos/' });
+        res.writeHead(302, { Location: '/ainos' });
         res.end();
         return;
       }
