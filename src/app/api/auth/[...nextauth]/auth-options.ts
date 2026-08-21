@@ -60,8 +60,8 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
-  // Enable debug logs only in dev - production logs go through logger below
-  debug: process.env.NODE_ENV === 'development',
+  // Enable debug logs to help troubleshoot auth issues
+  debug: true,
   logger: {
     error(code, metadata) {
       // Don't crash the process on a single auth error
@@ -127,11 +127,22 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
+    async redirect({ url, baseUrl }) {
+      console.log('[auth] redirect callback', { url, baseUrl });
+      // Allow relative URLs (starting with /) - resolve them to the base URL
+      if (url.startsWith('/')) {
+        return baseUrl + url;
+      }
+      // Allow same-origin URLs
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+      // Default: redirect to base URL
+      return baseUrl;
+    },
   },
-  pages: {
-    signIn: '/ainos/auth/signin',
-    error: '/ainos/error',
-  },
+  // Don't use custom pages config - it can interfere with OAuth redirect flow
+  // Custom sign-in page at /ainos/auth/signin is accessed directly by users
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days

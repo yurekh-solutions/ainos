@@ -1,10 +1,12 @@
-fix: replace all Framer Motion with plain HTML on sign-in page
+fix: remove custom pages config and add redirect callback for OAuth flow
 
-Root cause: Framer Motion initial={{ opacity: 0 }} animations were not
-firing on the deployed site, leaving the entire sign-in page invisible.
-The Google button existed in the DOM but had opacity: 0, making it
-impossible to click.
+Root cause: After Google OAuth completed, the user was redirected back
+to the sign-in page instead of the dashboard. This was caused by:
+1. Custom pages.signIn config interfering with OAuth redirect flow
+2. Missing redirect callback to properly resolve callbackUrl '/'
 
-Fix: Replaced all motion.* elements with regular HTML elements.
-The page now renders immediately with full visibility - no animation
-dependency. CSS hover effects preserved via Tailwind classes.
+Changes:
+- Removed pages config (signIn/error) that was interfering with redirects
+- Added redirect callback to explicitly handle relative URLs
+- Enabled debug logging for troubleshooting
+- The custom sign-in page at /ainos/auth/signin is still accessible directly
