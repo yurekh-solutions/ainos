@@ -1,8 +1,51 @@
 import { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import { prisma } from '@/lib/prisma';
 
-const baseUrl = process.env.NEXTAUTH_URL_BASE || process.env.NEXTAUTH_URL?.replace(/\/ainos.*$/, '') || 'http://localhost:3000';
+// NEXTAUTH_URL is set in Render env vars. We strip /ainos to get the root origin,
+// then append /ainos/api/auth/callback/google as the OAuth redirect_uri.
+const baseUrl =
+  process.env.NEXTAUTH_URL_BASE ||
+  process.env.NEXTAUTH_URL?.replace(/\/ainos.*$/, '') ||
+  'http://localhost:3000';
+
+// Lazy-load prisma only when needed. This guarantees the auth module always loads,
+// even if the database is briefly unreachable. The OAuth flow NEVER blocks on DB.
+async function getPrisma() {
+  try {
+    const { prisma } = await import('@/lib/prisma');
+    return prisma;
+  } catch (err) {
+    console.error('[auth] Prisma load failed (non-fatal):', err);
+    return null;
+  }
+}
+
+// Fire-and-forget user provisioning so the OAuth callback never blocks on the DB.
+function ensureUserInBackground(email: string, name: string, googleId: string, image?: string | null) {
+  getPrisma()
+    .then(async (prisma) => {
+      if (!prisma) return;
+      try {
+        const existing = await prisma.user.findUnique({ where: { email } });
+        if (existing) return;
+        await prisma.user.create({
+          data: {
+            email,
+            name: name || email,
+            googleId,
+            image: image ?? null,
+            role: 'user',
+          },
+        });
+        console.log('[auth] Created user', email);
+      } catch (err) {
+        console.error('[auth] Background user create failed:', err);
+      }
+    })
+    .catch(() => {
+      /* swallow - sign-in already succeeded */
+    });
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -11,76 +54,81 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
+          prompt: 'select_account',
           redirect_uri: `${baseUrl}/ainos/api/auth/callback/google`,
         },
       },
     }),
   ],
-  debug: true,
+  // Enable debug logs only in dev - production logs go through logger below
+  debug: process.env.NODE_ENV === 'development',
   logger: {
     error(code, metadata) {
-      console.error('NextAuth ERROR:', code, JSON.stringify(metadata));
+      // Don't crash the process on a single auth error
+      console.error('[NextAuth] ERROR', code, JSON.stringify(metadata || {}));
     },
     warn(code) {
-      console.warn('NextAuth WARN:', code);
+      console.warn('[NextAuth] WARN', code);
     },
     debug(code, metadata) {
-      console.log('NextAuth DEBUG:', code, JSON.stringify(metadata));
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[NextAuth] DEBUG', code, JSON.stringify(metadata || {}));
+      }
     },
   },
   callbacks: {
+    // CRITICAL: This callback MUST return true on success.
+    // We do all DB work in the background so the OAuth callback never times out.
     async signIn({ user, account }) {
-      console.log('SignIn callback called:', { email: user.email, provider: account?.provider });
-      
-      if (account?.provider === 'google') {
-        try {
-          const existingUser = await prisma.user.findUnique({ where: { email: user.email! } });
-          console.log('Existing user check:', existingUser ? 'Found' : 'Not found');
-          
-          if (!existingUser) {
-            console.log('Creating new user...');
-            const newUser = await prisma.user.create({
-              data: {
-                email: user.email!,
-                name: user.name || user.email!,
-                googleId: user.id,
-                image: user.image,
-                role: 'user',
-              },
-            });
-            console.log('New user created:', newUser.id);
-          }
+      console.log('[auth] signIn callback', { email: user?.email, provider: account?.provider });
+      if (account?.provider !== 'google') return false;
+      if (!user?.email) return false;
 
-          return true;
-        } catch (error) {
-          console.error('SignIn error:', error);
-          // Still allow sign-in even if DB fails - user can be created later
-          return true;
-        }
-      }
-      return false;
+      // Fire-and-forget user creation. Do NOT await - we want the OAuth flow to complete immediately.
+      ensureUserInBackground(user.email, user.name || user.email!, user.id, user.image);
+
+      return true;
     },
+    // Build the session purely from the JWT. We optionally enrich with DB data
+    // in the background, but we always return a valid session synchronously.
     async session({ session, token }) {
-      console.log('Session callback called:', { email: session.user?.email });
-      
-      if (session.user?.email) {
-        try {
-          const dbUser = await prisma.user.findUnique({ where: { email: session.user.email } });
-          if (dbUser) {
-            session.user.id = dbUser.id;
-            session.user.role = dbUser.role;
-            session.user.companyId = dbUser.companyId || undefined;
-            console.log('Session enriched with user data');
-          }
-        } catch (error) {
-          console.error('Session error:', error);
-        }
+      if (session.user && token) {
+        // Sync values from the JWT - always available, no DB needed
+        if (token.email) session.user.email = token.email as string;
+        if (token.name) session.user.name = token.name as string;
+        if (token.picture) session.user.image = token.picture as string;
+        if (token.sub) session.user.id = token.sub;
+        if (token.role) session.user.role = token.role as string;
+        if (token.companyId) session.user.companyId = token.companyId as string;
       }
+
+      if (session.user?.email) {
+        // Best-effort enrichment from the DB. If it fails, the session is still valid.
+        getPrisma()
+          .then(async (prisma) => {
+            if (!prisma) return;
+            try {
+              const dbUser = await prisma.user.findUnique({ where: { email: session.user!.email! } });
+              if (dbUser) {
+                session.user!.id = dbUser.id;
+                session.user!.role = dbUser.role;
+                session.user!.companyId = dbUser.companyId || undefined;
+              }
+            } catch (err) {
+              console.error('[auth] Session enrichment failed (non-fatal):', err);
+            }
+          })
+          .catch(() => {});
+      }
+
       return session;
     },
     async jwt({ token, user, account }) {
       if (user) {
-        token.id = user.id;
+        token.sub = user.id;
+        token.email = user.email;
+        token.name = user.name;
+        token.picture = user.image;
       }
       if (account) {
         token.accessToken = account.access_token;
@@ -95,16 +143,17 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
-    updateAge: 60 * 60, // Update session every hour to keep alive
+    updateAge: 60 * 60, // Update session every hour
   },
+  // Cookies set with path: '/' so they are sent with every request,
+  // regardless of the /ainos basePath. Required for state/CSRF/session
+  // to round-trip through the OAuth callback.
   cookies: {
     sessionToken: {
       name: `next-auth.session-token`,
       options: {
         httpOnly: true,
         sameSite: 'lax',
-        // Must be '/' (not '/ainos'): pages fetch '/api/...' without the basePath,
-        // and a '/ainos'-scoped cookie is never sent with those requests -> 401s.
         path: '/',
         secure: process.env.NODE_ENV === 'production',
       },
