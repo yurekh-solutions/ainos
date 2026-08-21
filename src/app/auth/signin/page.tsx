@@ -1,10 +1,10 @@
 'use client';
 
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { Shield, FileText, Users, Sparkles, ArrowRight, Check, Star, TrendingUp, Globe, Loader2, AlertCircle } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20">
@@ -30,10 +30,19 @@ const stats = [
 
 export default function SignInPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { data: session, status } = useSession();
   const urlError = searchParams.get('error');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const autoRetried = useRef(false);
+
+  // If already authenticated, redirect to dashboard
+  useEffect(() => {
+    if (status === 'authenticated') {
+      router.replace('/ainos/');
+    }
+  }, [status, router]);
 
   // Fire-and-forget warm-up: best effort, never blocks the user.
   // The GitHub Actions keep-alive pings the server every 5 minutes,

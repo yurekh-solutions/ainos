@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Search, Bell, ChevronDown,
   Activity, Users, Sparkles,
@@ -47,7 +48,8 @@ interface AppCard {
 }
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [stats, setStats] = useState<DashboardStats>({
     totalInvoices: 0, totalCustomers: 0, totalProducts: 0,
     totalRevenue: 0, pendingInvoices: 0, paidInvoices: 0,
@@ -57,9 +59,7 @@ export default function DashboardPage() {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { fetchStats(); }, []);
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const [invoicesRes, customersRes, productsRes, leadsRes, expensesRes, quotesRes, candidatesRes, ordersRes, vendorsRes, articlesRes, eventsRes] = await Promise.all([
         fetch('/api/invoices'), fetch('/api/customers'), fetch('/api/products'),
@@ -92,7 +92,26 @@ export default function DashboardPage() {
       });
     } catch (error) { console.error('Error:', error); }
     finally { setLoading(false); }
-  };
+  }, []);
+
+  useEffect(() => { fetchStats(); }, [fetchStats]);
+
+  // Redirect unauthenticated users to sign-in
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/ainos/auth/signin/');
+    }
+  }, [status, router]);
+
+  // Show nothing while checking auth status
+  if (status === 'loading' || status === 'unauthenticated') {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--page-gradient)' }}>
+        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
+          className="w-12 h-12 rounded-full border-2 border-[hsl(var(--border))] border-t-[hsl(var(--primary))]" />
+      </div>
+    );
+  }
 
   const getGreeting = () => {
     const hour = new Date().getHours();

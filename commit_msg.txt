@@ -1,1 +1,6 @@
-fix: middleware redirect loop blocking Google Sign-In
+fix: Google Sign-In redirect to dashboard after authentication
+
+- Removed middleware token check that was failing silently
+- Added client-side auth guard on dashboard page
+- Added auto-redirect on sign-in page for authenticated users
+- Google Sign-In now smoothly redirects to dashboard after login
