@@ -9,6 +9,13 @@ const nextConfig = {
   async rewrites() {
     const self = process.env.RENDER_EXTERNAL_URL || process.env.NEXTAUTH_URL?.replace(/\/ainos.*$/, '') || 'http://localhost:3000';
     return [
+      // Redirect root domain to sign-in page
+      {
+        source: '/',
+        destination: `${self}/ainos/auth/signin/`,
+        basePath: false,
+      },
+      // API routes: proxy /api/* to /ainos/api/*
       {
         source: '/api/:path*',
         destination: `${self}/ainos/api/:path*`,
