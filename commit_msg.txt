@@ -1,6 +1,7 @@
-fix: remove double basePath prefix from all client-side redirects
+fix: blank dashboard page - invisible spinner and hanging auth check
 
-- router.replace('/ainos/') was becoming /ainos/ainos/ (404)
-- Use '/' for client-side router calls — basePath auto-prepends /ainos
-- Fixed sign-in page redirect and dashboard auth guard redirect
-- Fixed fetch URL to use /api/ping instead of /ainos/api/ping
+- Spinner used undefined CSS variables (var(--page-gradient), var(--border), var(--primary))
+- Made spinner visible with hardcoded colors (bg-gray-50, border-gray-200, border-t-purple-600)
+- Added 5-second timeout to force redirect if session check hangs
+- Separated loading and unauthenticated states for better UX
+- Prevents blank page when SessionProvider can't reach auth endpoint

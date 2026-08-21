@@ -102,13 +102,33 @@ export default function DashboardPage() {
       router.replace('/auth/signin/');
     }
   }, [status, router]);
-
-  // Show nothing while checking auth status
-  if (status === 'loading' || status === 'unauthenticated') {
+  
+  // Force redirect after 5 seconds if still loading (prevents blank page)
+  useEffect(() => {
+    if (status === 'loading') {
+      const timer = setTimeout(() => {
+        router.replace('/auth/signin/');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [status, router]);
+  
+  // Show loading spinner with visible fallback colors
+  if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--page-gradient)' }}>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
-          className="w-12 h-12 rounded-full border-2 border-[hsl(var(--border))] border-t-[hsl(var(--primary))]" />
+          className="w-12 h-12 rounded-full border-2 border-gray-200 border-t-purple-600" />
+      </div>
+    );
+  }
+  
+  // Redirect unauthenticated users
+  if (status === 'unauthenticated') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
+          className="w-12 h-12 rounded-full border-2 border-gray-200 border-t-purple-600" />
       </div>
     );
   }
