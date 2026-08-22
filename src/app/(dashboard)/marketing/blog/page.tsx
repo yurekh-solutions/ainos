@@ -12,6 +12,7 @@ interface BlogPost {
   status: string; author: string | null; featuredImage: string | null;
   category: string | null; publishedAt: string | null; scheduledAt: string | null;
   tags: string[] | null; views?: number; createdAt: string;
+  isSchedule?: boolean;
 }
 interface GeneratedPost {
   title: string; slug: string; excerpt: string; content: string;
@@ -426,37 +427,22 @@ export default function BlogPage() {
             {filtered.map((post, i) => (
               <motion.article key={post.id}
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                className="group bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm hover:shadow-xl hover:border-purple-200 dark:hover:border-purple-800 transition-all duration-300 cursor-pointer"
+                className="group bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-xl hover:border-purple-200 dark:hover:border-purple-800 transition-all duration-300 cursor-pointer"
                 onClick={() => setShowReader(post)}>
-                {/* Featured Image */}
-                <div className="relative aspect-[16/9] overflow-hidden bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/20 dark:to-indigo-900/20">
-                  {post.featuredImage ? (
-                    <img src={post.featuredImage} alt={post.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <BookOpen className="w-12 h-12 text-purple-300 dark:text-purple-700" />
-                    </div>
-                  )}
-                  {/* Status Badge */}
-                  <div className="absolute top-3 left-3">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold text-white uppercase tracking-wide ${
-                      post.status === 'published' ? 'bg-emerald-500' : post.status === 'draft' ? 'bg-amber-500' : 'bg-violet-500'
+                {/* Content */}
+                <div className="p-6">
+                  {/* Status + Category Row */}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+                      post.status === 'published' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : post.status === 'draft' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
                     }`}>{post.status}</span>
-                  </div>
-                  {/* Category Badge */}
-                  {post.category && (
-                    <div className="absolute top-3 right-3">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/90 dark:bg-gray-900/90 text-purple-700 dark:text-purple-300 backdrop-blur-sm">
+                    {post.category && (
+                      <span className="text-[11px] font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded-md">
                         {post.category}
                       </span>
-                    </div>
-                  )}
-                </div>
-                {/* Content */}
-                <div className="p-5">
-                  <h3 className="font-bold text-base text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                    )}
+                  </div>
+                  <h3 className="font-bold text-base text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                     {post.title}
                   </h3>
                   {post.excerpt && (
@@ -481,6 +467,11 @@ export default function BlogPage() {
                       {post.publishedAt && (
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />{new Date(post.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      )}
+                      {post.scheduledAt && (
+                        <span className="flex items-center gap-1">
+                          <CalendarRange className="w-3 h-3" />Scheduled: {new Date(post.scheduledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       )}
                       <span className="flex items-center gap-1">
@@ -754,31 +745,21 @@ export default function BlogPage() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
               onClick={e => e.stopPropagation()}
               className="bg-white dark:bg-gray-900 w-full max-w-4xl my-8 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-2xl overflow-hidden mx-4">
-            {/* Article Header Image */}
-            {showReader.featuredImage && (
-              <div className="relative aspect-[21/9] overflow-hidden">
-                <img src={showReader.featuredImage} alt={showReader.title}
-                  className="w-full h-full object-cover"
-                  onError={(e) => { const el = e.target as HTMLImageElement; if (el.parentElement) el.parentElement.style.display = 'none'; }} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute bottom-6 left-6 right-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    {showReader.category && (
-                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-white backdrop-blur-sm">
-                        {showReader.category}
-                      </span>
-                    )}
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${
-                      showReader.status === 'published' ? 'bg-emerald-500/80' : 'bg-amber-500/80'
-                    }`}>{showReader.status}</span>
-                  </div>
-                </div>
-              </div>
-            )}
             {/* Article Content */}
             <div className="p-8">
               {/* Title & Meta */}
               <div className="mb-8">
+                {/* Status + Category Badges */}
+                <div className="flex items-center gap-2 mb-4">
+                  {showReader.category && (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                      {showReader.category}
+                    </span>
+                  )}
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${
+                    showReader.status === 'published' ? 'bg-emerald-500' : 'bg-amber-500'
+                  }`}>{showReader.status}</span>
+                </div>
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">{showReader.title}</h1>
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
                   {showReader.publishedAt && (

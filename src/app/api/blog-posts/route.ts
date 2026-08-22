@@ -22,6 +22,53 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' }
     });
 
+    // Also fetch scheduled blogs from BlogSchedule
+    const scheduleWhere: Record<string, unknown> = { companyId: user.companyId };
+    if (status === 'scheduled') {
+      scheduleWhere.status = { in: ['pending', 'generating'] };
+    }
+    const schedules = await prisma.blogSchedule.findMany({
+      where: scheduleWhere,
+      include: {
+        subscription: {
+          include: {
+            connectedWebsite: true,
+          },
+        },
+      },
+      orderBy: { scheduledDate: 'desc' },
+    }) as Array<{
+      id: string;
+      topic: string;
+      keywords: string | null;
+      scheduledDate: Date;
+      createdAt: Date;
+      subscription: {
+        connectedWebsite: {
+          niche: string | null;
+        } | null;
+      } | null;
+    }>;
+
+    // Convert schedules to blog post format for unified display
+    const scheduledPosts = schedules.map((s) => ({
+      id: s.id,
+      title: s.topic,
+      slug: s.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+      content: '',
+      excerpt: '',
+      featuredImage: null,
+      category: s.subscription?.connectedWebsite?.niche || 'General',
+      status: 'scheduled',
+      author: null,
+      publishedAt: null,
+      scheduledAt: s.scheduledDate,
+      tags: s.keywords ? (s.keywords as string).split(',').map(k => k.trim()) : [],
+      views: 0,
+      createdAt: s.createdAt || new Date(),
+      isSchedule: true,
+    }));
+
     // Get distinct categories for filtering
     const allPosts = await prisma.blogPost.findMany({
       where: { companyId: user.companyId },
@@ -29,7 +76,10 @@ export async function GET(req: NextRequest) {
     });
     const categories = [...new Set(allPosts.map((p: { category: string | null }) => p.category).filter(Boolean))] as string[];
 
-    return NextResponse.json({ posts, categories });
+    // Combine posts and scheduled posts
+    const allContent = [...posts, ...scheduledPosts];
+
+    return NextResponse.json({ posts: allContent, categories, scheduledCount: scheduledPosts.length });
   } catch (error) {
     console.error('Error fetching blog posts:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

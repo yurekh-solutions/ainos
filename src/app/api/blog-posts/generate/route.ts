@@ -54,26 +54,18 @@ Requirements:
 - Include a strong CTA at the end
 - Make it rank on Google AND get cited by AI engines.`;
 
-    // Generate blog content and featured image in parallel
-    const [pollinationsRes, imageUrl] = await Promise.all([
-      fetch('https://text.pollinations.ai/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'openai',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-        }),
+    // Generate blog content via Pollinations
+    const pollinationsRes = await fetch('https://text.pollinations.ai/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'openai',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
       }),
-      // Generate featured image via Pollinations.ai (free, no API key)
-      Promise.resolve(
-        `https://image.pollinations.ai/prompt/${encodeURIComponent(
-          `Professional blog header image about ${topic}, modern business concept, clean design, high quality, 16:9 aspect ratio`
-        )}?width=1200&height=630&nologo=true&seed=${Date.now()}`
-      ),
-    ]);
+    });
 
     let result;
     if (pollinationsRes.ok) {
@@ -108,8 +100,7 @@ Requirements:
       };
     }
 
-    // Attach the generated featured image URL and ensure SEO fields exist
-    result.featuredImage = imageUrl;
+    // Ensure SEO fields exist
     if (!result.seoScore) {
       // Calculate basic SEO score
       let score = 50;

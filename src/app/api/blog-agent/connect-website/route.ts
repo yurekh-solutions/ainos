@@ -97,18 +97,27 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Generate first batch of 7 blog schedules for week 1
-    const topics = aiAnalysis.topics.slice(0, 7);
+    // Generate all 30 blog schedules for the month
+    const topics = aiAnalysis.topics.slice(0, 30);
     const schedules = [];
     for (let i = 0; i < topics.length; i++) {
       const scheduledDate = new Date(now);
       scheduledDate.setDate(scheduledDate.getDate() + i);
       scheduledDate.setHours(9, 0, 0, 0);
 
+      // Generate diverse SEO keywords from topic
+      const stopWords = new Set(['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'her', 'was', 'one', 'our', 'out', 'how', 'what', 'which', 'their', 'this', 'that', 'with', 'from', 'have', 'been', 'will', 'each', 'make', 'like', 'long', 'look', 'many', 'some', 'them', 'then', 'than', 'into', 'more', 'also', 'just', 'over', 'such', 'take', 'year', 'very', 'when', 'come', 'could', 'other', 'after', 'most', 'about', 'would', 'there', 'their', 'what', 'so', 'up', 'out', 'if', 'of', 'in', 'to', 'is', 'it', 'as', 'at', 'by', 'on', 'or', 'an', 'be', 'we', 'he', 'do', 'go', 'no', 'my', 'me', 'us']);
+      const topicWords = topics[i]
+        .split(/\s+/)
+        .map(w => w.replace(/[^a-zA-Z0-9]/g, ''))
+        .filter(w => w.length > 3 && !stopWords.has(w.toLowerCase()))
+        .slice(0, 6);
+      const keywords = [aiAnalysis.niche, ...topicWords].filter(Boolean).join(', ');
+
       const schedule = await prisma.blogSchedule.create({
         data: {
           topic: topics[i],
-          keywords: aiAnalysis.niche,
+          keywords,
           tone: 'Professional',
           targetWordCount: 3000,
           scheduledDate,

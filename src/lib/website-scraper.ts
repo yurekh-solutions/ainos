@@ -243,12 +243,88 @@ Rules:
     };
   } catch (error) {
     console.error('AI analysis error:', error);
-    // Fallback analysis
+    // Dynamic fallback: detect niche from all available data and generate unique topics
+    const name = scrapedData.name || '';
+    const desc = scrapedData.description || '';
+    const headings = scrapedData.headings.join(' ');
+    const keywords = scrapedData.metaKeywords.join(' ');
+    const content = scrapedData.rawText;
+
+    // Smart niche detection from multiple signals
+    const allText = `${name} ${desc} ${headings} ${keywords} ${content}`.toLowerCase();
+    const nicheSignals: Record<string, string[]> = {
+      'Fashion & Clothing': ['fashion', 'clothing', 'apparel', 'wear', 'style', 'outfit', 'dress', 'pants', 'jeans', 'shirt', 'garment', 'textile', 'boutique', 'wardrobe'],
+      'Technology & Software': ['tech', 'software', 'app', 'digital', 'cloud', 'saas', 'platform', 'ai', 'machine learning', 'coding', 'developer', 'programming'],
+      'Health & Wellness': ['health', 'wellness', 'medical', 'fitness', 'nutrition', 'diet', 'yoga', 'mental health', 'healthcare', 'hospital', 'clinic'],
+      'Food & Restaurant': ['food', 'restaurant', 'recipe', 'cooking', 'cuisine', 'meal', 'chef', 'dining', 'cafe', 'bakery', 'catering'],
+      'Real Estate': ['real estate', 'property', 'housing', 'apartment', 'rental', 'mortgage', 'home', 'land', 'construction', 'interior'],
+      'Education & Learning': ['education', 'learning', 'course', 'training', 'school', 'university', 'student', 'teacher', 'academic', 'certification'],
+      'Finance & Banking': ['finance', 'banking', 'investment', 'loan', 'insurance', 'trading', 'stock', 'crypto', 'accounting', 'tax'],
+      'E-commerce & Retail': ['ecommerce', 'retail', 'shopping', 'store', 'product', 'marketplace', 'online shopping', 'cart', 'checkout'],
+      'Travel & Tourism': ['travel', 'tourism', 'hotel', 'flight', 'vacation', 'destination', 'tour', 'trip', 'booking', 'hospitality'],
+      'Marketing & Advertising': ['marketing', 'advertising', 'seo', 'social media', 'branding', 'content', 'digital marketing', 'campaign'],
+      'Automotive': ['car', 'automotive', 'vehicle', 'auto', 'motorcycle', 'electric vehicle', 'ev', 'driving', 'garage'],
+      'Beauty & Cosmetics': ['beauty', 'cosmetics', 'skincare', 'makeup', 'salon', 'spa', 'hair', 'fragrance', 'grooming'],
+      'Sports & Fitness': ['sports', 'fitness', 'gym', 'exercise', 'athlete', 'training', 'workout', 'running', 'cycling'],
+      'Legal Services': ['legal', 'law', 'attorney', 'lawyer', 'court', 'litigation', 'compliance', 'contract'],
+      'Manufacturing & Industrial': ['manufacturing', 'industrial', 'factory', 'production', 'supply chain', 'logistics', 'engineering'],
+    };
+
+    let detectedNiche = 'Business';
+    let maxScore = 0;
+    for (const [niche, signals] of Object.entries(nicheSignals)) {
+      const score = signals.filter(s => allText.includes(s)).length;
+      if (score > maxScore) {
+        maxScore = score;
+        detectedNiche = niche;
+      }
+    }
+
+    // If no strong signal, use meta keywords or name
+    if (maxScore === 0) {
+      detectedNiche = scrapedData.metaKeywords[0] || name.split('|')[0].trim() || desc.split(' ').slice(0, 3).join(' ') || 'Business';
+    }
+
+    const n = detectedNiche;
+    // 30 unique, varied topic templates - all dynamic based on detected niche
+    const topicTemplates = [
+      `The Complete Guide to ${n}: Everything Beginners Need to Know`,
+      `Top 10 ${n} Trends Shaping the Industry in 2026`,
+      `How to Choose the Right ${n} Solutions: A Buyer's Guide`,
+      `${n} Mistakes Everyone Makes (And How to Avoid Them)`,
+      `The Ultimate ${n} Checklist for Professionals`,
+      `How ${n} is Evolving: What to Expect in the Next 5 Years`,
+      `Beginner to Pro: Your Complete ${n} Learning Roadmap`,
+      `15 Expert Tips to Master ${n} Faster`,
+      `${n} vs the Competition: What Makes the Difference`,
+      `The Hidden Costs of ${n} Nobody Talks About`,
+      `How to Build a Winning ${n} Strategy from Scratch`,
+      `${n} for Small Businesses: A Practical Getting-Started Guide`,
+      `The Science Behind ${n}: What Research Actually Says`,
+      `Case Study: How One Company Transformed Their ${n} Approach`,
+      `${n} Tools and Software Worth Using in 2026`,
+      `The ROI of Investing in ${n}: Is It Worth It?`,
+      `Common ${n} Myths Debunked with Real Data`,
+      `How to Stay Ahead of the Curve in ${n}`,
+      `${n} Best Practices: Lessons from Industry Leaders`,
+      `A Day in the Life: What Working in ${n} Actually Looks Like`,
+      `The Future of ${n}: AI, Automation, and What's Next`,
+      `How to Measure Success in ${n}: KPIs That Actually Matter`,
+      `${n} on a Budget: Smart Strategies That Don't Break the Bank`,
+      `The Complete ${n} Glossary: Terms Every Professional Should Know`,
+      `How ${n} Impacts Customer Experience and Loyalty`,
+      `${n} Compliance and Regulations: What You Need to Know`,
+      `From Zero to Hero: Building Your First ${n} Campaign`,
+      `The Psychology Behind Effective ${n} Decisions`,
+      `${n} Trends by Region: A Global Perspective`,
+      `Your ${n} Action Plan: 30 Days to Meaningful Results`,
+    ];
+
     return {
-      niche: scrapedData.metaKeywords[0] || scrapedData.description?.split(' ').slice(0, 3).join(' ') || 'General Business',
+      niche: detectedNiche,
       brandVoice: 'Professional and informative',
       competitors: [],
-      topics: Array.from({ length: 30 }, (_, i) => `${scrapedData.name} - Topic ${i + 1}`),
+      topics: topicTemplates,
     };
   }
 }
