@@ -145,8 +145,8 @@ export const authOptions: NextAuthOptions = {
       if (url.startsWith(appBase)) {
         return url;
       }
-      // Anything else: land on the dashboard
-      return `${appBase}/ainos/`;
+      // Anything else: land on the dashboard (no trailing slash)
+      return `${appBase}/ainos`;
     },
   },
   // NOTE: no custom `cookies` override. NextAuth defaults already use path '/'
