@@ -31,7 +31,7 @@ export default function ToolsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    fetch('/ainos/api/tools')
+    fetch('/api/tools')
       .then(res => res.json())
       .then(data => { setTools(data); setLoading(false); })
       .catch(() => setLoading(false));
@@ -100,7 +100,7 @@ export default function ToolsPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
               className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-6 hover:border-purple-500/50 transition-all group cursor-pointer"
-              onClick={() => router.push(`/ainos/tools/execute/${tool.slug}`)}
+              onClick={() => router.push(`/tools/execute/${tool.slug}`)}
             >
               <div className="flex items-start justify-between mb-3">
                 <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${categoryColors[tool.category] || 'from-gray-500 to-gray-600'} flex items-center justify-center`}>

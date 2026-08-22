@@ -507,7 +507,7 @@ function runLegal(i: Inputs): ToolOutput {
 
 // ─── Tool: Yurekh Web Chat AI (embeddable chatbot) ──────────────────────────
 
-const BOT_AVATAR = 'https://yurekh.vercel.app/ainos/ainos-robot.png';
+const BOT_AVATAR = '/ainos-robot.png';
 
 function parseFaqs(raw: string): { q: string; a: string }[] {
   const out: { q: string; a: string }[] = [];

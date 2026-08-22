@@ -176,7 +176,7 @@ export async function requireApp(
     {
       error: `${APPS[app].name} subscription required`,
       requiredApp: app,
-      upgradeUrl: '/ainos/billing',
+      upgradeUrl: '/billing',
     },
     { status: 402 }
   );

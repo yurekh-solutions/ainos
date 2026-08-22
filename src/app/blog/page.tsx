@@ -42,14 +42,14 @@ export default function PublicBlogPage() {
       <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <a href="/ainos/blog/" className="flex items-center gap-2">
+            <a href="/blog/" className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <span className="text-lg font-bold text-gray-900">AINOS Blog</span>
             </a>
             <div className="flex items-center gap-4">
-              <a href="/ainos/" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+              <a href="/" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                 Back to AINOS
               </a>
             </div>
@@ -116,7 +116,7 @@ export default function PublicBlogPage() {
             {/* Featured Post */}
             {featured && !search && activeCategory === 'All' && (
               <a
-                href={`/ainos/blog/${featured.slug}/`}
+                href={`/blog/${featured.slug}/`}
                 className="group block mb-10 bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
               >
                 <div className="grid md:grid-cols-2 gap-0">
@@ -177,7 +177,7 @@ export default function PublicBlogPage() {
               {(search || activeCategory !== 'All' ? posts : rest).map((post) => (
                 <a
                   key={post.id}
-                  href={`/ainos/blog/${post.slug}/`}
+                  href={`/blog/${post.slug}/`}
                   className="group bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-xl hover:border-purple-200 transition-all duration-300"
                 >
                   {/* Image */}
@@ -252,13 +252,13 @@ export default function PublicBlogPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <a
-              href="/ainos/"
+              href="/"
               className="px-6 py-3 rounded-xl text-sm font-semibold bg-white text-purple-700 hover:bg-gray-100 transition-colors inline-flex items-center justify-center gap-2 shadow-lg"
             >
               Get Started Free <ArrowRight className="w-4 h-4" />
             </a>
             <a
-              href="/ainos/marketing/blog/"
+              href="/marketing/blog/"
               className="px-6 py-3 rounded-xl text-sm font-semibold text-white border border-white/30 hover:bg-white/10 transition-colors inline-flex items-center justify-center gap-2"
             >
               <ExternalLink className="w-4 h-4" /> Open Blog Dashboard

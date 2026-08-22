@@ -24,7 +24,7 @@ export default function ToolExecutePage() {
   const [input, setInput] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    fetch(`/ainos/api/tools?slug=${slug}`)
+    fetch(`/api/tools?slug=${slug}`)
       .then(res => res.json())
       .then(data => { setTool(data); setLoading(false); })
       .catch(() => setLoading(false));
@@ -34,7 +34,7 @@ export default function ToolExecutePage() {
     setExecuting(true);
     setResult(null);
     try {
-      const res = await fetch('/ainos/api/tools/execute', {
+      const res = await fetch('/api/tools/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ toolSlug: slug, input })
@@ -56,7 +56,7 @@ export default function ToolExecutePage() {
     return (
       <div className="p-6 text-center">
         <h2 className="text-xl font-semibold text-gray-300">Tool not found</h2>
-        <button onClick={() => router.push('/ainos/tools')} className="mt-4 text-purple-400 hover:underline">Back to tools</button>
+        <button onClick={() => router.push('/tools')} className="mt-4 text-purple-400 hover:underline">Back to tools</button>
       </div>
     );
   }
@@ -65,7 +65,7 @@ export default function ToolExecutePage() {
     <div className="p-4 md:p-6 max-w-4xl mx-auto">
       <motion.button
         initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-        onClick={() => router.push('/ainos/tools')}
+        onClick={() => router.push('/tools')}
         className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" /> Back to Tools

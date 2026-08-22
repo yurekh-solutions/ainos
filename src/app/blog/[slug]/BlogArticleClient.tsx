@@ -48,14 +48,14 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
       <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <a href="/ainos/blog/" className="flex items-center gap-2">
+            <a href="/blog/" className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <span className="text-lg font-bold text-gray-900">AINOS Blog</span>
             </a>
             <div className="flex items-center gap-4">
-              <a href="/ainos/blog/" className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1">
+              <a href="/blog/" className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1">
                 <ArrowLeft className="w-4 h-4" /> All Articles
               </a>
             </div>
@@ -156,7 +156,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
                 This article was generated and published using AINOS AI Blog Agent — the AI-powered content engine that researches, writes, and publishes SEO-optimized blog posts automatically.
               </p>
               <a
-                href="/ainos/"
+                href="/"
                 className="inline-flex items-center gap-1 text-sm font-semibold text-purple-600 hover:text-purple-700 transition-colors"
               >
                 Try AINOS Free <ArrowRight className="w-4 h-4" />
@@ -174,7 +174,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
             {relatedPosts.map((rp) => (
               <a
                 key={rp.id}
-                href={`/ainos/blog/${rp.slug}/`}
+                href={`/blog/${rp.slug}/`}
                 className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300"
               >
                 <div className="aspect-[16/9] overflow-hidden bg-gray-100">
@@ -216,8 +216,8 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
           </div>
           <p className="text-xs">AI-Powered Business Suite. Generate, publish & grow with SEO-optimized content.</p>
           <div className="flex items-center justify-center gap-4 mt-4">
-            <a href="/ainos/blog/" className="text-xs hover:text-white transition-colors">Blog</a>
-            <a href="/ainos/" className="text-xs hover:text-white transition-colors">Dashboard</a>
+            <a href="/blog/" className="text-xs hover:text-white transition-colors">Blog</a>
+            <a href="/" className="text-xs hover:text-white transition-colors">Dashboard</a>
           </div>
           <p className="text-xs mt-4">&copy; {new Date().getFullYear()} AINOS Business Suite. All rights reserved.</p>
         </div>

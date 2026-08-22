@@ -29,8 +29,8 @@ export default function CreditsPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/ainos/api/billing/credits').then(r => r.json()),
-      fetch('/ainos/api/billing/checkout').then(r => r.json())
+      fetch('/api/billing/credits').then(r => r.json()),
+      fetch('/api/billing/checkout').then(r => r.json())
     ]).then(([creditsData, packsData]) => {
       setBalance(creditsData.balance || 0);
       setHistory(creditsData.history || []);
@@ -42,7 +42,7 @@ export default function CreditsPage() {
   const handleBuy = async (pack: CreditPack) => {
     setBuying(pack.credits);
     try {
-      const res = await fetch('/ainos/api/billing/checkout', {
+      const res = await fetch('/api/billing/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ creditPackId: pack.credits })

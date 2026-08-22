@@ -231,7 +231,7 @@ export default function BlogPage() {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <a href="/ainos/blog/" target="_blank" rel="noopener noreferrer"
+              <a href="/blog/" target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-2 px-4 py-3 rounded-xl text-white/80 text-sm font-medium bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 transition-all">
                 <Globe className="w-4 h-4" /> View Blog
               </a>
@@ -427,7 +427,7 @@ export default function BlogPage() {
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {post.status === 'published' && (
-                        <a href={`/ainos/blog/${post.slug}/`} target="_blank" rel="noopener noreferrer"
+                        <a href={`/blog/${post.slug}/`} target="_blank" rel="noopener noreferrer"
                           onClick={e => e.stopPropagation()}
                           className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View Public Post">
                           <ExternalLink className="w-3.5 h-3.5 text-blue-500" />

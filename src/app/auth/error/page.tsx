@@ -44,7 +44,7 @@ export default function AuthErrorPage() {
         <p className="text-slate-400 mb-8">{message}</p>
 
         <Link
-          href="/ainos/auth/signin"
+          href="/auth/signin"
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all"
           style={{
             background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',

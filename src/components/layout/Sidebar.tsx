@@ -257,7 +257,7 @@ export function Sidebar() {
         <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
-              <img src="/ainos/icon.png" alt="AINOS" className="w-8 h-8 rounded-lg" />
+              <img src="/icon.png" alt="AINOS" className="w-8 h-8 rounded-lg" />
               <div>
                 <h1 className="text-base font-bold text-gray-900 dark:text-white">AINOS</h1>
                 <p className="text-[10px] text-gray-500 dark:text-gray-400">Business Suite</p>
@@ -299,7 +299,7 @@ export function Sidebar() {
             {/* Logo */}
             <div className="p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-800">
               <div className="flex items-center gap-3">
-                <img src="/ainos/icon.png" alt="AINOS" className="w-9 h-9 rounded-lg" />
+                <img src="/icon.png" alt="AINOS" className="w-9 h-9 rounded-lg" />
                 <div>
                   <h1 className="text-lg font-bold text-gray-900 dark:text-white">AINOS</h1>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Business Suite</p>
@@ -370,7 +370,7 @@ export function Sidebar() {
                 </div>
               </div>
               <button
-                onClick={() => signOut({ callbackUrl: '/ainos/auth/signin/' })}
+                onClick={() => signOut({ callbackUrl: '/auth/signin' })}
                 className="flex items-center gap-3 px-3 py-2 rounded-lg w-full hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
               >
                 <LogOut className="w-4 h-4" />
@@ -389,7 +389,7 @@ export function Sidebar() {
       >
         {/* Logo */}
         <div className="p-4 flex items-center gap-3 border-b border-gray-200 dark:border-gray-800">
-          <img src="/ainos/icon.png" alt="AINOS" className="w-9 h-9 rounded-lg flex-shrink-0" />
+          <img src="/icon.png" alt="AINOS" className="w-9 h-9 rounded-lg flex-shrink-0" />
           {!collapsed && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <h1 className="text-lg font-bold text-gray-900 dark:text-white">AINOS</h1>
@@ -489,7 +489,7 @@ export function Sidebar() {
             )}
           </div>
           <button
-            onClick={() => signOut({ callbackUrl: '/ainos/auth/signin/' })}
+            onClick={() => signOut({ callbackUrl: '/auth/signin' })}
             className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors w-full ${
               collapsed ? 'justify-center' : ''
             } hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300`}
