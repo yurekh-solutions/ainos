@@ -1,5 +1,4 @@
-// Custom server for AINOS: handles root redirect + Next.js
-// Required because basePath: '/ainos' means Next.js only handles /ainos/* paths
+// Custom server for AINOS: Next.js request handler
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
@@ -15,14 +14,6 @@ app.prepare().then(() => {
   createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url, true);
-
-      // Redirect root "/" to "/ainos" (dashboard entry point)
-      if (parsedUrl.pathname === '/') {
-        res.writeHead(302, { Location: '/ainos' });
-        res.end();
-        return;
-      }
-
       await handle(req, res, parsedUrl);
     } catch (err) {
       console.error('Error handling request:', err);
@@ -32,6 +23,5 @@ app.prepare().then(() => {
   }).listen(port, hostname, (err) => {
     if (err) throw err;
     console.log(`> AINOS ready on http://${hostname}:${port}`);
-    console.log(`> Root "/" redirects to "/ainos/"`);
   });
 });
