@@ -1,0 +1,49 @@
+Note: Unnecessary use of -X or --request, POST is already inferred.
+* Host ainos-ywu0.onrender.com:443 was resolved.
+* IPv6: (none)
+* IPv4: 216.24.57.15, 216.24.57.7
+*   Trying 216.24.57.15:443...
+* schannel: disabled automatic use of client certificate
+* ALPN: curl offers http/1.1
+* ALPN: server accepted http/1.1
+* Established connection to ainos-ywu0.onrender.com (216.24.57.15 port 443) from 192.168.29.42 port 64857 
+  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
+                                 Dload  Upload  Total   Spent   Left   Speed
+  0      0   0      0   0      0      0      0                              0* using HTTP/1.x
+> POST /ainos/api/auth/signin/google HTTP/1.1
+> Host: ainos-ywu0.onrender.com
+> User-Agent: curl/8.21.0
+> Accept: */*
+> Cookie: __Secure-next-auth.callback-url=https%3A%2F%2Fainos-ywu0.onrender.com; __Host-next-auth.csrf-token=a91afdcf5d19965ea1a8d1789ff9338ece6ead47729b7ee77ba9d69bbef50017%7Ce698f900b86bb7c5480845e94679f8f57df19b3266856c9ce7f0bdd2522b4a29
+> Content-Length: 100
+> Content-Type: application/x-www-form-urlencoded
+> 
+} [100 bytes data]
+* upload completely sent off: 100 bytes
+* schannel: remote party requests renegotiation
+* schannel: renegotiating SSL/TLS connection
+* schannel: SSL/TLS connection renegotiated
+* schannel: remote party requests renegotiation
+* schannel: renegotiating SSL/TLS connection
+* schannel: SSL/TLS connection renegotiated
+< HTTP/1.1 302 Found
+< Date: Fri, 21 Aug 2026 18:58:28 GMT
+< Transfer-Encoding: chunked
+< Connection: keep-alive
+< Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+< expires: 0
+< location: https://ainos-ywu0.onrender.com/ainos/api/auth/signin?csrf=true
+< pragma: no-cache
+< rndr-id: 9070f6f1-127d-4211
+< Server: cloudflare
+* Replaced cookie __Secure-next-auth.callback-url="https%3A%2F%2Fainos-ywu0.onrender.com%2F" for domain ainos-ywu0.onrender.com, path /, expire 0
+< Set-Cookie: __Secure-next-auth.callback-url=https%3A%2F%2Fainos-ywu0.onrender.com%2F; Path=/; HttpOnly; Secure; SameSite=Lax
+< vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+< x-render-origin-server: Render
+< cf-cache-status: DYNAMIC
+< CF-RAY: a2ebde89fbf08602-BOM
+< alt-svc: h3=":443"; ma=86400
+< 
+{ [5 bytes data]
+100    100   0      0 100    100      0    118                              0100    100   0      0 100    100      0    118                              0100    100   0      0 100    100      0    118                              0
+* Connection #0 to host ainos-ywu0.onrender.com:443 left intact

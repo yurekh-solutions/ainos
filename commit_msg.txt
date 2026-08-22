@@ -1,5 +1,1 @@
-fix: remove trailingSlash (caused cached 308 redirects breaking session fetch)
-
-The trailingSlash: true config caused Chrome to cache 308 Permanent Redirects
-on /api/auth/* routes (from disk cache), which broke the session fetch chain.
-Also added Cache-Control: no-store headers on all auth endpoints as a safety net.
+fix: manual JWT decrypt in dashboard layout (bypass NextAuth v4 + Next.js 16 issues)  
