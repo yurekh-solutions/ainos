@@ -72,6 +72,9 @@ model Company {
   toolRuns          ToolRun[]
   creditBalance     CreditBalance?
   creditTransactions CreditTransaction[]
+  connectedWebsites  ConnectedWebsite[]
+  blogSubscriptions  BlogSubscription[]
+  blogSchedules      BlogSchedule[]
   
   @@map("companies")
 }
@@ -480,6 +483,7 @@ model BlogPost {
   updatedAt     DateTime  @updatedAt @map("updated_at")
   
   company       Company?  @relation(fields: [companyId], references: [id])
+  schedules     BlogSchedule[]
   
   @@index([companyId])
   @@map("blog_posts")
@@ -927,4 +931,99 @@ model CreditTransaction {
   @@index([companyId])
   @@index([createdAt])
   @@map("credit_transactions")
+}
+
+// ============================================
+// AI BLOG AGENT MODELS
+// ============================================
+
+// Connected Websites
+model ConnectedWebsite {
+  id                    String    @id @default(uuid())
+  url                   String    @unique
+  name                  String?
+  description           String?   @db.Text
+  techStack             String?   @map("tech_stack")
+  niche                 String?
+  topics                Json?
+  brandVoice            String?   @map("brand_voice") @db.Text
+  competitors           Json?
+  pageLinks             Json?     @map("page_links")
+  publishMethod         String    @default("ainos") @map("publish_method")
+  webhookUrl            String?   @map("webhook_url")
+  webhookSecret         String?   @map("webhook_secret")
+  wordpressUrl          String?   @map("wordpress_url")
+  wordpressUsername     String?   @map("wordpress_username")
+  wordpressAppPassword  String?   @map("wordpress_app_password")
+  deliveryEmail         String?   @map("delivery_email")
+  isActive              Boolean   @default(true) @map("is_active")
+  companyId             String?   @map("company_id")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  company               Company?  @relation(fields: [companyId], references: [id])
+  subscriptions         BlogSubscription[]
+  schedules             BlogSchedule[]
+
+  @@index([companyId])
+  @@index([url])
+  @@map("connected_websites")
+}
+
+// Blog Subscriptions
+model BlogSubscription {
+  id                String    @id @default(uuid())
+  plan              String    @default("standard")
+  blogsPerMonth     Int       @default(30) @map("blogs_per_month")
+  blogsUsed         Int       @default(0) @map("blogs_used")
+  blogsRemaining    Int       @default(30) @map("blogs_remaining")
+  startDate         DateTime? @map("start_date")
+  currentPeriodEnd  DateTime? @map("current_period_end")
+  autoSchedule      Boolean   @default(true) @map("auto_schedule")
+  schedulePattern   String    @default("daily") @map("schedule_pattern")
+  connectedWebsiteId String?  @map("connected_website_id")
+  companyId         String?   @map("company_id")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  connectedWebsite  ConnectedWebsite? @relation(fields: [connectedWebsiteId], references: [id])
+  company           Company?  @relation(fields: [companyId], references: [id])
+  schedules         BlogSchedule[]
+
+  @@index([companyId])
+  @@index([connectedWebsiteId])
+  @@map("blog_subscriptions")
+}
+
+// Blog Schedule (Auto-scheduling queue)
+model BlogSchedule {
+  id              String    @id @default(uuid())
+  topic           String    @db.Text
+  keywords        String?
+  tone            String    @default("Professional")
+  targetWordCount Int       @default(3000) @map("target_word_count")
+  scheduledDate   DateTime  @map("scheduled_date")
+  status          String    @default("pending")
+  blogPostId      String?   @map("blog_post_id")
+  subscriptionId  String?   @map("subscription_id")
+  publishTargets  Json?     @map("publish_targets")
+  wordpressPostId String?   @map("wordpress_post_id")
+  webhookResponse Json?     @map("webhook_response")
+  emailSentAt     DateTime? @map("email_sent_at")
+  companyId       String?   @map("company_id")
+  connectedWebsiteId String? @map("connected_website_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  blogPost        BlogPost? @relation(fields: [blogPostId], references: [id])
+  subscription    BlogSubscription? @relation(fields: [subscriptionId], references: [id])
+  connectedWebsite ConnectedWebsite? @relation(fields: [connectedWebsiteId], references: [id])
+  company         Company?  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([subscriptionId])
+  @@index([connectedWebsiteId])
+  @@index([scheduledDate])
+  @@index([status])
+  @@map("blog_schedules")
 }

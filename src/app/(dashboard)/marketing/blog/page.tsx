@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, FileText, Eye, Calendar, Sparkles, Wand2, Search,
   Clock, Trash2, Edit3, CheckCircle, Send, ArrowLeft,
-  BookOpen, Layers, ExternalLink, Globe, CalendarRange, TrendingUp, Shield
+  BookOpen, Layers, ExternalLink, Globe, CalendarRange, TrendingUp, Shield, Zap
 } from 'lucide-react';
 
 interface BlogPost {
@@ -24,7 +24,8 @@ const industries = ['Technology', 'Healthcare', 'Finance', 'E-commerce', 'Educat
 const lengths = [
   { value: 'short', label: 'Short (400-500 words)' },
   { value: 'medium', label: 'Medium (700-900 words)' },
-  { value: 'long', label: 'Long (1200-1500 words)' }
+  { value: 'long', label: 'Long (1200-1500 words)' },
+  { value: 'extra-long', label: 'Extra Long (2800-3200 words)' }
 ];
 
 // Simple markdown to HTML converter
@@ -211,57 +212,118 @@ export default function BlogPage() {
 
   return (
     <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-950">
-      {/* Hero Section */}
-      <div className="relative bg-gradient-to-br from-purple-600 via-violet-600 to-indigo-700 dark:from-purple-900 dark:via-violet-900 dark:to-indigo-950">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-30" />
-        <div className="relative px-6 py-10 md:px-10 md:py-14">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-sm font-medium text-white/80">AI Blog Agent</span>
-              </div>
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-                AI SEO Insights & Growth Strategies
-              </h1>
-              <p className="text-base text-white/70 max-w-xl">
-                Generate SEO-optimized blog posts with AI, publish them with beautiful featured images, and drive organic traffic.
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <a href="/blog/" target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-3 rounded-xl text-white/80 text-sm font-medium bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 transition-all">
-                <Globe className="w-4 h-4" /> View Blog
-              </a>
-              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                onClick={() => { setShowAI(true); setGenerated(null); }}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl text-white text-sm font-semibold bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/20 transition-all shadow-lg">
-                <Wand2 className="w-4 h-4" /> Generate with AI
-              </motion.button>
-            </div>
-          </div>
+      {/* ═══════════ TOP ACTION BAR ═══════════ */}
+      <div className="flex items-center justify-between px-6 py-3 md:px-10 bg-white dark:bg-gray-900 border-b border-gray-200/80 dark:border-gray-800">
+        <div className="flex items-center gap-2.5">
+          <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          <span className="text-sm font-bold text-slate-900 dark:text-white">AI Blog Agent</span>
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 uppercase tracking-wider">AUTOPILOT</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+            onClick={() => { setShowAI(true); setGenerated(null); }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-md shadow-purple-500/20 transition-all">
+            <Wand2 className="w-3.5 h-3.5" /> Generate with AI
+          </motion.button>
+        </div>
+      </div>
 
-          {/* Stats Row */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-8">
-            {[
-              { label: 'Total Posts', value: posts.length, icon: FileText },
-              { label: 'Published', value: publishedCount, icon: CheckCircle },
-              { label: 'Scheduled', value: scheduledCount, icon: CalendarRange },
-              { label: 'Drafts', value: draftCount, icon: Edit3 },
-              { label: 'Total Views', value: totalViews, icon: Eye },
-            ].map((s) => (
-              <div key={s.label} className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/10">
-                <div className="flex items-center gap-2 mb-1">
-                  <s.icon className="w-3.5 h-3.5 text-white/60" />
-                  <span className="text-xs text-white/60">{s.label}</span>
+      {/* ═══════════ HERO BANNER ═══════════ */}
+      <div className="relative bg-gradient-to-br from-[#1a1040] via-[#2d1b69] to-[#3b1f8e] dark:from-[#0f0a2e] dark:via-[#1a1040] dark:to-[#2d1b69] overflow-hidden">
+        {/* Wave decoration */}
+        <div className="absolute bottom-0 left-0 right-0 h-20">
+          <svg viewBox="0 0 1440 80" fill="none" className="absolute bottom-0 w-full h-full">
+            <path d="M0 40C240 10 480 70 720 40C960 10 1200 70 1440 40V80H0V40Z" fill="rgba(255,255,255,0.03)" />
+            <path d="M0 50C240 20 480 80 720 50C960 20 1200 80 1440 50V80H0V50Z" fill="rgba(255,255,255,0.02)" />
+          </svg>
+        </div>
+
+        <div className="relative px-6 py-10 md:px-10 md:py-14 max-w-[1400px] mx-auto">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+            {/* Left content */}
+            <div className="max-w-lg">
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+                <div className="w-10 h-10 rounded-xl bg-purple-500/20 backdrop-blur-sm flex items-center justify-center border border-purple-400/20 mb-5">
+                  <Sparkles className="w-5 h-5 text-purple-300" />
                 </div>
-                <p className="text-xl font-bold text-white">{s.value}</p>
+                <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight leading-[1.2]">
+                  AI SEO Insights &<br />
+                  Growth <span className="text-purple-400">Strategies</span>
+                </h1>
+                <p className="text-sm text-white/60 max-w-md leading-relaxed">
+                  Generate SEO-optimized blog posts with AI, publish them with beautiful featured images, and drive organic traffic.
+                </p>
+              </motion.div>
+            </div>
+
+            {/* Right illustration */}
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.2 }}
+              className="hidden lg:block flex-shrink-0">
+              <div className="relative w-[280px] h-[200px]">
+                {/* Orbital lines */}
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 280 200">
+                  <ellipse cx="140" cy="100" rx="100" ry="60" fill="none" stroke="rgba(168,85,247,0.15)" strokeWidth="1" strokeDasharray="4 4" />
+                  <ellipse cx="140" cy="100" rx="70" ry="40" fill="none" stroke="rgba(168,85,247,0.1)" strokeWidth="1" strokeDasharray="3 3" />
+                </svg>
+                {/* Main document card */}
+                <div className="absolute top-4 left-8 w-[160px] h-[130px] bg-white/[0.08] backdrop-blur-sm rounded-2xl border border-white/[0.12] p-4 shadow-2xl">
+                  <div className="w-full h-3 bg-white/[0.1] rounded mb-2" />
+                  <div className="w-3/4 h-2 bg-white/[0.06] rounded mb-3" />
+                  <div className="w-full h-[60px] bg-white/[0.04] rounded-xl mb-2 flex items-center justify-center border border-white/[0.06]">
+                    <div className="w-8 h-8 rounded-lg bg-purple-400/20 flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-purple-300/70" />
+                    </div>
+                  </div>
+                  <div className="w-1/2 h-2 bg-white/[0.06] rounded" />
+                </div>
+                {/* Floating icons */}
+                <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  className="absolute top-0 right-4 w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/40 border border-blue-400/30">
+                  <Edit3 className="w-4 h-4 text-white" />
+                </motion.div>
+                <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+                  className="absolute bottom-4 right-0 w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/40 border border-emerald-400/30">
+                  <CheckCircle className="w-4 h-4 text-white" />
+                </motion.div>
+                <motion.div animate={{ y: [0, -5, 0] }} transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+                  className="absolute top-12 left-0 w-9 h-9 bg-purple-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/40 border border-purple-400/30">
+                  <Globe className="w-4 h-4 text-white" />
+                </motion.div>
               </div>
-            ))}
+            </motion.div>
           </div>
         </div>
+      </div>
+
+      {/* ═══════════ STATS CARDS (overlap hero) ═══════════ */}
+      <div className="px-6 md:px-10 max-w-[1400px] mx-auto -mt-8 relative z-10">
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}
+          className="grid grid-cols-2 md:grid-cols-5 gap-4"
+        >
+          {[
+            { label: 'Total Posts', value: posts.length, sub: 'All Content', icon: FileText, iconBg: 'bg-purple-100', iconColor: 'text-purple-600', subColor: 'text-purple-500' },
+            { label: 'Published', value: publishedCount, sub: 'Live Now', icon: CheckCircle, iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600', subColor: 'text-emerald-500' },
+            { label: 'Scheduled', value: scheduledCount, sub: 'Upcoming', icon: CalendarRange, iconBg: 'bg-blue-100', iconColor: 'text-blue-600', subColor: 'text-blue-500' },
+            { label: 'Drafts', value: draftCount, sub: 'In Progress', icon: Edit3, iconBg: 'bg-orange-100', iconColor: 'text-orange-600', subColor: 'text-orange-500' },
+            { label: 'Total Views', value: totalViews, sub: 'All Time', icon: Eye, iconBg: 'bg-pink-100', iconColor: 'text-pink-600', subColor: 'text-pink-500' },
+          ].map((s, i) => (
+            <motion.div key={s.label}
+              initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 + i * 0.08 }}
+              className="bg-white dark:bg-gray-900 rounded-2xl p-5 border border-gray-200/80 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-11 h-11 rounded-full ${s.iconBg} flex items-center justify-center flex-shrink-0`}>
+                  <s.icon className={`w-5 h-5 ${s.iconColor}`} />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{s.label}</p>
+                  <p className="text-2xl font-extrabold text-slate-900 dark:text-white leading-tight">{s.value}</p>
+                  <p className={`text-[11px] font-medium ${s.subColor}`}>{s.sub}</p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
       </div>
 
       {/* Main Content */}
