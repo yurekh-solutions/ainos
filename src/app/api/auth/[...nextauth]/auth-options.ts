@@ -134,19 +134,17 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async redirect({ url, baseUrl }) {
-      const appBase =
-        process.env.NEXTAUTH_URL_BASE || 'https://ainos-ywu0.onrender.com';
-      console.log('[auth] redirect callback', { url, baseUrl, appBase });
-      // Relative URLs (e.g. "/" or "/ainos/auth/signin/") resolve against the app root
+      console.log('[auth] redirect callback', { url, baseUrl });
+      // Allow relative URLs like "/ainos" or "/"
       if (url.startsWith('/')) {
-        return appBase + url;
+        return `${baseUrl}${url}`;
       }
-      // Same-origin absolute URLs pass through
-      if (url.startsWith(appBase)) {
+      // Allow same-origin URLs
+      if (url.startsWith(baseUrl)) {
         return url;
       }
-      // Anything else: land on the dashboard (no trailing slash)
-      return `${appBase}/ainos`;
+      // Default to dashboard
+      return `${baseUrl}/ainos`;
     },
   },
   // NOTE: no custom `cookies` override. NextAuth defaults already use path '/'
