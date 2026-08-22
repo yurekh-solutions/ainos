@@ -81,6 +81,7 @@ model User {
   id          String    @id @default(uuid())
   email       String    @unique
   name        String
+  password    String?
   googleId    String?   @unique @map("google_id")
   image       String?
   role        String    @default("user")
