@@ -49,7 +49,7 @@ export default function SignInPage() {
     setLoading(true);
     setError(null);
     try {
-      await signIn('google', { callbackUrl: '/ainos' });
+      await signIn('google', { callbackUrl: '/' });
     } catch {
       setError('Sign-in failed. Please try again.');
       setLoading(false);

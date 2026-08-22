@@ -3,30 +3,19 @@ const nextConfig = {
   basePath: '/ainos',
   // trailingSlash removed — it caused 308 redirects on /api/auth/* routes
   // that Chrome cached aggressively (disk cache), breaking session fetches.
-  // Pages fetch '/api/...' (without the /ainos basePath) — route those to the real API.
-  // Destination must be absolute when it lives outside the basePath, otherwise `next build` fails
-  // (this exact error blocked every Render deploy). RENDER_EXTERNAL_URL is set automatically on Render.
+  // Rewrites removed — the '/api/*' rewrite with absolute URL destination caused
+  // the server to fetch itself in a loop (ERR_TOO_MANY_REDIRECTS on session endpoint).
+  // basePath: '/ainos' already routes all /ainos/api/* requests correctly.
   async headers() {
     return [
       {
-        // Prevent any caching on auth endpoints (especially the trailingSlash 308
-        // that Chrome was caching from disk for weeks).
+        // Prevent any caching on auth endpoints.
         source: '/api/auth/:path*',
         headers: [
           { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate, max-age=0' },
           { key: 'Pragma', value: 'no-cache' },
           { key: 'Expires', value: '0' },
         ],
-      },
-    ];
-  },
-  async rewrites() {
-    const self = process.env.RENDER_EXTERNAL_URL || process.env.NEXTAUTH_URL?.replace(/\/ainos.*$/, '') || 'http://localhost:3000';
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${self}/ainos/api/:path*`,
-        basePath: false,
       },
     ];
   },
