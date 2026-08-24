@@ -41,8 +41,10 @@ export default function SocialMediaPage() {
   const [copiedPlatform, setCopiedPlatform] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['instagram', 'tiktok', 'youtube', 'linkedin', 'twitter', 'facebook']);
-  const [uploadedMedia, setUploadedMedia] = useState<{ file: File; preview: string; type: 'image' | 'video' } | null>(null);
+  const [uploadedMedia, setUploadedMedia] = useState<{ file: File; preview: string; type: 'image' | 'video'; frame?: string } | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [scanInfo, setScanInfo] = useState<{ niche?: string; mood?: string; detectedObjects?: string[] } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -56,16 +58,99 @@ export default function SocialMediaPage() {
     );
   };
 
-  const handleFileSelect = (file: File) => {
+  // Grab a representative frame from a video as a base64 JPEG so AI vision can read reels
+  const extractVideoFrame = (url: string): Promise<string | null> =>
+    new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.src = url;
+      video.muted = true;
+      video.crossOrigin = 'anonymous';
+      video.playsInline = true;
+
+      const cleanup = () => {
+        video.onloadeddata = null;
+        video.onseeked = null;
+        video.onerror = null;
+      };
+
+      const capture = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const maxWidth = 720;
+          const scale = video.videoWidth > maxWidth ? maxWidth / video.videoWidth : 1;
+          canvas.width = Math.round(video.videoWidth * scale);
+          canvas.height = Math.round(video.videoHeight * scale);
+          const ctx = canvas.getContext('2d');
+          if (!ctx || !canvas.width || !canvas.height) { cleanup(); resolve(null); return; }
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          cleanup();
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        } catch {
+          cleanup();
+          resolve(null);
+        }
+      };
+
+      video.onloadeddata = () => {
+        // Seek ~1s in (or midpoint for very short reels) to skip black intro frames
+        const target = video.duration && isFinite(video.duration) ? Math.min(1, video.duration / 2) : 0;
+        if (target > 0) video.currentTime = target;
+        else capture();
+      };
+      video.onseeked = capture;
+      video.onerror = () => { cleanup(); resolve(null); };
+
+      setTimeout(() => { cleanup(); resolve(null); }, 10000);
+    });
+
+  // Scan the media with AI and auto-fill topic + description
+  const autoFillFromMedia = async (base64: string, type: 'image' | 'video') => {
+    setAnalyzing(true);
+    setScanInfo(null);
+    try {
+      const res = await fetch('/api/social-caption/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64, mediaType: type }),
+      });
+      if (!res.ok) {
+        showToast('Could not scan media — fill the fields manually', 'error');
+        return;
+      }
+      const data = await res.json();
+      if (data.topic) setTopic(data.topic);
+      if (data.description) setVideoDescription(data.description);
+      setScanInfo({ niche: data.niche, mood: data.mood, detectedObjects: data.detectedObjects });
+      if (data.topic || data.description) showToast('AI scanned your media and filled the details!');
+    } catch (e) {
+      console.error(e);
+      showToast('Could not scan media — fill the fields manually', 'error');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const handleFileSelect = async (file: File) => {
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setUploadedMedia({ file, preview: e.target?.result as string, type: 'image' });
+        const base64 = e.target?.result as string;
+        setUploadedMedia({ file, preview: base64, type: 'image' });
+        autoFillFromMedia(base64, 'image');
       };
       reader.readAsDataURL(file);
     } else if (file.type.startsWith('video/')) {
       const url = URL.createObjectURL(file);
       setUploadedMedia({ file, preview: url, type: 'video' });
+      setAnalyzing(true);
+      const frame = await extractVideoFrame(url);
+      if (frame) {
+        setUploadedMedia({ file, preview: url, type: 'video', frame });
+        autoFillFromMedia(frame, 'video');
+      } else {
+        setAnalyzing(false);
+        showToast('Could not read the reel frame — describe it manually', 'error');
+      }
     } else {
       showToast('Please upload an image or video file', 'error');
     }
@@ -88,6 +173,12 @@ export default function SocialMediaPage() {
   const removeMedia = () => {
     if (uploadedMedia?.type === 'video') URL.revokeObjectURL(uploadedMedia.preview);
     setUploadedMedia(null);
+    setScanInfo(null);
+  };
+
+  const rescanMedia = () => {
+    const base64 = uploadedMedia?.type === 'image' ? uploadedMedia.preview : uploadedMedia?.frame;
+    if (base64 && uploadedMedia) autoFillFromMedia(base64, uploadedMedia.type);
   };
 
   const handleGenerate = async () => {
@@ -105,9 +196,10 @@ export default function SocialMediaPage() {
         platforms: selectedPlatforms,
       };
 
-      // Send image as base64 if uploaded
-      if (uploadedMedia?.type === 'image' && uploadedMedia.preview) {
-        body.imageBase64 = uploadedMedia.preview;
+      // Send image (or extracted video frame) as base64 if uploaded
+      const mediaBase64 = uploadedMedia?.type === 'image' ? uploadedMedia.preview : uploadedMedia?.frame;
+      if (mediaBase64) {
+        body.imageBase64 = mediaBase64;
       }
 
       const res = await fetch('/api/social-caption', {
@@ -179,6 +271,7 @@ export default function SocialMediaPage() {
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
                   <Camera className="w-3.5 h-3.5 text-purple-500" /> Upload Image or Video
+                  <span className="ml-auto text-[10px] font-normal text-purple-500">AI auto-fills the details</span>
                 </label>
                 {!uploadedMedia ? (
                   <div
@@ -203,7 +296,8 @@ export default function SocialMediaPage() {
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                       {dragOver ? 'Drop your file here' : 'Drag & drop or click to upload'}
                     </p>
-                    <p className="text-[10px] text-gray-400 mt-1">Images (JPG, PNG, WebP) & Videos (MP4, MOV) up to 50MB</p>
+                    <p className="text-[10px] text-gray-400 mt-1">Images (JPG, PNG, WebP) &amp; Videos (MP4, MOV) up to 50MB</p>
+                    <p className="text-[10px] text-purple-500 mt-1 font-medium">AI will scan it and fill the title &amp; description for you</p>
                   </div>
                 ) : (
                   <div className="relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
@@ -216,10 +310,40 @@ export default function SocialMediaPage() {
                       className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 hover:bg-black/80 transition-colors">
                       <X className="w-4 h-4 text-white" />
                     </button>
+                    <button onClick={rescanMedia} disabled={analyzing} title="Re-scan with AI"
+                      className="absolute top-2 right-11 p-1.5 rounded-full bg-black/60 hover:bg-black/80 disabled:opacity-40 transition-colors">
+                      <RefreshCw className={`w-4 h-4 text-white ${analyzing ? 'animate-spin' : ''}`} />
+                    </button>
                     <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-black/60">
                       {uploadedMedia.type === 'image' ? <ImageIcon className="w-3 h-3 text-white" /> : <Film className="w-3 h-3 text-white" />}
                       <span className="text-[10px] text-white font-medium">{uploadedMedia.file.name}</span>
                     </div>
+                    {analyzing && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 backdrop-blur-sm">
+                        <Loader2 className="w-6 h-6 text-white animate-spin" />
+                        <p className="text-xs font-medium text-white">
+                          AI is scanning your {uploadedMedia.type === 'video' ? 'reel' : 'image'}...
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* What the AI detected */}
+                {scanInfo && !analyzing && (uploadedMedia !== null) && (
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="w-3 h-3" /> AI detected
+                    </span>
+                    {scanInfo.niche && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">{scanInfo.niche}</span>
+                    )}
+                    {scanInfo.mood && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300">{scanInfo.mood}</span>
+                    )}
+                    {(scanInfo.detectedObjects || []).slice(0, 4).map((o, i) => (
+                      <span key={i} className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">{o}</span>
+                    ))}
                   </div>
                 )}
               </div>
@@ -228,11 +352,12 @@ export default function SocialMediaPage() {
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
                   <Video className="w-3.5 h-3.5 text-purple-500" /> What&apos;s your content about? {uploadedMedia ? '(optional)' : ''}
+                  {analyzing && <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-normal text-purple-500"><Loader2 className="w-3 h-3 animate-spin" /> auto-filling</span>}
                 </label>
                 <input
                   value={topic}
                   onChange={e => setTopic(e.target.value)}
-                  placeholder="e.g., New product launch, Behind the scenes, Tutorial..."
+                  placeholder={analyzing ? 'AI is reading your media...' : 'e.g., New product launch, Behind the scenes, Tutorial...'}
                   className="w-full px-4 py-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
                 />
               </div>
@@ -245,7 +370,7 @@ export default function SocialMediaPage() {
                 <textarea
                   value={videoDescription}
                   onChange={e => setVideoDescription(e.target.value)}
-                  placeholder={uploadedMedia ? "Optional context to help AI. Leave blank and AI will scan your media..." : "What happens in your video? What does your image show?"}
+                  placeholder={analyzing ? 'AI is writing the description...' : uploadedMedia ? 'AI filled this from your media — edit freely' : 'What happens in your video? What does your image show?'}
                   rows={2}
                   className="w-full px-4 py-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 resize-none"
                 />
@@ -310,9 +435,14 @@ export default function SocialMediaPage() {
           {/* Generate Button */}
           <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
             <button onClick={handleGenerate}
-              disabled={generating || (!topic.trim() && !videoDescription.trim() && !uploadedMedia)}
+              disabled={generating || analyzing || (!topic.trim() && !videoDescription.trim() && !uploadedMedia)}
               className="w-full py-3.5 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-purple-600/20">
-              {generating ? (
+              {analyzing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Scanning your media...
+                </>
+              ) : generating ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   AI is analyzing your media & crafting viral captions...
