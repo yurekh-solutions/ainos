@@ -1,1 +1,1 @@
-feat: CRM leads - toast notifications, validation, export CSV, delete  
+feat: invoices - toast notifications and better error handling  
