@@ -5,7 +5,7 @@ import {
   X, FileText, Eye, Calendar, Sparkles, Wand2, Search,
   Clock, Trash2, Edit3, CheckCircle, Send, ArrowLeft,
   BookOpen, Layers, ExternalLink, Globe, CalendarRange, TrendingUp, Shield, Zap,
-  Code, Copy, Check, Rss, Map
+  Code, Copy, Check, Rss, Map, Palette
 } from 'lucide-react';
 
 interface BlogPost {
@@ -980,6 +980,26 @@ export default function BlogPage() {
                   </div>
                 </div>
 
+                {/* Auto Theme Matching — Highlight */}
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+                  <h4 className="font-bold text-xs text-amber-900 dark:text-amber-200 mb-2 flex items-center gap-2">
+                    <Palette className="w-3.5 h-3.5" /> Auto Theme Matching — Blogs Match Your Website Colors!
+                  </h4>
+                  <p className="text-[10px] text-amber-800 dark:text-amber-300 mb-3">
+                    Widget automatically detects your website{"'"}s primary color and adjusts blog card colors to match perfectly. No manual setup needed!
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-2 border border-amber-200 dark:border-amber-700">
+                      <code className="text-amber-700 dark:text-amber-400 text-[10px]">{'data-color="#ff6b35"'}</code>
+                      <p className="text-gray-500 mt-1 text-[10px]">Force specific color</p>
+                    </div>
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-2 border border-amber-200 dark:border-amber-700">
+                      <code className="text-amber-700 dark:text-amber-400 text-[10px]">{'data-theme="dark"'}</code>
+                      <p className="text-gray-500 mt-1 text-[10px]">Force dark mode</p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Customization */}
                 <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
                   <h4 className="font-semibold text-xs text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
@@ -1064,6 +1084,7 @@ export default function BlogPage() {
                     <div className="flex items-start gap-1.5 text-[10px] text-purple-700 dark:text-purple-300"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Mobile Responsive Design</div>
                     <div className="flex items-start gap-1.5 text-[10px] text-purple-700 dark:text-purple-300"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Daily Auto-Updated Content</div>
                     <div className="flex items-start gap-1.5 text-[10px] text-purple-700 dark:text-purple-300"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Traffic Back to Your Website</div>
+                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700 dark:text-purple-300"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Auto Theme Color Matching</div>
                   </div>
                 </div>
               </div>
