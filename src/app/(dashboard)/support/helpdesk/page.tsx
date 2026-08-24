@@ -1,7 +1,7 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Plus, X, Headphones, AlertCircle, Clock, CheckCircle } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, X, Headphones, AlertCircle, Clock, CheckCircle, CheckCircle2 } from 'lucide-react';
 
 interface Ticket { id: string; subject: string; description: string; priority: string; status: string; category?: string; createdAt: string; }
 
@@ -10,13 +10,19 @@ export default function HelpdeskPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ subject: '', description: '', priority: 'medium', category: '' });
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  useEffect(() => { fetchTickets(); }, []);
-
-  const fetchTickets = async () => {
-    try { const res = await fetch('/api/helpdesk'); if (res.ok) setTickets(await res.json()); } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
   };
+
+  const fetchTickets = useCallback(async () => {
+    try { const res = await fetch('/api/helpdesk'); if (res.ok) setTickets(await res.json()); else showToast('Failed to load tickets', 'error'); } catch (e) { console.error(e); showToast('Failed to load tickets', 'error'); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchTickets(); }, [fetchTickets]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,8 +31,9 @@ export default function HelpdeskPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, status: 'open' }),
       });
-      if (res.ok) { setForm({ subject: '', description: '', priority: 'medium', category: '' }); setShowForm(false); fetchTickets(); }
-    } catch (e) { console.error(e); }
+      if (res.ok) { setForm({ subject: '', description: '', priority: 'medium', category: '' }); setShowForm(false); fetchTickets(); showToast('Ticket created successfully'); }
+      else { showToast('Failed to create ticket', 'error'); }
+    } catch (e) { console.error(e); showToast('Failed to create ticket', 'error'); }
   };
 
   const priorityColors: Record<string, string> = { low: '#34d399', medium: '#a78bfa', high: 'hsl(252 60% 55%)', urgent: '#94a3b8' };
@@ -107,6 +114,18 @@ export default function HelpdeskPage() {
             </motion.div>
           </div>
         )}
+
+        {/* Toast Notification */}
+        <AnimatePresence>
+          {toast && (
+            <motion.div initial={{ opacity: 0, y: 50, x: '-50%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
+              className="fixed bottom-6 left-1/2 z-[100] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl"
+              style={{ background: toast.type === 'success' ? 'hsl(142 76% 36%)' : 'hsl(0 72% 51%)', color: 'white' }}>
+              {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+              <span className="text-sm font-medium">{toast.message}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

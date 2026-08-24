@@ -1,1 +1,1 @@
-feat: products - toast notifications and better error handling  
+feat: AI chat - toast notifications and better error handling  
