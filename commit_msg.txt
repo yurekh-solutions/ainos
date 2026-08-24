@@ -1,1 +1,1 @@
-feat: professional dashboard header - better spacing and notification bell  
+feat: add professional heading to sign-in left panel  

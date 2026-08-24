@@ -1,7 +1,7 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, Users, Mail, Phone, Building2, TrendingUp, Filter, Search } from 'lucide-react';
+import { Plus, X, Users, Mail, Phone, Building2, TrendingUp, Filter, Search, Download, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface Lead { id: string; name: string; email: string; phone?: string; company?: string; designation?: string; source: string; status: string; score?: number; estimatedValue?: number; notes?: string; tags?: string[]; createdAt: string; }
 
@@ -15,33 +15,94 @@ export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', designation: '', source: 'website', status: 'new', estimatedValue: '', notes: '' });
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => { fetchLeads(); }, []);
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
-  const fetchLeads = async () => {
+  const fetchLeads = useCallback(async () => {
     try {
       const res = await fetch('/api/leads');
       if (res.ok) setLeads(await res.json());
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); showToast('Failed to load leads', 'error'); }
     finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchLeads(); }, [fetchLeads]);
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    if (!form.name.trim()) errors.name = 'Name is required';
+    if (!form.email.trim()) errors.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errors.email = 'Invalid email format';
+    if (form.phone && !/^[\d\s+()-]{10,}$/.test(form.phone)) errors.phone = 'Invalid phone number';
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateForm()) return;
     try {
       const res = await fetch('/api/leads', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, estimatedValue: Number(form.estimatedValue) || 0 }),
       });
-      if (res.ok) { setForm({ name: '', email: '', phone: '', company: '', designation: '', source: 'website', status: 'new', estimatedValue: '', notes: '' }); setShowForm(false); fetchLeads(); }
-    } catch (e) { console.error(e); }
+      if (res.ok) {
+        setForm({ name: '', email: '', phone: '', company: '', designation: '', source: 'website', status: 'new', estimatedValue: '', notes: '' });
+        setFormErrors({});
+        setShowForm(false);
+        fetchLeads();
+        showToast('Lead created successfully');
+      } else {
+        showToast('Failed to create lead', 'error');
+      }
+    } catch (e) { console.error(e); showToast('Failed to create lead', 'error'); }
   };
 
   const updateStatus = async (id: string, status: string) => {
     try {
-      await fetch('/api/leads', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status }) });
-      fetchLeads();
-    } catch (e) { console.error(e); }
+      const res = await fetch('/api/leads', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status }) });
+      if (res.ok) {
+        fetchLeads();
+        showToast('Status updated');
+      } else {
+        showToast('Failed to update status', 'error');
+      }
+    } catch (e) { console.error(e); showToast('Failed to update status', 'error'); }
+  };
+
+  const deleteLead = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this lead?')) return;
+    try {
+      const res = await fetch(`/api/leads?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchLeads();
+        showToast('Lead deleted');
+      } else {
+        showToast('Failed to delete lead', 'error');
+      }
+    } catch (e) { console.error(e); showToast('Failed to delete lead', 'error'); }
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Name', 'Email', 'Phone', 'Company', 'Designation', 'Source', 'Status', 'Estimated Value', 'Created At'];
+    const rows = filteredLeads.map(l => [
+      l.name, l.email, l.phone || '', l.company || '', l.designation || '',
+      l.source, l.status, l.estimatedValue || 0, new Date(l.createdAt).toLocaleDateString()
+    ]);
+    const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Exported to CSV');
   };
 
   const filteredLeads = leads.filter(l => {
@@ -67,11 +128,20 @@ export default function LeadsPage() {
             <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'hsl(var(--foreground))' }}>Leads</h1>
             <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Manage your sales pipeline</p>
           </div>
-          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowForm(true)}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-medium"
-            style={{ background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%)', boxShadow: '0 4px 14px 0 hsl(var(--primary) / 0.39)' }}>
-            <Plus className="w-4 h-4" /> Add Lead
-          </motion.button>
+          <div className="flex items-center gap-2">
+            {leads.length > 0 && (
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={exportToCSV}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition-colors"
+                style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))', background: 'hsl(var(--card))' }}>
+                <Download className="w-4 h-4" /> Export
+              </motion.button>
+            )}
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowForm(true)}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-medium"
+              style={{ background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%)', boxShadow: '0 4px 14px 0 hsl(var(--primary) / 0.39)' }}>
+              <Plus className="w-4 h-4" /> Add Lead
+            </motion.button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -152,17 +222,22 @@ export default function LeadsPage() {
                   
                   <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: 'hsl(var(--border) / 0.3)' }}>
                     <span className="text-[10px] font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>{sourceIcons[lead.source] || '📋'} {lead.source.replace('_', ' ')}</span>
-                    <select value={lead.status} onChange={(e) => updateStatus(lead.id, e.target.value)}
-                      className="text-[10px] font-semibold px-2 py-1 rounded-lg border-0 cursor-pointer"
-                      style={{ background: 'hsl(var(--muted))', color: statusColors[lead.status] }}>
-                      <option value="new">New</option>
-                      <option value="contacted">Contacted</option>
-                      <option value="qualified">Qualified</option>
-                      <option value="proposal">Proposal</option>
-                      <option value="negotiation">Negotiation</option>
-                      <option value="converted">Converted</option>
-                      <option value="lost">Lost</option>
-                    </select>
+                    <div className="flex items-center gap-1">
+                      <select value={lead.status} onChange={(e) => updateStatus(lead.id, e.target.value)}
+                        className="text-[10px] font-semibold px-2 py-1 rounded-lg border-0 cursor-pointer"
+                        style={{ background: 'hsl(var(--muted))', color: statusColors[lead.status] }}>
+                        <option value="new">New</option>
+                        <option value="contacted">Contacted</option>
+                        <option value="qualified">Qualified</option>
+                        <option value="proposal">Proposal</option>
+                        <option value="negotiation">Negotiation</option>
+                        <option value="converted">Converted</option>
+                        <option value="lost">Lost</option>
+                      </select>
+                      <button onClick={() => deleteLead(lead.id)} className="p-1.5 rounded-lg hover:bg-red-500/10 transition-colors" title="Delete lead">
+                        <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               ))}
@@ -182,14 +257,23 @@ export default function LeadsPage() {
                   <button onClick={() => setShowForm(false)} className="p-2 rounded-xl hover:opacity-70"><X className="w-5 h-5" style={{ color: 'hsl(var(--muted-foreground))' }} /></button>
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-3">
-                  <input required placeholder="Name *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="glass-input w-full px-4 py-2.5 rounded-xl text-sm" />
-                  <input required type="email" placeholder="Email *" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="glass-input w-full px-4 py-2.5 rounded-xl text-sm" />
-                  <div className="grid grid-cols-2 gap-3">
-                    <input placeholder="Phone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="glass-input w-full px-4 py-2.5 rounded-xl text-sm" />
-                    <input placeholder="Company" value={form.company} onChange={e => setForm({ ...form, company: e.target.value })} className="glass-input w-full px-4 py-2.5 rounded-xl text-sm" />
+                  <div>
+                    <input required placeholder="Name *" value={form.name} onChange={e => { setForm({ ...form, name: e.target.value }); setFormErrors({ ...formErrors, name: '' }); }}
+                      className={`glass-input w-full px-4 py-2.5 rounded-xl text-sm ${formErrors.name ? 'border-red-500/50' : ''}`} />
+                    {formErrors.name && <p className="text-xs text-red-500 mt-1">{formErrors.name}</p>}
+                  </div>
+                  <div>
+                    <input required type="email" placeholder="Email *" value={form.email} onChange={e => { setForm({ ...form, email: e.target.value }); setFormErrors({ ...formErrors, email: '' }); }}
+                      className={`glass-input w-full px-4 py-2.5 rounded-xl text-sm ${formErrors.email ? 'border-red-500/50' : ''}`} />
+                    {formErrors.email && <p className="text-xs text-red-500 mt-1">{formErrors.email}</p>}
+                  </div>
+                  <div>
+                    <input placeholder="Phone" value={form.phone} onChange={e => { setForm({ ...form, phone: e.target.value }); setFormErrors({ ...formErrors, phone: '' }); }}
+                      className={`glass-input w-full px-4 py-2.5 rounded-xl text-sm ${formErrors.phone ? 'border-red-500/50' : ''}`} />
+                    {formErrors.phone && <p className="text-xs text-red-500 mt-1">{formErrors.phone}</p>}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <input placeholder="Designation" value={form.designation} onChange={e => setForm({ ...form, designation: e.target.value })} className="glass-input w-full px-4 py-2.5 rounded-xl text-sm" />
+                    <input placeholder="Company" value={form.company} onChange={e => setForm({ ...form, company: e.target.value })} className="glass-input w-full px-4 py-2.5 rounded-xl text-sm" />
                     <input type="number" placeholder="Est. Value" value={form.estimatedValue} onChange={e => setForm({ ...form, estimatedValue: e.target.value })} className="glass-input w-full px-4 py-2.5 rounded-xl text-sm" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -205,6 +289,18 @@ export default function LeadsPage() {
                     style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>Create Lead</button>
                 </form>
               </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Toast Notification */}
+        <AnimatePresence>
+          {toast && (
+            <motion.div initial={{ opacity: 0, y: 50, x: '-50%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
+              className="fixed bottom-6 left-1/2 z-[100] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl"
+              style={{ background: toast.type === 'success' ? 'hsl(142 76% 36%)' : 'hsl(0 72% 51%)', color: 'white' }}>
+              {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+              <span className="text-sm font-medium">{toast.message}</span>
             </motion.div>
           )}
         </AnimatePresence>
