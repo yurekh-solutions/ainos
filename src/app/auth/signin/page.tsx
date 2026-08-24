@@ -249,7 +249,7 @@ export default function SignInPage() {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
-              src="/ainos-illustration.png" 
+              src="/aino.png" 
               alt="AINOS Business Suite Illustration" 
               className="w-full max-w-sm mx-auto object-contain"
             />

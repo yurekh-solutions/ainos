@@ -1,1 +1,1 @@
-feat: full mobile responsive dashboard - all pages adapted  
+feat: professional sign-in page redesign with illustration  
