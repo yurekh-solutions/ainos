@@ -1,1 +1,1 @@
-feat: clean sign-in page - removed text, kept only image  
+feat: professional dashboard header - better spacing and notification bell  

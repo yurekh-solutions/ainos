@@ -180,6 +180,25 @@ export default function SignInPage() {
             </div>
           </motion.div>
 
+          {/* Heading */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="mb-6"
+          >
+            <h2 className="text-3xl xl:text-4xl font-bold text-gray-900 mb-3">
+              One Platform.
+              <br />
+              <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                Complete Business Control.
+              </span>
+            </h2>
+            <p className="text-base text-gray-500 max-w-md mx-auto leading-relaxed">
+              Manage invoices, customers, inventory, HR, and AI automation — all in one intelligent dashboard.
+            </p>
+          </motion.div>
+
           {/* Illustration */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
