@@ -101,9 +101,10 @@ You must respond in this exact JSON format (no other text):
 
     const userPrompt = `Create viral, platform-optimized social media captions for this content:
 
-Topic: "${topic || 'N/A'}"
+${topic ? `Topic: "${topic}"` : ''}
 ${videoDescription ? `Content Description: "${videoDescription}"` : ''}
 ${imageAnalysis ? `AI Vision Analysis of uploaded media: "${imageAnalysis}"` : ''}
+${!topic && !videoDescription && imageAnalysis ? 'NOTE: The user has only uploaded an image/video. Use the AI Vision Analysis above as the PRIMARY source to generate accurate, relevant captions and hashtags. Do not ask for more context.' : ''}
 Tone: ${tone || 'engaging'}
 
 Generate captions for these platforms:
@@ -119,7 +120,7 @@ For each platform:
    - Platform-specific trending hashtags
 4. Calculate exact character count
 
-Also provide 4 general pro tips for maximizing GLOBAL reach across all platforms.`;
+If only an image/video was uploaded with no text context, rely entirely on the AI Vision Analysis to create relevant, accurate captions.`;
 
     // Generate via Pollinations (free)
     const pollinationsRes = await fetch('https://text.pollinations.ai/', {

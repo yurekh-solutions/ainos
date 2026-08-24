@@ -227,7 +227,7 @@ export default function SocialMediaPage() {
               {/* Topic */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
-                  <Video className="w-3.5 h-3.5 text-purple-500" /> What&apos;s your content about? *
+                  <Video className="w-3.5 h-3.5 text-purple-500" /> What&apos;s your content about? {uploadedMedia ? '(optional)' : ''}
                 </label>
                 <input
                   value={topic}
@@ -245,7 +245,7 @@ export default function SocialMediaPage() {
                 <textarea
                   value={videoDescription}
                   onChange={e => setVideoDescription(e.target.value)}
-                  placeholder="What happens in your video? What does your image show? AI will analyze uploaded media too..."
+                  placeholder={uploadedMedia ? "Optional context to help AI. Leave blank and AI will scan your media..." : "What happens in your video? What does your image show?"}
                   rows={2}
                   className="w-full px-4 py-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 resize-none"
                 />
@@ -471,7 +471,7 @@ export default function SocialMediaPage() {
             </div>
             <p className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Ready to go viral?</p>
             <p className="text-sm text-gray-500 max-w-md mx-auto">
-              Upload your image or video, describe your content, and get AI-powered captions with global hashtags optimized for every platform.
+              Upload an image or video and AI will scan it, then generate captions with global hashtags optimized for every platform. Or enter a topic for text-based captions.
             </p>
             <div className="flex items-center justify-center gap-4 mt-6">
               {[Instagram, Video, Youtube, Linkedin, Twitter, Facebook].map((Icon, i) => (
