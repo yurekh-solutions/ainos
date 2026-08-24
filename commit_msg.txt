@@ -1,1 +1,1 @@
-feat: professional sign-in page redesign with illustration  
+fix: correct illustration filename aino.png  

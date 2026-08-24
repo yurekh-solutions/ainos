@@ -155,121 +155,44 @@ export default function SignInPage() {
           initial={{ opacity: 0, x: -60 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="max-w-xl w-full"
+          className="max-w-lg w-full text-center"
         >
+          {/* Logo */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="flex items-center gap-4 mb-10"
+            className="flex items-center justify-center gap-3 mb-8"
           >
-            <motion.div
-              whileHover={{ rotate: 180, scale: 1.1 }}
-              transition={{ duration: 0.5 }}
-              className="relative"
+            <div 
+              className="w-12 h-12 rounded-xl overflow-hidden flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #4f46e5 100%)',
+                boxShadow: '0 12px 30px -8px rgba(99,102,241,0.4)'
+              }}
             >
-              <div 
-                className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center"
-                style={{
-                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #4f46e5 100%)',
-                  boxShadow: '0 20px 50px -15px rgba(99,102,241,0.5), 0 10px 20px -10px rgba(99,102,241,0.3)'
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/ainos-robot.png" alt="AINOS" className="w-full h-full object-cover" />
-              </div>
-              <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 opacity-30 blur-lg -z-10" />
-            </motion.div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-gray-900">AINOS</h1>
-              <p className="text-sm font-medium text-gray-500">Business Suite</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/ainos-robot.png" alt="AINOS" className="w-full h-full object-cover" />
             </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-            className="mb-6"
-          >
-            <h2 className="text-4xl xl:text-5xl font-bold leading-[1.15] mb-4 text-gray-900">
-              Transform Your
-              <span className="block mt-1">
-                <span 
-                  className="bg-clip-text text-transparent"
-                  style={{ 
-                    backgroundImage: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%)',
-                  }}
-                >
-                  Billing Experience
-                </span>
-              </span>
-            </h2>
-            <p className="text-base leading-relaxed text-gray-500 max-w-md">
-              Streamline invoicing, automate payments, and grow your business with intelligent automation.
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="grid grid-cols-2 gap-2.5 mb-8"
-          >
-            {[
-              { text: 'Automated Reminders', color: '#6366f1' },
-              { text: 'Real-time Analytics', color: '#8b5cf6' },
-              { text: 'PDF Generation', color: '#3b82f6' },
-              { text: 'Multi-currency', color: '#a78bfa' },
-            ].map((item, i) => (
-              <motion.div
-                key={item.text}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 + i * 0.1 }}
-                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white border border-gray-100 shadow-sm"
-              >
-                <div 
-                  className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ background: `${item.color}18` }}
-                >
-                  <Check className="w-3.5 h-3.5" style={{ color: item.color }} />
-                </div>
-                <span className="text-xs font-medium text-gray-700">{item.text}</span>
-              </motion.div>
-            ))}
+            <div className="text-left">
+              <h1 className="text-xl font-bold text-gray-900">AINOS</h1>
+              <p className="text-xs text-gray-500">Business Suite</p>
+            </div>
           </motion.div>
 
           {/* Illustration */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.55 }}
+            transition={{ delay: 0.3 }}
             className="mb-6"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src="/aino.png" 
-              alt="AINOS Business Suite Illustration" 
-              className="w-full max-w-sm mx-auto object-contain"
+              alt="AINOS Business Suite" 
+              className="w-full max-w-md mx-auto object-contain"
             />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="flex items-center justify-center gap-8"
-          >
-            {stats.map((stat, i) => (
-              <div key={stat.label} className="text-center">
-                <div className="flex items-center justify-center gap-1">
-                  <span className="text-2xl font-bold text-purple-600">{stat.value}</span>
-                  {stat.icon && <Star className="w-4 h-4 fill-purple-600 text-purple-600" />}
-                </div>
-                <span className="text-[11px] font-medium text-gray-400">{stat.label}</span>
-              </div>
-            ))}
           </motion.div>
         </motion.div>
       </div>
