@@ -26,6 +26,7 @@ import {
   CalendarOff,
   Boxes,
   MapPin,
+  Globe,
   ShoppingCart,
   Mail,
   ShieldCheck,
@@ -130,6 +131,7 @@ const sections: MenuSection[] = [
     icon: Mail,
     items: [
       { icon: Sparkles, label: 'Social Media', href: '/marketing/email' },
+      { icon: Globe, label: 'SEO Platform', href: '/marketing/seo' },
       { icon: FileText, label: 'Blog & Content', href: '/marketing/blog' },
       { icon: Zap, label: 'Blog Agent', href: '/marketing/blog-agent' },
     ],

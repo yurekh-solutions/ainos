@@ -4,6 +4,8 @@ on:
   schedule:
     # Run every 5 minutes to prevent Render free tier from sleeping
     - cron: '*/5 * * * *'
+    # Run daily at 9 AM UTC to auto-publish one blog per connected website
+    - cron: '0 9 * * *'
   workflow_dispatch: # Allow manual trigger
 
 jobs:
@@ -19,4 +21,21 @@ jobs:
             echo "✅ Server is alive"
           else
             echo "⚠️ Server returned $response"
+          fi
+
+  auto-publish-blogs:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 9 * * *' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Trigger daily blog auto-publishing
+        run: |
+          echo "Triggering daily blog auto-publishing..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET || 'ainos-cron-2024' }}" \
+            https://ainos-ywu0.onrender.com/ainos/api/blog-agent/auto-generate)
+          echo "Auto-publish status: $response"
+          if [ "$response" = "200" ]; then
+            echo "✅ Blog auto-publishing triggered"
+          else
+            echo "⚠️ Auto-publishing returned $response"
           fi
