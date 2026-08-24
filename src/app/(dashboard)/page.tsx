@@ -139,19 +139,23 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 lg:pt-10 pb-4 sm:py-6 lg:py-8">
 
         {/* Greeting Header */}
-        <motion.header initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 sm:mb-8 flex items-start sm:items-center justify-between gap-3 flex-col sm:flex-row">
-          <div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>
-              {getGreeting()}, <span style={{ color: 'hsl(var(--foreground-muted))' }}>{session?.user?.name?.split(' ')[0] || 'User'}</span>.
-            </h1>
-            <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
-              Your ecosystem is running smoothly. {stats.totalInvoices} active tools, {stats.pendingInvoices} alerts.
-            </p>
+        <motion.header initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 sm:mb-8">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight" style={{ color: 'hsl(var(--foreground))' }}>
+                {getGreeting()}, <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">{session?.user?.name?.split(' ')[0] || 'User'}</span>
+              </h1>
+              <p className="text-sm sm:text-base mt-2" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                Your ecosystem is running smoothly. {stats.totalInvoices} active tools, {stats.pendingInvoices} alerts.
+              </p>
+            </div>
+            <div className="flex-shrink-0">
+              <NotificationsBell />
+            </div>
           </div>
-          <NotificationsBell />
         </motion.header>
 
         {/* AINOS Robot Helper Card */}
