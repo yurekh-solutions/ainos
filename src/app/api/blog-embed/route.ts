@@ -40,15 +40,15 @@ export async function GET(req: NextRequest) {
         websiteNiche: website?.niche || post.category,
         // SEO data
         seoTitle: post.title,
-        seoDescription: post.excerpt || post.content.substring(0, 160),
-        seoKeywords: post.tags?.join(', ') || '',
+        seoDescription: post.excerpt || post.content?.substring(0, 160) || '',
+        seoKeywords: Array.isArray(post.tags) ? post.tags.join(', ') : '',
         canonicalUrl: `${website?.url || ''}/blog/${post.slug}`,
         // Structured data for Google
         schemaOrg: {
           '@context': 'https://schema.org',
           '@type': 'BlogPosting',
           headline: post.title,
-          description: post.excerpt || post.content.substring(0, 160),
+          description: post.excerpt || post.content?.substring(0, 160) || '',
           author: {
             '@type': 'Organization',
             name: website?.name || 'AINOS Blog',
@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
             '@type': 'WebPage',
             '@id': `${website?.url || ''}/blog/${post.slug}`,
           },
-          keywords: post.tags?.join(', ') || '',
+          keywords: Array.isArray(post.tags) ? post.tags.join(', ') : '',
           articleSection: post.category || 'General',
         },
       };
@@ -120,10 +120,10 @@ export async function GET(req: NextRequest) {
         id: post.id,
         title: post.title,
         slug: post.slug,
-        excerpt: post.excerpt || post.content.substring(0, 200) + '...',
+        excerpt: post.excerpt || post.content?.substring(0, 200) + '...' || '',
         content: post.content,
         category: post.category,
-        tags: post.tags,
+        tags: Array.isArray(post.tags) ? post.tags : [],
         featuredImage: post.featuredImage,
         publishedAt: post.publishedAt,
         createdAt: post.createdAt,

@@ -1,1 +1,1 @@
-fix: manual JWT decrypt in dashboard layout (bypass NextAuth v4 + Next.js 16 issues)  
+feat: blog embed widget RSS sitemap SEO  

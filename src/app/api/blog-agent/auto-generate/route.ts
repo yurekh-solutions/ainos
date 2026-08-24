@@ -214,7 +214,7 @@ Requirements:
           );
           await prisma.blogSchedule.update({
             where: { id: schedule.id },
-            data: { webhookResponse: publishResults as unknown as import('@prisma/client').Prisma.JsonValue },
+            data: { webhookResponse: publishResults ? (publishResults as import('@prisma/client').Prisma.InputJsonValue) : undefined },
           });
         }
 
