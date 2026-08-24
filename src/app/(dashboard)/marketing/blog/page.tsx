@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, FileText, Eye, Calendar, Sparkles, Wand2, Search,
   Clock, Trash2, Edit3, CheckCircle, Send, ArrowLeft,
-  BookOpen, Layers, ExternalLink, Globe, CalendarRange, TrendingUp, Shield, Zap
+  BookOpen, Layers, ExternalLink, Globe, CalendarRange, TrendingUp, Shield, Zap,
+  Code, Copy, Check, Rss, Map
 } from 'lucide-react';
 
 interface BlogPost {
@@ -55,6 +56,19 @@ export default function BlogPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
   const [scheduleDate, setScheduleDate] = useState('');
+  const [showEmbed, setShowEmbed] = useState(false);
+  const [copiedCode, setCopiedCode] = useState('');
+  
+  // Initialize baseUrl with the correct production URL
+  const baseUrl = (() => {
+    if (typeof window !== 'undefined') {
+      const origin = window.location.origin;
+      if (origin.includes('onrender.com') || origin.includes('vercel.app')) {
+        return origin;
+      }
+    }
+    return 'https://ainos-ywu0.onrender.com';
+  })();
 
   const [aiForm, setAiForm] = useState({
     topic: '', keywords: '', tone: 'Professional', length: 'medium', industry: 'General Business'
@@ -159,6 +173,15 @@ export default function BlogPage() {
         body: JSON.stringify(data),
       });
       if (res.ok) fetchPosts();
+    } catch (e) { console.error(e); }
+  };
+
+  // Copy embed code to clipboard
+  const handleCopyCode = async (code: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(id);
+      setTimeout(() => setCopiedCode(''), 2000);
     } catch (e) { console.error(e); }
   };
 
@@ -354,6 +377,11 @@ export default function BlogPage() {
               <CalendarRange className="w-4 h-4" />
             </button>
           </div>
+          {/* Publish to Website Button */}
+          <button onClick={() => setShowEmbed(true)}
+            className="px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center gap-2">
+            <Globe className="w-4 h-4" /> Publish to Website
+          </button>
         </div>
 
         {/* Category Tabs */}
@@ -823,6 +851,135 @@ export default function BlogPage() {
               </div>
             </div>
           </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Publish to Website Modal */}
+      <AnimatePresence>
+        {showEmbed && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowEmbed(false)}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-800"
+              onClick={e => e.stopPropagation()}>
+              <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                      <Globe className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-gray-900 dark:text-white">Publish to Your Website</h2>
+                      <p className="text-xs text-gray-500">Works on WordPress, Shopify, React, HTML, Wix & more</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowEmbed(false)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <X className="w-5 h-5 text-gray-500" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Option 1: Embed Widget */}
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Code className="w-4 h-4 text-purple-600" />
+                    <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Option 1: Embed Widget (Recommended)</h3>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-3">Paste this code anywhere in your website HTML. Blogs will auto-load with SEO-optimized structure.</p>
+                  <div className="relative">
+                    <pre className="bg-gray-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto font-mono">
+{`<script src="${baseUrl}/embed.js"></script>
+<div id="ainos-blog" data-limit="6" data-style="grid"></div>`}
+                    </pre>
+                    <button onClick={() => handleCopyCode(`<script src="${baseUrl}/embed.js"></script>\n<div id="ainos-blog" data-limit="6" data-style="grid"></div>`, 'embed')}
+                      className="absolute top-2 right-2 p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors">
+                      {copiedCode === 'embed' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-gray-300" />}
+                    </button>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className="px-2 py-1 rounded-md text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium">WordPress</span>
+                    <span className="px-2 py-1 rounded-md text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium">Shopify</span>
+                    <span className="px-2 py-1 rounded-md text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-medium">React</span>
+                    <span className="px-2 py-1 rounded-md text-[10px] bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 font-medium">HTML</span>
+                    <span className="px-2 py-1 rounded-md text-[10px] bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 font-medium">Wix</span>
+                  </div>
+                </div>
+
+                {/* Option 2: API Integration */}
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Zap className="w-4 h-4 text-amber-600" />
+                    <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Option 2: REST API (For Developers)</h3>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-3">Fetch blog data as JSON and render with your own design. Full control over styling.</p>
+                  <div className="relative">
+                    <pre className="bg-gray-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto font-mono">
+{`const res = await fetch('${baseUrl}/api/blog-embed');
+const { posts, categories } = await res.json();
+// posts[] contains: title, slug, content, excerpt, tags, category, publishedAt`}
+                    </pre>
+                    <button onClick={() => handleCopyCode(`const res = await fetch('${baseUrl}/api/blog-embed');\nconst { posts, categories } = await res.json();`, 'api')}
+                      className="absolute top-2 right-2 p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors">
+                      {copiedCode === 'api' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-gray-300" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Option 3: RSS Feed */}
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Rss className="w-4 h-4 text-orange-600" />
+                    <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Option 3: RSS Feed (Auto-Syndication)</h3>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-3">Subscribe to auto-receive new blogs. Works with Feedly, WordPress, and all RSS readers.</p>
+                  <div className="relative">
+                    <pre className="bg-gray-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto font-mono">
+{`${baseUrl}/api/blog-rss`}
+                    </pre>
+                    <button onClick={() => handleCopyCode(`${baseUrl}/api/blog-rss`, 'rss')}
+                      className="absolute top-2 right-2 p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors">
+                      {copiedCode === 'rss' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-gray-300" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Option 4: SEO Sitemap */}
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Map className="w-4 h-4 text-blue-600" />
+                    <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Option 4: XML Sitemap (Google Indexing)</h3>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-3">Submit this to Google Search Console for automatic indexing of all blog posts.</p>
+                  <div className="relative">
+                    <pre className="bg-gray-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto font-mono">
+{`${baseUrl}/api/blog-sitemap`}
+                    </pre>
+                    <button onClick={() => handleCopyCode(`${baseUrl}/api/blog-sitemap`, 'sitemap')}
+                      className="absolute top-2 right-2 p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors">
+                      {copiedCode === 'sitemap' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-gray-300" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* SEO Info */}
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-5 border border-purple-200 dark:border-purple-800">
+                  <h3 className="font-semibold text-sm text-purple-900 dark:text-purple-200 mb-2 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" /> SEO & Traffic Features Included
+                  </h3>
+                  <ul className="text-xs text-purple-700 dark:text-purple-300 space-y-1.5">
+                    <li className="flex items-start gap-2"><Check className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> JSON-LD Schema.org markup for Google rich snippets</li>
+                    <li className="flex items-start gap-2"><Check className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> Open Graph + Twitter Card meta tags for social sharing</li>
+                    <li className="flex items-start gap-2"><Check className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> Auto-generated keywords & hashtags for organic ranking</li>
+                    <li className="flex items-start gap-2"><Check className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> Canonical URLs to prevent duplicate content issues</li>
+                    <li className="flex items-start gap-2"><Check className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> Responsive design - works on all devices</li>
+                    <li className="flex items-start gap-2"><Check className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> Website traffic CTAs in every article</li>
+                  </ul>
+                </div>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

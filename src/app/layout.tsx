@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AINOS - Business Suite",
   description: "Simple and powerful billing platform for businesses of all sizes",
+  other: {
+    'rss-feed': '/api/blog-rss',
+  },
 };
 
 export const dynamic = 'force-dynamic';

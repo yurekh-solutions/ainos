@@ -115,6 +115,28 @@ Requirements:
       result.seoTips = tips.length > 0 ? tips : ['Looking good! All SEO checks passed.'];
     }
 
+    // Enhance tags with keyword extraction from title and content
+    if (result.tags && Array.isArray(result.tags)) {
+      // Extract additional keywords from title
+      const titleWords: string[] = result.title?.split(/\s+/).filter((w: string) => w.length > 3) || [];
+      const stopWords = new Set(['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'how', 'what', 'why', 'when', 'where', 'which', 'this', 'that', 'with', 'from', 'your', 'their', 'complete', 'guide', 'ultimate']);
+      const keywordTags = titleWords
+        .map((w: string) => w.replace(/[^a-zA-Z0-9]/g, '').toLowerCase())
+        .filter((w: string) => w.length > 3 && !stopWords.has(w));
+
+      // Merge with existing tags, remove duplicates
+      const allTags = [...new Set([...result.tags, ...keywordTags])];
+      result.tags = allTags.slice(0, 10); // Max 10 tags for SEO
+    }
+
+    // Add hashtags to content for social media visibility
+    if (result.content && result.tags?.length) {
+      const hashtags = result.tags.slice(0, 5).map((t: string) => `#${t.replace(/\s+/g, '')}`).join(' ');
+      if (!result.content.includes('#')) {
+        result.content += `\n\n---\n\n**Share this article:** ${hashtags}`;
+      }
+    }
+
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error generating blog post:', error);

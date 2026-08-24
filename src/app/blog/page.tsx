@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { Search, Calendar, Clock, ArrowRight, Sparkles, BookOpen, Layers, ExternalLink } from 'lucide-react';
+import { Search, Calendar, Clock, ArrowRight, Sparkles, BookOpen, Layers, ExternalLink, Rss } from 'lucide-react';
 
 interface BlogPost {
   id: string; title: string; slug: string; content: string; excerpt: string | null;
@@ -49,6 +49,9 @@ export default function PublicBlogPage() {
               <span className="text-lg font-bold text-gray-900">AINOS Blog</span>
             </a>
             <div className="flex items-center gap-4">
+              <a href="/api/blog-rss" className="text-sm text-gray-600 hover:text-orange-600 transition-colors flex items-center gap-1" title="RSS Feed">
+                <Rss className="w-4 h-4" /> RSS
+              </a>
               <a href="/" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                 Back to AINOS
               </a>
