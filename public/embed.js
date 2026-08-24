@@ -48,17 +48,12 @@
     return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   }
 
-  // Render blog card
+  // Render blog card (no images)
   function renderCard(post, style) {
     const safeTitle = sanitize(post.title);
     const safeExcerpt = sanitize(post.excerpt || '');
     const safeCategory = sanitize(post.category || '');
     const safeUrl = sanitize(post.url || '#');
-    const safeImage = post.featuredImage ? sanitize(post.featuredImage) : '';
-
-    const imageHtml = safeImage
-      ? `<div class="ainos-blog-image"><img src="${safeImage}" alt="${safeTitle}" loading="lazy"/></div>`
-      : `<div class="ainos-blog-image ainos-blog-image-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg></div>`;
 
     const tagsHtml = post.tags && post.tags.length
       ? `<div class="ainos-blog-tags">${post.tags.slice(0, 3).map(t => `<span class="ainos-blog-tag">#${sanitize(t)}</span>`).join('')}</div>`
@@ -67,7 +62,6 @@
     if (style === 'list') {
       return `
         <article class="ainos-blog-card ainos-blog-card-list">
-          ${imageHtml}
           <div class="ainos-blog-content">
             ${safeCategory ? `<span class="ainos-blog-category">${safeCategory}</span>` : ''}
             <h3 class="ainos-blog-title"><a href="${safeUrl}">${safeTitle}</a></h3>
@@ -83,7 +77,6 @@
 
     return `
       <article class="ainos-blog-card">
-        ${imageHtml}
         <div class="ainos-blog-content">
           ${safeCategory ? `<span class="ainos-blog-category">${safeCategory}</span>` : ''}
           <h3 class="ainos-blog-title"><a href="${safeUrl}">${safeTitle}</a></h3>
@@ -190,18 +183,12 @@
     if (document.getElementById('ainos-blog-styles')) return;
 
     const css = `
-      .ainos-blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
+      .ainos-blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
       .ainos-blog-list { display: flex; flex-direction: column; gap: 20px; }
       .ainos-blog-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08); transition: transform 0.3s, box-shadow 0.3s; border: 1px solid #f0f0f0; }
       .ainos-blog-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
       .ainos-blog-card-list { display: flex; flex-direction: row; }
-      .ainos-blog-card-list .ainos-blog-image { width: 200px; min-height: 150px; }
-      .ainos-blog-image { aspect-ratio: 16/9; overflow: hidden; background: #f8f9fa; }
-      .ainos-blog-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
-      .ainos-blog-card:hover .ainos-blog-image img { transform: scale(1.05); }
-      .ainos-blog-image-placeholder { display: flex; align-items: center; justify-content: center; color: #ccc; }
-      .ainos-blog-image-placeholder svg { width: 48px; height: 48px; }
-      .ainos-blog-content { padding: 20px; }
+      .ainos-blog-content { padding: 24px; }
       .ainos-blog-category { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; background: #f3e8ff; color: #7c3aed; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
       .ainos-blog-title { font-size: 18px; font-weight: 700; margin: 8px 0; line-height: 1.4; }
       .ainos-blog-title a { color: #1a1a2e; text-decoration: none; }
@@ -218,8 +205,6 @@
       .ainos-blog-cat-btn:hover { background: #7c3aed; color: #fff; border-color: #7c3aed; }
       .ainos-blog-full { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
       .ainos-blog-header { margin-bottom: 32px; }
-      .ainos-blog-featured-image { border-radius: 16px; overflow: hidden; margin: 24px 0; }
-      .ainos-blog-featured-image img { width: 100%; height: auto; }
       .ainos-blog-body { font-size: 16px; line-height: 1.8; color: #333; }
       .ainos-blog-body h2 { font-size: 24px; font-weight: 700; margin: 32px 0 16px; color: #1a1a2e; }
       .ainos-blog-body h3 { font-size: 20px; font-weight: 600; margin: 24px 0 12px; color: #1a1a2e; }
@@ -233,7 +218,6 @@
       @media (max-width: 768px) {
         .ainos-blog-grid { grid-template-columns: 1fr; }
         .ainos-blog-card-list { flex-direction: column; }
-        .ainos-blog-card-list .ainos-blog-image { width: 100%; }
         .ainos-blog-title-full { font-size: 24px; }
       }
     `;
