@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2 } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2, CheckCircle2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
 
@@ -61,12 +61,14 @@ export default function InvoicesPage() {
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [invoicesRes, companyRes] = await Promise.all([
         fetch('/api/invoices'),
@@ -76,6 +78,8 @@ export default function InvoicesPage() {
       if (invoicesRes.ok) {
         const invoicesData = await invoicesRes.json();
         setInvoices(invoicesData);
+      } else {
+        showToast('Failed to load invoices', 'error');
       }
       
       if (companyRes.ok) {
@@ -84,10 +88,15 @@ export default function InvoicesPage() {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
+      showToast('Failed to load data', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -534,6 +543,18 @@ export default function InvoicesPage() {
             </div>
           )}
         </div>
+
+        {/* Toast Notification */}
+        <AnimatePresence>
+          {toast && (
+            <motion.div initial={{ opacity: 0, y: 50, x: '-50%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
+              className="fixed bottom-6 left-1/2 z-[100] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl"
+              style={{ background: toast.type === 'success' ? 'hsl(142 76% 36%)' : 'hsl(0 72% 51%)', color: 'white' }}>
+              {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+              <span className="text-sm font-medium">{toast.message}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
