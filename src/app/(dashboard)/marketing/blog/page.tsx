@@ -882,101 +882,189 @@ export default function BlogPage() {
               </div>
 
               <div className="p-6 space-y-6">
-                {/* Option 1: Embed Widget */}
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Code className="w-4 h-4 text-purple-600" />
-                    <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Option 1: Embed Widget (Recommended)</h3>
-                  </div>
-                  <p className="text-xs text-gray-500 mb-3">Paste this code anywhere in your website HTML. Blogs will auto-load with SEO-optimized structure.</p>
-                  <div className="relative">
-                    <pre className="bg-gray-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto font-mono">
-{`<script src="${baseUrl}/embed.js"></script>
-<div id="ainos-blog" data-limit="6" data-style="grid"></div>`}
-                    </pre>
-                    <button onClick={() => handleCopyCode(`<script src="${baseUrl}/embed.js"></script>\n<div id="ainos-blog" data-limit="6" data-style="grid"></div>`, 'embed')}
-                      className="absolute top-2 right-2 p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors">
-                      {copiedCode === 'embed' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-gray-300" />}
-                    </button>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="px-2 py-1 rounded-md text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium">WordPress</span>
-                    <span className="px-2 py-1 rounded-md text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium">Shopify</span>
-                    <span className="px-2 py-1 rounded-md text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-medium">React</span>
-                    <span className="px-2 py-1 rounded-md text-[10px] bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 font-medium">HTML</span>
-                    <span className="px-2 py-1 rounded-md text-[10px] bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 font-medium">Wix</span>
-                  </div>
-                </div>
-
-                {/* Option 2: API Integration */}
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Zap className="w-4 h-4 text-amber-600" />
-                    <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Option 2: REST API (For Developers)</h3>
-                  </div>
-                  <p className="text-xs text-gray-500 mb-3">Fetch blog data as JSON and render with your own design. Full control over styling.</p>
-                  <div className="relative">
-                    <pre className="bg-gray-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto font-mono">
-{`const res = await fetch('${baseUrl}/api/blog-embed');
-const { posts, categories } = await res.json();
-// posts[] contains: title, slug, content, excerpt, tags, category, publishedAt`}
-                    </pre>
-                    <button onClick={() => handleCopyCode(`const res = await fetch('${baseUrl}/api/blog-embed');\nconst { posts, categories } = await res.json();`, 'api')}
-                      className="absolute top-2 right-2 p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors">
-                      {copiedCode === 'api' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-gray-300" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Option 3: RSS Feed */}
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Rss className="w-4 h-4 text-orange-600" />
-                    <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Option 3: RSS Feed (Auto-Syndication)</h3>
-                  </div>
-                  <p className="text-xs text-gray-500 mb-3">Subscribe to auto-receive new blogs. Works with Feedly, WordPress, and all RSS readers.</p>
-                  <div className="relative">
-                    <pre className="bg-gray-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto font-mono">
-{`${baseUrl}/api/blog-rss`}
-                    </pre>
-                    <button onClick={() => handleCopyCode(`${baseUrl}/api/blog-rss`, 'rss')}
-                      className="absolute top-2 right-2 p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors">
-                      {copiedCode === 'rss' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-gray-300" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Option 4: SEO Sitemap */}
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Map className="w-4 h-4 text-blue-600" />
-                    <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Option 4: XML Sitemap (Google Indexing)</h3>
-                  </div>
-                  <p className="text-xs text-gray-500 mb-3">Submit this to Google Search Console for automatic indexing of all blog posts.</p>
-                  <div className="relative">
-                    <pre className="bg-gray-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto font-mono">
-{`${baseUrl}/api/blog-sitemap`}
-                    </pre>
-                    <button onClick={() => handleCopyCode(`${baseUrl}/api/blog-sitemap`, 'sitemap')}
-                      className="absolute top-2 right-2 p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors">
-                      {copiedCode === 'sitemap' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-gray-300" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* SEO Info */}
-                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-5 border border-purple-200 dark:border-purple-800">
-                  <h3 className="font-semibold text-sm text-purple-900 dark:text-purple-200 mb-2 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4" /> SEO & Traffic Features Included
+                {/* HOW IT WORKS - 3 Steps */}
+                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl p-5 border border-emerald-200 dark:border-emerald-800">
+                  <h3 className="font-bold text-sm text-emerald-900 dark:text-emerald-200 mb-4 flex items-center gap-2">
+                    <Zap className="w-4 h-4" /> 3 Simple Steps — Done in 30 Seconds!
                   </h3>
-                  <ul className="text-xs text-purple-700 dark:text-purple-300 space-y-1.5">
-                    <li className="flex items-start gap-2"><Check className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> JSON-LD Schema.org markup for Google rich snippets</li>
-                    <li className="flex items-start gap-2"><Check className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> Open Graph + Twitter Card meta tags for social sharing</li>
-                    <li className="flex items-start gap-2"><Check className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> Auto-generated keywords & hashtags for organic ranking</li>
-                    <li className="flex items-start gap-2"><Check className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> Canonical URLs to prevent duplicate content issues</li>
-                    <li className="flex items-start gap-2"><Check className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> Responsive design - works on all devices</li>
-                    <li className="flex items-start gap-2"><Check className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> Website traffic CTAs in every article</li>
-                  </ul>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="text-center">
+                      <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-2 text-lg font-bold">1</div>
+                      <p className="text-xs font-semibold text-emerald-900 dark:text-emerald-200">Copy Code</p>
+                      <p className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-1">Click the copy button</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-2 text-lg font-bold">2</div>
+                      <p className="text-xs font-semibold text-emerald-900 dark:text-emerald-200">Paste in Website</p>
+                      <p className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-1">Any page, any platform</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-2 text-lg font-bold">3</div>
+                      <p className="text-xs font-semibold text-emerald-900 dark:text-emerald-200">Blogs Go Live!</p>
+                      <p className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-1">Auto-updates daily</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* MAIN: Copy & Paste Code — Highlighted */}
+                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-5 border-2 border-purple-300 dark:border-purple-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center">
+                      <Code className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-gray-900 dark:text-white">Copy This Code & Paste in Your Website</h3>
+                      <p className="text-[10px] text-gray-500">Works on WordPress, Shopify, Wix, Squarespace, HTML — ANY platform!</p>
+                    </div>
+                  </div>
+                  <div className="relative mt-3">
+                    <pre className="bg-gray-900 text-green-400 rounded-lg p-4 text-sm overflow-x-auto font-mono leading-relaxed">
+{`<script src="${baseUrl}/embed.js"></script>
+<div id="ainos-blog" data-limit="6"></div>`}
+                    </pre>
+                    <button onClick={() => handleCopyCode(`<script src="${baseUrl}/embed.js"></script>\n<div id="ainos-blog" data-limit="6"></div>`, 'embed')}
+                      className="absolute top-2 right-2 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 transition-colors flex items-center gap-1.5 text-white text-xs font-medium">
+                      {copiedCode === 'embed' ? <><Check className="w-3.5 h-3.5" /> Copied!</> : <><Copy className="w-3.5 h-3.5" /> Copy Code</>}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Platform-Specific Instructions */}
+                <div>
+                  <h4 className="font-semibold text-xs text-gray-700 dark:text-gray-300 mb-3">How to Add on Your Platform:</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg"></span>
+                        <span className="font-semibold text-xs text-blue-900 dark:text-blue-200">WordPress</span>
+                      </div>
+                      <ol className="text-[10px] text-blue-800 dark:text-blue-300 space-y-1 list-decimal list-inside">
+                        <li>Pages → Add New (or edit)</li>
+                        <li>Click {'"'}+{'"'} → {'"'}Custom HTML{'"'}</li>
+                        <li>Paste code → Publish!</li>
+                      </ol>
+                    </div>
+                    <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg"></span>
+                        <span className="font-semibold text-xs text-green-900 dark:text-green-200">Shopify</span>
+                      </div>
+                      <ol className="text-[10px] text-green-800 dark:text-green-300 space-y-1 list-decimal list-inside">
+                        <li>Online Store → Pages</li>
+                        <li>Click {'"'}&lt;/&gt;{'"'} Show HTML</li>
+                        <li>Paste code → Save!</li>
+                      </ol>
+                    </div>
+                    <div className="bg-pink-50 dark:bg-pink-900/20 rounded-lg p-3 border border-pink-200 dark:border-pink-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg"></span>
+                        <span className="font-semibold text-xs text-pink-900 dark:text-pink-200">Wix</span>
+                      </div>
+                      <ol className="text-[10px] text-pink-800 dark:text-pink-300 space-y-1 list-decimal list-inside">
+                        <li>Add → Embed → Widget</li>
+                        <li>Click {'"'}Enter Code{'"'}</li>
+                        <li>Paste code → Update!</li>
+                      </ol>
+                    </div>
+                    <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 border border-orange-200 dark:border-orange-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg"></span>
+                        <span className="font-semibold text-xs text-orange-900 dark:text-orange-200">HTML / Any</span>
+                      </div>
+                      <ol className="text-[10px] text-orange-800 dark:text-orange-300 space-y-1 list-decimal list-inside">
+                        <li>Open your HTML file</li>
+                        <li>Paste where you want blogs</li>
+                        <li>Save & upload — Done!</li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Customization */}
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                  <h4 className="font-semibold text-xs text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                    <Shield className="w-3.5 h-3.5" /> Optional: Customize Display
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2 text-[10px]">
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+                      <code className="text-purple-600 dark:text-purple-400">{'data-limit="3"'}</code>
+                      <p className="text-gray-500 mt-1">Show 3 blogs (default: 6)</p>
+                    </div>
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+                      <code className="text-purple-600 dark:text-purple-400">{'data-style="list"'}</code>
+                      <p className="text-gray-500 mt-1">List view (default: grid)</p>
+                    </div>
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+                      <code className="text-purple-600 dark:text-purple-400">{'data-category="Fashion"'}</code>
+                      <p className="text-gray-500 mt-1">Only Fashion blogs</p>
+                    </div>
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+                      <code className="text-purple-600 dark:text-purple-400">{'data-slug="my-post"'}</code>
+                      <p className="text-gray-500 mt-1">Show single blog post</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Advanced Options */}
+                <details className="bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                  <summary className="p-4 cursor-pointer font-semibold text-xs text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <Zap className="w-3.5 h-3.5" /> Advanced Options (For Developers)
+                  </summary>
+                  <div className="px-4 pb-4 space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-xs text-gray-700 dark:text-gray-300 mb-2">REST API</h4>
+                      <div className="relative">
+                        <pre className="bg-gray-900 text-green-400 rounded-lg p-3 text-[10px] overflow-x-auto font-mono">
+{`fetch('${baseUrl}/api/blog-embed?limit=10')
+  .then(r => r.json())
+  .then(data => console.log(data.posts))`}
+                        </pre>
+                        <button onClick={() => handleCopyCode(`fetch('${baseUrl}/api/blog-embed?limit=10')\n  .then(r => r.json())\n  .then(data => console.log(data.posts))`, 'api')}
+                          className="absolute top-1.5 right-1.5 p-1.5 rounded bg-gray-700 hover:bg-gray-600 transition-colors">
+                          {copiedCode === 'api' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-gray-300" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-xs text-gray-700 dark:text-gray-300 mb-2">RSS Feed</h4>
+                      <div className="relative">
+                        <pre className="bg-gray-900 text-green-400 rounded-lg p-3 text-[10px] overflow-x-auto font-mono">
+{`${baseUrl}/api/blog-rss`}
+                        </pre>
+                        <button onClick={() => handleCopyCode(`${baseUrl}/api/blog-rss`, 'rss')}
+                          className="absolute top-1.5 right-1.5 p-1.5 rounded bg-gray-700 hover:bg-gray-600 transition-colors">
+                          {copiedCode === 'rss' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-gray-300" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-xs text-gray-700 dark:text-gray-300 mb-2">XML Sitemap</h4>
+                      <div className="relative">
+                        <pre className="bg-gray-900 text-green-400 rounded-lg p-3 text-[10px] overflow-x-auto font-mono">
+{`${baseUrl}/api/blog-sitemap`}
+                        </pre>
+                        <button onClick={() => handleCopyCode(`${baseUrl}/api/blog-sitemap`, 'sitemap')}
+                          className="absolute top-1.5 right-1.5 p-1.5 rounded bg-gray-700 hover:bg-gray-600 transition-colors">
+                          {copiedCode === 'sitemap' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-gray-300" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </details>
+
+                {/* SEO Benefits */}
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+                  <h3 className="font-bold text-xs text-purple-900 dark:text-purple-200 mb-2 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" /> What You Get — Zero Effort!
+                  </h3>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700 dark:text-purple-300"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Google Rich Snippets (Schema.org)</div>
+                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700 dark:text-purple-300"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Social Media Sharing Cards</div>
+                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700 dark:text-purple-300"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Auto Keywords & Hashtags</div>
+                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700 dark:text-purple-300"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Mobile Responsive Design</div>
+                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700 dark:text-purple-300"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Daily Auto-Updated Content</div>
+                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700 dark:text-purple-300"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Traffic Back to Your Website</div>
+                  </div>
                 </div>
               </div>
             </motion.div>

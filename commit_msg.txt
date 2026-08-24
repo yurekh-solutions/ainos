@@ -1,1 +1,1 @@
-feat: blog embed widget RSS sitemap SEO  
+fix: remove images from embed widget  
