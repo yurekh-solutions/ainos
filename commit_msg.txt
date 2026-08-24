@@ -1,1 +1,1 @@
-feat: auto theme matching - blogs adapt to host website colors  
+feat: full mobile responsive dashboard - all pages adapted  

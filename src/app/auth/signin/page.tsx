@@ -155,7 +155,7 @@ export default function SignInPage() {
           initial={{ opacity: 0, x: -60 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="max-w-xl"
+          className="max-w-xl w-full"
         >
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -169,7 +169,7 @@ export default function SignInPage() {
               className="relative"
             >
               <div 
-                className="w-16 h-16 rounded-2xl overflow-hidden"
+                className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center"
                 style={{
                   background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #4f46e5 100%)',
                   boxShadow: '0 20px 50px -15px rgba(99,102,241,0.5), 0 10px 20px -10px rgba(99,102,241,0.3)'
@@ -181,7 +181,7 @@ export default function SignInPage() {
               <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 opacity-30 blur-lg -z-10" />
             </motion.div>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900">AINOS</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-gray-900">AINOS</h1>
               <p className="text-sm font-medium text-gray-500">Business Suite</p>
             </div>
           </motion.div>
@@ -190,11 +190,11 @@ export default function SignInPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.6 }}
-            className="mb-8"
+            className="mb-6"
           >
-            <h2 className="text-4xl xl:text-5xl font-bold leading-[1.15] mb-5 text-gray-900">
+            <h2 className="text-4xl xl:text-5xl font-bold leading-[1.15] mb-4 text-gray-900">
               Transform Your
-              <span className="block mt-2">
+              <span className="block mt-1">
                 <span 
                   className="bg-clip-text text-transparent"
                   style={{ 
@@ -205,7 +205,7 @@ export default function SignInPage() {
                 </span>
               </span>
             </h2>
-            <p className="text-lg leading-relaxed text-gray-600">
+            <p className="text-base leading-relaxed text-gray-500 max-w-md">
               Streamline invoicing, automate payments, and grow your business with intelligent automation.
             </p>
           </motion.div>
@@ -214,7 +214,7 @@ export default function SignInPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="grid grid-cols-2 gap-3 mb-10"
+            className="grid grid-cols-2 gap-2.5 mb-8"
           >
             {[
               { text: 'Automated Reminders', color: '#6366f1' },
@@ -227,29 +227,39 @@ export default function SignInPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.5 + i * 0.1 }}
-                className="flex items-center gap-3 p-3 rounded-xl"
-                style={{ 
-                  background: 'linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(249,250,251,0.6) 100%)',
-                  border: '1px solid rgba(99,102,241,0.15)',
-                  backdropFilter: 'blur(10px)'
-                }}
+                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white border border-gray-100 shadow-sm"
               >
                 <div 
-                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ background: `${item.color}20` }}
+                  className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ background: `${item.color}18` }}
                 >
-                  <Check className="w-4 h-4" style={{ color: item.color }} />
+                  <Check className="w-3.5 h-3.5" style={{ color: item.color }} />
                 </div>
-                <span className="text-sm font-medium text-gray-700">{item.text}</span>
+                <span className="text-xs font-medium text-gray-700">{item.text}</span>
               </motion.div>
             ))}
+          </motion.div>
+
+          {/* Illustration */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.55 }}
+            className="mb-6"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              src="/ainos-illustration.png" 
+              alt="AINOS Business Suite Illustration" 
+              className="w-full max-w-sm mx-auto object-contain"
+            />
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="flex items-center gap-6"
+            className="flex items-center justify-center gap-8"
           >
             {stats.map((stat, i) => (
               <div key={stat.label} className="text-center">
@@ -257,7 +267,7 @@ export default function SignInPage() {
                   <span className="text-2xl font-bold text-purple-600">{stat.value}</span>
                   {stat.icon && <Star className="w-4 h-4 fill-purple-600 text-purple-600" />}
                 </div>
-                <span className="text-xs font-medium text-gray-500">{stat.label}</span>
+                <span className="text-[11px] font-medium text-gray-400">{stat.label}</span>
               </div>
             ))}
           </motion.div>
