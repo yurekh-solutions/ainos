@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Package, Search, X, DollarSign, Tag, TrendingUp, Grid3X3, List, Edit2, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, Package, Search, X, DollarSign, Tag, TrendingUp, Grid3X3, List, Edit2, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { Product } from '@/types/product';
 
@@ -23,22 +23,31 @@ export default function ProductsPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({ name: '', description: '', price: '', taxRate: '0', sku: '' });
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  useEffect(() => { fetchProducts(); }, []);
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       const res = await fetch('/api/products');
       if (res.ok) {
         const data = await res.json();
         setProducts(data);
+      } else {
+        showToast('Failed to load products', 'error');
       }
     } catch (error) {
       console.error('Error fetching products:', error);
+      showToast('Failed to load products', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,9 +67,13 @@ export default function ProductsPage() {
       if (res.ok) {
         resetForm();
         fetchProducts();
+        showToast(editingProduct ? 'Product updated successfully' : 'Product created successfully');
+      } else {
+        showToast('Failed to save product', 'error');
       }
     } catch (error) {
       console.error('Error saving product:', error);
+      showToast('Failed to save product', 'error');
     }
   };
 
@@ -70,9 +83,13 @@ export default function ProductsPage() {
       if (res.ok) {
         setShowDeleteConfirm(null);
         fetchProducts();
+        showToast('Product deleted');
+      } else {
+        showToast('Failed to delete product', 'error');
       }
     } catch (error) {
       console.error('Error deleting product:', error);
+      showToast('Failed to delete product', 'error');
     }
   };
 
@@ -434,6 +451,18 @@ export default function ProductsPage() {
             )}
           </div>
         )}
+
+        {/* Toast Notification */}
+        <AnimatePresence>
+          {toast && (
+            <motion.div initial={{ opacity: 0, y: 50, x: '-50%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
+              className="fixed bottom-6 left-1/2 z-[100] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl"
+              style={{ background: toast.type === 'success' ? 'hsl(142 76% 36%)' : 'hsl(0 72% 51%)', color: 'white' }}>
+              {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+              <span className="text-sm font-medium">{toast.message}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </div>
   );

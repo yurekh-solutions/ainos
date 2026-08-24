@@ -1,1 +1,1 @@
-feat: invoices - toast notifications and better error handling  
+feat: HR employees - toast notifications and better error handling  
