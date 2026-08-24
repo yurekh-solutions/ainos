@@ -129,7 +129,7 @@ const sections: MenuSection[] = [
     title: 'Marketing',
     icon: Mail,
     items: [
-      { icon: Mail, label: 'Email Campaigns', href: '/marketing/email' },
+      { icon: Sparkles, label: 'Social Media', href: '/marketing/email' },
       { icon: FileText, label: 'Blog & Content', href: '/marketing/blog' },
       { icon: Zap, label: 'Blog Agent', href: '/marketing/blog-agent' },
     ],
