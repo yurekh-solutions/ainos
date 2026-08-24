@@ -163,7 +163,7 @@ export default function AiSkillsPage() {
   });
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
       {/* Header */}
       <div className="rounded-xl border p-6" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
         <div className="flex flex-wrap items-center gap-4 justify-between">

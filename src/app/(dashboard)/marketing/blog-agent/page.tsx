@@ -211,7 +211,7 @@ def ainos_webhook():
           </svg>
         </div>
 
-        <div className="relative px-6 py-10 md:px-10 md:py-14 max-w-[1400px] mx-auto">
+        <div className="relative px-4 py-8 sm:px-6 sm:py-10 md:px-10 md:py-14 max-w-[1400px] mx-auto">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
             {/* Left content */}
             <div className="max-w-lg">
@@ -219,7 +219,7 @@ def ainos_webhook():
                 <div className="w-10 h-10 rounded-xl bg-purple-500/20 backdrop-blur-sm flex items-center justify-center border border-purple-400/20 mb-5">
                   <Wand2 className="w-5 h-5 text-purple-300" />
                 </div>
-                <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight leading-[1.2]">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight leading-[1.2]">
                   Your Content Engine<br />
                   on Full <span className="text-purple-400">Autopilot</span>
                 </h1>
@@ -269,7 +269,7 @@ def ainos_webhook():
       </div>
 
       {/* ═══════════ STATS CARDS (overlap hero) ═══════════ */}
-      <div className="px-6 md:px-10 max-w-[1400px] mx-auto -mt-8 relative z-10">
+      <div className="px-4 sm:px-6 md:px-10 max-w-[1400px] mx-auto -mt-8 relative z-10">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}
           className="grid grid-cols-2 md:grid-cols-4 gap-4"
         >
@@ -294,7 +294,7 @@ def ainos_webhook():
       </div>
 
       {/* ═══════════ BODY ═══════════ */}
-      <div className="px-6 py-6 md:px-10 max-w-[1400px] mx-auto space-y-6">
+      <div className="px-4 py-4 sm:px-6 sm:py-6 md:px-10 max-w-[1400px] mx-auto space-y-6">
 
         {/* ── Connected Websites ─ */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}

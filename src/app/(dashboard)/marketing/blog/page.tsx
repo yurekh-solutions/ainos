@@ -262,7 +262,7 @@ export default function BlogPage() {
           </svg>
         </div>
 
-        <div className="relative px-6 py-10 md:px-10 md:py-14 max-w-[1400px] mx-auto">
+        <div className="relative px-4 py-8 sm:px-6 sm:py-10 md:px-10 md:py-14 max-w-[1400px] mx-auto">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
             {/* Left content */}
             <div className="max-w-lg">
@@ -270,7 +270,7 @@ export default function BlogPage() {
                 <div className="w-10 h-10 rounded-xl bg-purple-500/20 backdrop-blur-sm flex items-center justify-center border border-purple-400/20 mb-5">
                   <Sparkles className="w-5 h-5 text-purple-300" />
                 </div>
-                <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight leading-[1.2]">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight leading-[1.2]">
                   AI SEO Insights &<br />
                   Growth <span className="text-purple-400">Strategies</span>
                 </h1>
@@ -320,7 +320,7 @@ export default function BlogPage() {
       </div>
 
       {/* ═══════════ STATS CARDS (overlap hero) ═══════════ */}
-      <div className="px-6 md:px-10 max-w-[1400px] mx-auto -mt-8 relative z-10">
+      <div className="px-4 sm:px-6 md:px-10 max-w-[1400px] mx-auto -mt-8 relative z-10">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}
           className="grid grid-cols-2 md:grid-cols-5 gap-4"
         >
@@ -351,7 +351,7 @@ export default function BlogPage() {
       </div>
 
       {/* Main Content */}
-      <div className="px-6 py-6 md:px-10 max-w-[1400px] mx-auto">
+      <div className="px-4 py-4 sm:px-6 sm:py-6 md:px-10 max-w-[1400px] mx-auto">
         {/* Search & Filter Bar */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="relative flex-1">
@@ -859,12 +859,12 @@ export default function BlogPage() {
       <AnimatePresence>
         {showEmbed && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-2 sm:p-4 pt-16 sm:pt-4"
             onClick={() => setShowEmbed(false)}>
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-800"
+              className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-y-auto border border-gray-200 dark:border-gray-800"
               onClick={e => e.stopPropagation()}>
-              <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+              <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-800">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
@@ -881,7 +881,7 @@ export default function BlogPage() {
                 </div>
               </div>
 
-              <div className="p-6 space-y-6">
+              <div className="p-4 sm:p-6 space-y-6">
                 {/* HOW IT WORKS - 3 Steps */}
                 <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl p-5 border border-emerald-200 dark:border-emerald-800">
                   <h3 className="font-bold text-sm text-emerald-900 dark:text-emerald-200 mb-4 flex items-center gap-2">

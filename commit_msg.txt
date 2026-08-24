@@ -1,1 +1,1 @@
-feat: super simple non-dev blog integration UI  
+feat: auto theme matching - blogs adapt to host website colors  

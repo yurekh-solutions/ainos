@@ -204,7 +204,7 @@ export default function ProjectBoardPage() {
 
   if (notFound || !project) {
     return (
-      <div className="p-6 max-w-2xl mx-auto text-center space-y-4 mt-12">
+      <div className="p-4 sm:p-6 max-w-2xl mx-auto text-center space-y-4 mt-12">
         <FolderKanban className="w-10 h-10 mx-auto text-[#1BE1D3]" />
         <h1 className="font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
           Project not found
@@ -223,7 +223,7 @@ export default function ProjectBoardPage() {
   const progress = tasks.length ? Math.round((doneCount / tasks.length) * 100) : 0;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="space-y-3">
         <Link

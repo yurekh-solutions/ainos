@@ -139,12 +139,12 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
 
         {/* Greeting Header */}
-        <motion.header initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex items-center justify-between">
+        <motion.header initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 sm:mb-8 flex items-start sm:items-center justify-between gap-3 flex-col sm:flex-row">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>
               {getGreeting()}, <span style={{ color: 'hsl(var(--foreground-muted))' }}>{session?.user?.name?.split(' ')[0] || 'User'}</span>.
             </h1>
             <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
@@ -159,17 +159,17 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="mb-8 p-6 rounded-2xl border border-purple-100 dark:border-purple-900/30 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30"
+          className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-2xl border border-purple-100 dark:border-purple-900/30 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30"
         >
-          <div className="flex items-start gap-4">
+          <div className="flex flex-col sm:flex-row items-start gap-4">
             <div className="flex-shrink-0">
               <img
                 src="/icon.png"
                 alt="AINOS Assistant"
-                className="w-16 h-16 rounded-xl object-cover shadow-md"
+                className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl object-cover shadow-md"
               />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <h3 className="text-base font-bold text-purple-900 dark:text-purple-100 mb-1">
                 Welcome to AINOS Business Suite
               </h3>
@@ -201,7 +201,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
           {[
             { label: 'System Health', value: '100%', sub: 'All systems operational', icon: Activity, color: '#00b894', gradient: 'from-emerald-500 to-teal-600' },
             { label: 'Active Users', value: `${stats.totalCustomers}`, sub: `Across ${Math.ceil(stats.totalInvoices / 5)} tools`, icon: Users, color: '#6c5ce7', gradient: 'from-violet-500 to-purple-600' },
@@ -238,7 +238,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Apps & ERPs Section */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-4 sm:mb-5">
           <h2 className="text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Your Apps & ERPs</h2>
           <div className="flex items-center gap-4 text-xs">
             <span className="flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}><span className="w-2 h-2 rounded-full bg-emerald-500" /> Active</span>
@@ -248,7 +248,7 @@ export default function DashboardPage() {
         </div>
 
         {/* App Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
           {appCards.map((app, i) => {
             const Icon = app.icon;
             const status = statusConfig[app.status];

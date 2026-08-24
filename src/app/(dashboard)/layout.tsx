@@ -25,7 +25,7 @@ export default async function DashboardLayout({
       <SessionKeepAlive />
       <div className="flex h-screen bg-gray-50 dark:bg-gray-950">
         <Sidebar />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto pt-16 lg:pt-0">
           <div className="min-h-full">{children}</div>
         </main>
       </div>
