@@ -1,1 +1,1 @@
-feat: AI chat - toast notifications and better error handling  
+feat: helpdesk - toast notifications and better error handling  

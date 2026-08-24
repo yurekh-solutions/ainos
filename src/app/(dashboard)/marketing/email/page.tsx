@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Plus, X, Mail, Send, BarChart3, CheckCircle, Clock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, X, Mail, Send, BarChart3, CheckCircle, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface EmailCampaign { id: string; name: string; subject: string | null; content: string | null; recipients: unknown; status: string; sentAt: string | null; sentCount: number; createdAt: string; }
 
@@ -11,6 +11,12 @@ export default function EmailCampaignsPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', subject: '', content: '', recipientEmails: '' });
   const [sending, setSending] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const fetchCampaigns = useCallback(async () => {
     try { const res = await fetch('/api/email-campaigns'); if (res.ok) setCampaigns(await res.json()); } catch (e) { console.error(e); }
@@ -40,16 +46,20 @@ export default function EmailCampaignsPage() {
         setForm({ name: '', subject: '', content: '', recipientEmails: '' });
         setShowForm(false);
         fetchCampaigns();
+        showToast('Campaign created successfully');
+      } else {
+        showToast('Failed to create campaign', 'error');
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); showToast('Failed to create campaign', 'error'); }
   };
 
   const handleSend = async (id: string) => {
     setSending(id);
     try {
       const res = await fetch(`/api/email-campaigns?id=${id}`, { method: 'PUT' });
-      if (res.ok) fetchCampaigns();
-    } catch (e) { console.error(e); }
+      if (res.ok) { fetchCampaigns(); showToast('Campaign sent successfully'); }
+      else { showToast('Failed to send campaign', 'error'); }
+    } catch (e) { console.error(e); showToast('Failed to send campaign', 'error'); }
     finally { setSending(null); }
   };
 
@@ -57,8 +67,9 @@ export default function EmailCampaignsPage() {
     if (!confirm('Delete this campaign?')) return;
     try {
       const res = await fetch(`/api/email-campaigns?id=${id}`, { method: 'DELETE' });
-      if (res.ok) fetchCampaigns();
-    } catch (e) { console.error(e); }
+      if (res.ok) { fetchCampaigns(); showToast('Campaign deleted'); }
+      else { showToast('Failed to delete campaign', 'error'); }
+    } catch (e) { console.error(e); showToast('Failed to delete campaign', 'error'); }
   };
 
   const getRecipientCount = (recipients: unknown): number => {
@@ -205,6 +216,18 @@ export default function EmailCampaignsPage() {
             </motion.div>
           </div>
         )}
+
+        {/* Toast Notification */}
+        <AnimatePresence>
+          {toast && (
+            <motion.div initial={{ opacity: 0, y: 50, x: '-50%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
+              className="fixed bottom-6 left-1/2 z-[100] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl"
+              style={{ background: toast.type === 'success' ? 'hsl(142 76% 36%)' : 'hsl(0 72% 51%)', color: 'white' }}>
+              {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+              <span className="text-sm font-medium">{toast.message}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
