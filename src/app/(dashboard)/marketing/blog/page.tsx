@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSession } from 'next-auth/react';
 import {
   X, FileText, Eye, Calendar, Sparkles, Wand2, Search,
   Clock, Trash2, Edit3, CheckCircle, Send, ArrowLeft,
@@ -60,6 +61,10 @@ export default function BlogPage() {
   const [showEmbed, setShowEmbed] = useState(false);
   const [copiedCode, setCopiedCode] = useState('');
   const [platformMode, setPlatformMode] = useState(false);
+
+  // Platform-wide view is admin-only (soniajaiswal2222@gmail.com)
+  const { data: session } = useSession();
+  const isAdminUser = session?.user?.email?.toLowerCase().trim() === 'soniajaiswal2222@gmail.com';
   
   // Initialize baseUrl with the correct production URL
   const baseUrl = (() => {
@@ -245,7 +250,8 @@ export default function BlogPage() {
           <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
           <span className="text-sm font-bold text-slate-900 dark:text-white">AI Blog Agent</span>
           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 uppercase tracking-wider">AUTOPILOT</span>
-          {/* Platform-wide toggle */}
+          {/* Platform-wide toggle — admin only */}
+          {isAdminUser && (
           <div className="ml-3 flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 border border-gray-200 dark:border-gray-700">
             <button onClick={() => setPlatformMode(false)}
               className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all ${
@@ -260,6 +266,7 @@ export default function BlogPage() {
               <Globe className="w-3 h-3" /> Platform
             </button>
           </div>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}

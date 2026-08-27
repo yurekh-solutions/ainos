@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { isAdmin } from '@/lib/admin';
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
     const category = searchParams.get('category');
-    const platform = searchParams.get('platform') === 'true';
+    const platform = searchParams.get('platform') === 'true' && isAdmin(session.user.email);
 
     // Platform mode: admin sees ALL blogs across all companies (no companyId filter)
     const where: Record<string, unknown> = platform ? {} : { companyId: user.companyId };

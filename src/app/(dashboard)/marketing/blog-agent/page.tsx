@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSession } from 'next-auth/react';
 import {
   Globe, Plus, X, Loader2, Sparkles,
   Zap, Link2, Mail, Code, FileText, CheckCircle,
@@ -67,6 +68,10 @@ export default function BlogAgentPage() {
   const [analysisResult, setAnalysisResult] = useState<Record<string, unknown> | null>(null);
   const [showAllSites, setShowAllSites] = useState(false);
   const [platformMode, setPlatformMode] = useState(false);
+
+  // Platform-wide view is admin-only (soniajaiswal2222@gmail.com)
+  const { data: session } = useSession();
+  const isAdminUser = session?.user?.email?.toLowerCase().trim() === 'soniajaiswal2222@gmail.com';
 
   const [form, setForm] = useState({
     url: '', publishMethod: 'ainos', webhookUrl: '', webhookSecret: '',
@@ -188,7 +193,8 @@ def ainos_webhook():
           <Bot className="w-4 h-4 text-purple-600 dark:text-purple-400" />
           <span className="text-sm font-bold text-slate-900 dark:text-white">AI Blog Agent</span>
           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 uppercase tracking-wider">AUTOPILOT</span>
-          {/* Platform-wide toggle */}
+          {/* Platform-wide toggle — admin only */}
+          {isAdminUser && (
           <div className="ml-3 flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 border border-gray-200 dark:border-gray-700">
             <button onClick={() => setPlatformMode(false)}
               className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all ${
@@ -203,6 +209,7 @@ def ainos_webhook():
               <Globe className="w-3 h-3" /> Platform
             </button>
           </div>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}

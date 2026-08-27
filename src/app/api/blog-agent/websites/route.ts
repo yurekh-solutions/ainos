@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { ensureCompany } from '@/lib/prisma-helpers';
+import { isAdmin } from '@/lib/admin';
 
 // GET /api/blog-agent/websites - List connected websites
 export async function GET(req: NextRequest) {
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const platform = searchParams.get('platform') === 'true';
+    const platform = searchParams.get('platform') === 'true' && isAdmin(session.user.email);
 
     // Platform mode: admin sees ALL websites across all companies
     const where = platform ? {} : { companyId: company.id };
