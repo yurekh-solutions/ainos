@@ -13,17 +13,23 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
     const category = searchParams.get('category');
-    const where: Record<string, unknown> = { companyId: user.companyId };
+    const platform = searchParams.get('platform') === 'true';
+
+    // Platform mode: admin sees ALL blogs across all companies (no companyId filter)
+    const where: Record<string, unknown> = platform ? {} : { companyId: user.companyId };
     if (status) where.status = status;
     if (category && category !== 'All') where.category = category;
 
     const posts = await prisma.blogPost.findMany({
       where,
+      include: platform ? {
+        company: { select: { name: true, id: true } },
+      } : undefined,
       orderBy: { createdAt: 'desc' }
     });
 
     // Also fetch scheduled blogs from BlogSchedule
-    const scheduleWhere: Record<string, unknown> = { companyId: user.companyId };
+    const scheduleWhere: Record<string, unknown> = platform ? {} : { companyId: user.companyId };
     if (status === 'scheduled') {
       scheduleWhere.status = { in: ['pending', 'generating'] };
     }
@@ -35,6 +41,7 @@ export async function GET(req: NextRequest) {
             connectedWebsite: true,
           },
         },
+        ...(platform ? { company: { select: { name: true, id: true } } } : {}),
       },
       orderBy: { scheduledDate: 'desc' },
     }) as Array<{
@@ -48,6 +55,7 @@ export async function GET(req: NextRequest) {
           niche: string | null;
         } | null;
       } | null;
+      company?: { name: string | null; id: string } | null;
     }>;
 
     // Convert schedules to blog post format for unified display
@@ -67,11 +75,12 @@ export async function GET(req: NextRequest) {
       views: 0,
       createdAt: s.createdAt || new Date(),
       isSchedule: true,
+      company: s.company ? { name: s.company.name, id: s.company.id } : null,
     }));
 
     // Get distinct categories for filtering
     const allPosts = await prisma.blogPost.findMany({
-      where: { companyId: user.companyId },
+      where: platform ? {} : { companyId: user.companyId },
       select: { category: true },
     });
     const categories = [...new Set(allPosts.map((p: { category: string | null }) => p.category).filter(Boolean))] as string[];

@@ -16,8 +16,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to setup company' }, { status: 500 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const platform = searchParams.get('platform') === 'true';
+
+    // Platform mode: admin sees ALL websites across all companies
+    const where = platform ? {} : { companyId: company.id };
+
     const websites = await prisma.connectedWebsite.findMany({
-      where: { companyId: company.id },
+      where,
       include: {
         subscriptions: {
           select: {
@@ -36,6 +42,7 @@ export async function GET(req: NextRequest) {
           },
           orderBy: { scheduledDate: 'asc' },
         },
+        ...(platform ? { company: { select: { name: true, id: true } } } : {}),
       },
       orderBy: { createdAt: 'desc' },
     });

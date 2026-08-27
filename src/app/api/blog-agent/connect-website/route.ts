@@ -33,13 +33,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Website URL is required' }, { status: 400 });
     }
 
-    // Check if already connected
+    // Check if already connected BY THIS COMPANY (same URL can be connected by different companies)
     const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
-    const existing = await prisma.connectedWebsite.findUnique({
-      where: { url: normalizedUrl },
+    const existing = await prisma.connectedWebsite.findFirst({
+      where: { url: normalizedUrl, companyId: company.id },
     });
     if (existing) {
-      return NextResponse.json({ error: 'This website is already connected' }, { status: 409 });
+      return NextResponse.json({ error: 'This website is already connected to your account' }, { status: 409 });
     }
 
     // Scrape and analyze the website

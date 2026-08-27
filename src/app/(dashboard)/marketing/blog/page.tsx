@@ -14,6 +14,7 @@ interface BlogPost {
   category: string | null; publishedAt: string | null; scheduledAt: string | null;
   tags: string[] | null; views?: number; createdAt: string;
   isSchedule?: boolean;
+  company?: { name: string | null; id: string } | null;
 }
 interface GeneratedPost {
   title: string; slug: string; excerpt: string; content: string;
@@ -58,6 +59,7 @@ export default function BlogPage() {
   const [scheduleDate, setScheduleDate] = useState('');
   const [showEmbed, setShowEmbed] = useState(false);
   const [copiedCode, setCopiedCode] = useState('');
+  const [platformMode, setPlatformMode] = useState(false);
   
   // Initialize baseUrl with the correct production URL
   const baseUrl = (() => {
@@ -79,6 +81,7 @@ export default function BlogPage() {
       const params = new URLSearchParams();
       if (statusFilter) params.set('status', statusFilter);
       if (activeCategory !== 'All') params.set('category', activeCategory);
+      if (platformMode) params.set('platform', 'true');
       const res = await fetch(`/api/blog-posts?${params}`);
       if (res.ok) {
         const data = await res.json();
@@ -87,7 +90,7 @@ export default function BlogPage() {
       }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  }, [statusFilter, activeCategory]);
+  }, [statusFilter, activeCategory, platformMode]);
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]); // eslint-disable-line
 
@@ -242,6 +245,21 @@ export default function BlogPage() {
           <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
           <span className="text-sm font-bold text-slate-900 dark:text-white">AI Blog Agent</span>
           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 uppercase tracking-wider">AUTOPILOT</span>
+          {/* Platform-wide toggle */}
+          <div className="ml-3 flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 border border-gray-200 dark:border-gray-700">
+            <button onClick={() => setPlatformMode(false)}
+              className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all ${
+                !platformMode ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}>
+              My Blogs
+            </button>
+            <button onClick={() => setPlatformMode(true)}
+              className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1 ${
+                platformMode ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}>
+              <Globe className="w-3 h-3" /> Platform
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
@@ -470,6 +488,13 @@ export default function BlogPage() {
                       </span>
                     )}
                   </div>
+                  {/* Platform-mode: show which company/user this blog belongs to */}
+                  {platformMode && post.company?.name && (
+                    <div className="mb-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                      <Globe className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                      <span className="text-[10px] font-semibold text-blue-700 dark:text-blue-300 truncate max-w-[180px]">{post.company.name}</span>
+                    </div>
+                  )}
                   <h3 className="font-bold text-base text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                     {post.title}
                   </h3>

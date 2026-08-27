@@ -26,6 +26,7 @@ interface Website {
   publishedBlogs: number;
   pendingBlogs: number;
   lastPublishedAt?: string;
+  company?: { name: string | null; id: string } | null;
 }
 
 interface Schedule {
@@ -65,17 +66,20 @@ export default function BlogAgentPage() {
   const [connecting, setConnecting] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<Record<string, unknown> | null>(null);
   const [showAllSites, setShowAllSites] = useState(false);
+  const [platformMode, setPlatformMode] = useState(false);
 
   const [form, setForm] = useState({
     url: '', publishMethod: 'ainos', webhookUrl: '', webhookSecret: '',
     wordpressUrl: '', wordpressUsername: '', wordpressAppPassword: '', deliveryEmail: '',
   });
 
+  const platformQuery = platformMode ? '?platform=true' : '';
+
   useEffect(() => {
     (async () => {
       try {
         const [webRes, schedRes] = await Promise.all([
-          fetch('/api/blog-agent/websites'),
+          fetch(`/api/blog-agent/websites${platformQuery}`),
           fetch('/api/blog-agent/schedule'),
         ]);
         if (webRes.ok) { const d = await webRes.json(); setWebsites(d.websites || []); }
@@ -83,12 +87,12 @@ export default function BlogAgentPage() {
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     })();
-  }, []);
+  }, [platformMode]); // eslint-disable-line
 
   const refreshData = async () => {
     try {
       const [webRes, schedRes] = await Promise.all([
-        fetch('/api/blog-agent/websites'),
+        fetch(`/api/blog-agent/websites${platformQuery}`),
         fetch('/api/blog-agent/schedule'),
       ]);
       if (webRes.ok) { const d = await webRes.json(); setWebsites(d.websites || []); }
@@ -184,6 +188,21 @@ def ainos_webhook():
           <Bot className="w-4 h-4 text-purple-600 dark:text-purple-400" />
           <span className="text-sm font-bold text-slate-900 dark:text-white">AI Blog Agent</span>
           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 uppercase tracking-wider">AUTOPILOT</span>
+          {/* Platform-wide toggle */}
+          <div className="ml-3 flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 border border-gray-200 dark:border-gray-700">
+            <button onClick={() => setPlatformMode(false)}
+              className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all ${
+                !platformMode ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}>
+              My Sites
+            </button>
+            <button onClick={() => setPlatformMode(true)}
+              className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1 ${
+                platformMode ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}>
+              <Globe className="w-3 h-3" /> Platform
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
@@ -351,7 +370,7 @@ def ainos_webhook():
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <a href={site.url} target="_blank" rel="noopener noreferrer"
                           className="text-sm font-bold text-slate-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-400 transition-colors truncate">
                           {site.name || new URL(site.url).hostname}
@@ -364,6 +383,11 @@ def ainos_webhook():
                           <span className={`w-1.5 h-1.5 rounded-full ${site.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`} />
                           {site.isActive ? 'Connected' : 'Inactive'}
                         </span>
+                        {platformMode && site.company?.name && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-1">
+                            <Globe className="w-2.5 h-2.5" /> {site.company.name}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-center">

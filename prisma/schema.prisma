@@ -940,7 +940,7 @@ model CreditTransaction {
 // Connected Websites
 model ConnectedWebsite {
   id                    String    @id @default(uuid())
-  url                   String    @unique
+  url                   String
   name                  String?
   description           String?   @db.Text
   techStack             String?   @map("tech_stack")
@@ -965,6 +965,7 @@ model ConnectedWebsite {
   subscriptions         BlogSubscription[]
   schedules             BlogSchedule[]
 
+  @@unique([url, companyId])
   @@index([companyId])
   @@index([url])
   @@map("connected_websites")
