@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Video, Sparkles, Search, X, Heart } from 'lucide-react';
+import { Video, Sparkles, Search, X, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import CategoryFilter from './components/CategoryFilter';
 import TemplateCard from './components/TemplateCard';
 import { TEMPLATES, CATEGORIES, getGroup, getGroupIds, LANGUAGES } from '@/data/invitations/templates';
@@ -40,9 +40,8 @@ export default function InvitationsPage() {
   const [sort, setSort] = useState('featured');
   const [picks, setPicks] = useState(readPicks);
   const [showPicksOnly, setShowPicksOnly] = useState(false);
-  const [visible, setVisible] = useState(PAGE_SIZE);
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const isLoadingMore = useRef(false);
+  const [page, setPage] = useState(1);
+  const router = useRouter();
 
   // Sync category from URL on mount (searchParams is stable client-side)
   const urlCategory = searchParams.get('category');
@@ -78,28 +77,23 @@ export default function InvitationsPage() {
     return list;
   }, [templates, activeCategory, showVideoOnly, language, showPicksOnly, picks, query, sort]);
 
-  const loadMore = useCallback(() => {
-    setVisible((v) => Math.min(v + PAGE_SIZE, filteredTemplates.length));
-    isLoadingMore.current = false;
-  }, [filteredTemplates.length]);
+  // Reset to page 1 when filters change
+  useEffect(() => { queueMicrotask(() => setPage(1)); }, [activeCategory, showVideoOnly, language, showPicksOnly, query, sort]);
 
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !isLoadingMore.current) {
-          isLoadingMore.current = true;
-          loadMore();
-        }
-      },
-      { rootMargin: '400px' }
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [loadMore]);
+  // Sync page from URL on mount
+  const urlPage = parseInt(searchParams.get('page') || '1', 10);
+  useEffect(() => { if (urlPage > 1) queueMicrotask(() => setPage(urlPage)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const shown = filteredTemplates.slice(0, visible);
+  const goToPage = useCallback((p: number) => {
+    setPage(p);
+    router.replace(`?page=${p}`, { scroll: false });
+    document.getElementById('templates')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [router]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTemplates.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const startIdx = (safePage - 1) * PAGE_SIZE;
+  const shown = filteredTemplates.slice(startIdx, startIdx + PAGE_SIZE);
   const hasFilters = activeCategory !== 'all' || showVideoOnly || language !== 'all' || query.trim() !== '' || showPicksOnly;
   const totalTemplates = templates.length;
   const videoTemplates = templates.filter((t) => t.hasVideo).length;
@@ -319,11 +313,11 @@ export default function InvitationsPage() {
             </h2>
             <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
               {filteredTemplates.length} design{filteredTemplates.length === 1 ? '' : 's'}
-              {filteredTemplates.length > visible ? ` · showing ${shown.length}` : ''}
+              {filteredTemplates.length > PAGE_SIZE ? ` · page ${safePage} of ${totalPages}` : ''}
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-5">
             {shown.map((template, idx) => (
               <TemplateCard
                 key={template._id}
@@ -335,23 +329,59 @@ export default function InvitationsPage() {
             ))}
           </div>
 
-          {filteredTemplates.length > visible && (
-            <div ref={sentinelRef} className="mt-8 flex flex-col items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 border-2 border-[#800020]/25 border-t-[#800020] rounded-full animate-spin" />
-                <span className="text-sm text-gray-500">Loading more designs...</span>
+          {/* Pagination */}
+          {filteredTemplates.length > PAGE_SIZE && (
+            <div className="mt-8 flex flex-col items-center gap-3">
+              <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                <button
+                  type="button"
+                  disabled={safePage <= 1}
+                  onClick={() => goToPage(safePage - 1)}
+                  className="inline-flex items-center gap-1 h-9 px-3 rounded-full text-xs font-semibold border transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-[#eadfc9] dark:border-gray-600 hover:border-[#800020]/45 hover:text-[#800020]"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" /> Prev
+                </button>
+
+                {(() => {
+                  const pages: (number | '...')[] = [];
+                  const add = (p: number) => { if (!pages.includes(p)) pages.push(p); };
+                  add(1);
+                  if (safePage > 3) pages.push('...');
+                  for (let i = Math.max(2, safePage - 1); i <= Math.min(totalPages - 1, safePage + 1); i++) add(i);
+                  if (safePage < totalPages - 2) pages.push('...');
+                  if (totalPages > 1) add(totalPages);
+                  return pages.map((p, i) => (
+                    p === '...' ? (
+                      <span key={`dots-${i}`} className="w-9 h-9 flex items-center justify-center text-xs text-gray-400">…</span>
+                    ) : (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => goToPage(p as number)}
+                        className={`w-9 h-9 rounded-full text-xs font-semibold border transition-all ${
+                          p === safePage
+                            ? 'bg-[#800020] text-white border-[#800020] shadow-[0_8px_18px_-12px_rgba(128,0,32,1)]'
+                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-[#eadfc9] dark:border-gray-600 hover:border-[#800020]/45 hover:text-[#800020]'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    )
+                  ));
+                })()}
+
+                <button
+                  type="button"
+                  disabled={safePage >= totalPages}
+                  onClick={() => goToPage(safePage + 1)}
+                  className="inline-flex items-center gap-1 h-9 px-3 rounded-full text-xs font-semibold border transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-[#eadfc9] dark:border-gray-600 hover:border-[#800020]/45 hover:text-[#800020]"
+                >
+                  Next <ChevronRight className="w-3.5 h-3.5" />
+                </button>
               </div>
               <span className="text-xs text-gray-400">
-                {visible} of {filteredTemplates.length} shown
+                Page {safePage} of {totalPages} · {filteredTemplates.length} designs
               </span>
-            </div>
-          )}
-
-          {filteredTemplates.length > 0 && visible >= filteredTemplates.length && (
-            <div className="mt-8 text-center">
-              <p className="text-sm text-gray-400">
-                You&apos;ve seen all {filteredTemplates.length} designs in this selection
-              </p>
             </div>
           )}
 

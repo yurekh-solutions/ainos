@@ -1,6 +1,7 @@
 // Invitations Templates — hand-picked photo cards plus a generated vector
 // catalogue (scripts/genArt.cjs) covering many more occasions.
 import { GENERATED_TEMPLATES, GENERATED_CATEGORIES } from './templatesGenerated';
+import { EXPANDED_TEMPLATES, EXPANDED_CATEGORIES } from './templatesExpanded';
 
 // Retired: tpl-ganpati-1.jpg, card-durgapuja.jpg, tpl-janmashtami.jpg, tpl-diwali.jpg
 // and card-holi.jpg have their greeting printed inside the artwork itself, so every
@@ -134,7 +135,7 @@ const BASE_TEMPLATES = [
   { _id: 'b14', name: 'Baby Announcement', slug: 'baby-announcement', category: 'birthday', previewImage: '/templates/baby-announcement-01.png', language: 'english', hasVideo: true, price: 49, videoPrice: 99, recommendedColor: 'rose-blush', sampleText: { blessing: 'Welcome Baby', event: 'Birth Announcement', date: 'April 2026' }},
 ];
 
-export const TEMPLATES = [...BASE_TEMPLATES, ...GENERATED_TEMPLATES];
+export const TEMPLATES = [...BASE_TEMPLATES, ...GENERATED_TEMPLATES, ...EXPANDED_TEMPLATES];
 
 const BASE_CATEGORIES = [
   { id: 'all', label: 'All' },
@@ -156,9 +157,11 @@ const BASE_CATEGORIES = [
 // Occasions that only exist in the generated catalogue are appended, so the
 // filter bar stays in sync with whatever genArt.cjs produced.
 const BASE_IDS = new Set(BASE_CATEGORIES.map((c) => c.id));
+const EXPANDED_IDS = new Set(EXPANDED_CATEGORIES.map((c) => c.id));
 export const CATEGORIES = [
   ...BASE_CATEGORIES,
-  ...GENERATED_CATEGORIES.filter((c) => !BASE_IDS.has(c.id)),
+  ...GENERATED_CATEGORIES.filter((c) => !BASE_IDS.has(c.id) && !EXPANDED_IDS.has(c.id)),
+  ...EXPANDED_CATEGORIES.filter((c) => !BASE_IDS.has(c.id)),
 ];
 
 // Occasion families — the level above individual occasions in the filter bar.
@@ -182,7 +185,7 @@ export const CATEGORY_GROUPS = [
     ids: ['birthday', 'baby-shower', 'baby-announcement', 'naamkaran', 'annaprashan', 'mundan',
       'thread-ceremony', 'satyanarayan', 'griha-pravesh'],
   },
-  { id: 'work', label: 'Work & college', allLabel: 'Work & college events', ids: ['retirement', 'farewell'] },
+  { id: 'work', label: 'Work & college', allLabel: 'Work & college events', ids: ['retirement', 'farewell', 'corporate'] },
 ];
 
 // A family tab means *every* occasion in it, so the selection carries a
@@ -203,6 +206,7 @@ export const LANGUAGES = [
   { id: 'english', label: 'English' },
   { id: 'hindi', label: 'हिंदी' },
   { id: 'marathi', label: 'मराठी' },
+  { id: 'urdu', label: 'اردو' },
 ];
 
 export const PRICING = {

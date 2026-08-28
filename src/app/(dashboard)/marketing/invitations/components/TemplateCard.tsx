@@ -52,6 +52,8 @@ const TemplateCard = memo(({ template, index = 0, favourite = false, onToggleFav
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               draggable="false"
               loading="lazy"
+              width={300}
+              height={400}
               fetchPriority={index < 6 ? 'high' : 'auto'}
             />
           ) : (
