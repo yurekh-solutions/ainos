@@ -174,17 +174,17 @@ export function generateAnimatedVideo(opts: VideoOptions): Promise<Blob> {
         ctx.restore();
 
         if (opts.withWatermark) {
-          ctx.save(); const scrimH = Math.round(H * 0.13);
-          const scrim = ctx.createLinearGradient(0, H - scrimH, 0, H); scrim.addColorStop(0, 'rgba(24,6,12,0)'); scrim.addColorStop(0.45, 'rgba(24,6,12,0.34)'); scrim.addColorStop(1, 'rgba(24,6,12,0.66)');
+          ctx.save(); const scrimH = Math.round(H * 0.10);
+          const scrim = ctx.createLinearGradient(0, H - scrimH, 0, H); scrim.addColorStop(0, 'rgba(24,6,12,0)'); scrim.addColorStop(0.5, 'rgba(24,6,12,0.28)'); scrim.addColorStop(1, 'rgba(24,6,12,0.55)');
           ctx.fillStyle = scrim; ctx.fillRect(0, H - scrimH, W, scrimH);
-          const markSize = Math.round(20 * (W / 720));
+          const markSize = Math.round(18 * (W / 720));
           ctx.font = `600 ${markSize}px 'Inter',sans-serif`;
-          const baseY = H - Math.round(34 * (W / 720));
+          const baseY = H - Math.round(28 * (W / 720));
           ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-          ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 1;
+          ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 1;
           // Draw heart
-          const heartX = W / 2 - Math.round(82 * (W / 720));
-          const heartSize = Math.round(10 * (W / 720));
+          const heartX = W / 2 - Math.round(70 * (W / 720));
+          const heartSize = Math.round(9 * (W / 720));
           ctx.fillStyle = '#FF6B7A';
           ctx.beginPath();
           const topCurveHeight = heartSize * 0.3;
@@ -194,16 +194,10 @@ export function generateAnimatedVideo(opts: VideoOptions): Promise<Blob> {
           ctx.bezierCurveTo(heartX, baseY - heartSize * 0.2, heartX + heartSize, baseY - heartSize * 0.5, heartX + heartSize, baseY - heartSize + topCurveHeight);
           ctx.bezierCurveTo(heartX + heartSize, baseY - heartSize, heartX, baseY - heartSize, heartX, baseY - heartSize + topCurveHeight);
           ctx.fill();
-          // "Made with AINOS"
+          // "Made with AINOS" centered
           ctx.fillStyle = '#ffffff';
-          const textX = W / 2 + Math.round(6 * (W / 720));
+          const textX = W / 2 + Math.round(4 * (W / 720));
           ctx.fillText('Made with AINOS', textX, baseY);
-          // "· Invitations"
-          const invSize = Math.round(14 * (W / 720));
-          ctx.font = `500 ${invSize}px 'Inter',sans-serif`;
-          ctx.globalAlpha = 0.9;
-          const dotX = textX + Math.round(ctx.measureText('Made with AINOS').width / 2) + Math.round(6 * (W / 720));
-          ctx.fillText('· Invitations', dotX + Math.round(4 * (W / 720)), baseY);
           ctx.restore();
         }
       };
