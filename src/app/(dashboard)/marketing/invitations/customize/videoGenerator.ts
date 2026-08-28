@@ -168,7 +168,6 @@ export function generateAnimatedVideo(opts: VideoOptions): Promise<Blob> {
           ctx.shadowColor = textHalo; ctx.shadowBlur = boardRect ? 6 : 16; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
           ctx.lineWidth = boardRect ? 0 : Math.max(2.5, fontSize / 10); ctx.strokeStyle = textOutline;
           lines.forEach((line, li) => { const ly = startY + li * lineH; ctx.save(); ctx.translate(W/2, ly); ctx.scale(scale, scale); if (!boardRect) ctx.strokeText(line, 0, 0, W*0.86); ctx.fillText(line, 0, 0, W*0.86); ctx.restore(); });
-          if (b.key === 'eventName' && t > 0.55) { const gt = Math.min((t-0.55)/0.45,1); const half = Math.min(W*0.28,fontSize*4)*easeOut(gt); const ry = y+(lines.length*lineH)/2+fontSize*0.42; ctx.save(); ctx.globalAlpha = gt*0.85; ctx.strokeStyle = textIsLight ? 'rgba(255,215,130,0.9)' : 'rgba(184,134,11,0.85)'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(W/2-half,ry); ctx.lineTo(W/2+half,ry); ctx.stroke(); ctx.fillStyle = ctx.strokeStyle; [W/2-half,W/2+half].forEach(cx => { ctx.beginPath(); ctx.arc(cx,ry,2.6,0,Math.PI*2); ctx.fill(); }); ctx.restore(); }
           ctx.restore();
         });
         ctx.restore();
