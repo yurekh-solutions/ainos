@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1280" viewBox="0 0 720 1280">
+<defs>
+  <linearGradient id="bglayeredwavespeacocktealclassic" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#E9F8F5"/><stop offset="1" stop-color="#B4E2DC"/>
+  </linearGradient>
+  
+</defs>
+<rect width="720" height="1280" fill="url(#bglayeredwavespeacocktealclassic)"/>
+
+    <path d="M0 1040 Q180 990 360 1040 Q540 1090 720 1040 L720 1280 L0 1280 Z" fill="#0F6C94" opacity="0.28"/><path d="M0 1102 Q180 1052 360 1102 Q540 1152 720 1102 L720 1280 L0 1280 Z" fill="#128088" opacity="0.44000000000000006"/><path d="M0 1164 Q180 1114 360 1164 Q540 1214 720 1164 L720 1280 L0 1280 Z" fill="#0F6C94" opacity="0.6000000000000001"/><path d="M0 1226 Q180 1176 360 1226 Q540 1276 720 1226 L720 1280 L0 1280 Z" fill="#128088" opacity="0.76"/>
+    <path d="M0 40 Q180 4 360 40 Q540 76 720 40 L720 0 L0 0 Z" fill="#B98F22" opacity="0.85"/>
+    <rect x="96" y="96" width="528" height="1088" fill="none" stroke="#B98F22" stroke-width="1.4"/><rect x="104" y="104" width="512" height="1072" fill="none" stroke="#B98F22" stroke-width="1" opacity="0.6"/>
+    <g opacity="0.7"><circle cx="130" cy="170" r="20" fill="#B98F22" opacity="0.4"/><circle cx="300" cy="150" r="20" fill="#B98F22" opacity="0.4"/><circle cx="420" cy="150" r="20" fill="#B98F22" opacity="0.4"/><circle cx="590" cy="190" r="20" fill="#B98F22" opacity="0.4"/></g>
+
+</svg>

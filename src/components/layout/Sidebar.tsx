@@ -48,6 +48,7 @@ import {
   Sparkles,
   Clock,
   Zap,
+  Send,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -134,6 +135,7 @@ const sections: MenuSection[] = [
       { icon: Globe, label: 'SEO Platform', href: '/marketing/seo' },
       { icon: FileText, label: 'Blog & Content', href: '/marketing/blog' },
       { icon: Zap, label: 'Blog Agent', href: '/marketing/blog-agent' },
+      { icon: Send, label: 'Invitations', href: '/marketing/invitations' },
     ],
   },
   {
