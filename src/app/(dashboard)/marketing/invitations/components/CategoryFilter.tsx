@@ -1,13 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { CATEGORIES, CATEGORY_GROUPS, TEMPLATES, getGroup, getGroupIds } from '@/data/invitations/templates';
+import { CATEGORIES, CATEGORY_GROUPS, TEMPLATES } from '@/data/invitations/templates';
 
 const COLLAPSED_COUNT = 14;
 
-const tabBase = 'flex-shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[11px] sm:text-xs font-semibold border transition-all duration-200';
-const tabOn = 'bg-[#800020] text-white border-[#800020] shadow-[0_8px_18px_-12px_rgba(128,0,32,1)]';
+const tabBase = 'flex-shrink-0 whitespace-nowrap inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-semibold border transition-all duration-200';
+const tabOn = 'bg-[#800020] text-white border-[#800020] shadow-[0_6px_14px_-10px_rgba(128,0,32,1)]';
 const tabOff = 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-[#eadfc9] dark:border-gray-600 hover:border-[#800020]/45 hover:text-[#800020]';
 
 const useCounts = () => useMemo(() => {
@@ -15,6 +15,20 @@ const useCounts = () => useMemo(() => {
   TEMPLATES.forEach((t: { category: string }) => { map[t.category] = (map[t.category] || 0) + 1; });
   return map;
 }, []);
+
+/** Converts vertical mouse-wheel to horizontal scroll for chip rows on desktop. */
+const useWheelToHorizontal = () => {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const onWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+    const el = ref.current;
+    if (!el) return;
+    // Only intercept when the container is actually scrollable and it's a vertical wheel
+    if (el.scrollWidth <= el.clientWidth) return;
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+    el.scrollLeft += e.deltaY;
+  }, []);
+  return [ref, onWheel] as const;
+};
 
 interface CategoryFilterProps {
   activeCategory: string;
@@ -24,6 +38,8 @@ interface CategoryFilterProps {
 const CategoryFilter = ({ activeCategory, onCategoryChange }: CategoryFilterProps) => {
   const counts = useCounts();
   const [showAll, setShowAll] = useState(false);
+  const [groupsRef, groupsOnWheel] = useWheelToHorizontal();
+  const [chipsRef, chipsOnWheel] = useWheelToHorizontal();
 
   const activeGroup = useMemo(() => (
     CATEGORY_GROUPS.find((g) => activeCategory === `group:${g.id}`)
@@ -55,7 +71,11 @@ const CategoryFilter = ({ activeCategory, onCategoryChange }: CategoryFilterProp
   return (
     <div className="w-full">
       {/* Occasion family tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0" style={{ scrollbarWidth: 'none' }}>
+      <div
+        ref={groupsRef}
+        onWheel={groupsOnWheel}
+        className="flex items-center gap-1 overflow-x-auto pb-0.5 -mx-2 px-2 sm:mx-0 sm:px-0 [scrollbar-width:none] snap-x snap-proximity [&::-webkit-scrollbar]:hidden"
+      >
         {CATEGORY_GROUPS.map((g) => {
           const total = g.id === 'popular'
             ? TEMPLATES.length
@@ -71,7 +91,7 @@ const CategoryFilter = ({ activeCategory, onCategoryChange }: CategoryFilterProp
                 setShowAll(false);
               }}
               aria-pressed={active}
-              className={`${tabBase} ${active ? tabOn : tabOff}`}
+              className={`${tabBase} snap-start ${active ? tabOn : tabOff}`}
             >
               {g.label}
               <span className={`text-[10px] font-normal ${active ? 'text-white/70' : 'text-gray-400'}`}>{total}</span>
@@ -81,7 +101,11 @@ const CategoryFilter = ({ activeCategory, onCategoryChange }: CategoryFilterProp
       </div>
 
       {/* Occasion chips */}
-      <div className={`mt-2 gap-2 ${showAll ? 'flex flex-wrap max-h-52 overflow-y-auto pr-1' : 'flex overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0'} pb-1`} style={{ scrollbarWidth: 'none' }}>
+      <div
+        ref={chipsRef}
+        onWheel={chipsOnWheel}
+        className={`mt-1.5 gap-1 pb-0.5 ${showAll ? 'flex flex-wrap max-h-40 overflow-y-auto pr-1' : 'flex overflow-x-auto -mx-2 px-2 sm:mx-0 sm:px-0 snap-x snap-proximity [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'}`}
+      >
         {visibleChips.map((chip) => {
           const active = activeCategory === chip.value;
           return (
@@ -90,7 +114,7 @@ const CategoryFilter = ({ activeCategory, onCategoryChange }: CategoryFilterProp
               type="button"
               onClick={() => onCategoryChange(chip.value)}
               aria-pressed={active}
-              className={`${tabBase} ${active ? tabOn : tabOff} font-medium`}
+              className={`${tabBase} ${showAll ? '' : 'snap-start'} ${active ? tabOn : tabOff} font-medium`}
             >
               {chip.label}
               <span className={`text-[10px] font-normal ${active ? 'text-white/65' : 'text-gray-400'}`}>{chip.count}</span>
@@ -102,12 +126,12 @@ const CategoryFilter = ({ activeCategory, onCategoryChange }: CategoryFilterProp
           <button
             type="button"
             onClick={() => setShowAll((s) => !s)}
-            className={`${tabBase} !px-3 bg-[#800020]/8 dark:bg-[#800020]/15 text-[#800020] dark:text-[#e8a0b0] border-[#800020]/20 hover:bg-[#800020]/15`}
+            className={`${tabBase} !px-2.5 snap-start bg-[#800020]/8 dark:bg-[#800020]/15 text-[#800020] dark:text-[#e8a0b0] border-[#800020]/20 hover:bg-[#800020]/15`}
           >
             {showAll ? (
-              <>Show less <ChevronUp className="w-3.5 h-3.5" /></>
+              <>Less <ChevronUp className="w-3 h-3" /></>
             ) : (
-              <>All {chips.length - 1} occasions <ChevronDown className="w-3.5 h-3.5" /></>
+              <>+{chips.length - COLLAPSED_COUNT} <ChevronDown className="w-3 h-3" /></>
             )}
           </button>
         )}

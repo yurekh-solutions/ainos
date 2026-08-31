@@ -26,7 +26,7 @@ const SORTS = [
 
 const PAGE_SIZE = 24;
 
-const TOOL_BASE = 'inline-flex items-center gap-1.5 h-10 px-4 rounded-full text-xs font-semibold border transition-all whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-[#800020]/20';
+const TOOL_BASE = 'inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[11px] font-semibold border transition-all whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-[#800020]/20';
 const TOOL_OFF = 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-[#eadfc9] dark:border-gray-600 hover:border-[#800020]/45 hover:text-[#800020]';
 const TOOL_ON = 'bg-[#800020] text-white border-[#800020] shadow-[0_8px_18px_-12px_rgba(128,0,32,1)]';
 const TOOL_ON_ROSE = 'bg-[#e0486b] text-white border-[#e0486b] shadow-[0_8px_18px_-12px_rgba(224,72,107,1)]';
@@ -216,18 +216,18 @@ export default function InvitationsPage() {
       </section>
 
       {/* Filters Section */}
-      <section className="sticky top-0 z-30 border-b border-[#f0e3cd] dark:border-gray-700 py-2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md">
+      <section className="sticky top-0 z-30 border-b border-[#f0e3cd] dark:border-gray-700 py-1.5 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
-          <div className="rounded-xl bg-white dark:bg-gray-800 border border-[#eadfc9] dark:border-gray-600 shadow-sm p-1.5">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="rounded-lg bg-white dark:bg-gray-800 border border-[#eadfc9] dark:border-gray-600 shadow-sm p-1">
+            <div className="flex flex-wrap items-center gap-1.5">
               <div className="relative order-1 basis-full sm:basis-auto sm:flex-1 min-w-[200px]">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                 <input
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search designs — ganpati, mandala, haldi, royal blue…"
-                  className="w-full h-10 pl-10 pr-9 rounded-full bg-[#fdfaf5] dark:bg-gray-700 border border-[#eadfc9] dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#800020]/20 focus:border-[#800020]/40 focus:bg-white transition-colors"
+                  className="w-full h-8 pl-8 pr-8 rounded-full bg-[#fdfaf5] dark:bg-gray-700 border border-[#eadfc9] dark:border-gray-600 text-xs text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#800020]/20 focus:border-[#800020]/40 focus:bg-white transition-colors"
                   aria-label="Search templates"
                 />
                 {query && (
@@ -235,7 +235,7 @@ export default function InvitationsPage() {
                     type="button"
                     onClick={() => setQuery('')}
                     aria-label="Clear search"
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-gray-200/80 text-gray-600 flex items-center justify-center hover:bg-gray-300"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-gray-200/80 text-gray-600 flex items-center justify-center hover:bg-gray-300"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -268,7 +268,7 @@ export default function InvitationsPage() {
                 aria-pressed={showVideoOnly}
                 className={`${TOOL_BASE} ${showVideoOnly ? TOOL_ON : TOOL_OFF}`}
               >
-                <Video className="w-3.5 h-3.5" /> Video
+                <Video className="w-3 h-3" /> Video
               </button>
 
               <button
@@ -277,7 +277,7 @@ export default function InvitationsPage() {
                 aria-pressed={showPicksOnly}
                 className={`${TOOL_BASE} ${showPicksOnly ? TOOL_ON_ROSE : TOOL_OFF}`}
               >
-                <Heart className={`w-4 h-4 ${showPicksOnly ? 'fill-current' : ''}`} />
+                <Heart className={`w-3.5 h-3.5 ${showPicksOnly ? 'fill-current' : ''}`} />
                 My picks
                 <span className={showPicksOnly ? 'text-white/75' : 'text-gray-400'}>{picks.size}</span>
               </button>
@@ -294,7 +294,7 @@ export default function InvitationsPage() {
             </div>
           </div>
 
-          <div className="mt-2.5">
+          <div className="mt-1.5">
             <CategoryFilter activeCategory={activeCategory} onCategoryChange={setActiveCategory} />
           </div>
         </div>
