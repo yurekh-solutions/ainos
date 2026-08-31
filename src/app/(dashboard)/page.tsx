@@ -1,107 +1,79 @@
-'use client';
-
-import { useEffect, useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import {
-  Search, Bell, ChevronDown,
-  Activity, Users, Sparkles,
-  TrendingUp, FileText, Target, Mail,
-  Package, UserPlus, ShieldCheck, Headphones,
-  BarChart3, Layers, Lock, RefreshCw,
-  ArrowRight, Zap, DollarSign, ShoppingCart,
-  Building2, BookOpen, Calendar, Timer,
-  FileSpreadsheet, Truck, Briefcase, Globe, Send,
+  Sparkles, FileText, Globe, Zap, Send, ArrowRight, Mail,
 } from 'lucide-react';
 
 import { NotificationsBell } from '@/components/layout/NotificationsBell';
 
-interface DashboardStats {
-  totalInvoices: number;
-  totalCustomers: number;
-  totalProducts: number;
-  totalRevenue: number;
-  pendingInvoices: number;
-  paidInvoices: number;
-  totalLeads: number;
-  totalExpenses: number;
-  totalQuotes: number;
-  totalCandidates: number;
-  totalOrders: number;
-  totalVendors: number;
-  totalArticles: number;
-  totalEvents: number;
-}
-
-interface AppCard {
-  category: string;
+interface MarketingTool {
   title: string;
   description: string;
   icon: React.ElementType;
   href: string;
-  status: 'active' | 'expired' | 'locked';
-  stat?: string;
-  statLabel?: string;
-  color: string;
+  stat: string;
+  gradient: string;
+  accent: string;
 }
 
+const marketingTools: MarketingTool[] = [
+  {
+    title: 'Social Media',
+    description: 'AI-powered captions, hooks & hashtags for every platform.',
+    icon: Sparkles,
+    href: '/marketing/email',
+    stat: '6 platforms ready',
+    gradient: 'from-violet-500 to-purple-600',
+    accent: '#6c5ce7',
+  },
+  {
+    title: 'SEO Platform',
+    description: 'Site audits, keyword research, competitor & content insights.',
+    icon: Globe,
+    href: '/marketing/seo',
+    stat: '92/100 health score',
+    gradient: 'from-emerald-500 to-teal-600',
+    accent: '#00b894',
+  },
+  {
+    title: 'Blog & Content',
+    description: 'SEO-optimized content generation and one-click publishing.',
+    icon: FileText,
+    href: '/marketing/blog',
+    stat: '4 drafts ready',
+    gradient: 'from-sky-500 to-blue-600',
+    accent: '#0984e3',
+  },
+  {
+    title: 'Blog Agent',
+    description: 'Autonomous agent that researches, writes and publishes blogs.',
+    icon: Zap,
+    href: '/marketing/blog-agent',
+    stat: 'Agent ready',
+    gradient: 'from-amber-500 to-orange-600',
+    accent: '#f59e0b',
+  },
+  {
+    title: 'Invitations',
+    description: '2000+ festival & occasion invitation templates with your branding.',
+    icon: Send,
+    href: '/marketing/invitations',
+    stat: '2000+ templates',
+    gradient: 'from-pink-500 to-rose-600',
+    accent: '#e84393',
+  },
+];
+
+const suiteStats = [
+  { label: 'Marketing Tools', value: '5', sub: 'All active & ready', icon: Sparkles, gradient: 'from-violet-500 to-purple-600', color: '#6c5ce7' },
+  { label: 'Invitation Templates', value: '2000+', sub: 'Festivals & occasions covered', icon: Send, gradient: 'from-pink-500 to-rose-600', color: '#e84393' },
+  { label: 'Social Platforms', value: '6', sub: 'Captions, hooks & hashtags', icon: Mail, gradient: 'from-sky-500 to-blue-600', color: '#0984e3' },
+  { label: 'SEO Health', value: '92/100', sub: 'Latest site audit score', icon: Globe, gradient: 'from-emerald-500 to-teal-600', color: '#00b894' },
+];
+
 export default function DashboardPage() {
-  const { data: session, status } = useSession();
-  const [stats, setStats] = useState<DashboardStats>({
-    totalInvoices: 0, totalCustomers: 0, totalProducts: 0,
-    totalRevenue: 0, pendingInvoices: 0, paidInvoices: 0,
-    totalLeads: 0, totalExpenses: 0, totalQuotes: 0,
-    totalCandidates: 0, totalOrders: 0, totalVendors: 0,
-    totalArticles: 0, totalEvents: 0,
-  });
-  const [loading, setLoading] = useState(true);
-
-  const fetchStats = useCallback(async () => {
-    try {
-      const [invoicesRes, customersRes, productsRes, leadsRes, expensesRes, quotesRes, candidatesRes, ordersRes, vendorsRes, articlesRes, eventsRes] = await Promise.all([
-        fetch('/api/invoices'), fetch('/api/customers'), fetch('/api/products'),
-        fetch('/api/leads'), fetch('/api/expenses'), fetch('/api/quotes'),
-        fetch('/api/candidates'), fetch('/api/sales-orders'), fetch('/api/vendors'),
-        fetch('/api/knowledge-base'), fetch('/api/calendar'),
-      ]);
-      const invoices = invoicesRes.ok ? await invoicesRes.json() : [];
-      const customers = customersRes.ok ? await customersRes.json() : [];
-      const products = productsRes.ok ? await productsRes.json() : [];
-      const leads = leadsRes.ok ? await leadsRes.json() : [];
-      const expenses = expensesRes.ok ? await expensesRes.json() : [];
-      const quotes = quotesRes.ok ? await quotesRes.json() : [];
-      const candidates = candidatesRes.ok ? await candidatesRes.json() : [];
-      const orders = ordersRes.ok ? await ordersRes.json() : [];
-      const vendors = vendorsRes.ok ? await vendorsRes.json() : [];
-      const articles = articlesRes.ok ? await articlesRes.json() : [];
-      const events = eventsRes.ok ? await eventsRes.json() : [];
-      const revenue = invoices.filter((inv: { status: string }) => inv.status === 'paid')
-        .reduce((sum: number, inv: { totalAmount: number }) => sum + inv.totalAmount, 0);
-      setStats({
-        totalInvoices: invoices.length, totalCustomers: customers.length,
-        totalProducts: products.length, totalRevenue: revenue,
-        pendingInvoices: invoices.filter((inv: { status: string }) => inv.status === 'pending').length,
-        paidInvoices: invoices.filter((inv: { status: string }) => inv.status === 'paid').length,
-        totalLeads: leads.length, totalExpenses: expenses.length,
-        totalQuotes: quotes.length, totalCandidates: candidates.length,
-        totalOrders: orders.length, totalVendors: vendors.length,
-        totalArticles: articles.length, totalEvents: events.length,
-      });
-    } catch (error) { console.error('Error:', error); }
-    finally { setLoading(false); }
-  }, []);
-
-  useEffect(() => {
-    // Only fire dashboard API calls once NextAuth has confirmed the session.
-    // Prevents a burst of 401/404s when the browser wakes from sleep and the
-    // session cookie isn't validated yet.
-    if (status === 'authenticated') {
-      void Promise.resolve().then(fetchStats);
-    } else if (status === 'unauthenticated') {
-      Promise.resolve().then(() => setLoading(false));
-    }
-  }, [status, fetchStats]);
+  const { data: session } = useSession();
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -110,48 +82,9 @@ export default function DashboardPage() {
     return 'Good Evening';
   };
 
-  const appCards: AppCard[] = [
-    { category: 'INTELLIGENCE', title: 'Ainos Analytics', description: 'Deep predictive insights and unified data visualization.', icon: TrendingUp, href: '/reports', status: 'active', stat: `${stats.totalInvoices} events today`, statLabel: 'events', color: '#6c5ce7' },
-    { category: 'SALES', title: 'Smart CRM', description: 'AI-driven customer relationship and pipeline management.', icon: Target, href: '/crm/contacts', status: 'active', stat: `${stats.totalCustomers} contacts`, statLabel: 'contacts', color: '#6c5ce7' },
-    { category: 'CRM', title: 'Leads Pipeline', description: 'Track and convert leads through your sales funnel.', icon: UserPlus, href: '/crm/leads', status: 'active', stat: `${stats.totalLeads} leads`, statLabel: 'leads', color: '#0984e3' },
-    { category: 'FINANCE', title: 'Expenses', description: 'Track, approve and manage all business expenses.', icon: DollarSign, href: '/finance/expenses', status: 'active', stat: `${stats.totalExpenses} entries`, statLabel: 'entries', color: '#00b894' },
-    { category: 'FINANCE', title: 'Quotations', description: 'Create and send professional quotes to clients.', icon: FileSpreadsheet, href: '/finance/quotes', status: 'active', stat: `${stats.totalQuotes} quotes`, statLabel: 'quotes', color: '#fdcb6e' },
-    { category: 'INTELLIGENCE', title: 'AI Chat Assistant', description: 'Autonomous customer support and internal query resolution.', icon: Sparkles, href: '/ai/chat', status: 'active', stat: '98% resolution rate', statLabel: 'rate', color: '#6c5ce7' },
-    { category: 'MARKETING', title: 'Social Media', description: 'AI-powered captions, hooks & hashtags for all platforms.', icon: Sparkles, href: '/marketing/email', status: 'active', stat: '6 platforms ready', statLabel: 'platforms', color: '#6c5ce7' },
-    { category: 'MARKETING', title: 'Automated Blog', description: 'SEO-optimized content generation and publishing.', icon: FileText, href: '/marketing/blog', status: 'active', stat: '4 drafts ready', statLabel: 'drafts', color: '#6c5ce7' },
-    { category: 'MARKETING', title: 'SEO Platform', description: 'Keyword research, site audits and ranking insights.', icon: Globe, href: '/marketing/seo', status: 'active', stat: 'SEO ready', statLabel: 'platform', color: '#0984e3' },
-    { category: 'MARKETING', title: 'Blog Agent', description: 'Autonomous agent that researches, writes and publishes blogs.', icon: Zap, href: '/marketing/blog-agent', status: 'active', stat: 'Agent ready', statLabel: 'agent', color: '#6c5ce7' },
-    { category: 'MARKETING', title: 'Invitations', description: '2000+ festival & occasion invitation templates with your branding.', icon: Send, href: '/marketing/invitations', status: 'active', stat: '2000+ templates', statLabel: 'templates', color: '#e17055' },
-    { category: 'OPERATIONS', title: 'Inventory OS', description: 'Real-time stock tracking and automated reordering.', icon: Package, href: '/inventory/stock', status: 'active', stat: `${stats.totalProducts} products`, statLabel: 'products', color: '#6c5ce7' },
-    { category: 'OPERATIONS', title: 'Sales Orders', description: 'Manage orders, fulfillment and delivery tracking.', icon: Truck, href: '/inventory/sales-orders', status: 'active', stat: `${stats.totalOrders} orders`, statLabel: 'orders', color: '#6c5ce7' },
-    { category: 'OPERATIONS', title: 'Vendor Management', description: 'Manage suppliers, contracts and payment terms.', icon: Building2, href: '/inventory/vendors', status: 'active', stat: `${stats.totalVendors} vendors`, statLabel: 'vendors', color: '#0984e3' },
-    { category: 'FINANCE', title: 'Accounting ERP', description: 'Intelligent ledger, invoicing, and financial forecasting.', icon: FileText, href: '/invoices', status: 'active', stat: `₹${stats.totalRevenue.toLocaleString('en-IN')}`, statLabel: 'revenue', color: '#6c5ce7' },
-    { category: 'HR', title: 'HR & Payroll', description: 'Unified employee lifecycle and automated payroll.', icon: UserPlus, href: '/hr/employees', status: 'active', stat: 'Active employees', statLabel: 'team', color: '#6c5ce7' },
-    { category: 'HR', title: 'Recruitment', description: 'Applicant tracking and hiring pipeline management.', icon: Briefcase, href: '/hr/recruitment', status: 'active', stat: `${stats.totalCandidates} candidates`, statLabel: 'candidates', color: '#6c5ce7' },
-    { category: 'HR', title: 'Timesheets', description: 'Track employee hours and project time allocation.', icon: Timer, href: '/hr/timesheet', status: 'active', stat: 'Time entries', statLabel: 'tracked', color: '#00b894' },
-    { category: 'SUPPORT', title: 'IT Helpdesk', description: 'Internal ticketing and asset management.', icon: Headphones, href: '/support/helpdesk', status: 'active', stat: 'Open tickets', statLabel: 'tickets', color: '#6c5ce7' },
-    { category: 'SUPPORT', title: 'Knowledge Base', description: 'Internal documentation and help articles.', icon: BookOpen, href: '/support/knowledge-base', status: 'active', stat: `${stats.totalArticles} articles`, statLabel: 'articles', color: '#0984e3' },
-    { category: 'SCHEDULING', title: 'Calendar', description: 'Schedule events, meetings and manage your time.', icon: Calendar, href: '/calendar', status: 'active', stat: `${stats.totalEvents} events`, statLabel: 'events', color: '#6c5ce7' },
-  ];
-
-  const statusConfig = {
-    active: { bg: 'bg-emerald-500/10 dark:bg-emerald-500/15', text: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500', border: 'border-emerald-500/20', label: 'Active' },
-    expired: { bg: 'bg-amber-500/10 dark:bg-amber-500/15', text: 'text-amber-600 dark:text-amber-400', dot: 'bg-amber-500', border: 'border-amber-500/20', label: 'Expired' },
-    locked: { bg: 'bg-gray-500/10 dark:bg-gray-500/15', text: 'text-gray-500 dark:text-gray-400', dot: 'bg-gray-400', border: 'border-gray-500/20', label: 'Locked' },
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
-          className="w-12 h-12 rounded-full border-2 border-gray-200 border-t-purple-600" />
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 lg:pt-10 pb-4 sm:py-6 lg:py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 lg:pt-10 pb-8 sm:pb-12">
 
         {/* Greeting Header */}
         <motion.header initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 sm:mb-8">
@@ -161,7 +94,7 @@ export default function DashboardPage() {
                 {getGreeting()}, <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">{session?.user?.name?.split(' ')[0] || 'User'}</span>
               </h1>
               <p className="text-sm sm:text-base mt-2" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                Your ecosystem is running smoothly. {stats.totalInvoices} active tools, {stats.pendingInvoices} alerts.
+                Your Marketing Suite is live — create, publish & grow from one place.
               </p>
             </div>
             <div className="flex-shrink-0">
@@ -170,169 +103,125 @@ export default function DashboardPage() {
           </div>
         </motion.header>
 
-        {/* AINOS Robot Helper Card */}
+        {/* Marketing Suite Hero */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-2xl border border-purple-100 dark:border-purple-900/30 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30"
+          transition={{ delay: 0.1 }}
+          className="relative mb-6 sm:mb-8 p-5 sm:p-8 rounded-3xl overflow-hidden bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 dark:from-purple-950 dark:via-indigo-950 dark:to-purple-900"
         >
-          <div className="flex flex-col sm:flex-row items-start gap-4">
-            <div className="flex-shrink-0">
-              <img
-                src="/icon.png"
-                alt="AINOS Assistant"
-                className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl object-cover shadow-md"
-              />
-            </div>
+          <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute -bottom-24 right-24 w-48 h-48 rounded-full bg-pink-400/20 blur-2xl" />
+          <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-5">
+            <img
+              src="/ainos-robot.png"
+              alt="AINOS Assistant"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover shadow-lg ring-2 ring-white/30"
+            />
             <div className="flex-1 min-w-0">
-              <h3 className="text-base font-bold text-purple-900 dark:text-purple-100 mb-1">
-                Welcome to AINOS Business Suite
-              </h3>
-              <p className="text-sm text-purple-700 dark:text-purple-300 mb-3">
-                Your complete business operating system. Explore the Marketing suite below.
+              <p className="text-[11px] font-bold uppercase tracking-widest text-purple-200 mb-1">AINOS Marketing Suite</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Everything you need to market your business</h2>
+              <p className="text-sm text-purple-100/90 mb-4 max-w-2xl">
+                Social captions, SEO audits, AI blogs and branded invitations — pick a tool below and start growing.
               </p>
+              <div className="flex flex-wrap gap-2">
+                {marketingTools.map((tool) => (
+                  <Link key={tool.href} href={tool.href}>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-white/15 hover:bg-white/25 border border-white/20 backdrop-blur-sm transition-colors">
+                      <tool.icon className="w-3.5 h-3.5" />
+                      {tool.title}
+                    </span>
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </motion.div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
-          {[
-            { label: 'System Health', value: '100%', sub: 'All systems operational', icon: Activity, color: '#00b894', gradient: 'from-emerald-500 to-teal-600' },
-            { label: 'Active Users', value: `${stats.totalCustomers}`, sub: `Across ${Math.ceil(stats.totalInvoices / 5)} tools`, icon: Users, color: '#6c5ce7', gradient: 'from-violet-500 to-purple-600' },
-            { label: 'AI Operations', value: `${(stats.totalInvoices * 10).toLocaleString()}`, sub: 'Tasks automated this week', icon: Sparkles, color: '#6c5ce7', gradient: 'from-purple-500 to-indigo-600' },
-          ].map((stat, i) => (
-            <motion.div 
-              key={stat.label} 
-              initial={{ opacity: 0, y: 20 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              transition={{ delay: 0.1 + i * 0.08 }}
-              whileHover={{ y: -8, transition: { duration: 0.2 } }}
-              className="relative p-6 rounded-2xl overflow-hidden group"
-              style={{ 
+        {/* Suite Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-8 sm:mb-10">
+          {suiteStats.map((stat, i) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 + i * 0.08 }}
+              whileHover={{ y: -6, transition: { duration: 0.2 } }}
+              className="relative p-5 sm:p-6 rounded-2xl overflow-hidden"
+              style={{
                 background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)',
                 border: '1px solid hsl(var(--border) / 0.5)',
                 boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
-              }}>
-              {/* Content */}
-              <div className="relative">
-                <div className="flex items-center gap-2 mb-3">
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 10 }}
-                    className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-lg`}
-                  >
-                    <stat.icon className="w-5 h-5 text-white" />
-                  </motion.div>
-                  <p className="text-xs font-medium uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>{stat.label}</p>
-                </div>
-                <p className="text-4xl font-bold mb-2" style={{ color: 'hsl(var(--foreground))' }}>{stat.value}</p>
-                <p className="text-xs font-medium" style={{ color: stat.color }}>{stat.sub}</p>
+              }}
+            >
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-lg mb-4`}>
+                <stat.icon className="w-5 h-5 text-white" />
               </div>
+              <p className="text-xs font-medium uppercase tracking-wide mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{stat.label}</p>
+              <p className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: 'hsl(var(--foreground))' }}>{stat.value}</p>
+              <p className="text-xs font-medium" style={{ color: stat.color }}>{stat.sub}</p>
             </motion.div>
           ))}
         </div>
 
-        {/* Apps & ERPs Section */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-4 sm:mb-5">
-          <h2 className="text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Your Apps & ERPs</h2>
-          <div className="flex items-center gap-4 text-xs">
-            <span className="flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}><span className="w-2 h-2 rounded-full bg-emerald-500" /> Active</span>
-            <span className="flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}><span className="w-2 h-2 rounded-full bg-amber-500" /> Expired</span>
-            <span className="flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}><Lock className="w-3 h-3" /> Locked</span>
-          </div>
+        {/* Marketing Tools */}
+        <div className="flex items-center justify-between gap-2 mb-4 sm:mb-5">
+          <h2 className="text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Your Marketing Tools</h2>
+          <span className="flex items-center gap-1.5 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> All systems active
+          </span>
         </div>
 
-        {/* App Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-          {/* Marketing-only mode: hide all non-MARKETING cards */}
-          {appCards.filter((app) => app.category === 'MARKETING').map((app, i) => {
-            const Icon = app.icon;
-            const status = statusConfig[app.status];
-            const isLocked = app.status === 'locked';
-            const isExpired = app.status === 'expired';
-
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          {marketingTools.map((tool, i) => {
+            const Icon = tool.icon;
             return (
-              <motion.div 
-                key={app.title} 
-                initial={{ opacity: 0, y: 20 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                transition={{ delay: 0.15 + i * 0.04 }}
+              <motion.div
+                key={tool.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + i * 0.06 }}
                 whileHover={{ y: -6, transition: { duration: 0.25 } }}
-                className="relative p-6 rounded-2xl flex flex-col h-full group overflow-hidden"
+                className="relative p-6 rounded-2xl flex flex-col h-full overflow-hidden group"
                 style={{
-                  background: isExpired 
-                    ? 'linear-gradient(135deg, hsl(25 60% 95%) 0%, hsl(25 40% 92%) 100%)' 
-                    : 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)',
-                  border: `1px solid ${isLocked ? 'hsl(var(--border) / 0.5)' : isExpired ? 'hsl(25 40% 85%)' : 'hsl(var(--border) / 0.5)'}`,
+                  background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)',
+                  border: '1px solid hsl(var(--border) / 0.5)',
                   boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
-                }}>
-
-                {/* Top Row: Icon + Status */}
+                }}
+              >
                 <div className="flex items-start justify-between mb-5">
-                  <motion.div 
+                  <motion.div
                     whileHover={{ scale: 1.1, rotate: 5 }}
-                    className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg"
-                    style={{ 
-                      background: `linear-gradient(135deg, ${app.color}20 0%, ${app.color}10 100%)`,
-                      border: `1px solid ${app.color}30`,
-                    }}>
-                    <Icon className="w-6 h-6" style={{ color: app.color }} />
+                    className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tool.gradient} flex items-center justify-center shadow-lg`}
+                  >
+                    <Icon className="w-6 h-6 text-white" />
                   </motion.div>
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold ${status.bg} ${status.text} border ${status.border} backdrop-blur-sm`}>
-                    {app.status === 'locked' ? <Lock className="w-3 h-3" /> : <span className={`w-2 h-2 rounded-full ${status.dot} animate-pulse`} />}
-                    {status.label}
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    Active
                   </span>
                 </div>
 
-                {/* Content */}
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: 'hsl(var(--muted-foreground))' }}>{app.category}</p>
-                <h3 className="text-base font-bold mb-2" style={{ color: 'hsl(var(--foreground))' }}>{app.title}</h3>
-                <p className="text-xs leading-relaxed mb-5 flex-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{app.description}</p>
+                <h3 className="text-base font-bold mb-2" style={{ color: 'hsl(var(--foreground))' }}>{tool.title}</h3>
+                <p className="text-xs leading-relaxed mb-5 flex-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{tool.description}</p>
 
-                {/* Bottom: Stat + Action */}
-                {isLocked ? (
-                  <div className="mt-auto">
-                    <motion.button 
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="w-full py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all"
-                      style={{ 
-                        background: 'linear-gradient(135deg, hsl(252 60% 55%) 0%, hsl(252 65% 65%) 100%)', 
-                        boxShadow: '0 4px 14px hsl(252 60% 55% / 0.4)',
-                      }}>
-                      <Lock className="w-4 h-4" /> Subscribe to Unlock
-                    </motion.button>
-                    <p className="text-[10px] text-center mt-3 font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>{app.stat}</p>
-                  </div>
-                ) : isExpired ? (
-                  <div className="mt-auto flex items-center justify-between">
-                    <p className="text-xs font-medium text-amber-600">{app.stat}</p>
-                    <motion.button 
-                      whileHover={{ scale: 1.05 }}
+                <div className="mt-auto flex items-center justify-between">
+                  <p className="text-xs font-medium" style={{ color: tool.accent }}>{tool.stat}</p>
+                  <Link href={tool.href}>
+                    <motion.button
+                      whileHover={{ scale: 1.05, x: 3 }}
                       whileTap={{ scale: 0.95 }}
-                      className="px-4 py-2 rounded-xl text-xs font-semibold text-amber-600 border-2 border-amber-500/30 hover:bg-amber-500/10 transition-all">
-                      Renew
+                      className="px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all"
+                      style={{
+                        color: 'hsl(var(--primary))',
+                        background: 'hsl(var(--primary) / 0.1)',
+                        border: '1px solid hsl(var(--primary) / 0.2)',
+                      }}
+                    >
+                      Open <ArrowRight className="w-3.5 h-3.5" />
                     </motion.button>
-                  </div>
-                ) : (
-                  <div className="mt-auto flex items-center justify-between">
-                    <p className="text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>{app.stat}</p>
-                    <Link href={app.href}>
-                      <motion.button 
-                        whileHover={{ scale: 1.05, x: 3 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all"
-                        style={{ 
-                          color: 'hsl(var(--primary))', 
-                          background: 'hsl(var(--primary) / 0.1)', 
-                          border: '1px solid hsl(var(--primary) / 0.2)',
-                        }}>
-                        Open <ArrowRight className="w-3.5 h-3.5" />
-                      </motion.button>
-                    </Link>
-                  </div>
-                )}
+                  </Link>
+                </div>
               </motion.div>
             );
           })}
