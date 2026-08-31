@@ -17,10 +17,6 @@ export async function GET(req: NextRequest) {
     ]);
 
     return NextResponse.json({
-      siteHealth: schedules > 0 ? '92/100' : '—',
-      trackedKeywords: schedules * 3,
-      competitors: websites * 2,
-      contentIdeas: posts + schedules,
       websites,
       posts,
       schedules,

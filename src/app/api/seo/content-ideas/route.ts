@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
+import { generateAIText } from '@/lib/ai-provider';
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,31 +38,18 @@ Make ideas:
 - Suitable for blog posts and social media repurposing
 - Include actionable takeaways for readers`;
 
-    const res = await fetch('https://text.pollinations.ai/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'openai',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-      }),
-    });
-
-    if (!res.ok) throw new Error('AI content ideas failed');
-
-    const text = await res.text();
+    const text = await generateAIText(systemPrompt, userPrompt, { json: true });
     let data;
     try {
       data = JSON.parse(text);
     } catch {
-      const match = text.match(/\{[\s\S]*\}/);
+      const match = text.replace(/```(?:json)?/gi, '').match(/\{[\s\S]*\}/);
       if (match) data = JSON.parse(match[0]);
       else throw new Error('Could not parse content ideas');
     }
 
-    return NextResponse.json(data);
+    const ideas = Array.isArray(data.ideas) ? data.ideas.slice(0, 10) : [];
+    return NextResponse.json({ ideas });
   } catch (error) {
     console.error('Content ideas error:', error);
     const message = error instanceof Error ? error.message : 'Content ideas failed';

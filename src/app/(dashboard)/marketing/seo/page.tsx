@@ -2,10 +2,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search, Globe, TrendingUp, Users, BarChart3, Zap, Target,
-  CheckCircle, AlertCircle, Loader2, Sparkles, ChevronRight,
-  MapPin, Linkedin, FileText, Clock, RefreshCw, Copy, Check,
-  ExternalLink, Shield, Megaphone, Lightbulb
+  Search, Globe, Users, BarChart3, Zap,
+  CheckCircle, AlertCircle, Loader2, Sparkles,
+  FileText, Clock, Copy,
+  Shield, Lightbulb
 } from 'lucide-react';
 
 const tabs = [
@@ -14,8 +14,6 @@ const tabs = [
   { id: 'keywords', label: 'Keyword Research', icon: Search },
   { id: 'competitors', label: 'Competitor Analysis', icon: Users },
   { id: 'content', label: 'Content Ideas', icon: Lightbulb },
-  { id: 'linkedin', label: 'LinkedIn', icon: Linkedin },
-  { id: 'local', label: 'Local SEO', icon: MapPin },
 ];
 
 export default function SEODashboardPage() {
@@ -31,6 +29,13 @@ export default function SEODashboardPage() {
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
+  };
+
+  const switchTab = (id: string) => { setActiveTab(id); setResult(null); };
+
+  const showError = async (res: Response, fallback: string) => {
+    const err = await res.json().catch(() => null);
+    showToast((err && typeof err.error === 'string' && err.error) || fallback, 'error');
   };
 
   const fetchOverview = useCallback(async () => {
@@ -54,7 +59,7 @@ export default function SEODashboardPage() {
         body: JSON.stringify({ url: websiteUrl }),
       });
       if (res.ok) setResult(await res.json());
-      else showToast('Audit failed', 'error');
+      else await showError(res, 'Audit failed');
     } catch (e) { console.error(e); showToast('Audit failed', 'error'); }
     finally { setLoading(false); }
   };
@@ -69,7 +74,7 @@ export default function SEODashboardPage() {
         body: JSON.stringify({ keyword, niche }),
       });
       if (res.ok) setResult(await res.json());
-      else showToast('Keyword research failed', 'error');
+      else await showError(res, 'Keyword research failed');
     } catch (e) { console.error(e); showToast('Keyword research failed', 'error'); }
     finally { setLoading(false); }
   };
@@ -84,7 +89,7 @@ export default function SEODashboardPage() {
         body: JSON.stringify({ competitorUrl: competitor, yourUrl: websiteUrl }),
       });
       if (res.ok) setResult(await res.json());
-      else showToast('Competitor analysis failed', 'error');
+      else await showError(res, 'Competitor analysis failed');
     } catch (e) { console.error(e); showToast('Competitor analysis failed', 'error'); }
     finally { setLoading(false); }
   };
@@ -99,10 +104,28 @@ export default function SEODashboardPage() {
         body: JSON.stringify({ niche, keyword }),
       });
       if (res.ok) setResult(await res.json());
-      else showToast('Content ideas failed', 'error');
+      else await showError(res, 'Content ideas failed');
     } catch (e) { console.error(e); showToast('Content ideas failed', 'error'); }
     finally { setLoading(false); }
   };
+
+  const copyText = async (text: string) => {
+    try {
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
+      else {
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+      }
+      showToast('Copied to clipboard');
+    } catch { showToast('Copy failed', 'error'); }
+  };
+
+  const auditChecks = Array.isArray(result?.checks)
+    ? (result?.checks as Array<{ name: string; status: string; message: string; fix?: string }>)
+    : null;
+  const auditScore = typeof result?.score === 'number' ? result.score : null;
+  const auditAI = (result?.aiSummary ?? null) as { summary?: string; priorities?: Array<{ title: string; why: string; how: string }> } | null;
 
   return (
     <div className="p-4 md:p-6 h-full overflow-auto bg-gray-50 dark:bg-gray-950">
@@ -115,7 +138,7 @@ export default function SEODashboardPage() {
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">SEO & Content Marketing Platform</h1>
-              <p className="text-sm mt-0.5 text-gray-600 dark:text-gray-400">Site audits, keyword research, competitor analysis, content ideas & LinkedIn scheduling.</p>
+              <p className="text-sm mt-0.5 text-gray-600 dark:text-gray-400">Site audits, keyword research, competitor analysis & AI content ideas.</p>
             </div>
           </div>
         </motion.div>
@@ -125,7 +148,7 @@ export default function SEODashboardPage() {
           {tabs.map(tab => {
             const Icon = tab.icon;
             return (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              <button key={tab.id} onClick={() => switchTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                   activeTab === tab.id
                     ? 'bg-purple-600 text-white shadow-md'
@@ -143,12 +166,11 @@ export default function SEODashboardPage() {
             {/* OVERVIEW */}
             {activeTab === 'overview' && (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[
-                    { l: 'Site Health Score', v: result?.siteHealth || '—', i: Shield, c: 'text-emerald-600' },
-                    { l: 'Tracked Keywords', v: result?.trackedKeywords || '0', i: Target, c: 'text-blue-600' },
-                    { l: 'Competitors', v: result?.competitors || '0', i: Users, c: 'text-violet-600' },
-                    { l: 'Content Ideas', v: result?.contentIdeas || '0', i: Lightbulb, c: 'text-amber-600' },
+                    { l: 'Connected Websites', v: result?.websites ?? '0', i: Globe, c: 'text-emerald-600' },
+                    { l: 'Blog Posts', v: result?.posts ?? '0', i: FileText, c: 'text-blue-600' },
+                    { l: 'Scheduled Posts', v: result?.schedules ?? '0', i: Clock, c: 'text-violet-600' },
                   ].map((s, i) => {
                     const Icon = s.i;
                     return (
@@ -172,8 +194,6 @@ export default function SEODashboardPage() {
                       { label: 'Research Keywords', desc: 'Find high-value keywords', icon: Search, action: () => setActiveTab('keywords') },
                       { label: 'Analyze Competitor', desc: 'Compare with competitors', icon: Users, action: () => setActiveTab('competitors') },
                       { label: 'Get Content Ideas', desc: 'AI-generated blog topics', icon: Lightbulb, action: () => setActiveTab('content') },
-                      { label: 'Schedule LinkedIn', desc: 'Plan LinkedIn posts', icon: Linkedin, action: () => setActiveTab('linkedin') },
-                      { label: 'Local SEO', desc: 'Google Business Profile', icon: MapPin, action: () => setActiveTab('local') },
                     ].map((a, i) => {
                       const Icon = a.icon;
                       return (
@@ -203,20 +223,55 @@ export default function SEODashboardPage() {
                     Run Audit
                   </button>
                 </div>
-                {Array.isArray(result?.checks) && (
-                  <div className="space-y-3">
-                    {(result.checks as Array<{ name: string; status: string; message: string }>).map((check, i) => (
-                      <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                        {check.status === 'ok' ? <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" /> : <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />}
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white">{check.name}</p>
-                          <p className="text-xs text-gray-500">{check.message}</p>
-                        </div>
+                {auditChecks && (
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                      <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800 flex flex-col items-center justify-center">
+                        <p className={`text-5xl font-extrabold ${auditScore !== null && auditScore >= 80 ? 'text-emerald-600' : auditScore !== null && auditScore >= 50 ? 'text-amber-600' : 'text-red-600'}`}>{auditScore ?? '—'}</p>
+                        <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mt-1 uppercase tracking-wider">SEO Health Score</p>
+                        <p className="text-[11px] text-gray-500 mt-1">{String(result?.techStack ?? '')} • {String(result?.wordCount ?? 0)} words</p>
                       </div>
-                    ))}
+                      <div className="lg:col-span-2 p-5 rounded-2xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+                        <h4 className="text-sm font-bold text-purple-900 dark:text-purple-200 flex items-center gap-2 mb-2">
+                          <Sparkles className="w-4 h-4" /> AINOS AI — What to fix first
+                        </h4>
+                        {auditAI ? (
+                          <>
+                            <p className="text-xs text-gray-700 dark:text-gray-300 mb-3">{auditAI.summary}</p>
+                            <div className="space-y-2">
+                              {(auditAI.priorities ?? []).map((p, i) => (
+                                <div key={i} className="p-3 rounded-xl bg-white dark:bg-gray-900 border border-purple-100 dark:border-purple-900">
+                                  <p className="text-xs font-bold text-gray-900 dark:text-white">{i + 1}. {p.title}</p>
+                                  <p className="text-[11px] text-gray-500">Why: {p.why}</p>
+                                  <p className="text-[11px] text-purple-700 dark:text-purple-300">How: {p.how}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        ) : (
+                          <p className="text-xs text-gray-500">AINOS AI summary unavailable right now — see the checks below.</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      {auditChecks.map((check, i) => (
+                        <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                          {check.status === 'ok'
+                            ? <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                            : <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${check.status === 'error' ? 'text-red-500' : 'text-amber-500'}`} />}
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">{check.name}</p>
+                            <p className="text-xs text-gray-500">{check.message}</p>
+                            {check.status !== 'ok' && check.fix && (
+                              <p className="text-xs text-purple-700 dark:text-purple-300 mt-1"><span className="font-semibold">Fix:</span> {check.fix}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
-                {!Array.isArray(result?.checks) && !loading && (
+                {!auditChecks && !loading && (
                   <p className="text-sm text-gray-500 text-center py-8">Enter your website URL to run a comprehensive SEO audit.</p>
                 )}
               </div>
@@ -239,7 +294,7 @@ export default function SEODashboardPage() {
                 </button>
                 {Array.isArray(result?.keywords) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {(result.keywords as Array<{ keyword: string; difficulty: string; volume: string; intent: string }>).map((k, i) => (
+                    {(result.keywords as Array<{ keyword: string; difficulty: string; volume: string; intent: string; cpc?: string; trend?: string }>).map((k, i) => (
                       <div key={i} className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-sm font-semibold text-gray-900 dark:text-white">{k.keyword}</p>
@@ -247,9 +302,15 @@ export default function SEODashboardPage() {
                             k.difficulty === 'Low' ? 'bg-emerald-100 text-emerald-700' : k.difficulty === 'Medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
                           }`}>{k.difficulty}</span>
                         </div>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
                           <span>Vol: {k.volume}</span>
                           <span>Intent: {k.intent}</span>
+                          {k.cpc && <span>CPC: {k.cpc}</span>}
+                          {k.trend && (
+                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
+                              k.trend === 'trending' ? 'bg-emerald-100 text-emerald-700' : k.trend === 'seasonal' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                            }`}>{k.trend}</span>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -274,8 +335,29 @@ export default function SEODashboardPage() {
                   Analyze Competitor
                 </button>
                 {typeof result?.analysis === 'string' && (
-                  <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{result.analysis as string}</p>
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{result.analysis as string}</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {([
+                        { title: 'Competitor Strengths', items: result?.strengths, color: 'text-red-600' },
+                        { title: 'Their Weaknesses', items: result?.weaknesses, color: 'text-emerald-600' },
+                        { title: 'Your Opportunities', items: result?.opportunities, color: 'text-blue-600' },
+                        { title: 'Keywords They Likely Rank For', items: result?.keywordsTheyRankFor, color: 'text-violet-600' },
+                        { title: 'Content Gaps to Exploit', items: result?.contentGaps, color: 'text-amber-600' },
+                        { title: 'Your Action Plan', items: result?.actionPlan, color: 'text-purple-600' },
+                      ] as Array<{ title: string; items: unknown; color: string }>)
+                        .filter(s => Array.isArray(s.items) && (s.items as unknown[]).length > 0)
+                        .map((s, i) => (
+                          <div key={i} className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
+                            <p className={`text-xs font-bold uppercase tracking-wider mb-2 ${s.color}`}>{s.title}</p>
+                            <ul className="space-y-1">
+                              {(s.items as string[]).map((item, j) => <li key={j} className="text-xs text-gray-600 dark:text-gray-400">• {item}</li>)}
+                            </ul>
+                          </div>
+                        ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -298,59 +380,28 @@ export default function SEODashboardPage() {
                 </button>
                 {Array.isArray(result?.ideas) && (
                   <div className="grid grid-cols-1 gap-3">
-                    {(result.ideas as Array<{ title: string; type: string; keywords: string[]; outline: string[] }>).map((idea, i) => (
+                    {(result.ideas as Array<{ title: string; type: string; keywords?: string[]; outline?: string[]; searchIntent?: string; estimatedReadTime?: string }>).map((idea, i) => (
                       <div key={i} className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-sm font-semibold text-gray-900 dark:text-white">{idea.title}</p>
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">{idea.type}</span>
                         </div>
-                        <p className="text-xs text-gray-500 mb-2">{idea.keywords.join(', ')}</p>
+                        <p className="text-xs text-gray-500 mb-2">{(idea.keywords ?? []).join(', ')}</p>
+                        <div className="flex items-center gap-2 mb-2">
+                          {idea.searchIntent && <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">{idea.searchIntent}</span>}
+                          {idea.estimatedReadTime && <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 flex items-center gap-1"><Clock className="w-3 h-3" />{idea.estimatedReadTime}</span>}
+                        </div>
                         <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-0.5">
-                          {idea.outline.map((o, j) => <li key={j}>• {o}</li>)}
+                          {(idea.outline ?? []).map((o, j) => <li key={j}>• {o}</li>)}
                         </ul>
+                        <button onClick={() => copyText(`${idea.title}\n\nTarget keywords: ${(idea.keywords ?? []).join(', ')}\n\nOutline:\n${(idea.outline ?? []).map(o => `- ${o}`).join('\n')}`)}
+                          className="mt-2 flex items-center gap-1 text-[11px] font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700">
+                          <Copy className="w-3 h-3" /> Copy idea brief
+                        </button>
                       </div>
                     ))}
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* LINKEDIN */}
-            {activeTab === 'linkedin' && (
-              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <Linkedin className="w-6 h-6 text-blue-600" />
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">LinkedIn Composer & Scheduler</h3>
-                </div>
-                <div className="p-6 rounded-xl bg-gradient-to-r from-blue-50 to-sky-50 dark:from-blue-900/20 dark:to-sky-900/20 border border-blue-200 dark:border-blue-800 text-center">
-                  <Megaphone className="w-10 h-10 text-blue-500 mx-auto mb-3" />
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Coming Next</p>
-                  <p className="text-xs text-gray-500 max-w-md mx-auto">LinkedIn auto-scheduling with AI audience intelligence is being integrated. You can currently use the Social Media Caption Generator for LinkedIn posts.</p>
-                </div>
-              </div>
-            )}
-
-            {/* LOCAL SEO */}
-            {activeTab === 'local' && (
-              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <MapPin className="w-6 h-6 text-emerald-600" />
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Local SEO & Google Business Profile</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    { l: 'Google Business Profile Integration', s: 'Coming soon' },
-                    { l: 'Listing Tracking', s: 'Coming soon' },
-                    { l: 'Review Analysis', s: 'Coming soon' },
-                    { l: 'AI-Drafted Review Replies', s: 'Coming soon' },
-                    { l: 'Geo-Grid Rank Tracking', s: 'Coming soon' },
-                  ].map((f, i) => (
-                    <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                      <span className="text-sm text-gray-700 dark:text-gray-300">{f.l}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">{f.s}</span>
-                    </div>
-                  ))}
-                </div>
               </div>
             )}
           </motion.div>

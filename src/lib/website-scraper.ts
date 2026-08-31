@@ -1,5 +1,6 @@
 // Universal Website Scraper - works with ANY tech stack
 // React, Next.js, HTML, PHP, WordPress, Shopify, Wix, etc.
+import { generateAIText } from '@/lib/ai-provider';
 
 interface ScrapedData {
   url: string;
@@ -12,6 +13,16 @@ interface ScrapedData {
   openGraph: Record<string, string>;
   jsonLd: Record<string, unknown>[];
   rawText: string;
+  // Audit-grade signals
+  titleRaw: string;
+  h1Count: number;
+  imgTotal: number;
+  imgMissingAlt: number;
+  hasViewport: boolean;
+  hasCanonical: boolean;
+  hasFavicon: boolean;
+  hasTwitterCard: boolean;
+  wordCount: number;
 }
 
 // Detect tech stack from HTML signatures
@@ -110,7 +121,24 @@ function parseHTML(html: string, baseUrl: string): ScrapedData {
   // Extract raw text for AI analysis
   const rawText = extractText(html);
 
-  return { url: baseUrl, name, description, techStack, headings, metaKeywords, pageLinks, openGraph, jsonLd, rawText };
+  // Audit-grade signals
+  const titleRaw = titleMatch ? titleMatch[1].trim() : '';
+  const h1Count = (html.match(/<h1[\s>]/gi) || []).length;
+  const imgTags = html.match(/<img\b[^>]*>/gi) || [];
+  const imgTotal = imgTags.length;
+  const imgMissingAlt = imgTags.filter((t) => !/\balt\s*=\s*["'][^"']+["']/i.test(t)).length;
+  const hasViewport = /<meta[^>]+name=["']viewport["']/i.test(html);
+  const hasCanonical = /<link[^>]+rel=["']canonical["']/i.test(html);
+  const hasFavicon = /<link[^>]+rel=["'](icon|shortcut icon|apple-touch-icon)["']/i.test(html);
+  const hasTwitterCard = /<meta[^>]+name=["']twitter:card["']/i.test(html);
+  const wordCount = rawText.split(/\s+/).filter(Boolean).length;
+
+  return {
+    url: baseUrl, name, description, techStack, headings, metaKeywords, pageLinks,
+    openGraph, jsonLd, rawText,
+    titleRaw, h1Count, imgTotal, imgMissingAlt, hasViewport, hasCanonical,
+    hasFavicon, hasTwitterCard, wordCount,
+  };
 }
 
 // Fetch and scrape a single page
@@ -208,21 +236,7 @@ Rules:
 - Topics should help the website rank on Google and get cited by AI`;
 
   try {
-    const res = await fetch('https://text.pollinations.ai/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'openai',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: contentSummary },
-        ],
-      }),
-    });
-
-    if (!res.ok) throw new Error('AI analysis failed');
-
-    const text = await res.text();
+    const text = await generateAIText(systemPrompt, contentSummary, { json: true });
     let result;
     try {
       result = JSON.parse(text);

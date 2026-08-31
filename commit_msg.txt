@@ -1,9 +1,16 @@
-perf(invitations): compact filter bar + horizontal wheel scroll
+feat(seo): real dynamic SEO platform with AINOS AI — audits, keywords, competitors
 
-- Reduce chip height (h-9 -> h-7) and tool buttons (h-10 -> h-8)
-- Tighter padding throughout sticky filter section
-- Add mouse-wheel to horizontal-scroll for chip rows on desktop
-- Add snap-x scroll behaviour for smoother trackpad swipes
-- Hide scrollbar visually while keeping scroll functionality
-- "Show less" chip now shows just "+N" for compactness
-- Filter section total height reduced by ~40%, more cards visible
+- Site audit now REAL: fetches live HTML, 15 actual checks (title, meta, H1,
+  alt text, viewport, canonical, OG, schema, sitemap, robots, content depth,
+  internal links, favicon), weighted health score + per-check "Fix" guidance
+- AINOS AI panel: Gemini ranks top 3 priority fixes (why + how, founder-friendly)
+- Keyword research / content ideas / competitor analysis switched from flaky
+  Pollinations to Gemini via ai-provider (with JSON-strict mode + fence stripping)
+- Competitor analysis scrapes BOTH websites for real on-page signals, returns
+  strengths/weaknesses/opportunities/keywords/content gaps/action plan
+- Website scraper exports audit-grade signals (h1Count, alt coverage, viewport,
+  canonical, word count, etc.) and uses Gemini for site analysis
+- UI: score gauge, severity colors, CPC/trend badges, structured competitor view,
+  intent + read time chips, copy idea brief button, real error toasts
+- Removed static LinkedIn + Local SEO tabs and fake overview metrics;
+  overview now shows real connected websites / blog posts / schedules counts

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
+import { generateAIText } from '@/lib/ai-provider';
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,31 +40,18 @@ Include a mix of:
 
 Make them realistic and valuable for SEO content strategy.`;
 
-    const res = await fetch('https://text.pollinations.ai/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'openai',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-      }),
-    });
-
-    if (!res.ok) throw new Error('AI keyword research failed');
-
-    const text = await res.text();
+    const text = await generateAIText(systemPrompt, userPrompt, { json: true });
     let data;
     try {
       data = JSON.parse(text);
     } catch {
-      const match = text.match(/\{[\s\S]*\}/);
+      const match = text.replace(/```(?:json)?/gi, '').match(/\{[\s\S]*\}/);
       if (match) data = JSON.parse(match[0]);
       else throw new Error('Could not parse keyword data');
     }
 
-    return NextResponse.json(data);
+    const keywords = Array.isArray(data.keywords) ? data.keywords.slice(0, 20) : [];
+    return NextResponse.json({ keywords });
   } catch (error) {
     console.error('Keyword research error:', error);
     const message = error instanceof Error ? error.message : 'Keyword research failed';
