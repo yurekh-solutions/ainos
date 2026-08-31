@@ -138,7 +138,17 @@ const BASE_TEMPLATES = [
   { _id: 'b14', name: 'Baby Announcement', slug: 'baby-announcement', category: 'birthday', previewImage: '/templates/baby-announcement-01.png', language: 'english', hasVideo: true, price: 49, videoPrice: 99, recommendedColor: 'rose-blush', sampleText: { blessing: 'Welcome Baby', event: 'Birth Announcement', date: 'April 2026' }},
 ];
 
-export const TEMPLATES = [...BASE_TEMPLATES, ...GENERATED_TEMPLATES, ...EXPANDED_TEMPLATES];
+// Combine all sources and deduplicate by previewImage so the gallery never
+// shows the same artwork twice. BASE wins, then GENERATED, then EXPANDED.
+type _T = (typeof BASE_TEMPLATES)[number] | (typeof GENERATED_TEMPLATES)[number] | (typeof EXPANDED_TEMPLATES)[number];
+const _seenImages = new Set<string>();
+export const TEMPLATES: _T[] = [...BASE_TEMPLATES, ...GENERATED_TEMPLATES, ...EXPANDED_TEMPLATES].filter((t: _T) => {
+  const key = (t as { previewImage?: string }).previewImage;
+  if (!key) return true;
+  if (_seenImages.has(key)) return false;
+  _seenImages.add(key);
+  return true;
+});
 
 const BASE_CATEGORIES = [
   { id: 'all', label: 'All' },

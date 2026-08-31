@@ -211,20 +211,22 @@ export default function CustomizePage() {
 
   // Download helpers
   const capturePreview = async () => {
-    const html2canvas = (await import('html2canvas')).default;
+    // html2canvas-pro natively parses modern CSS color functions (lab, lch, oklab, oklch, color-mix)
+    // which plain html2canvas chokes on with "Attempting to parse an unsupported color function 'lab'".
+    const html2canvas = (await import('html2canvas-pro')).default;
     return html2canvas(previewRef.current!, {
       scale: 2,
       useCORS: true,
       backgroundColor: null,
       logging: false,
       onclone: (clonedDoc) => {
-        // Replace unsupported CSS color functions (lab/lch/oklab/oklch) with safe RGB fallback
+        // Extra safety: strip any lingering modern color fns from inline styles
         const all = clonedDoc.querySelectorAll('*');
         all.forEach((el) => {
           const inline = (el as HTMLElement).style;
           ['color','background','background-color','border','border-color','fill','stroke','box-shadow','text-shadow'].forEach((prop) => {
             const v = inline.getPropertyValue(prop);
-            if (v && /\b(lab|lch|oklab|oklch)\s*\(/i.test(v)) inline.setProperty(prop, '#000000');
+            if (v && /\b(lab|lch|oklab|oklch|color-mix)\s*\(/i.test(v)) inline.setProperty(prop, '#000000');
           });
         });
       },
