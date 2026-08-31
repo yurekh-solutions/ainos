@@ -1,5 +1,5 @@
 /**
- * genTemplates2.cjs — Generate 2000+ invitation template entries.
+ * genTemplates2.cjs — Generate invitation template entries with minimal repetition.
  * Scans /public/templates/art/*.svg and /public/templates/*.{png,jpg}
  * then distributes them across all occasion categories with unique names.
  *
@@ -21,69 +21,69 @@ const imgFiles = fs.readdirSync(IMG_DIR)
 
 console.log(`Found ${artFiles.length} art SVGs, ${imgFiles.length} base images`);
 
-// ── Category definitions with target counts ──
+// ── Category definitions with target counts (reduced to minimize image repetition) ──
 const CATEGORIES = [
   // Wedding functions
-  { id: "wedding", count: 200, lang: "english", color: "royal-maroon" },
-  { id: "engagement", count: 80, lang: "english", color: "rani-pink" },
-  { id: "haldi", count: 80, lang: "hindi", color: "gold-leaf" },
-  { id: "mehndi", count: 80, lang: "hindi", color: "emerald" },
-  { id: "sangeet", count: 80, lang: "english", color: "magenta" },
-  { id: "reception", count: 80, lang: "english", color: "peacock-teal" },
-  { id: "anniversary", count: 40, lang: "english", color: "gold-leaf" },
+  { id: "wedding", count: 80, lang: "english", color: "royal-maroon" },
+  { id: "engagement", count: 30, lang: "english", color: "rani-pink" },
+  { id: "haldi", count: 30, lang: "hindi", color: "gold-leaf" },
+  { id: "mehndi", count: 30, lang: "hindi", color: "emerald" },
+  { id: "sangeet", count: 30, lang: "english", color: "magenta" },
+  { id: "reception", count: 30, lang: "english", color: "peacock-teal" },
+  { id: "anniversary", count: 15, lang: "english", color: "gold-leaf" },
   // Hindu festivals
-  { id: "ganpati", count: 80, lang: "hindi", color: "saffron" },
-  { id: "navratri", count: 60, lang: "hindi", color: "royal-maroon" },
-  { id: "diwali", count: 80, lang: "hindi", color: "gold-leaf" },
-  { id: "holi", count: 50, lang: "hindi", color: "royal-maroon" },
-  { id: "janmashtami", count: 40, lang: "hindi", color: "peacock-teal" },
-  { id: "durga-puja", count: 50, lang: "hindi", color: "gold-leaf" },
-  { id: "dussehra", count: 30, lang: "hindi", color: "royal-maroon" },
-  { id: "chhath", count: 30, lang: "hindi", color: "saffron" },
-  { id: "raksha-bandhan", count: 30, lang: "hindi", color: "rani-pink" },
-  { id: "karva-chauth", count: 30, lang: "hindi", color: "royal-maroon" },
-  { id: "dhanteras", count: 25, lang: "hindi", color: "gold-leaf" },
-  { id: "teej", count: 20, lang: "hindi", color: "emerald" },
-  { id: "bhai-dooj", count: 20, lang: "hindi", color: "gold-leaf" },
-  { id: "makar-sankranti", count: 25, lang: "hindi", color: "saffron" },
+  { id: "ganpati", count: 30, lang: "hindi", color: "saffron" },
+  { id: "navratri", count: 25, lang: "hindi", color: "royal-maroon" },
+  { id: "diwali", count: 30, lang: "hindi", color: "gold-leaf" },
+  { id: "holi", count: 20, lang: "hindi", color: "royal-maroon" },
+  { id: "janmashtami", count: 15, lang: "hindi", color: "peacock-teal" },
+  { id: "durga-puja", count: 20, lang: "hindi", color: "gold-leaf" },
+  { id: "dussehra", count: 12, lang: "hindi", color: "royal-maroon" },
+  { id: "chhath", count: 12, lang: "hindi", color: "saffron" },
+  { id: "raksha-bandhan", count: 12, lang: "hindi", color: "rani-pink" },
+  { id: "karva-chauth", count: 12, lang: "hindi", color: "royal-maroon" },
+  { id: "dhanteras", count: 10, lang: "hindi", color: "gold-leaf" },
+  { id: "teej", count: 8, lang: "hindi", color: "emerald" },
+  { id: "bhai-dooj", count: 8, lang: "hindi", color: "gold-leaf" },
+  { id: "makar-sankranti", count: 10, lang: "hindi", color: "saffron" },
   // Islamic
-  { id: "eid-ul-fitr", count: 80, lang: "english", color: "emerald" },
-  { id: "eid-ul-adha", count: 60, lang: "english", color: "emerald" },
-  { id: "muharram", count: 40, lang: "english", color: "deep-maroon" },
-  { id: "milad-un-nabi", count: 30, lang: "english", color: "emerald" },
+  { id: "eid-ul-fitr", count: 30, lang: "english", color: "emerald" },
+  { id: "eid-ul-adha", count: 25, lang: "english", color: "emerald" },
+  { id: "muharram", count: 15, lang: "english", color: "deep-maroon" },
+  { id: "milad-un-nabi", count: 12, lang: "english", color: "emerald" },
   // Jain
-  { id: "paryushan", count: 50, lang: "english", color: "forest" },
-  { id: "mahavir-jayanti", count: 50, lang: "english", color: "peacock-teal" },
+  { id: "paryushan", count: 20, lang: "english", color: "forest" },
+  { id: "mahavir-jayanti", count: 20, lang: "english", color: "peacock-teal" },
   // Maharashtrian
-  { id: "gudi-padwa", count: 40, lang: "marathi", color: "saffron" },
+  { id: "gudi-padwa", count: 15, lang: "marathi", color: "saffron" },
   // Family functions
-  { id: "birthday", count: 120, lang: "english", color: "rose-blush" },
-  { id: "baby-shower", count: 30, lang: "english", color: "rose-blush" },
-  { id: "baby-announcement", count: 20, lang: "english", color: "rose-blush" },
-  { id: "naamkaran", count: 20, lang: "hindi", color: "gold-leaf" },
-  { id: "annaprashan", count: 20, lang: "hindi", color: "gold-leaf" },
-  { id: "mundan", count: 20, lang: "hindi", color: "saffron" },
-  { id: "thread-ceremony", count: 15, lang: "hindi", color: "saffron" },
-  { id: "satyanarayan", count: 20, lang: "hindi", color: "saffron" },
-  { id: "griha-pravesh", count: 20, lang: "hindi", color: "gold-leaf" },
+  { id: "birthday", count: 50, lang: "english", color: "rose-blush" },
+  { id: "baby-shower", count: 12, lang: "english", color: "rose-blush" },
+  { id: "baby-announcement", count: 8, lang: "english", color: "rose-blush" },
+  { id: "naamkaran", count: 8, lang: "hindi", color: "gold-leaf" },
+  { id: "annaprashan", count: 8, lang: "hindi", color: "gold-leaf" },
+  { id: "mundan", count: 8, lang: "hindi", color: "saffron" },
+  { id: "thread-ceremony", count: 6, lang: "hindi", color: "saffron" },
+  { id: "satyanarayan", count: 8, lang: "hindi", color: "saffron" },
+  { id: "griha-pravesh", count: 8, lang: "hindi", color: "gold-leaf" },
   // Christian / Other
-  { id: "christmas", count: 40, lang: "english", color: "royal-maroon" },
-  { id: "easter", count: 20, lang: "english", color: "rose-blush" },
-  { id: "new-year", count: 30, lang: "english", color: "gold-leaf" },
-  { id: "good-friday", count: 10, lang: "english", color: "deep-maroon" },
+  { id: "christmas", count: 15, lang: "english", color: "royal-maroon" },
+  { id: "easter", count: 8, lang: "english", color: "rose-blush" },
+  { id: "new-year", count: 12, lang: "english", color: "gold-leaf" },
+  { id: "good-friday", count: 5, lang: "english", color: "deep-maroon" },
   // Work / College
-  { id: "retirement", count: 15, lang: "english", color: "sky-trust" },
-  { id: "farewell", count: 15, lang: "english", color: "peacock-teal" },
-  { id: "corporate", count: 30, lang: "english", color: "sky-trust" },
+  { id: "retirement", count: 6, lang: "english", color: "sky-trust" },
+  { id: "farewell", count: 6, lang: "english", color: "peacock-teal" },
+  { id: "corporate", count: 12, lang: "english", color: "sky-trust" },
   // Other Hindu
-  { id: "ram-navami", count: 25, lang: "hindi", color: "saffron" },
-  { id: "saraswati-puja", count: 25, lang: "hindi", color: "rose-blush" },
-  { id: "buddha-purnima", count: 15, lang: "english", color: "saffron" },
-  { id: "gurpurab", count: 20, lang: "hindi", color: "saffron" },
-  { id: "vaisakhi", count: 15, lang: "hindi", color: "saffron" },
-  { id: "onam", count: 15, lang: "english", color: "gold-leaf" },
-  { id: "pongal", count: 15, lang: "english", color: "gold-leaf" },
-  { id: "maha-shivratri", count: 25, lang: "hindi", color: "deep-maroon" },
+  { id: "ram-navami", count: 10, lang: "hindi", color: "saffron" },
+  { id: "saraswati-puja", count: 10, lang: "hindi", color: "rose-blush" },
+  { id: "buddha-purnima", count: 6, lang: "english", color: "saffron" },
+  { id: "gurpurab", count: 8, lang: "hindi", color: "saffron" },
+  { id: "vaisakhi", count: 6, lang: "hindi", color: "saffron" },
+  { id: "onam", count: 6, lang: "english", color: "gold-leaf" },
+  { id: "pongal", count: 6, lang: "english", color: "gold-leaf" },
+  { id: "maha-shivratri", count: 10, lang: "hindi", color: "deep-maroon" },
 ];
 
 // ── Name generators per category ──

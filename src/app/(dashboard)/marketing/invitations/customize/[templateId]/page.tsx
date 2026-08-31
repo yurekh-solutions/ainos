@@ -210,7 +210,26 @@ export default function CustomizePage() {
   useEffect(() => () => stopMusicPreview(), []);
 
   // Download helpers
-  const capturePreview = async () => { const html2canvas = (await import('html2canvas')).default; return html2canvas(previewRef.current!, { scale: 2, useCORS: true, backgroundColor: null, logging: false }); };
+  const capturePreview = async () => {
+    const html2canvas = (await import('html2canvas')).default;
+    return html2canvas(previewRef.current!, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: null,
+      logging: false,
+      onclone: (clonedDoc) => {
+        // Replace unsupported CSS color functions (lab/lch/oklab/oklch) with safe RGB fallback
+        const all = clonedDoc.querySelectorAll('*');
+        all.forEach((el) => {
+          const inline = (el as HTMLElement).style;
+          ['color','background','background-color','border','border-color','fill','stroke','box-shadow','text-shadow'].forEach((prop) => {
+            const v = inline.getPropertyValue(prop);
+            if (v && /\b(lab|lch|oklab|oklch)\s*\(/i.test(v)) inline.setProperty(prop, '#000000');
+          });
+        });
+      },
+    });
+  };
 
   const handleDownload = async (type: string) => {
     setGenerating(true);
