@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, X, Check, CheckCheck, Info, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 interface Notification { _id: string; title: string; message: string; type: string; read: boolean; module?: string; createdAt: string; }
 
@@ -9,12 +10,20 @@ const typeIcons: Record<string, React.ElementType> = { info: Info, success: Chec
 const typeColors: Record<string, string> = { info: '#0984e3', success: '#00b894', warning: '#fdcb6e', error: '#d63031' };
 
 export function NotificationsBell() {
+  const { status } = useSession();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { fetchNotifications(); }, []);
+  useEffect(() => {
+    // Wait for NextAuth to confirm the session before hitting the API.
+    if (status === 'authenticated') {
+      void Promise.resolve().then(fetchNotifications);
+    } else if (status === 'unauthenticated') {
+      Promise.resolve().then(() => setLoading(false));
+    }
+  }, [status]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

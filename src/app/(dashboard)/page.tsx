@@ -47,7 +47,7 @@ interface AppCard {
 }
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [stats, setStats] = useState<DashboardStats>({
     totalInvoices: 0, totalCustomers: 0, totalProducts: 0,
     totalRevenue: 0, pendingInvoices: 0, paidInvoices: 0,
@@ -92,7 +92,16 @@ export default function DashboardPage() {
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchStats(); }, [fetchStats]);
+  useEffect(() => {
+    // Only fire dashboard API calls once NextAuth has confirmed the session.
+    // Prevents a burst of 401/404s when the browser wakes from sleep and the
+    // session cookie isn't validated yet.
+    if (status === 'authenticated') {
+      void Promise.resolve().then(fetchStats);
+    } else if (status === 'unauthenticated') {
+      Promise.resolve().then(() => setLoading(false));
+    }
+  }, [status, fetchStats]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
