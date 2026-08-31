@@ -215,8 +215,8 @@ export default function InvitationsPage() {
         </div>
       </section>
 
-      {/* Filters Section */}
-      <section className="sticky top-0 z-30 border-b border-[#f0e3cd] dark:border-gray-700 py-1.5 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md">
+      {/* Filters Section — scrolls with the page (no longer sticky) */}
+      <section className="border-b border-[#f0e3cd] dark:border-gray-700 py-1.5 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
           <div className="rounded-lg bg-white dark:bg-gray-800 border border-[#eadfc9] dark:border-gray-600 shadow-sm p-1">
             <div className="flex flex-wrap items-center gap-1.5">

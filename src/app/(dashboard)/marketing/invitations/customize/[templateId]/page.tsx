@@ -237,15 +237,22 @@ export default function CustomizePage() {
     setGenerating(true);
     try {
       if (type === 'video') {
+        // Video path uses canvas + MediaRecorder directly; it does NOT need the html2canvas snapshot.
+        // Previously capturePreview() was called in Promise.all and any lab()/oklch() parse error
+        // aborted the whole video download even though the video itself was fine.
         const vBlocks = buildVideoTextBlocks();
-        const [videoBlob] = await Promise.all([
-          generateAnimatedVideo({ templateImage, category, blocks: vBlocks, textColor: textColorValue, textHalo, textOutline, textIsLight, boardStyle: boardStyle || null, textBand, includeAudio, musicStyle, withWatermark: true }),
-          capturePreview(),
-        ]);
+        const videoBlob = await generateAnimatedVideo({ templateImage, category, blocks: vBlocks, textColor: textColorValue, textHalo, textOutline, textIsLight, boardStyle: boardStyle || null, textBand, includeAudio, musicStyle, withWatermark: true });
         const vUrl = URL.createObjectURL(videoBlob); const vLink = document.createElement('a');
         vLink.download = `ainos-${template?.slug || 'template'}.webm`; vLink.href = vUrl; vLink.click();
         setTimeout(() => URL.revokeObjectURL(vUrl), 5000);
-        toastSuccess('Video + image downloaded!');
+        // Try to also emit the still image, but do not fail the download if it errors.
+        try {
+          const canvas = await capturePreview();
+          const imageUrl = canvas.toDataURL('image/png');
+          const imgLink = document.createElement('a');
+          imgLink.download = `ainos-${template?.slug || 'template'}.png`; imgLink.href = imageUrl; imgLink.click();
+        } catch (imgErr) { console.warn('Still image skipped:', imgErr); }
+        toastSuccess('Video downloaded!');
       } else if (type === 'pdf') {
         const canvas = await capturePreview(); const image = canvas.toDataURL('image/png');
         const { jsPDF } = await import('jspdf');
@@ -259,7 +266,7 @@ export default function CustomizePage() {
         try { const { jsPDF } = await import('jspdf'); const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] }); pdf.addImage(image, 'PNG', 0, 0, canvas.width, canvas.height); pdf.save(`ainos-${template?.slug || 'template'}.pdf`); } catch { /* pdf optional */ }
         toastSuccess('Image + PDF downloaded!');
       }
-    } catch (err) { console.error('Download error:', err); toastError('Failed to generate. Please try again.'); }
+    } catch (err) { console.error('Download error:', err); toastError(err instanceof Error ? `Download failed: ${err.message}` : 'Failed to generate. Please try again.'); }
     finally { setGenerating(false); }
   };
 
