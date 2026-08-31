@@ -165,6 +165,16 @@ const sections: MenuSection[] = [
   },
 ];
 
+// Marketing-only mode: keep the full menus above, but only render
+// Dashboard + the Marketing section. Set MARKETING_ONLY to false to restore.
+const MARKETING_ONLY = true;
+const visibleMainItems = MARKETING_ONLY
+  ? mainItems.filter((item) => item.href === '/')
+  : mainItems;
+const visibleSections = MARKETING_ONLY
+  ? sections.filter((section) => section.title === 'Marketing')
+  : sections;
+
 function SectionGroup({
   section,
   collapsed,
@@ -321,7 +331,7 @@ export function Sidebar() {
 
             {/* Navigation */}
             <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-              {mainItems.map((item) => {
+              {visibleMainItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
 
@@ -342,7 +352,7 @@ export function Sidebar() {
               })}
 
               <div className="pt-3 space-y-1">
-                {sections.map((section) => (
+                {visibleSections.map((section) => (
                   <SectionGroup
                     key={section.title}
                     section={section}
@@ -406,7 +416,7 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {mainItems.map((item) => {
+          {visibleMainItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
 
@@ -441,7 +451,7 @@ export function Sidebar() {
           })}
 
           <div className="pt-3 space-y-1">
-            {sections.map((section) => (
+            {visibleSections.map((section) => (
               <SectionGroup
                 key={section.title}
                 section={section}

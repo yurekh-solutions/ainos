@@ -12,7 +12,7 @@ import {
   BarChart3, Layers, Lock, RefreshCw,
   ArrowRight, Zap, DollarSign, ShoppingCart,
   Building2, BookOpen, Calendar, Timer,
-  FileSpreadsheet, Truck, Briefcase,
+  FileSpreadsheet, Truck, Briefcase, Globe, Send,
 } from 'lucide-react';
 
 import { NotificationsBell } from '@/components/layout/NotificationsBell';
@@ -119,6 +119,9 @@ export default function DashboardPage() {
     { category: 'INTELLIGENCE', title: 'AI Chat Assistant', description: 'Autonomous customer support and internal query resolution.', icon: Sparkles, href: '/ai/chat', status: 'active', stat: '98% resolution rate', statLabel: 'rate', color: '#6c5ce7' },
     { category: 'MARKETING', title: 'Social Media', description: 'AI-powered captions, hooks & hashtags for all platforms.', icon: Sparkles, href: '/marketing/email', status: 'active', stat: '6 platforms ready', statLabel: 'platforms', color: '#6c5ce7' },
     { category: 'MARKETING', title: 'Automated Blog', description: 'SEO-optimized content generation and publishing.', icon: FileText, href: '/marketing/blog', status: 'active', stat: '4 drafts ready', statLabel: 'drafts', color: '#6c5ce7' },
+    { category: 'MARKETING', title: 'SEO Platform', description: 'Keyword research, site audits and ranking insights.', icon: Globe, href: '/marketing/seo', status: 'active', stat: 'SEO ready', statLabel: 'platform', color: '#0984e3' },
+    { category: 'MARKETING', title: 'Blog Agent', description: 'Autonomous agent that researches, writes and publishes blogs.', icon: Zap, href: '/marketing/blog-agent', status: 'active', stat: 'Agent ready', statLabel: 'agent', color: '#6c5ce7' },
+    { category: 'MARKETING', title: 'Invitations', description: '2000+ festival & occasion invitation templates with your branding.', icon: Send, href: '/marketing/invitations', status: 'active', stat: '2000+ templates', statLabel: 'templates', color: '#e17055' },
     { category: 'OPERATIONS', title: 'Inventory OS', description: 'Real-time stock tracking and automated reordering.', icon: Package, href: '/inventory/stock', status: 'active', stat: `${stats.totalProducts} products`, statLabel: 'products', color: '#6c5ce7' },
     { category: 'OPERATIONS', title: 'Sales Orders', description: 'Manage orders, fulfillment and delivery tracking.', icon: Truck, href: '/inventory/sales-orders', status: 'active', stat: `${stats.totalOrders} orders`, statLabel: 'orders', color: '#6c5ce7' },
     { category: 'OPERATIONS', title: 'Vendor Management', description: 'Manage suppliers, contracts and payment terms.', icon: Building2, href: '/inventory/vendors', status: 'active', stat: `${stats.totalVendors} vendors`, statLabel: 'vendors', color: '#0984e3' },
@@ -187,28 +190,8 @@ export default function DashboardPage() {
                 Welcome to AINOS Business Suite
               </h3>
               <p className="text-sm text-purple-700 dark:text-purple-300 mb-3">
-                Your complete business operating system. Start by exploring the modules below or ask me anything using the AI Chat.
+                Your complete business operating system. Explore the Marketing suite below.
               </p>
-              <div className="flex flex-wrap gap-2">
-                <Link href="/ai/chat">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 transition-colors shadow-sm"
-                  >
-                     Ask AI Assistant
-                  </motion.button>
-                </Link>
-                <Link href="/ai/skills">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="px-4 py-2 rounded-lg text-xs font-semibold text-purple-700 dark:text-purple-300 bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                     Explore AI Tools
-                  </motion.button>
-                </Link>
-              </div>
             </div>
           </div>
         </motion.div>
@@ -262,7 +245,8 @@ export default function DashboardPage() {
 
         {/* App Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
-          {appCards.map((app, i) => {
+          {/* Marketing-only mode: hide all non-MARKETING cards */}
+          {appCards.filter((app) => app.category === 'MARKETING').map((app, i) => {
             const Icon = app.icon;
             const status = statusConfig[app.status];
             const isLocked = app.status === 'locked';
