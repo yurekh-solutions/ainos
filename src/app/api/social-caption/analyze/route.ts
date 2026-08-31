@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
+import { analyzeMedia } from '@/lib/ai-provider';
 
 // AI Media Scanner — auto-fills topic + description from an uploaded image or video frame
-// Uses Pollinations.ai vision (100% free, no API key)
+// Gemini (GEMINI_API_KEY) primary + Pollinations vision fallback via ai-provider
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(req);
@@ -32,46 +33,28 @@ Rules:
 - be specific about what you actually see, never generic
 - if text is visible in the media, factor it into the topic`;
 
-    const visionRes = await fetch('https://text.pollinations.ai/openai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'openai',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: instruction },
-              { type: 'image_url', image_url: { url: imageBase64 } },
-            ],
-          },
-        ],
-      }),
-    });
-
-    if (!visionRes.ok) {
-      throw new Error('Vision analysis failed');
-    }
-
-    const raw = await visionRes.text();
-    let content = raw;
-    try {
-      const parsed = JSON.parse(raw);
-      content = parsed.choices?.[0]?.message?.content || raw;
-    } catch {
-      content = raw;
+    const analysis = await analyzeMedia(imageBase64, instruction);
+    if (!analysis) {
+      // No vision backend reachable (Pollinations anonymous vision is gated with 402).
+      // Degrade gracefully — the user can still type topic/description manually.
+      return NextResponse.json({ error: 'AI scan is unavailable right now — please fill the topic and description manually' }, { status: 503 });
     }
 
     let result: Record<string, unknown>;
     try {
-      result = JSON.parse(content);
+      result = JSON.parse(analysis);
     } catch {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      const stripped = analysis.replace(/```(?:json)?/gi, '');
+      const jsonMatch = stripped.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        result = JSON.parse(jsonMatch[0]);
+        try {
+          result = JSON.parse(jsonMatch[0]);
+        } catch {
+          result = { topic: '', description: stripped.slice(0, 500) };
+        }
       } else {
         // Fall back to using the raw description text
-        result = { topic: '', description: content.slice(0, 500) };
+        result = { topic: '', description: stripped.slice(0, 500) };
       }
     }
 

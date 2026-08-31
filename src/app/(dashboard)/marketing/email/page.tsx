@@ -19,6 +19,7 @@ interface PlatformCaption {
 interface GeneratedContent {
   topic: string;
   imageAnalysis?: string;
+  visionFailed?: boolean;
   platforms: PlatformCaption[];
   generalTips: string[];
 }
@@ -36,6 +37,8 @@ export default function SocialMediaPage() {
   const [topic, setTopic] = useState('');
   const [videoDescription, setVideoDescription] = useState('');
   const [tone, setTone] = useState('engaging');
+  const [language, setLanguage] = useState('english');
+  const [selectedHooks, setSelectedHooks] = useState<Record<string, number>>({});
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState<GeneratedContent | null>(null);
   const [copiedPlatform, setCopiedPlatform] = useState<string | null>(null);
@@ -193,6 +196,7 @@ export default function SocialMediaPage() {
         topic: topic.trim(),
         videoDescription: videoDescription.trim(),
         tone,
+        language,
         platforms: selectedPlatforms,
       };
 
@@ -209,8 +213,13 @@ export default function SocialMediaPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        setGenerated(data);
-        showToast('Captions generated successfully!');
+        if (!Array.isArray(data.platforms) || data.platforms.length === 0) {
+          showToast('AI returned no captions — please regenerate', 'error');
+        } else {
+          setSelectedHooks({});
+          setGenerated(data);
+          showToast('Captions generated successfully!');
+        }
       } else {
         const err = await res.json().catch(() => ({ error: 'Failed' }));
         showToast(err.error || 'Failed to generate captions', 'error');
@@ -223,18 +232,44 @@ export default function SocialMediaPage() {
     }
   };
 
-  const handleCopy = (platform: string, content: string) => {
-    navigator.clipboard.writeText(content);
+  const copyText = async (content: string): Promise<boolean> => {
+    try {
+      await navigator.clipboard.writeText(content);
+      return true;
+    } catch {
+      // Fallback for non-secure contexts / older browsers
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = content;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+      } catch {
+        return false;
+      }
+    }
+  };
+
+  const handleCopy = async (platform: string, content: string) => {
+    const ok = await copyText(content);
+    if (!ok) { showToast('Copy failed — please select and copy manually', 'error'); return; }
     setCopiedPlatform(platform);
     showToast('Copied to clipboard!');
     setTimeout(() => setCopiedPlatform(null), 2000);
   };
 
   const getFullCaption = (p: PlatformCaption) => {
-    const hook = p.hooks[0] ? `${p.hooks[0]}\n\n` : '';
-    const hashtags = p.hashtags.length > 0 ? `\n\n${p.hashtags.join(' ')}` : '';
-    return `${hook}${p.caption}${hashtags}`;
+    const hookIdx = selectedHooks[p.platform] ?? 0;
+    const hook = p.hooks?.[hookIdx] ? `${p.hooks[hookIdx]}\n\n` : '';
+    const hashtags = (p.hashtags?.length ?? 0) > 0 ? `\n\n${p.hashtags.join(' ')}` : '';
+    return `${hook}${p.caption ?? ''}${hashtags}`;
   };
+
+  const getFullLength = (p: PlatformCaption) => getFullCaption(p).length;
 
   const tones = [
     { value: 'engaging', label: 'Engaging & Fun' },
@@ -243,6 +278,12 @@ export default function SocialMediaPage() {
     { value: 'bold', label: 'Bold & Viral' },
     { value: 'educational', label: 'Educational' },
     { value: 'inspirational', label: 'Inspirational' },
+  ];
+
+  const languages = [
+    { value: 'english', label: 'English' },
+    { value: 'hinglish', label: 'Hinglish' },
+    { value: 'hindi', label: 'हिंदी (Hindi)' },
   ];
 
   return (
@@ -392,6 +433,23 @@ export default function SocialMediaPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Caption Language */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-purple-500" /> Caption Language
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {languages.map(l => (
+                    <button key={l.value} onClick={() => setLanguage(l.value)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        language === l.value ? 'bg-pink-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      }`}>
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Right: Platform Selection */}
@@ -435,7 +493,7 @@ export default function SocialMediaPage() {
           {/* Generate Button */}
           <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
             <button onClick={handleGenerate}
-              disabled={generating || analyzing || (!topic.trim() && !videoDescription.trim() && !uploadedMedia)}
+              disabled={generating || analyzing || selectedPlatforms.length === 0 || (!topic.trim() && !videoDescription.trim() && !uploadedMedia)}
               className="w-full py-3.5 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-purple-600/20">
               {analyzing ? (
                 <>
@@ -453,6 +511,9 @@ export default function SocialMediaPage() {
                 </>
               )}
             </button>
+            {selectedPlatforms.length === 0 && (
+              <p className="mt-2 text-center text-[11px] text-amber-600 dark:text-amber-400">Select at least one platform to generate captions</p>
+            )}
           </div>
         </motion.div>
 
@@ -496,15 +557,25 @@ export default function SocialMediaPage() {
                 </div>
               )}
 
+              {/* Vision fallback note */}
+              {generated.visionFailed && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-200 dark:border-amber-800 p-4 mb-6 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                  <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+                    AI media scan is temporarily unavailable, so captions were crafted from your topic &amp; description. Edit them above or regenerate in a few minutes.
+                  </p>
+                </div>
+              )}
+
               {/* General Tips */}
-              {generated.generalTips.length > 0 && (
+              {(generated.generalTips?.length ?? 0) > 0 && (
                 <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl border border-amber-200 dark:border-amber-800 p-5 mb-6">
                   <div className="flex items-center gap-2 mb-3">
                     <TrendingUp className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                     <h3 className="text-sm font-bold text-amber-900 dark:text-amber-200">Pro Tips for Maximum Global Reach</h3>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {generated.generalTips.map((tip, i) => (
+                    {(generated.generalTips ?? []).map((tip, i) => (
                       <p key={i} className="text-xs text-amber-800 dark:text-amber-300 flex items-start gap-1.5">
                         <span className="text-amber-500 mt-0.5">•</span> {tip}
                       </p>
@@ -520,7 +591,11 @@ export default function SocialMediaPage() {
                   if (!config) return null;
                   const Icon = config.icon;
                   const fullCaption = getFullCaption(p);
+                  const fullLength = getFullLength(p);
                   const isCopied = copiedPlatform === p.platform;
+                  const hooks = p.hooks ?? [];
+                  const hashtags = p.hashtags ?? [];
+                  const selectedHookIdx = selectedHooks[p.platform] ?? 0;
 
                   return (
                     <motion.div key={p.platform} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
@@ -531,14 +606,14 @@ export default function SocialMediaPage() {
                           <Icon className={`w-5 h-5 ${config.color}`} />
                           <div>
                             <h3 className={`text-sm font-bold ${config.color}`}>{config.label}</h3>
-                            <p className="text-[10px] text-gray-400">{p.characterCount} / {config.maxChars.toLocaleString()} chars</p>
+                            <p className="text-[10px] text-gray-400">{fullLength.toLocaleString()} / {config.maxChars.toLocaleString()} chars</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                            p.characterCount <= config.maxChars ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                            fullLength <= config.maxChars ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                           }`}>
-                            {p.characterCount <= config.maxChars ? 'Optimal' : 'Too Long'}
+                            {fullLength <= config.maxChars ? 'Optimal' : 'Too Long'}
                           </span>
                           <button onClick={() => handleCopy(p.platform, fullCaption)}
                             className="p-1.5 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="Copy full caption">
@@ -547,13 +622,20 @@ export default function SocialMediaPage() {
                         </div>
                       </div>
 
-                      {/* Hooks */}
-                      {p.hooks.length > 0 && (
+                      {/* Hooks — tap to pick the one included in the copied caption */}
+                      {hooks.length > 0 && (
                         <div className="mb-3">
-                          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Hooks (choose one)</p>
+                          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Hooks — tap to use in copy</p>
                           <div className="space-y-1">
-                            {p.hooks.map((hook, j) => (
-                              <p key={j} className="text-xs text-gray-700 dark:text-gray-300 bg-white/50 dark:bg-gray-800/50 rounded-lg px-3 py-1.5">{hook}</p>
+                            {hooks.map((hook, j) => (
+                              <button key={j} onClick={() => setSelectedHooks(prev => ({ ...prev, [p.platform]: j }))}
+                                className={`w-full text-left text-xs rounded-lg px-3 py-1.5 transition-all border ${
+                                  selectedHookIdx === j
+                                    ? 'bg-purple-50 dark:bg-purple-900/30 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300 font-semibold'
+                                    : 'bg-white/50 dark:bg-gray-800/50 border-transparent text-gray-700 dark:text-gray-300 hover:border-purple-200 dark:hover:border-purple-800'
+                                }`}>
+                                {hook}
+                              </button>
                             ))}
                           </div>
                         </div>
@@ -561,16 +643,30 @@ export default function SocialMediaPage() {
 
                       {/* Caption */}
                       <div className="mb-3">
-                        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Caption</p>
-                        <p className="text-xs text-gray-700 dark:text-gray-300 bg-white/50 dark:bg-gray-800/50 rounded-lg px-3 py-2 leading-relaxed whitespace-pre-wrap">{p.caption}</p>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Caption</p>
+                          {p.caption && (
+                            <button onClick={() => handleCopy(`${p.platform}-caption`, p.caption)} title="Copy caption only"
+                              className="p-1 rounded-md hover:bg-white/70 dark:hover:bg-gray-800 transition-colors">
+                              {copiedPlatform === `${p.platform}-caption` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-gray-400" />}
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-700 dark:text-gray-300 bg-white/50 dark:bg-gray-800/50 rounded-lg px-3 py-2 leading-relaxed whitespace-pre-wrap">{p.caption || '—'}</p>
                       </div>
 
                       {/* Hashtags */}
-                      {p.hashtags.length > 0 && (
+                      {hashtags.length > 0 && (
                         <div>
-                          <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Global Hashtags</p>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Global Hashtags</p>
+                            <button onClick={() => handleCopy(`${p.platform}-hashtags`, hashtags.join(' '))} title="Copy hashtags only"
+                              className="p-1 rounded-md hover:bg-white/70 dark:hover:bg-gray-800 transition-colors">
+                              {copiedPlatform === `${p.platform}-hashtags` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-gray-400" />}
+                            </button>
+                          </div>
                           <div className="flex flex-wrap gap-1">
-                            {p.hashtags.map((tag, j) => (
+                            {hashtags.map((tag, j) => (
                               <span key={j} className="px-2 py-0.5 rounded-md text-[10px] bg-white/50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 font-medium">{tag}</span>
                             ))}
                           </div>
