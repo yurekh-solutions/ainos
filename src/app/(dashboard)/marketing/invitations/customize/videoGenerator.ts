@@ -146,7 +146,7 @@ export function generateAnimatedVideo(opts: VideoOptions): Promise<Blob> {
         petals.forEach(p => { p.y += p.speed; p.sway += p.swaySpeed; p.rotation += p.rotSpeed; const px = p.x + Math.sin(p.sway)*35; if (p.y > H+20) { p.y = -20; p.x = Math.random()*W; } ctx.save(); ctx.globalAlpha = 0.55; ctx.translate(px, p.y); ctx.rotate(p.rotation); ctx.fillStyle = p.color; ctx.beginPath(); ctx.ellipse(0,0,p.r,p.r*0.6,0,0,Math.PI*2); ctx.fill(); ctx.restore(); });
         sparkles.forEach(s => { const alpha = 0.4+0.6*Math.sin(elapsed*s.speed+s.phase); ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = '#fff8dc'; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill(); ctx.restore(); });
 
-        const breathe = 1 + 0.006 * Math.sin(elapsed * 0.0012);
+        const breathe = 1 + 0.003 * Math.sin(elapsed * 0.0012);
         ctx.save(); ctx.translate(W/2, H/2); ctx.scale(breathe, breathe); ctx.translate(-W/2, -H/2);
         if (boardRect && boardStyle) {
           const bt = easeOut(Math.min(Math.max(elapsed / 650, 0), 1)); ctx.save(); ctx.globalAlpha = bt;
@@ -160,14 +160,14 @@ export function generateAnimatedVideo(opts: VideoOptions): Promise<Blob> {
         blocks.forEach((b, i) => {
           const start = (boardRect ? 520 : 300) + i * perBlock * 0.5;
           const t = Math.min(Math.max((elapsed - start) / 750, 0), 1); if (t <= 0) return;
-          const alpha = easeOut(t) * b.opacity, scale = 0.94 + 0.06 * easeOut(t), offsetY = (1 - easeOut(t)) * 26, y = b.yPx + offsetY;
+          const alpha = easeOut(t) * b.opacity, offsetY = (1 - easeOut(t)) * 12, y = b.yPx + offsetY;
           ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           const fontSize = Math.round(b.fontPx);
           ctx.font = `${b.weight} ${fontSize}px '${b.font}', 'Tiro Devanagari Hindi', serif`;
           const lines = String(b.text).split('\n'), lineH = fontSize * 1.32, startY = y - ((lines.length - 1) * lineH) / 2;
-          ctx.shadowColor = textHalo; ctx.shadowBlur = boardRect ? 6 : 16; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
-          ctx.lineWidth = boardRect ? 0 : Math.max(2.5, fontSize / 10); ctx.strokeStyle = textOutline;
-          lines.forEach((line, li) => { const ly = startY + li * lineH; ctx.save(); ctx.translate(W/2, ly); ctx.scale(scale, scale); if (!boardRect) ctx.strokeText(line, 0, 0, W*0.86); ctx.fillText(line, 0, 0, W*0.86); ctx.restore(); });
+          ctx.shadowColor = textHalo; ctx.shadowBlur = boardRect ? 4 : 12; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
+          ctx.lineWidth = boardRect ? 0 : Math.max(2, fontSize / 12); ctx.strokeStyle = textOutline;
+          lines.forEach((line, li) => { const ly = startY + li * lineH; ctx.save(); ctx.translate(W/2, ly); if (!boardRect) ctx.strokeText(line, 0, 0, W*0.86); ctx.fillText(line, 0, 0, W*0.86); ctx.restore(); });
           ctx.restore();
         });
         ctx.restore();

@@ -216,7 +216,7 @@ export default function InvitationsPage() {
       </section>
 
       {/* Filters Section */}
-      <section className="relative z-30 border-y border-[#f0e3cd] dark:border-gray-700 py-3 md:sticky md:top-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+      <section className="sticky top-0 z-30 border-y border-[#f0e3cd] dark:border-gray-700 py-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="rounded-2xl bg-white dark:bg-gray-800 border border-[#eadfc9] dark:border-gray-600 shadow-sm p-2">
             <div className="flex flex-wrap items-center gap-2">
