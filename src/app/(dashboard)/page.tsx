@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -19,63 +20,79 @@ interface MarketingTool {
   accent: string;
 }
 
-const marketingTools: MarketingTool[] = [
-  {
-    title: 'Social Media',
-    description: 'AI-powered captions, hooks & hashtags for every platform.',
-    icon: Sparkles,
-    href: '/marketing/email',
-    stat: '6 platforms ready',
-    gradient: 'from-violet-500 to-purple-600',
-    accent: '#6c5ce7',
-  },
-  {
-    title: 'SEO Platform',
-    description: 'Site audits, keyword research, competitor & content insights.',
-    icon: Globe,
-    href: '/marketing/seo',
-    stat: '92/100 health score',
-    gradient: 'from-emerald-500 to-teal-600',
-    accent: '#00b894',
-  },
-  {
-    title: 'Blog & Content',
-    description: 'SEO-optimized content generation and one-click publishing.',
-    icon: FileText,
-    href: '/marketing/blog',
-    stat: '4 drafts ready',
-    gradient: 'from-sky-500 to-blue-600',
-    accent: '#0984e3',
-  },
-  {
-    title: 'Blog Agent',
-    description: 'Autonomous agent that researches, writes and publishes blogs.',
-    icon: Zap,
-    href: '/marketing/blog-agent',
-    stat: 'Agent ready',
-    gradient: 'from-amber-500 to-orange-600',
-    accent: '#f59e0b',
-  },
-  {
-    title: 'Invitations',
-    description: '2000+ festival & occasion invitation templates with your branding.',
-    icon: Send,
-    href: '/marketing/invitations',
-    stat: '2000+ templates',
-    gradient: 'from-pink-500 to-rose-600',
-    accent: '#e84393',
-  },
-];
-
-const suiteStats = [
-  { label: 'Marketing Tools', value: '5', sub: 'All active & ready', icon: Sparkles, gradient: 'from-violet-500 to-purple-600', color: '#6c5ce7' },
-  { label: 'Invitation Templates', value: '2000+', sub: 'Festivals & occasions covered', icon: Send, gradient: 'from-pink-500 to-rose-600', color: '#e84393' },
-  { label: 'Social Platforms', value: '6', sub: 'Captions, hooks & hashtags', icon: Mail, gradient: 'from-sky-500 to-blue-600', color: '#0984e3' },
-  { label: 'SEO Health', value: '92/100', sub: 'Latest site audit score', icon: Globe, gradient: 'from-emerald-500 to-teal-600', color: '#00b894' },
-];
-
 export default function DashboardPage() {
   const { data: session } = useSession();
+  const [templateCount, setTemplateCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/invitations/stats')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { count?: number } | null) => {
+        if (!cancelled && data?.count) setTemplateCount(data.count);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const templateLabel = templateCount ? `${templateCount}` : '500+';
+
+  const marketingTools: MarketingTool[] = [
+    {
+      title: 'Social Media',
+      description: 'AI-powered captions, hooks & hashtags for every platform.',
+      icon: Sparkles,
+      href: '/marketing/email',
+      stat: '6 platforms ready',
+      gradient: 'from-violet-500 to-purple-600',
+      accent: '#6c5ce7',
+    },
+    {
+      title: 'SEO Platform',
+      description: 'Site audits, keyword research, competitor & content insights.',
+      icon: Globe,
+      href: '/marketing/seo',
+      stat: '92/100 health score',
+      gradient: 'from-emerald-500 to-teal-600',
+      accent: '#00b894',
+    },
+    {
+      title: 'Blog & Content',
+      description: 'SEO-optimized content generation and one-click publishing.',
+      icon: FileText,
+      href: '/marketing/blog',
+      stat: '4 drafts ready',
+      gradient: 'from-sky-500 to-blue-600',
+      accent: '#0984e3',
+    },
+    {
+      title: 'Blog Agent',
+      description: 'Autonomous agent that researches, writes and publishes blogs.',
+      icon: Zap,
+      href: '/marketing/blog-agent',
+      stat: 'Agent ready',
+      gradient: 'from-amber-500 to-orange-600',
+      accent: '#f59e0b',
+    },
+    {
+      title: 'Invitations',
+      description: `${templateLabel} festival & occasion invitation templates with your branding.`,
+      icon: Send,
+      href: '/marketing/invitations',
+      stat: `${templateLabel} templates`,
+      gradient: 'from-pink-500 to-rose-600',
+      accent: '#e84393',
+    },
+  ];
+
+  const suiteStats = [
+    { label: 'Marketing Tools', value: '5', sub: 'All active & ready', icon: Sparkles, gradient: 'from-violet-500 to-purple-600', color: '#6c5ce7' },
+    { label: 'Invitation Templates', value: templateLabel, sub: 'Festivals & occasions covered', icon: Send, gradient: 'from-pink-500 to-rose-600', color: '#e84393' },
+    { label: 'Social Platforms', value: '6', sub: 'Captions, hooks & hashtags', icon: Mail, gradient: 'from-sky-500 to-blue-600', color: '#0984e3' },
+    { label: 'SEO Health', value: '92/100', sub: 'Latest site audit score', icon: Globe, gradient: 'from-emerald-500 to-teal-600', color: '#00b894' },
+  ];
 
   const getGreeting = () => {
     const hour = new Date().getHours();
