@@ -1,1 +1,9 @@
-feat: email campaigns - toast notifications and better error handling  
+perf(invitations): compact filter bar + horizontal wheel scroll
+
+- Reduce chip height (h-9 -> h-7) and tool buttons (h-10 -> h-8)
+- Tighter padding throughout sticky filter section
+- Add mouse-wheel to horizontal-scroll for chip rows on desktop
+- Add snap-x scroll behaviour for smoother trackpad swipes
+- Hide scrollbar visually while keeping scroll functionality
+- "Show less" chip now shows just "+N" for compactness
+- Filter section total height reduced by ~40%, more cards visible
