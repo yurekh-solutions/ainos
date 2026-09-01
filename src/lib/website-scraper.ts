@@ -216,24 +216,27 @@ Inner Pages: ${innerPages.join('\n---\n').substring(0, 3000)}
 
   const systemPrompt = `You are an expert website analyst and SEO strategist. Analyze the given website content and return ONLY valid JSON (no markdown, no other text).
 
+CRITICAL: The topics MUST be specific to this website's actual business. If the website is about AV equipment rental, topics should be about projectors, LED screens, sound systems, event equipment — NOT generic "Technology & Software". If it's a fashion brand, topics should be about clothing, styling, trends — NOT generic business advice.
+
 Return this exact JSON format:
 {
-  "niche": "The primary industry/niche of this website (1-3 words)",
+  "niche": "The primary industry/niche of this website (specific, 2-5 words, e.g., 'AV Equipment Rental', 'Women's Fashion Boutique', 'Corporate Law Firm')",
   "brandVoice": "Description of the brand's tone and voice (formal/casual/technical/etc, 1-2 sentences)",
   "competitors": ["Competitor 1", "Competitor 2", "Competitor 3"],
   "topics": [
-    "Blog topic 1 (specific, SEO-friendly, actionable)",
+    "Blog topic 1 (specific to this website's business, SEO-friendly, actionable)",
     "Blog topic 2",
     ...30 topics total...
   ]
 }
 
 Rules:
-- Generate exactly 30 unique, SEO-optimized blog topics tailored to this website's niche
-- Topics should be specific enough to write 3000-word articles about
+- Generate exactly 30 unique, SEO-optimized blog topics SPECIFICALLY TAILORED to this website's actual business
+- Topics should mention specific products/services/locations relevant to this business
 - Mix of informational, commercial, and transactional intent topics
 - Include trending topics and evergreen content
-- Topics should help the website rank on Google and get cited by AI`;
+- Topics should help the website rank on Google for its specific niche
+- DO NOT generate generic topics that could apply to any business`;
 
   try {
     const text = await generateAIText(systemPrompt, contentSummary, { json: true });
@@ -267,21 +270,29 @@ Rules:
     // Smart niche detection from multiple signals
     const allText = `${name} ${desc} ${headings} ${keywords} ${content}`.toLowerCase();
     const nicheSignals: Record<string, string[]> = {
-      'Fashion & Clothing': ['fashion', 'clothing', 'apparel', 'wear', 'style', 'outfit', 'dress', 'pants', 'jeans', 'shirt', 'garment', 'textile', 'boutique', 'wardrobe'],
+      'AV Equipment Rental': ['av equipment', 'audio visual', 'projector rental', 'led screen', 'sound system', 'speaker rental', 'microphone', 'stage lighting', 'event equipment', 'av rental', 'multimedia rental', 'projection', 'pa system', 'dj equipment'],
+      'Event Services': ['event planning', 'wedding planner', 'corporate event', 'conference', 'party planner', 'event organizer', 'venue', 'event decoration', 'catering service', 'event management'],
+      'Fashion & Clothing': ['fashion', 'clothing', 'apparel', 'wear', 'style', 'outfit', 'dress', 'pants', 'jeans', 'shirt', 'garment', 'textile', 'boutique', 'wardrobe', 'designer wear'],
       'Technology & Software': ['tech', 'software', 'app', 'digital', 'cloud', 'saas', 'platform', 'ai', 'machine learning', 'coding', 'developer', 'programming'],
-      'Health & Wellness': ['health', 'wellness', 'medical', 'fitness', 'nutrition', 'diet', 'yoga', 'mental health', 'healthcare', 'hospital', 'clinic'],
-      'Food & Restaurant': ['food', 'restaurant', 'recipe', 'cooking', 'cuisine', 'meal', 'chef', 'dining', 'cafe', 'bakery', 'catering'],
-      'Real Estate': ['real estate', 'property', 'housing', 'apartment', 'rental', 'mortgage', 'home', 'land', 'construction', 'interior'],
-      'Education & Learning': ['education', 'learning', 'course', 'training', 'school', 'university', 'student', 'teacher', 'academic', 'certification'],
-      'Finance & Banking': ['finance', 'banking', 'investment', 'loan', 'insurance', 'trading', 'stock', 'crypto', 'accounting', 'tax'],
-      'E-commerce & Retail': ['ecommerce', 'retail', 'shopping', 'store', 'product', 'marketplace', 'online shopping', 'cart', 'checkout'],
-      'Travel & Tourism': ['travel', 'tourism', 'hotel', 'flight', 'vacation', 'destination', 'tour', 'trip', 'booking', 'hospitality'],
-      'Marketing & Advertising': ['marketing', 'advertising', 'seo', 'social media', 'branding', 'content', 'digital marketing', 'campaign'],
-      'Automotive': ['car', 'automotive', 'vehicle', 'auto', 'motorcycle', 'electric vehicle', 'ev', 'driving', 'garage'],
-      'Beauty & Cosmetics': ['beauty', 'cosmetics', 'skincare', 'makeup', 'salon', 'spa', 'hair', 'fragrance', 'grooming'],
-      'Sports & Fitness': ['sports', 'fitness', 'gym', 'exercise', 'athlete', 'training', 'workout', 'running', 'cycling'],
-      'Legal Services': ['legal', 'law', 'attorney', 'lawyer', 'court', 'litigation', 'compliance', 'contract'],
-      'Manufacturing & Industrial': ['manufacturing', 'industrial', 'factory', 'production', 'supply chain', 'logistics', 'engineering'],
+      'Health & Wellness': ['health', 'wellness', 'medical', 'fitness', 'nutrition', 'diet', 'yoga', 'mental health', 'healthcare', 'hospital', 'clinic', 'doctor'],
+      'Food & Restaurant': ['food', 'restaurant', 'recipe', 'cooking', 'cuisine', 'meal', 'chef', 'dining', 'cafe', 'bakery', 'catering', 'cloud kitchen'],
+      'Real Estate': ['real estate', 'property', 'housing', 'apartment', 'rental', 'mortgage', 'home', 'land', 'construction', 'interior', 'builder', 'developer'],
+      'Education & Learning': ['education', 'learning', 'course', 'training', 'school', 'university', 'student', 'teacher', 'academic', 'certification', 'coaching', 'tutor'],
+      'Finance & Banking': ['finance', 'banking', 'investment', 'loan', 'insurance', 'trading', 'stock', 'crypto', 'accounting', 'tax', 'financial advisor'],
+      'E-commerce & Retail': ['ecommerce', 'retail', 'shopping', 'store', 'product', 'marketplace', 'online shopping', 'cart', 'checkout', 'shopify', 'woocommerce'],
+      'Travel & Tourism': ['travel', 'tourism', 'hotel', 'flight', 'vacation', 'destination', 'tour', 'trip', 'booking', 'hospitality', 'resort', 'homestay'],
+      'Marketing & Advertising': ['marketing', 'advertising', 'seo', 'social media', 'branding', 'content', 'digital marketing', 'campaign', 'ppc', 'lead generation'],
+      'Automotive': ['car', 'automotive', 'vehicle', 'auto', 'motorcycle', 'electric vehicle', 'ev', 'driving', 'garage', 'car dealer', 'service center'],
+      'Beauty & Cosmetics': ['beauty', 'cosmetics', 'skincare', 'makeup', 'salon', 'spa', 'hair', 'fragrance', 'grooming', 'parlor'],
+      'Sports & Fitness': ['sports', 'fitness', 'gym', 'exercise', 'athlete', 'training', 'workout', 'running', 'cycling', 'personal trainer', 'yoga studio'],
+      'Legal Services': ['legal', 'law', 'attorney', 'lawyer', 'court', 'litigation', 'compliance', 'contract', 'advocate', 'legal advisor'],
+      'Manufacturing & Industrial': ['manufacturing', 'industrial', 'factory', 'production', 'supply chain', 'logistics', 'engineering', 'machinery'],
+      'Hospitality': ['hotel', 'resort', 'homestay', 'guesthouse', 'booking', 'accommodation', 'hospitality', 'room service'],
+      'Construction': ['construction', 'building', 'contractor', 'architect', 'interior design', 'renovation', 'civil engineering', 'home improvement'],
+      'Consulting': ['consulting', 'advisory', 'strategy', 'management consulting', 'business consultant', 'consultant'],
+      'Media & Entertainment': ['media', 'entertainment', 'film', 'music', 'production', 'studio', 'photography', 'videography', 'content creation'],
+      'Agriculture': ['agriculture', 'farming', 'crop', 'livestock', 'organic', 'seeds', 'agricultural', 'farm'],
+      'Logistics': ['logistics', 'shipping', 'courier', 'transport', 'freight', 'supply chain', 'delivery', 'warehouse'],
     };
 
     let detectedNiche = 'Business';
@@ -301,37 +312,38 @@ Rules:
 
     const n = detectedNiche;
     // 30 unique, varied topic templates - all dynamic based on detected niche
+    // Templates are business-focused and work for specific niches
     const topicTemplates = [
-      `The Complete Guide to ${n}: Everything Beginners Need to Know`,
-      `Top 10 ${n} Trends Shaping the Industry in 2026`,
-      `How to Choose the Right ${n} Solutions: A Buyer's Guide`,
-      `${n} Mistakes Everyone Makes (And How to Avoid Them)`,
-      `The Ultimate ${n} Checklist for Professionals`,
-      `How ${n} is Evolving: What to Expect in the Next 5 Years`,
-      `Beginner to Pro: Your Complete ${n} Learning Roadmap`,
-      `15 Expert Tips to Master ${n} Faster`,
-      `${n} vs the Competition: What Makes the Difference`,
-      `The Hidden Costs of ${n} Nobody Talks About`,
-      `How to Build a Winning ${n} Strategy from Scratch`,
+      `The Complete Guide to ${n} in 2026: What Every Business Owner Should Know`,
+      `Top 10 ${n} Trends That Will Define the Industry This Year`,
+      `How to Choose the Right ${n} Provider: A Step-by-Step Buyer's Guide`,
+      `${n} Mistakes That Cost Businesses Thousands (And How to Avoid Them)`,
+      `The Ultimate ${n} Checklist for Professionals and Beginners`,
+      `How ${n} is Evolving: Expert Predictions for the Next 5 Years`,
+      `From Beginner to Expert: Your Complete ${n} Learning Roadmap`,
+      `15 Expert Tips to Get the Most Out of Your ${n} Investment`,
+      `${n} vs Alternatives: An Honest Comparison for Smart Buyers`,
+      `The Hidden Costs of ${n} Nobody Warns You About`,
+      `How to Build a Winning ${n} Strategy for Your Business`,
       `${n} for Small Businesses: A Practical Getting-Started Guide`,
-      `The Science Behind ${n}: What Research Actually Says`,
-      `Case Study: How One Company Transformed Their ${n} Approach`,
-      `${n} Tools and Software Worth Using in 2026`,
-      `The ROI of Investing in ${n}: Is It Worth It?`,
-      `Common ${n} Myths Debunked with Real Data`,
-      `How to Stay Ahead of the Curve in ${n}`,
+      `What Research Says About ${n}: Data-Backed Insights`,
+      `Case Study: How One Business Transformed Results with ${n}`,
+      `Best ${n} Tools and Solutions Worth Using in 2026`,
+      `The Real ROI of ${n}: Is the Investment Worth It?`,
+      `Common ${n} Myths Debunked with Real-World Evidence`,
+      `How to Stay Ahead of Competitors in the ${n} Space`,
       `${n} Best Practices: Lessons from Industry Leaders`,
-      `A Day in the Life: What Working in ${n} Actually Looks Like`,
-      `The Future of ${n}: AI, Automation, and What's Next`,
+      `A Day in the Life: What Working with ${n} Actually Looks Like`,
+      `The Future of ${n}: Technology, Trends, and What's Next`,
       `How to Measure Success in ${n}: KPIs That Actually Matter`,
-      `${n} on a Budget: Smart Strategies That Don't Break the Bank`,
-      `The Complete ${n} Glossary: Terms Every Professional Should Know`,
-      `How ${n} Impacts Customer Experience and Loyalty`,
-      `${n} Compliance and Regulations: What You Need to Know`,
-      `From Zero to Hero: Building Your First ${n} Campaign`,
-      `The Psychology Behind Effective ${n} Decisions`,
-      `${n} Trends by Region: A Global Perspective`,
-      `Your ${n} Action Plan: 30 Days to Meaningful Results`,
+      `${n} on a Budget: Smart Strategies That Don't Compromise Quality`,
+      `The Complete ${n} Glossary: Terms Every Client Should Know`,
+      `How ${n} Directly Impacts Customer Experience and Loyalty`,
+      `${n} Regulations and Compliance: What You Must Know`,
+      `From Zero to Results: Building Your First ${n} Plan`,
+      `The Psychology Behind Smart ${n} Decisions`,
+      `${n} Trends by Region: A Practical Global Perspective`,
+      `Your 30-Day ${n} Action Plan for Meaningful Results`,
     ];
 
     return {

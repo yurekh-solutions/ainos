@@ -1,22 +1,18 @@
-Blog cards show content preview + AI generation quota resilience + real photos
+Smarter niche detection + re-analyze all websites with correct topics
 
-Cards:
-- Queued (Preparing) cards now show a readable content preview built
-  from niche + keywords, so every card shows heading, content, image
-- Recent Blog Activity no longer lists CANCELLED rows from old
-  disconnected sites
+Scraper improvements:
+- Fallback niche detection now uses 20+ specific niche signal maps
+  (AV Equipment Rental, Fashion, Event Services, Food, Real Estate, etc.)
+  instead of generic keyword matching that misclassified everything as
+  "Technology & Software"
+- AI prompt explicitly instructs topics must match the website's actual
+  business, not generic business advice
 
-Generation resilience (Gemini free quota 429 / Pollinations 402):
-- Multiple Gemini keys rotate on quota errors: GEMINI_API_KEYS="k1,k2"
-- Quota/rate-limit errors keep rows pending ("Preparing") instead of
-  FAILED and the batch stops instead of burning attempts; rows retry
-  automatically on the next run / daily quota reset
-- Non-JSON AI replies are salvaged as markdown articles instead of failing
-- Failure reasons are now logged server-side
+Re-analyzed all 3 active websites:
+- skyav.in: "Technology & Software" → "AV Equipment Rental" (30 schedules)
+- tubhyam.in: "tubhyam" → "Fashion & Clothing" (6 schedules)
+- yurekh.com: "Technology & Software" → "Marketing & Advertising" (30 schedules)
 
-Images (Pollinations rejected as low quality):
-- Per-topic hash picks a distinct Pexels photo per blog (Date-based
-  seed previously gave identical images to blogs created in one loop)
-- Publish step prefers a fresh real photo when Pexels/Unsplash is configured
-- DB fix applied: all 29 published posts with Pollinations images
-  replaced with topic-matched Pexels photos
+New utility: scripts/reanalyzeWebsite.ts — re-scrapes any connected
+website and updates niche + topics + pending schedules.
+Usage: npx tsx scripts/reanalyzeWebsite.ts <url>
