@@ -41,6 +41,20 @@ export async function GET(req: NextRequest) {
       });
       if (!post) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+      // Tenant guard: an embedded single-post view must never show another
+      // company's article on a client's website
+      const slugSiteHost = normalizeHost(searchParams.get('site') || req.headers.get('referer') || req.headers.get('origin') || '');
+      if (slugSiteHost) {
+        const sites = await prisma.connectedWebsite.findMany({
+          where: { isActive: true },
+          select: { id: true, url: true, companyId: true },
+        });
+        const siteMatch = sites.find(w => normalizeHost(w.url || '') === slugSiteHost);
+        if (siteMatch && post.companyId && post.companyId !== siteMatch.companyId) {
+          return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        }
+      }
+
       const website = post.schedules?.[0]?.subscription?.connectedWebsite;
 
       const responseData = {

@@ -1,5 +1,1 @@
-feat(embed): non-developer friendly publish flow
-
-- Publish modal: platform picker (WordPress/Shopify/Wix/Other) with simple 3-step plain-language guides, "See Live Preview" button, reassuring copy
-- /embed-preview page: live widget preview with the connected website's blogs (data-site)
-- embed.js self-healing: if a builder/SPA wipes the pasted div, widget creates its own section at page bottom - blogs always show up even when pasted in the wrong place
+fix(embed): tenant guard on single-post (slug) view - no cross-client article leakage
