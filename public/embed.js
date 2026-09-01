@@ -315,8 +315,9 @@
       if (category) params.set('category', category);
       if (slug) params.set('slug', slug);
       // Tell the API which website this widget lives on, so only this
-      // website's own blogs are served (multi-tenant isolation)
-      params.set('site', window.location.href);
+      // website's own blogs are served (multi-tenant isolation).
+      // data-site allows preview pages to impersonate a website.
+      params.set('site', container.getAttribute('data-site') || window.location.href);
 
       const res = await fetch(`${AINOS_API}?${params}`);
       if (!res.ok) throw new Error('Failed to load blogs');
@@ -421,10 +422,39 @@
   }
 
   // Auto-initialize on DOM ready
+  function makeFallback() {
+    const fallback = document.createElement('div');
+    fallback.id = 'ainos-blog';
+    fallback.setAttribute('data-limit', '6');
+    fallback.setAttribute('data-style', 'grid');
+    document.body.appendChild(fallback);
+    return fallback;
+  }
+
   function init() {
     injectStyles();
-    const containers = document.querySelectorAll('#ainos-blog, .ainos-blog-widget, [data-ainos-blog]');
+    let containers = Array.from(document.querySelectorAll('#ainos-blog, .ainos-blog-widget, [data-ainos-blog]'));
+    // Non-developer safety net: if the user's platform (React/SPA builders)
+    // wiped the pasted div, create our own section at the page bottom so
+    // blogs always show up
+    if (!containers.length) {
+      containers = [makeFallback()];
+    }
     containers.forEach(loadBlogs);
+
+    // Self-heal: some builders replace page HTML after mount — if our
+    // container gets removed, re-attach a fallback (checked for ~30s)
+    let checks = 0;
+    const heal = setInterval(() => {
+      checks++;
+      const alive = containers.some(c => document.body.contains(c));
+      if (!alive) {
+        const fallback = makeFallback();
+        containers = [fallback];
+        loadBlogs(fallback);
+      }
+      if (checks > 10) clearInterval(heal);
+    }, 3000);
   }
 
   if (document.readyState === 'loading') {

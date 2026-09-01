@@ -32,6 +32,30 @@ const lengths = [
   { value: 'extra-long', label: 'Extra Long (2800-3200 words)' }
 ];
 
+// Friendly, non-developer step-by-step guides per website builder
+const platformSteps: Record<string, string[]> = {
+  'WordPress': [
+    'Open the page where you want your blogs (Pages → Add New or edit any page).',
+    'Click the + button and choose “Custom HTML”.',
+    'Paste the code and press Publish. Done!',
+  ],
+  'Shopify': [
+    'Go to Online Store → Pages and open any page.',
+    'Click the “Show HTML” button in the editor.',
+    'Paste the code and press Save. Done!',
+  ],
+  'Wix': [
+    'In your editor, click Add → Embed → “Embed Code”.',
+    'Paste the code in the box.',
+    'Publish your site. Done!',
+  ],
+  'Other / Not sure': [
+    'Open your website editor — any platform works.',
+    'Paste the code anywhere on the page (bottom of the page is best).',
+    'Save or publish. The widget does the rest!',
+  ],
+};
+
 // Simple markdown to HTML converter
 function renderMarkdown(md: string): string {
   return md
@@ -60,6 +84,21 @@ export default function BlogPage() {
   const [scheduleDate, setScheduleDate] = useState('');
   const [showEmbed, setShowEmbed] = useState(false);
   const [copiedCode, setCopiedCode] = useState('');
+  const [embedPlatform, setEmbedPlatform] = useState('WordPress');
+  const [embedSite, setEmbedSite] = useState('');
+
+  // When the publish modal opens, remember the connected website so we can
+  // offer a live preview of the widget with that site's blogs
+  useEffect(() => {
+    if (!showEmbed) return;
+    fetch('/api/blog-agent/websites')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        const w = ((d && d.websites) || []).find((x: { isActive?: boolean }) => x.isActive !== false);
+        setEmbedSite((w && w.url) || '');
+      })
+      .catch(() => { /* preview is optional */ });
+  }, [showEmbed]);
   const [platformMode, setPlatformMode] = useState(false);
 
   // Platform-wide view is admin-only (soniajaiswal2222@gmail.com)
@@ -1131,56 +1170,35 @@ export default function BlogPage() {
                       {copiedCode === 'embed' ? <><Check className="w-3.5 h-3.5" /> Copied!</> : <><Copy className="w-3.5 h-3.5" /> Copy Code</>}
                     </button>
                   </div>
+                  <div className="flex flex-wrap items-center gap-2 mt-3">
+                    {embedSite && (
+                      <a href={`${baseUrl}/embed-preview?site=${encodeURIComponent(embedSite)}`} target="_blank" rel="noopener noreferrer"
+                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 transition-colors flex items-center gap-1.5 text-white text-xs font-medium">
+                        <Eye className="w-3.5 h-3.5" /> See Live Preview
+                      </a>
+                    )}
+                    <p className="text-[10px] text-gray-500">No technical knowledge needed — if you can copy-paste, you can do this!</p>
+                  </div>
                 </div>
 
-                {/* Platform-Specific Instructions */}
+                {/* Platform picker — simple steps for non-developers */}
                 <div>
-                  <h4 className="font-semibold text-xs text-gray-700 dark:text-gray-300 mb-3">How to Add on Your Platform:</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-lg"></span>
-                        <span className="font-semibold text-xs text-blue-900 dark:text-blue-200">WordPress</span>
-                      </div>
-                      <ol className="text-[10px] text-blue-800 dark:text-blue-300 space-y-1 list-decimal list-inside">
-                        <li>Pages → Add New (or edit)</li>
-                        <li>Click {'"'}+{'"'} → {'"'}Custom HTML{'"'}</li>
-                        <li>Paste code → Publish!</li>
-                      </ol>
-                    </div>
-                    <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-lg"></span>
-                        <span className="font-semibold text-xs text-green-900 dark:text-green-200">Shopify</span>
-                      </div>
-                      <ol className="text-[10px] text-green-800 dark:text-green-300 space-y-1 list-decimal list-inside">
-                        <li>Online Store → Pages</li>
-                        <li>Click {'"'}&lt;/&gt;{'"'} Show HTML</li>
-                        <li>Paste code → Save!</li>
-                      </ol>
-                    </div>
-                    <div className="bg-pink-50 dark:bg-pink-900/20 rounded-lg p-3 border border-pink-200 dark:border-pink-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-lg"></span>
-                        <span className="font-semibold text-xs text-pink-900 dark:text-pink-200">Wix</span>
-                      </div>
-                      <ol className="text-[10px] text-pink-800 dark:text-pink-300 space-y-1 list-decimal list-inside">
-                        <li>Add → Embed → Widget</li>
-                        <li>Click {'"'}Enter Code{'"'}</li>
-                        <li>Paste code → Update!</li>
-                      </ol>
-                    </div>
-                    <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 border border-orange-200 dark:border-orange-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-lg"></span>
-                        <span className="font-semibold text-xs text-orange-900 dark:text-orange-200">HTML / Any</span>
-                      </div>
-                      <ol className="text-[10px] text-orange-800 dark:text-orange-300 space-y-1 list-decimal list-inside">
-                        <li>Open your HTML file</li>
-                        <li>Paste where you want blogs</li>
-                        <li>Save & upload — Done!</li>
-                      </ol>
-                    </div>
+                  <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200 mb-1">Which website builder do you use?</h4>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3">
+                    Pick your platform and follow the 3 easy steps. Even if you paste in the wrong spot, the widget automatically finds its own place on your page.
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {Object.keys(platformSteps).map(p => (
+                      <button key={p} onClick={() => setEmbedPlatform(p)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${embedPlatform === p ? 'bg-purple-600 text-white border-purple-600' : 'border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-purple-400'}`}>
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                    <ol className="text-xs text-blue-900 dark:text-blue-200 space-y-2 list-decimal list-inside font-medium">
+                      {platformSteps[embedPlatform].map((s, i) => <li key={i}>{s}</li>)}
+                    </ol>
                   </div>
                 </div>
 

@@ -1,4 +1,5 @@
-fix(embed): multi-tenant isolation - widget serves only its own website's blogs
+feat(embed): non-developer friendly publish flow
 
-- embed.js sends site=<current url>; blog-embed API matches host against active connected websites and filters posts by that company
-- unknown/unmatched sites get an empty list - no cross-client blog leakage
+- Publish modal: platform picker (WordPress/Shopify/Wix/Other) with simple 3-step plain-language guides, "See Live Preview" button, reassuring copy
+- /embed-preview page: live widget preview with the connected website's blogs (data-site)
+- embed.js self-healing: if a builder/SPA wipes the pasted div, widget creates its own section at page bottom - blogs always show up even when pasted in the wrong place
