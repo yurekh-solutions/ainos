@@ -1,1 +1,1 @@
-chore: remove See Live Preview button and /embed-preview page - publish modal stays simple copy-paste only
+fix(blog): no Generate buttons/queue copy - blogs arrive pre-written; regenerate works on queued blogs; no duplicate/stuck cards; disconnect verified

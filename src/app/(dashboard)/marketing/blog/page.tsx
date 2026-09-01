@@ -246,71 +246,6 @@ export default function BlogPage() {
     setRegenerating(null);
   };
 
-  // Generate a scheduled blog immediately (full article + premium image right now)
-  const [generatingNow, setGeneratingNow] = useState<string | null>(null);
-  const handleGenerateNow = async (scheduleId: string) => {
-    setGeneratingNow(scheduleId);
-    try {
-      const res = await fetch('/api/blog-agent/generate-now', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scheduleId }),
-      });
-      if (res.ok) {
-        await fetchPosts();
-        setShowReader(null);
-        alert('Blog generated & published! Full article + premium image ready.');
-      } else {
-        const d = await res.json();
-        alert(d.error || 'Generation failed — please try again.');
-      }
-    } catch (e) { console.error(e); alert('Generation failed — please try again.'); }
-    setGeneratingNow(null);
-  };
-
-  // One click: server writes ALL queued blogs in the background (full article +
-  // premium image each); UI polls the list so published cards appear live
-  const [bulkGenerating, setBulkGenerating] = useState(false);
-  const [bulkProgress, setBulkProgress] = useState('');
-  const handleGenerateAll = async () => {
-    const queued = posts.filter(p => p.isSchedule);
-    if (!queued.length) return;
-    if (!confirm(`Generate all ${queued.length} queued blogs now? The AI writes each one in the background (full article + premium image) — you can keep using the app while they publish.`)) return;
-    setBulkGenerating(true);
-    setBulkProgress('Starting AI...');
-    try {
-      const res = await fetch('/api/blog-agent/generate-all', { method: 'POST' });
-      if (!res.ok) {
-        const d = await res.json();
-        alert(d.error || 'Could not start generation — please try again.');
-        setBulkGenerating(false); setBulkProgress('');
-        return;
-      }
-    } catch {
-      alert('Could not start generation — please try again.');
-      setBulkGenerating(false); setBulkProgress('');
-      return;
-    }
-    const poll = setInterval(async () => {
-      try {
-        const r = await fetch('/api/blog-posts');
-        if (!r.ok) return;
-        const data = await r.json();
-        setPosts(data.posts || []);
-        setCategories(data.categories || []);
-        const left = (data.posts || []).filter((p: BlogPost) => p.isSchedule).length;
-        if (left > 0) {
-          setBulkProgress(`AI writing in background... ${left} queued left`);
-        } else {
-          clearInterval(poll);
-          setBulkGenerating(false);
-          setBulkProgress('');
-          alert('All queued blogs generated & published!');
-        }
-      } catch { /* keep polling */ }
-    }, 15000);
-  };
-
   const filtered = posts.filter(p => {
     const matchSearch = !search || p.title.toLowerCase().includes(search.toLowerCase())
       || (p.excerpt || '').toLowerCase().includes(search.toLowerCase())
@@ -320,7 +255,6 @@ export default function BlogPage() {
 
   const totalViews = posts.reduce((s, p) => s + (p.views || 0), 0);
   const publishedCount = posts.filter(p => p.status === 'published').length;
-  const queuedCount = posts.filter(p => p.isSchedule).length;
   const draftCount = posts.filter(p => p.status === 'draft').length;
   const scheduledCount = posts.filter(p => p.status === 'scheduled').length;
 
@@ -512,22 +446,6 @@ export default function BlogPage() {
               <CalendarRange className="w-4 h-4" />
             </button>
           </div>
-          {/* Generate All Queued Button — own-company action, hidden in platform view */}
-                    {!platformMode && queuedCount > 0 && (
-                      <button onClick={handleGenerateAll} disabled={bulkGenerating}
-                        className="px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center gap-2 disabled:opacity-60">
-                        {bulkGenerating ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            {bulkProgress}
-                          </>
-                        ) : (
-                          <>
-                            <Zap className="w-4 h-4" /> Generate All Queued ({queuedCount})
-                          </>
-                        )}
-                      </button>
-                    )}
           {/* Publish to Website Button — hidden in platform view (it applies to your own site only) */}
           {!platformMode && (
           <button onClick={() => setShowEmbed(true)}
@@ -668,11 +586,6 @@ export default function BlogPage() {
                           <Calendar className="w-3 h-3" />{new Date(post.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       )}
-                      {post.scheduledAt && (
-                        <span className="flex items-center gap-1">
-                          <CalendarRange className="w-3 h-3" />In AI writing queue
-                        </span>
-                      )}
                       {!post.isSchedule && (
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />{Math.max(1, Math.ceil((post.content || '').split(' ').length / 200))} min
@@ -680,7 +593,7 @@ export default function BlogPage() {
                       )}
                       {post.isSchedule && (
                         <span className="flex items-center gap-1 text-emerald-500">
-                          <Zap className="w-3 h-3" />Queued
+                          <Zap className="w-3 h-3" />Preparing
                         </span>
                       )}
                     </div>
@@ -698,20 +611,11 @@ export default function BlogPage() {
                           <Send className="w-3.5 h-3.5 text-emerald-500" />
                         </button>
                       )}
-                      {post.isSchedule && (
-                        <button onClick={(e) => { e.stopPropagation(); handleGenerateNow(post.id); }}
-                          disabled={generatingNow === post.id}
-                          className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20" title="Generate Now with AI">
-                          <Zap className={`w-3.5 h-3.5 text-emerald-500 ${generatingNow === post.id ? 'animate-pulse' : ''}`} />
-                        </button>
-                      )}
-                      {!post.isSchedule && (
-                        <button onClick={(e) => { e.stopPropagation(); handleRegenerate(post.id); }}
-                          disabled={regenerating === post.id}
-                          className="p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20" title="Regenerate with AI">
-                          <RefreshCw className={`w-3.5 h-3.5 text-purple-500 ${regenerating === post.id ? 'animate-spin' : ''}`} />
-                        </button>
-                      )}
+                      <button onClick={(e) => { e.stopPropagation(); handleRegenerate(post.id); }}
+                        disabled={regenerating === post.id}
+                        className="p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20" title="Regenerate with AI">
+                        <RefreshCw className={`w-3.5 h-3.5 text-purple-500 ${regenerating === post.id ? 'animate-spin' : ''}`} />
+                      </button>
                       <button onClick={(e) => { e.stopPropagation(); handleDelete(post.id); }}
                         className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete">
                         <Trash2 className="w-3.5 h-3.5 text-red-400" />
@@ -1020,24 +924,10 @@ export default function BlogPage() {
                   <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
                     <CalendarRange className="w-7 h-7 text-white" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">AI is writing this article</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6 leading-relaxed">
-                    This article is in the writing queue — the full 3000-word blog with headings, FAQs and a premium featured image will appear here automatically within minutes. Need it right away? Let the AI write it now:
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Your article is being prepared</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto leading-relaxed">
+                    The full 3000-word blog with headings, FAQs and a premium featured image will appear here automatically within minutes — no action needed.
                   </p>
-                  <button onClick={() => handleGenerateNow(showReader.id)}
-                    disabled={generatingNow === showReader.id}
-                    className="px-6 py-3 rounded-xl text-white text-sm font-semibold inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-60 transition-all shadow-lg shadow-purple-600/20">
-                    {generatingNow === showReader.id ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        AI is writing your article (30-60 sec)...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4" /> Generate Now with AI
-                      </>
-                    )}
-                  </button>
                 </div>
               ) : (
                 <div className="prose dark:prose-invert max-w-none"

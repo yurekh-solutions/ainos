@@ -3,6 +3,7 @@ import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { generateAIText } from '@/lib/ai-provider';
 import { getBlogImage } from '@/lib/blog-images';
+import { generateScheduleNow } from '@/lib/schedule-generator';
 
 // POST /api/blog-posts/regenerate?id=xxx
 // Regenerates content + featured image for an existing blog post (fresh angle,
@@ -19,7 +20,16 @@ export async function POST(req: NextRequest) {
     if (!postId) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
     const post = await prisma.blogPost.findUnique({ where: { id: postId } });
-    if (!post) return NextResponse.json({ error: 'Post not found' }, { status: 404 });
+    if (!post) {
+      // Queued blogs are BlogSchedule rows — write the full article right now
+      const schedule = await prisma.blogSchedule.findUnique({ where: { id: postId } });
+      if (!schedule) return NextResponse.json({ error: 'Post not found' }, { status: 404 });
+      const result = await generateScheduleNow(schedule.id);
+      if (result.status === 'failed') {
+        return NextResponse.json({ error: 'The AI is busy right now — please try again in a moment.' }, { status: 502 });
+      }
+      return NextResponse.json({ ok: true, status: result.status });
+    }
 
     const systemPrompt = `You are an expert SEO content writer. Completely rewrite the given blog post with a fresh angle, new examples and better structure. Keep the same title. Include proper H2/H3 headings, an engaging intro, a 5-question FAQ section, EEAT signals and a strong CTA. Write in markdown.
 

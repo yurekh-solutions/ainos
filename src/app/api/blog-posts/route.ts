@@ -30,23 +30,13 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' }
     });
 
-    // Also fetch scheduled blogs from BlogSchedule
+    // Also fetch scheduled blogs from BlogSchedule.
+    // ONLY blogs still being prepared show as cards — published or failed
+    // schedule rows must never surface (prevents duplicate cards after
+    // publishing and stuck "queued" cards that confuse delete/regenerate).
     const scheduleWhere: Record<string, unknown> = platform ? {} : { companyId: user.companyId };
-    if (status === 'scheduled') {
-      scheduleWhere.status = { in: ['pending', 'generating'] };
-    }
-    const schedules = await prisma.blogSchedule.findMany({
-      where: scheduleWhere,
-      include: {
-        subscription: {
-          include: {
-            connectedWebsite: true,
-          },
-        },
-        ...(platform ? { company: { select: { name: true, id: true } } } : {}),
-      },
-      orderBy: { scheduledDate: 'desc' },
-    }) as unknown as Array<{
+    scheduleWhere.status = { in: ['pending', 'generating'] };
+    let schedules = [] as unknown as Array<{
       id: string;
       topic: string;
       keywords: string | null;
@@ -62,6 +52,20 @@ export async function GET(req: NextRequest) {
       } | null;
       company?: { name: string | null; id: string } | null;
     }>;
+    if (!status || status === 'scheduled') {
+      schedules = await prisma.blogSchedule.findMany({
+        where: scheduleWhere,
+        include: {
+          subscription: {
+            include: {
+              connectedWebsite: true,
+            },
+          },
+          ...(platform ? { company: { select: { name: true, id: true } } } : {}),
+        },
+        orderBy: { scheduledDate: 'desc' },
+      }) as unknown as typeof schedules;
+    }
 
     // Auto-start background writing for any company that still has queued blogs —
     // no user clicks needed; published articles appear as they are written
