@@ -1,11 +1,23 @@
 /**
  * AINOS Blog Embed Widget
  * Universal blog widget that works on ANY website platform
- * Supports: WordPress, Shopify, React, HTML, Wix, Squarespace, etc.
- * 
+ * (WordPress, Shopify, React, HTML, Wix, Squarespace, etc.)
+ *
+ * The widget reads the host website's own design language — fonts, colors,
+ * corner roundness, light/dark — from its computed CSS (index.css etc.) and
+ * mirrors it, so the blog section looks native to the site.
+ *
+ * Article pages open ON the client's own domain via hash routing
+ * (#ainos-blog/slug) with JSON-LD structured data — readers and SEO
+ * value stay on the client's website.
+ *
  * Usage:
- * <script src="https://ainos.vercel.app/embed.js"></script>
+ * <script src="https://ainos-ywu0.onrender.com/embed.js"></script>
  * <div id="ainos-blog" data-limit="6" data-style="grid"></div>
+ *
+ * Optional attributes: data-limit, data-style (grid|list), data-category,
+ * data-color (#hex accent override), data-theme (light|dark), data-slug
+ * (single-article embed), data-site (preview impersonation).
  */
 
 (function () {
@@ -16,6 +28,15 @@
   const scriptSrc = currentScript?.src || '';
   const baseUrl = scriptSrc ? new URL(scriptSrc).origin : 'https://ainos-ywu0.onrender.com';
   const AINOS_API = `${baseUrl}/api/blog-embed`;
+
+  // On-site article routes: #ainos-blog/<slug> keeps readers on the
+  // client's domain instead of sending them to AINOS
+  const HASH_PREFIX = '#ainos-blog/';
+
+  function currentHashSlug() {
+    const h = window.location.hash || '';
+    return h.indexOf(HASH_PREFIX) === 0 ? decodeURIComponent(h.slice(HASH_PREFIX.length)) : '';
+  }
 
   // Basic HTML sanitizer to prevent XSS
   function sanitize(str) {
@@ -70,9 +91,9 @@
 
   function detectDarkMode() {
     // Walk from the widget container up to <html> and use the FIRST
-    // non-transparent background. Many sites (and our preview page) keep
-    // <body> transparent and paint the wrapper instead — treating a
-    // transparent body as "dark" produced ugly dark boxes on light pages.
+    // non-transparent background. Many sites keep <body> transparent and
+    // paint the wrapper instead — treating a transparent body as "dark"
+    // produced ugly dark boxes on light pages.
     const candidates = [];
     const container = document.querySelector('#ainos-blog, .ainos-blog-widget, [data-ainos-blog]');
     let el = container;
@@ -120,6 +141,33 @@
     return null;
   }
 
+  // ═══════════════════════════════════════════
+  // TYPOGRAPHY DETECTION — mirror the host site's fonts & shape language
+  // (reads the site's effective CSS: index.css, Tailwind, theme files...)
+  // ═══════════════════════════════════════════
+  function detectTypography() {
+    const bodyCs = getComputedStyle(document.body);
+    const heading = document.querySelector('h1, h2, h3');
+    const headingFont = heading ? getComputedStyle(heading).fontFamily : bodyCs.fontFamily;
+    const baseSize = parseFloat(bodyCs.fontSize) || 16;
+
+    // Corner roundness: sample the site's own buttons/cards so the widget's
+    // cards feel like they belong (sharp site -> sharp cards, etc.)
+    let radius = 16;
+    const sample = document.querySelector('button, .btn, a.button, [class*="card"]');
+    if (sample) {
+      const r = parseFloat(getComputedStyle(sample).borderRadius);
+      if (!isNaN(r) && r >= 0) radius = Math.min(24, r);
+    }
+
+    return {
+      bodyFont: bodyCs.fontFamily || 'system-ui, sans-serif',
+      headingFont: headingFont || bodyCs.fontFamily || 'system-ui, sans-serif',
+      baseSize,
+      radius
+    };
+  }
+
   function parseRgb(str) {
     if (!str) return null;
     const match = str.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?/);
@@ -152,7 +200,7 @@
   }
 
   function hexToRgb(hex) {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    const result = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
     return result ? {
       r: parseInt(result[1], 16),
       g: parseInt(result[2], 16),
@@ -246,12 +294,17 @@
     return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   }
 
-  // Render blog card (no images)
+  // Render blog card with featured image. Links use hash routing so the
+  // article opens ON the client's own website (not on AINOS).
   function renderCard(post, style) {
     const safeTitle = sanitize(post.title);
     const safeExcerpt = sanitize(post.excerpt || '');
     const safeCategory = sanitize(post.category || '');
-    const safeUrl = sanitize(post.url || '#');
+    const safeImage = post.featuredImage ? sanitize(post.featuredImage) : '';
+    const articleHref = `${HASH_PREFIX}${encodeURIComponent(post.slug)}`;
+    const imgHtml = safeImage
+      ? `<div class="ainos-blog-card-img"><img src="${safeImage}" alt="${safeTitle}" loading="lazy"/></div>`
+      : '';
 
     const tagsHtml = post.tags && post.tags.length
       ? `<div class="ainos-blog-tags">${post.tags.slice(0, 3).map(t => `<span class="ainos-blog-tag">#${sanitize(t)}</span>`).join('')}</div>`
@@ -260,9 +313,10 @@
     if (style === 'list') {
       return `
         <article class="ainos-blog-card ainos-blog-card-list">
+          ${imgHtml}
           <div class="ainos-blog-content">
             ${safeCategory ? `<span class="ainos-blog-category">${safeCategory}</span>` : ''}
-            <h3 class="ainos-blog-title"><a href="${safeUrl}">${safeTitle}</a></h3>
+            <h3 class="ainos-blog-title"><a href="${articleHref}">${safeTitle}</a></h3>
             <p class="ainos-blog-excerpt">${safeExcerpt}</p>
             ${tagsHtml}
             <div class="ainos-blog-meta">
@@ -275,9 +329,10 @@
 
     return `
       <article class="ainos-blog-card">
+        ${imgHtml}
         <div class="ainos-blog-content">
           ${safeCategory ? `<span class="ainos-blog-category">${safeCategory}</span>` : ''}
-          <h3 class="ainos-blog-title"><a href="${safeUrl}">${safeTitle}</a></h3>
+          <h3 class="ainos-blog-title"><a href="${articleHref}">${safeTitle}</a></h3>
           <p class="ainos-blog-excerpt">${safeExcerpt}</p>
           ${tagsHtml}
           <div class="ainos-blog-meta">
@@ -313,117 +368,174 @@
       </article>`;
   }
 
-  // Load and render blogs
+  // ═══════════════════════════════════════════
+  // SEO — structured data injected on the client's domain
+  // ═══════════════════════════════════════════
+  function injectJsonLd(id, obj) {
+    if (!obj) return;
+    const old = document.getElementById(id);
+    if (old) old.remove();
+    const s = document.createElement('script');
+    s.type = 'application/ld+json';
+    s.id = id;
+    s.textContent = JSON.stringify(obj);
+    document.head.appendChild(s);
+  }
+
+  function injectListSchema(posts) {
+    // Remove single-article schema when back on the list view
+    const oldPost = document.getElementById('ainos-blog-post-schema');
+    if (oldPost) oldPost.remove();
+    injectJsonLd('ainos-blog-list-schema', {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      numberOfItems: posts.length,
+      itemListElement: posts.map((p, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: p.title,
+        url: `${window.location.origin}${window.location.pathname}${HASH_PREFIX}${encodeURIComponent(p.slug)}`
+      }))
+    });
+  }
+
+  // ═══════════════════════════════════════════
+  // LOADERS
+  // ═══════════════════════════════════════════
   async function loadBlogs(container) {
     const limit = container.getAttribute('data-limit') || '6';
     const style = container.getAttribute('data-style') || 'grid';
     const category = container.getAttribute('data-category') || '';
-    const slug = container.getAttribute('data-slug') || '';
 
     container.innerHTML = '<div class="ainos-blog-loading">Loading articles...</div>';
 
     try {
       const params = new URLSearchParams({ limit, format: 'json' });
       if (category) params.set('category', category);
-      if (slug) params.set('slug', slug);
       // Tell the API which website this widget lives on, so only this
       // website's own blogs are served (multi-tenant isolation).
-      // data-site allows preview pages to impersonate a website.
       params.set('site', container.getAttribute('data-site') || window.location.href);
 
       const res = await fetch(`${AINOS_API}?${params}`);
       if (!res.ok) throw new Error('Failed to load blogs');
 
       const data = await res.json();
-
-      if (slug && data.title) {
-        // Single post view
-        container.innerHTML = renderFullPost(data);
-        // Inject JSON-LD for SEO
-        if (data.schemaOrg) {
-          const script = document.createElement('script');
-          script.type = 'application/ld+json';
-          script.textContent = JSON.stringify(data.schemaOrg);
-          document.head.appendChild(script);
-        }
-      } else {
-        // Blog list view
-        const posts = data.posts || [];
-        if (posts.length === 0) {
-          container.innerHTML = '<div class="ainos-blog-empty">No articles found.</div>';
-          return;
-        }
-
-        const gridClass = style === 'list' ? 'ainos-blog-list' : 'ainos-blog-grid';
-        container.innerHTML = `
-          <div class="${gridClass}">
-            ${posts.map(p => renderCard(p, style)).join('')}
-          </div>
-          ${data.categories && data.categories.length ? `
-            <div class="ainos-blog-categories">
-              ${data.categories.map(c => `<button class="ainos-blog-cat-btn" data-category="${c}">${c}</button>`).join('')}
-            </div>
-          ` : ''}
-        `;
-
-        // Category filter buttons
-        container.querySelectorAll('.ainos-blog-cat-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            container.setAttribute('data-category', btn.getAttribute('data-category'));
-            loadBlogs(container);
-          });
-        });
+      const posts = data.posts || [];
+      if (posts.length === 0) {
+        container.innerHTML = '<div class="ainos-blog-empty">No articles found.</div>';
+        return;
       }
+
+      const gridClass = style === 'list' ? 'ainos-blog-list' : 'ainos-blog-grid';
+      container.innerHTML = `
+        <div class="${gridClass}">
+          ${posts.map(p => renderCard(p, style)).join('')}
+        </div>
+        ${data.categories && data.categories.length ? `
+          <div class="ainos-blog-categories">
+            ${data.categories.map(c => `<button class="ainos-blog-cat-btn" data-category="${sanitize(c)}">${sanitize(c)}</button>`).join('')}
+          </div>
+        ` : ''}
+      `;
+      injectListSchema(posts);
+
+      // Category filter buttons
+      container.querySelectorAll('.ainos-blog-cat-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          container.setAttribute('data-category', btn.getAttribute('data-category'));
+          loadBlogs(container);
+        });
+      });
     } catch (err) {
       container.innerHTML = '<div class="ainos-blog-error">Failed to load articles. Please try again later.</div>';
       console.error('AINOS Blog Widget Error:', err);
     }
   }
 
-  // CSS Styles (injected dynamically with theme colors)
+  // Single article view — rendered ON the client's domain (hash route)
+  async function loadSingle(container, slug) {
+    container.innerHTML = '<div class="ainos-blog-loading">Loading article...</div>';
+    try {
+      const params = new URLSearchParams({ slug, format: 'json' });
+      params.set('site', container.getAttribute('data-site') || window.location.href);
+
+      const res = await fetch(`${AINOS_API}?${params}`);
+      if (!res.ok) throw new Error('Failed to load article');
+      const data = await res.json();
+
+      const backHref = sanitize(window.location.pathname + window.location.search);
+      container.innerHTML =
+        `<div class="ainos-blog-back"><a href="${backHref}">&larr; All articles</a></div>` +
+        renderFullPost(data);
+
+      // BlogPosting structured data on the client's own domain
+      const oldList = document.getElementById('ainos-blog-list-schema');
+      if (oldList) oldList.remove();
+      injectJsonLd('ainos-blog-post-schema', data.schemaOrg);
+
+      container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      container.innerHTML = '<div class="ainos-blog-error">Failed to load article. Please try again later.</div>';
+      console.error('AINOS Blog Widget Error:', err);
+    }
+  }
+
+  // CSS Styles (injected dynamically with theme + host typography)
   function injectStyles() {
     if (document.getElementById('ainos-blog-styles')) return;
 
-    const theme = detectTheme();
-    const t = theme;
+    const t = detectTheme();
+    const typo = detectTypography();
+    // Scale widget type to the host site's base font size
+    const px = (n) => Math.round((n / 16) * typo.baseSize);
 
     const css = `
       .ainos-blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
       .ainos-blog-list { display: flex; flex-direction: column; gap: 20px; }
-      .ainos-blog-card { background: ${t.cardBg}; border-radius: 16px; overflow: hidden; box-shadow: ${t.cardShadow}; transition: transform 0.3s, box-shadow 0.3s; border: 1px solid ${t.cardBorder}; }
+      .ainos-blog-card { background: ${t.cardBg}; border-radius: ${typo.radius}px; overflow: hidden; box-shadow: ${t.cardShadow}; transition: transform 0.3s, box-shadow 0.3s; border: 1px solid ${t.cardBorder}; font-family: ${typo.bodyFont}; }
       .ainos-blog-card:hover { transform: translateY(-4px); box-shadow: ${t.cardShadowHover}; }
       .ainos-blog-card-list { display: flex; flex-direction: row; }
+      .ainos-blog-card-img { height: ${px(160)}px; overflow: hidden; }
+      .ainos-blog-card-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+      .ainos-blog-card:hover .ainos-blog-card-img img { transform: scale(1.05); }
+      .ainos-blog-card-list .ainos-blog-card-img { width: ${px(200)}px; flex-shrink: 0; height: auto; }
       .ainos-blog-content { padding: 24px; }
-      .ainos-blog-category { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; background: ${t.categoryBg}; color: ${t.categoryColor}; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-      .ainos-blog-title { font-size: 18px; font-weight: 700; margin: 8px 0; line-height: 1.4; }
+      .ainos-blog-category { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: ${px(11)}px; font-weight: 600; background: ${t.categoryBg}; color: ${t.categoryColor}; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+      .ainos-blog-title { font-size: ${px(18)}px; font-weight: 700; margin: 8px 0; line-height: 1.4; font-family: ${typo.headingFont}; }
       .ainos-blog-title a { color: ${t.titleColor}; text-decoration: none; transition: color 0.2s; }
       .ainos-blog-title a:hover { color: ${t.titleHover}; }
-      .ainos-blog-title-full { font-size: 32px; font-weight: 800; margin: 16px 0; line-height: 1.3; color: ${t.headingColor}; }
-      .ainos-blog-excerpt { font-size: 14px; color: ${t.excerptColor}; line-height: 1.6; margin: 8px 0 12px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+      .ainos-blog-title-full { font-size: ${px(32)}px; font-weight: 800; margin: 16px 0; line-height: 1.3; color: ${t.headingColor}; font-family: ${typo.headingFont}; }
+      .ainos-blog-excerpt { font-size: ${px(14)}px; color: ${t.excerptColor}; line-height: 1.6; margin: 8px 0 12px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
       .ainos-blog-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
       .ainos-blog-tags-full { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
-      .ainos-blog-tag { padding: 3px 10px; border-radius: 12px; font-size: 11px; background: ${t.tagBg}; color: ${t.tagColor}; font-weight: 500; }
-      .ainos-blog-meta { display: flex; gap: 16px; font-size: 12px; color: ${t.metaColor}; padding-top: 12px; border-top: 1px solid ${t.metaBorder}; }
+      .ainos-blog-tag { padding: 3px 10px; border-radius: 12px; font-size: ${px(11)}px; background: ${t.tagBg}; color: ${t.tagColor}; font-weight: 500; }
+      .ainos-blog-meta { display: flex; gap: 16px; font-size: ${px(12)}px; color: ${t.metaColor}; padding-top: 12px; border-top: 1px solid ${t.metaBorder}; }
       .ainos-blog-date, .ainos-blog-readtime { display: flex; align-items: center; gap: 4px; }
       .ainos-blog-categories { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; justify-content: center; }
-      .ainos-blog-cat-btn { padding: 8px 20px; border-radius: 24px; border: 1px solid ${t.btnBorder}; background: ${t.btnBg}; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; color: ${t.btnText}; }
+      .ainos-blog-cat-btn { padding: 8px 20px; border-radius: 24px; border: 1px solid ${t.btnBorder}; background: ${t.btnBg}; font-size: ${px(13)}px; font-weight: 500; cursor: pointer; transition: all 0.2s; color: ${t.btnText}; font-family: ${typo.bodyFont}; }
       .ainos-blog-cat-btn:hover { background: ${t.btnHoverBg}; color: ${t.btnHoverText}; border-color: ${t.btnHoverBg}; }
-      .ainos-blog-full { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+      .ainos-blog-back { margin-bottom: ${px(16)}px; }
+      .ainos-blog-back a { color: ${t.primary}; font-weight: 600; text-decoration: none; font-size: ${px(14)}px; font-family: ${typo.bodyFont}; }
+      .ainos-blog-back a:hover { text-decoration: underline; }
+      .ainos-blog-full { max-width: 800px; margin: 0 auto; padding: 24px 4px; font-family: ${typo.bodyFont}; }
       .ainos-blog-header { margin-bottom: 32px; }
-      .ainos-blog-body { font-size: 16px; line-height: 1.8; color: ${t.bodyColor}; }
-      .ainos-blog-body h2 { font-size: 24px; font-weight: 700; margin: 32px 0 16px; color: ${t.headingColor}; }
-      .ainos-blog-body h3 { font-size: 20px; font-weight: 600; margin: 24px 0 12px; color: ${t.headingColor}; }
+      .ainos-blog-featured-image { margin: 24px 0; border-radius: ${Math.max(8, typo.radius)}px; overflow: hidden; }
+      .ainos-blog-featured-image img { width: 100%; max-height: 420px; object-fit: cover; display: block; }
+      .ainos-blog-body { font-size: ${px(16)}px; line-height: 1.8; color: ${t.bodyColor}; }
+      .ainos-blog-body h1, .ainos-blog-body h2 { font-size: ${px(24)}px; font-weight: 700; margin: 32px 0 16px; color: ${t.headingColor}; font-family: ${typo.headingFont}; }
+      .ainos-blog-body h3 { font-size: ${px(20)}px; font-weight: 600; margin: 24px 0 12px; color: ${t.headingColor}; font-family: ${typo.headingFont}; }
       .ainos-blog-body p { margin: 16px 0; }
       .ainos-blog-body ul { margin: 16px 0; padding-left: 24px; }
       .ainos-blog-body li { margin: 8px 0; }
-      .ainos-blog-footer { margin-top: 40px; padding-top: 24px; border-top: 1px solid ${t.footerBorder}; font-size: 14px; color: ${t.footerColor}; }
+      .ainos-blog-footer { margin-top: 40px; padding-top: 24px; border-top: 1px solid ${t.footerBorder}; font-size: ${px(14)}px; color: ${t.footerColor}; }
       .ainos-blog-footer a { color: ${t.primary}; text-decoration: none; font-weight: 600; }
-      .ainos-blog-loading, .ainos-blog-empty, .ainos-blog-error { text-align: center; padding: 40px; color: ${t.loadingColor}; font-size: 14px; }
+      .ainos-blog-loading, .ainos-blog-empty, .ainos-blog-error { text-align: center; padding: 40px; color: ${t.loadingColor}; font-size: ${px(14)}px; font-family: ${typo.bodyFont}; }
       .ainos-blog-error { color: #dc2626; }
       @media (max-width: 768px) {
         .ainos-blog-grid { grid-template-columns: 1fr; }
         .ainos-blog-card-list { flex-direction: column; }
-        .ainos-blog-title-full { font-size: 24px; }
+        .ainos-blog-card-list .ainos-blog-card-img { width: 100%; height: ${px(160)}px; }
+        .ainos-blog-title-full { font-size: ${px(24)}px; }
       }
     `;
 
@@ -452,7 +564,21 @@
     if (!containers.length) {
       containers = [makeFallback()];
     }
-    containers.forEach(loadBlogs);
+
+    const renderFor = (c) => {
+      const slug = c.getAttribute('data-slug') || currentHashSlug();
+      if (slug) loadSingle(c, slug); else loadBlogs(c);
+    };
+    containers.forEach(renderFor);
+
+    // On-site article pages: card clicks change the hash (#ainos-blog/slug)
+    // and we swap list <-> article without leaving the client's domain
+    window.addEventListener('hashchange', () => {
+      containers.forEach(c => {
+        if (c.getAttribute('data-slug')) return; // fixed single-post embeds
+        renderFor(c);
+      });
+    });
 
     // Self-heal: some builders replace page HTML after mount — if our
     // container gets removed, re-attach a fallback (checked for ~30s)
@@ -463,7 +589,7 @@
       if (!alive) {
         const fallback = makeFallback();
         containers = [fallback];
-        loadBlogs(fallback);
+        renderFor(fallback);
       }
       if (checks > 10) clearInterval(heal);
     }, 3000);

@@ -86,6 +86,9 @@ export default function BlogPage() {
   const [showEmbed, setShowEmbed] = useState(false);
   const [copiedCode, setCopiedCode] = useState('');
   const [embedPlatform, setEmbedPlatform] = useState('WordPress');
+  const [embedStyle, setEmbedStyle] = useState<'grid' | 'list'>('grid');
+  const [embedLimit, setEmbedLimit] = useState(6);
+  const [embedColor, setEmbedColor] = useState('');
   const [platformMode, setPlatformMode] = useState(false);
 
   // Platform-wide view is admin-only (platform owner account)
@@ -102,6 +105,9 @@ export default function BlogPage() {
     }
     return 'https://ainos-ywu0.onrender.com';
   })();
+
+  // Live embed snippet — updates as the user picks layout/count/color
+  const embedSnippet = `<script src="${baseUrl}/embed.js"></script>\n<div id="ainos-blog" data-limit="${embedLimit}" data-style="${embedStyle}"${embedColor ? ` data-color="${embedColor}"` : ''}></div>`;
 
   const [aiForm, setAiForm] = useState({
     topic: '', keywords: '', tone: 'Professional', length: 'medium', industry: 'General Business'
@@ -1039,12 +1045,44 @@ export default function BlogPage() {
                       <p className="text-[10px] text-gray-500">Works on WordPress, Shopify, Wix, Squarespace, HTML — ANY platform!</p>
                     </div>
                   </div>
+                  {/* Live customization — the snippet below updates as you pick */}
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-3 text-[11px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-gray-500 font-medium">Layout:</span>
+                      {(['grid', 'list'] as const).map(s => (
+                        <button key={s} onClick={() => setEmbedStyle(s)}
+                          className={`px-2.5 py-1 rounded-lg font-semibold capitalize transition-colors ${embedStyle === s ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-gray-500 font-medium">Show:</span>
+                      {[3, 6, 9].map(n => (
+                        <button key={n} onClick={() => setEmbedLimit(n)}
+                          className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${embedLimit === n ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-gray-500 font-medium">Color:</span>
+                      <button onClick={() => setEmbedColor('')}
+                        className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${!embedColor ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+                        Auto
+                      </button>
+                      {['#7c3aed', '#2563eb', '#059669', '#ea580c', '#d46f48'].map(c => (
+                        <button key={c} onClick={() => setEmbedColor(c)} title={c}
+                          className={`w-6 h-6 rounded-full border-2 transition-transform ${embedColor === c ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'}`}
+                          style={{ background: c }} />
+                      ))}
+                    </div>
+                  </div>
                   <div className="relative mt-3">
                     <pre className="bg-gray-900 text-green-400 rounded-lg p-4 text-sm overflow-x-auto font-mono leading-relaxed">
-{`<script src="${baseUrl}/embed.js"></script>
-<div id="ainos-blog" data-limit="6"></div>`}
+                      {embedSnippet}
                     </pre>
-                    <button onClick={() => handleCopyCode(`<script src="${baseUrl}/embed.js"></script>\n<div id="ainos-blog" data-limit="6"></div>`, 'embed')}
+                    <button onClick={() => handleCopyCode(embedSnippet, 'embed')}
                       className="absolute top-2 right-2 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 transition-colors flex items-center gap-1.5 text-white text-xs font-medium">
                       {copiedCode === 'embed' ? <><Check className="w-3.5 h-3.5" /> Copied!</> : <><Copy className="w-3.5 h-3.5" /> Copy Code</>}
                     </button>
@@ -1095,29 +1133,14 @@ export default function BlogPage() {
                   </div>
                 </div>
 
-                {/* Customization */}
+                {/* Auto design matching */}
                 <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-                  <h4 className="font-semibold text-xs text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-                    <Shield className="w-3.5 h-3.5" /> Optional: Customize Display
+                  <h4 className="font-semibold text-xs text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                    <Shield className="w-3.5 h-3.5" /> Matches Your Website Automatically
                   </h4>
-                  <div className="grid grid-cols-2 gap-2 text-[10px]">
-                    <div className="bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
-                      <code className="text-purple-600 dark:text-purple-400">{'data-limit="3"'}</code>
-                      <p className="text-gray-500 mt-1">Show 3 blogs (default: 6)</p>
-                    </div>
-                    <div className="bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
-                      <code className="text-purple-600 dark:text-purple-400">{'data-style="list"'}</code>
-                      <p className="text-gray-500 mt-1">List view (default: grid)</p>
-                    </div>
-                    <div className="bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
-                      <code className="text-purple-600 dark:text-purple-400">{'data-category="Fashion"'}</code>
-                      <p className="text-gray-500 mt-1">Only Fashion blogs</p>
-                    </div>
-                    <div className="bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
-                      <code className="text-purple-600 dark:text-purple-400">{'data-slug="my-post"'}</code>
-                      <p className="text-gray-500 mt-1">Show single blog post</p>
-                    </div>
-                  </div>
+                  <p className="text-[11px] text-gray-500 leading-relaxed">
+                    The widget reads your website's own fonts, colors and card style, so your blog section looks like it was always part of your site. Articles open on YOUR website — readers never leave your domain, and Google counts every article for your ranking.
+                  </p>
                 </div>
 
                 {/* Advanced Options */}

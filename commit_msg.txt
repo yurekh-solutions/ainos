@@ -1,1 +1,1 @@
-fix(blog): no Generate buttons/queue copy - blogs arrive pre-written; regenerate works on queued blogs; no duplicate/stuck cards; disconnect verified
+feat(embed): widget mirrors host site fonts/design, image cards, on-domain article pages with SEO schema, live snippet customization
