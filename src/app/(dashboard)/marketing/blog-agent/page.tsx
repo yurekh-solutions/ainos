@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from 'next-auth/react';
+import { isAdmin } from '@/lib/admin';
 import {
   Globe, Plus, X, Loader2, Sparkles,
   Zap, Link2, Mail, Code, FileText, CheckCircle,
@@ -69,9 +70,9 @@ export default function BlogAgentPage() {
   const [showAllSites, setShowAllSites] = useState(false);
   const [platformMode, setPlatformMode] = useState(false);
 
-  // Platform-wide view is admin-only (soniajaiswal2222@gmail.com)
+  // Platform-wide view is admin-only (platform owner account)
   const { data: session } = useSession();
-  const isAdminUser = session?.user?.email?.toLowerCase().trim() === 'soniajaiswal2222@gmail.com';
+  const isAdminUser = isAdmin(session?.user?.email);
 
   const [form, setForm] = useState({
     url: '', publishMethod: 'ainos', webhookUrl: '', webhookSecret: '',

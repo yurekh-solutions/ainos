@@ -1,1 +1,1 @@
-fix(embed-preview): load embed.js post-hydration (client component) so React never wipes the widget
+fix(admin): Sonia (Tubhyam client) is a regular user - platform admin is now yurekhsolutions@gmail.com only

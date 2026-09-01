@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from 'next-auth/react';
+import { isAdmin } from '@/lib/admin';
 import {
   X, FileText, Eye, Calendar, Sparkles, Wand2, Search,
   Clock, Trash2, Edit3, CheckCircle, Send, ArrowLeft,
@@ -101,9 +102,9 @@ export default function BlogPage() {
   }, [showEmbed]);
   const [platformMode, setPlatformMode] = useState(false);
 
-  // Platform-wide view is admin-only (soniajaiswal2222@gmail.com)
+  // Platform-wide view is admin-only (platform owner account)
   const { data: session } = useSession();
-  const isAdminUser = session?.user?.email?.toLowerCase().trim() === 'soniajaiswal2222@gmail.com';
+  const isAdminUser = isAdmin(session?.user?.email);
   
   // Initialize baseUrl with the correct production URL
   const baseUrl = (() => {
