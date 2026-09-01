@@ -32,7 +32,7 @@ Respond in this exact JSON format (no other text):
 
     const userPrompt = `Blog title: "${post.title}"
 Category: ${post.category || 'General'}
-Existing tags: ${(post.tags || []).join(', ')}
+Existing tags: ${Array.isArray(post.tags) ? (post.tags as string[]).join(', ') : ''}
 
 Write a completely new, publish-ready version of this post.`;
 
