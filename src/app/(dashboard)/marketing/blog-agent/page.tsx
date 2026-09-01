@@ -6,7 +6,7 @@ import {
   Globe, Plus, X, Loader2, Sparkles,
   Zap, Link2, Mail, Code, FileText, CheckCircle,
   Clock, ChevronRight, Copy, Check, Bot, Shield, MoreVertical,
-  Bell, Wand2, Calendar
+  Bell, Wand2, Calendar, Trash2
 } from 'lucide-react';
 
 interface Website {
@@ -444,11 +444,11 @@ def ainos_webhook():
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <button onClick={() => handleScheduleMore(site.id)}
                         className="px-4 py-2 rounded-xl text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/15 hover:bg-purple-100 dark:hover:bg-purple-900/25 border border-purple-200/50 dark:border-purple-800/50 transition-colors flex items-center gap-1.5">
-                        View Details <ChevronRight className="w-3 h-3" />
+                        Schedule 30 More <ChevronRight className="w-3 h-3" />
                       </button>
                       <button onClick={() => handleDisconnect(site.id)}
-                        className="p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                        <MoreVertical className="w-4 h-4 text-slate-400" />
+                        className="px-4 py-2 rounded-xl text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200/50 dark:border-red-800/50 transition-colors flex items-center gap-1.5">
+                        <Trash2 className="w-3.5 h-3.5" /> Disconnect
                       </button>
                     </div>
                   </div>

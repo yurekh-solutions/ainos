@@ -42,6 +42,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'This website is already connected to your account' }, { status: 409 });
     }
 
+    // Policy: one active website per account — disconnect the old one first
+    const activeCount = await prisma.connectedWebsite.count({
+      where: { companyId: company.id, isActive: true },
+    });
+    if (activeCount >= 1) {
+      return NextResponse.json({ error: 'Your account already has a connected website (one website per account). Disconnect it from Blog Agent first, then connect a new one.' }, { status: 409 });
+    }
+
     // Scrape and analyze the website
     let analysis;
     try {

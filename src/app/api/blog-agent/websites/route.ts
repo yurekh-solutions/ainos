@@ -99,6 +99,15 @@ export async function DELETE(req: NextRequest) {
       data: { isActive: false },
     });
 
+    // Cancel all pending/failed schedules so the cron stops generating for this site
+    await prisma.blogSchedule.updateMany({
+      where: {
+        subscription: { connectedWebsiteId: id },
+        status: { in: ['pending', 'generating', 'failed'] },
+      },
+      data: { status: 'cancelled' },
+    });
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Delete website error:', error);

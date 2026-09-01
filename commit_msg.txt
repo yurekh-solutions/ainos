@@ -1,6 +1,5 @@
-fix(blogs): card images, working delete for queued blogs, always-visible actions, Generate All
+fix(blog-agent): clear disconnect flow, one-website-per-account policy, cancel schedules on disconnect
 
-- blog cards now show featured image (branded gradient placeholder for queued blogs)
-- action buttons (view/regenerate/generate-now/delete) always visible, not hover-only
-- DELETE /api/blog-posts now also deletes BlogSchedule rows (queued blogs) — delete was silently failing on schedules
-- Generate All Queued button: bulk-generates every scheduled blog sequentially with live progress (full 3000-word articles + premium images)
+- website card: "View Details" mislabeled button renamed to "Schedule 30 More"; hidden three-dot icon replaced with a labeled red Disconnect button
+- disconnect now cancels all pending/generating/failed schedules so the cron stops writing for a removed site
+- connect-website enforces one active website per account: must disconnect before connecting a new site
