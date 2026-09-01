@@ -147,7 +147,15 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
-    await prisma.blogPost.delete({ where: { id } });
+    const post = await prisma.blogPost.findUnique({ where: { id } });
+    if (post) {
+      await prisma.blogPost.delete({ where: { id } });
+    } else {
+      // Queued (scheduled) blogs are BlogSchedule rows — delete those too
+      const schedule = await prisma.blogSchedule.findUnique({ where: { id } });
+      if (!schedule) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      await prisma.blogSchedule.delete({ where: { id } });
+    }
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting blog post:', error);

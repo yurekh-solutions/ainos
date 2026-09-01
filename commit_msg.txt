@@ -1,8 +1,6 @@
-feat(blogs): Generate Now for scheduled blogs + reader featured image
+fix(blogs): card images, working delete for queued blogs, always-visible actions, Generate All
 
-- schedule-generator.ts: shared per-schedule generation (AI content + Pexels image + quota)
-- POST /api/blog-agent/generate-now: on-demand generation of a scheduled blog
-- auto-generate cron refactored to use the shared generator
-- blog reader: featured image shown; scheduled posts get a clear "queued" state with a Generate Now with AI button instead of empty body
-- blog cards: Queued chip + Generate Now (Zap) action for schedules
-- blog-agent: first scheduled blog auto-generates in background right after connecting a website
+- blog cards now show featured image (branded gradient placeholder for queued blogs)
+- action buttons (view/regenerate/generate-now/delete) always visible, not hover-only
+- DELETE /api/blog-posts now also deletes BlogSchedule rows (queued blogs) — delete was silently failing on schedules
+- Generate All Queued button: bulk-generates every scheduled blog sequentially with live progress (full 3000-word articles + premium images)

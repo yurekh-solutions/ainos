@@ -241,6 +241,33 @@ export default function BlogPage() {
     setGeneratingNow(null);
   };
 
+  // Bulk-generate every queued (scheduled) blog sequentially with live progress
+  const [bulkGenerating, setBulkGenerating] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState('');
+  const handleGenerateAll = async () => {
+    const queued = posts.filter(p => p.isSchedule);
+    if (!queued.length) return;
+    if (!confirm(`Generate all ${queued.length} queued blogs now? Each blog takes ~30-60 seconds (full 3000-word article + premium image).`)) return;
+    setBulkGenerating(true);
+    let done = 0;
+    for (const p of queued) {
+      setBulkProgress(`Writing blog ${done + 1} of ${queued.length}...`);
+      try {
+        await fetch('/api/blog-agent/generate-now', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scheduleId: p.id }),
+        });
+      } catch { /* keep going */ }
+      done++;
+      setBulkProgress(`Published ${done} of ${queued.length}...`);
+    }
+    await fetchPosts();
+    setBulkGenerating(false);
+    setBulkProgress('');
+    alert('All queued blogs generated & published!');
+  };
+
   const filtered = posts.filter(p => {
     const matchSearch = !search || p.title.toLowerCase().includes(search.toLowerCase())
       || (p.excerpt || '').toLowerCase().includes(search.toLowerCase())
@@ -250,6 +277,7 @@ export default function BlogPage() {
 
   const totalViews = posts.reduce((s, p) => s + (p.views || 0), 0);
   const publishedCount = posts.filter(p => p.status === 'published').length;
+  const queuedCount = posts.filter(p => p.isSchedule).length;
   const draftCount = posts.filter(p => p.status === 'draft').length;
   const scheduledCount = posts.filter(p => p.status === 'scheduled').length;
 
@@ -441,6 +469,22 @@ export default function BlogPage() {
               <CalendarRange className="w-4 h-4" />
             </button>
           </div>
+          {/* Generate All Queued Button */}
+                    {queuedCount > 0 && (
+                      <button onClick={handleGenerateAll} disabled={bulkGenerating}
+                        className="px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center gap-2 disabled:opacity-60">
+                        {bulkGenerating ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            {bulkProgress}
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="w-4 h-4" /> Generate All Queued ({queuedCount})
+                          </>
+                        )}
+                      </button>
+                    )}
           {/* Publish to Website Button */}
           <button onClick={() => setShowEmbed(true)}
             className="px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center gap-2">
@@ -521,6 +565,17 @@ export default function BlogPage() {
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                 className="group bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-xl hover:border-purple-200 dark:hover:border-purple-800 transition-all duration-300 cursor-pointer"
                 onClick={() => setShowReader(post)}>
+                {/* Featured image (branded placeholder for queued blogs) */}
+                {post.featuredImage ? (
+                  <div className="h-40 overflow-hidden rounded-t-2xl">
+                    <img src={post.featuredImage} alt={post.title} loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  </div>
+                ) : (
+                  <div className="h-40 rounded-t-2xl bg-gradient-to-br from-purple-600 via-indigo-600 to-indigo-800 flex items-center justify-center">
+                    <FileText className="w-10 h-10 text-white/40" />
+                  </div>
+                )}
                 {/* Content */}
                 <div className="p-6">
                   {/* Status + Category Row */}
@@ -584,7 +639,7 @@ export default function BlogPage() {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1">
                       {post.status === 'published' && (
                         <a href={`/blog/${post.slug}/`} target="_blank" rel="noopener noreferrer"
                           onClick={e => e.stopPropagation()}
