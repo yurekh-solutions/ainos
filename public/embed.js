@@ -314,6 +314,9 @@
       const params = new URLSearchParams({ limit, format: 'json' });
       if (category) params.set('category', category);
       if (slug) params.set('slug', slug);
+      // Tell the API which website this widget lives on, so only this
+      // website's own blogs are served (multi-tenant isolation)
+      params.set('site', window.location.href);
 
       const res = await fetch(`${AINOS_API}?${params}`);
       if (!res.ok) throw new Error('Failed to load blogs');

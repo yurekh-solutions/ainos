@@ -4,6 +4,16 @@ import { prisma } from '@/lib/prisma';
 // CORS-enabled public API for embedding blogs on ANY website
 // Supports: WordPress, Shopify, React, HTML, Wix, Squarespace, etc.
 
+// "https://www.SkyAV.in/some/path" -> "skyav.in"
+function normalizeHost(u: string): string {
+  try {
+    const url = new URL(u.startsWith('http') ? u : `https://${u}`);
+    return url.host.replace(/^www\./, '').toLowerCase();
+  } catch {
+    return '';
+  }
+}
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -85,6 +95,31 @@ export async function GET(req: NextRequest) {
     // List of published posts
     const where: Record<string, unknown> = { status: 'published' };
 
+    // Tenant isolation: serve ONLY the blogs of the website this widget is
+    // embedded on (host matched against connected websites). Unknown sites
+    // get an empty list — one client's blogs never leak to another.
+    const siteHint = searchParams.get('site') || req.headers.get('referer') || req.headers.get('origin') || '';
+    const siteHost = normalizeHost(siteHint);
+    if (siteHost) {
+      const websites = await prisma.connectedWebsite.findMany({
+        where: { isActive: true },
+        select: { id: true, url: true, companyId: true },
+      });
+      const match = websites.find(w => normalizeHost(w.url || '') === siteHost);
+      if (!match || !match.companyId) {
+        return NextResponse.json(
+          { posts: [], categories: [], total: 0 },
+          { headers: { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=300' } }
+        );
+      }
+      where.companyId = match.companyId;
+    } else {
+      return NextResponse.json(
+        { posts: [], categories: [], total: 0 },
+        { headers: { 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=300' } }
+      );
+    }
+
     if (category && category !== 'All') {
       where.category = category;
     }
@@ -134,9 +169,9 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    // Get distinct categories
+    // Get distinct categories (same tenant only)
     const allPublished = await prisma.blogPost.findMany({
-      where: { status: 'published' },
+      where: { status: 'published', companyId: where.companyId as string },
       select: { category: true },
     });
     const categories = [...new Set(allPublished.map((p: { category: string | null }) => p.category).filter(Boolean))] as string[];

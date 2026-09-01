@@ -1,1 +1,4 @@
-fix(regenerate): 180s AI timeout + friendly 502 message (was 500 on long rewrites)
+fix(embed): multi-tenant isolation - widget serves only its own website's blogs
+
+- embed.js sends site=<current url>; blog-embed API matches host against active connected websites and filters posts by that company
+- unknown/unmatched sites get an empty list - no cross-client blog leakage
