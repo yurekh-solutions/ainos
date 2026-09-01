@@ -112,7 +112,7 @@ Requirements:
 - Use EEAT signals
 - Strong CTA at the end`;
 
-    const aiRaw = await generateAIText(systemPrompt, userPrompt, { json: true });
+    const aiRaw = await generateAIText(systemPrompt, userPrompt, { json: true, timeoutMs: 180_000 });
 
     let blogData;
     try {
@@ -221,14 +221,32 @@ export function startBackgroundGeneration(companyId: string): boolean {
   if (runningCompanies.has(companyId)) return false;
   runningCompanies.add(companyId);
   (async () => {
+    const attempted = new Set<string>();
+    const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
     try {
+      // recover rows stuck in 'generating' from an interrupted previous run
+      // (safe: the runningCompanies guard ensures a single loop per company)
+      await prisma.blogSchedule.updateMany({
+        where: { companyId, status: 'generating' },
+        data: { status: 'pending' },
+      });
       for (;;) {
-        const next = await prisma.blogSchedule.findFirst({
+        // pending first (date order), then retry failed rows once per run
+        let next = await prisma.blogSchedule.findFirst({
           where: { companyId, status: 'pending' },
           orderBy: { scheduledDate: 'asc' },
         });
+        if (!next) {
+          next = await prisma.blogSchedule.findFirst({
+            where: { companyId, status: 'failed', id: { notIn: [...attempted] } },
+            orderBy: { scheduledDate: 'asc' },
+          });
+        }
         if (!next) break;
-        await generateScheduleNow(next.id);
+        attempted.add(next.id);
+        const result = await generateScheduleNow(next.id);
+        // gentle pacing so AI rate limits never trip
+        await sleep(result.status === 'failed' ? 6000 : 2500);
       }
     } catch { /* stop silently; cron will catch up later */ }
     finally { runningCompanies.delete(companyId); }

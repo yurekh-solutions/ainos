@@ -37,7 +37,7 @@ async function getBlogImage(topic, context) {
 const prisma = new PrismaClient();
 (async () => {
   const rows = await prisma.blogSchedule.findMany({
-    where: { status: 'pending', previewImage: null },
+    where: { status: { in: ['pending', 'failed', 'generating'] }, previewImage: null },
     include: { subscription: { include: { connectedWebsite: true } } },
   });
   console.log('Pending schedules without preview image:', rows.length);

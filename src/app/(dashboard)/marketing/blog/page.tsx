@@ -641,7 +641,7 @@ export default function BlogPage() {
                       )}
                       {post.scheduledAt && (
                         <span className="flex items-center gap-1">
-                          <CalendarRange className="w-3 h-3" />Scheduled: {new Date(post.scheduledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          <CalendarRange className="w-3 h-3" />In AI writing queue
                         </span>
                       )}
                       {!post.isSchedule && (
@@ -991,9 +991,9 @@ export default function BlogPage() {
                   <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
                     <CalendarRange className="w-7 h-7 text-white" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Article queued for auto-publishing</h3>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">AI is writing this article</h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6 leading-relaxed">
-                    This blog is scheduled{showReader.scheduledAt ? ` for ${new Date(showReader.scheduledAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : ''}. It will be written and published automatically on that date — or let the AI write it right now: full article with headings, FAQs and a premium featured image.
+                    This article is in the writing queue — the full 3000-word blog with headings, FAQs and a premium featured image will appear here automatically within minutes. Need it right away? Let the AI write it now:
                   </p>
                   <button onClick={() => handleGenerateNow(showReader.id)}
                     disabled={generatingNow === showReader.id}

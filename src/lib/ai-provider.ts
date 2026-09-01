@@ -41,12 +41,15 @@ async function callGemini(
 
   const body: Record<string, unknown> = {
     contents: [{ role: 'user', parts }],
+    // Long-form blog JSON needs a high output cap, otherwise the response is
+    // truncated mid-JSON and parsing fails
+    generationConfig: { maxOutputTokens: 65536 },
   };
   if (options.systemPrompt) {
     body.systemInstruction = { parts: [{ text: options.systemPrompt }] };
   }
   if (options.json) {
-    body.generationConfig = { responseMimeType: 'application/json' };
+    body.generationConfig = { responseMimeType: 'application/json', maxOutputTokens: 65536 };
   }
 
   const res = await fetchWithTimeout(
@@ -144,11 +147,11 @@ async function pollinationsVision(imageBase64: string, instruction: string): Pro
 export async function generateAIText(
   systemPrompt: string,
   userPrompt: string,
-  options: { json?: boolean } = {}
+  options: { json?: boolean; timeoutMs?: number } = {}
 ): Promise<string> {
   if (geminiKey()) {
     try {
-      return await callGemini([{ text: userPrompt }], { systemPrompt, json: options.json });
+      return await callGemini([{ text: userPrompt }], { systemPrompt, json: options.json, timeoutMs: options.timeoutMs });
     } catch (e) {
       console.warn('Gemini text generation failed, falling back to Pollinations:', e instanceof Error ? e.message : e);
     }
