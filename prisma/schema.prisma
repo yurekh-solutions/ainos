@@ -1005,6 +1005,7 @@ model BlogSchedule {
   targetWordCount Int       @default(3000) @map("target_word_count")
   scheduledDate   DateTime  @map("scheduled_date")
   status          String    @default("pending")
+  previewImage    String?   @map("preview_image") @db.Text
   blogPostId      String?   @map("blog_post_id")
   subscriptionId  String?   @map("subscription_id")
   publishTargets  Json?     @map("publish_targets")

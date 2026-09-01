@@ -978,8 +978,8 @@ export default function BlogPage() {
                 </div>
               )}
 
-              {/* Featured image */}
-              {showReader.featuredImage && !showReader.isSchedule && (
+              {/* Featured image (published + queued previews both show real photos) */}
+              {showReader.featuredImage && (
                 <div className="mb-8 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800">
                   <img src={showReader.featuredImage} alt={showReader.title} className="w-full h-64 md:h-80 object-cover" />
                 </div>

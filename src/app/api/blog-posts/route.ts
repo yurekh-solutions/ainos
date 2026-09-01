@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { isAdmin } from '@/lib/admin';
+import { startBackgroundGeneration } from '@/lib/schedule-generator';
 
 export async function GET(req: NextRequest) {
   try {
@@ -49,6 +50,9 @@ export async function GET(req: NextRequest) {
       id: string;
       topic: string;
       keywords: string | null;
+      status: string;
+      previewImage: string | null;
+      companyId: string | null;
       scheduledDate: Date;
       createdAt: Date;
       subscription: {
@@ -59,6 +63,13 @@ export async function GET(req: NextRequest) {
       company?: { name: string | null; id: string } | null;
     }>;
 
+    // Auto-start background writing for any company that still has queued blogs —
+    // no user clicks needed; published articles appear as they are written
+    const pendingCompanies = new Set<string>();
+    schedules.forEach(s => { if (s.status === 'pending' && s.companyId) pendingCompanies.add(s.companyId); });
+    if (!platform && user.companyId) pendingCompanies.add(user.companyId);
+    pendingCompanies.forEach(cid => startBackgroundGeneration(cid));
+
     // Convert schedules to blog post format for unified display
     const scheduledPosts = schedules.map((s) => ({
       id: s.id,
@@ -66,7 +77,7 @@ export async function GET(req: NextRequest) {
       slug: s.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
       content: '',
       excerpt: '',
-      featuredImage: null,
+      featuredImage: s.previewImage,
       category: s.subscription?.connectedWebsite?.niche || 'General',
       status: 'scheduled',
       author: null,

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { ensureCompany } from '@/lib/prisma-helpers';
 import { connectAndAnalyzeWebsite } from '@/lib/website-scraper';
 import { startBackgroundGeneration } from '@/lib/schedule-generator';
+import { getBlogImage } from '@/lib/blog-images';
 
 // POST /api/blog-agent/connect-website
 // Connect a website, scrape it, analyze with AI, create subscription + initial schedules
@@ -131,6 +132,7 @@ export async function POST(req: NextRequest) {
           targetWordCount: 3000,
           scheduledDate,
           status: 'pending',
+          previewImage: await getBlogImage(topics[i], aiAnalysis.niche || undefined),
           publishTargets: publishMethod === 'ainos' ? ['ainos'] : ['ainos', publishMethod],
           subscriptionId: subscription.id,
           connectedWebsiteId: website.id,

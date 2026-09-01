@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { ensureCompany } from '@/lib/prisma-helpers';
+import { getBlogImage } from '@/lib/blog-images';
+import { startBackgroundGeneration } from '@/lib/schedule-generator';
 
 // POST /api/blog-agent/schedule - Generate blog schedule for a website
 export async function POST(req: NextRequest) {
@@ -99,6 +101,7 @@ export async function POST(req: NextRequest) {
           targetWordCount: 3000,
           scheduledDate,
           status: 'pending',
+          previewImage: await getBlogImage(finalTopics[i], website.niche || undefined),
           publishTargets: website.publishMethod === 'ainos' ? ['ainos'] : ['ainos', website.publishMethod],
           subscriptionId: subscription.id,
           connectedWebsiteId: websiteId,
@@ -116,6 +119,9 @@ export async function POST(req: NextRequest) {
         blogsRemaining: Math.max(0, subscription.blogsRemaining - finalTopics.length),
       },
     });
+
+    // Start writing the newly queued blogs in the background right away
+    startBackgroundGeneration(company.id);
 
     return NextResponse.json({
       scheduled: schedules.length,

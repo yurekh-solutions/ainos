@@ -1,5 +1,7 @@
-feat(blogs): auto background generation + niche-aware premium images
+feat(blogs): preview images on every queued card + auto background writing
 
-- connect-website now starts background generation immediately: all 30 queued blogs get written (full article + image) right after connecting, no clicks needed
-- Generate All Queued: one click starts server-side background writing; UI polls and shows live progress, tab can stay open
-- blog-images: stopword-filtered, niche-aware Pexels/Unsplash queries (AV blogs now get AV/event photos, not rain boots); 10 results pool for variety
+- BlogSchedule.previewImage: photo picked at scheduling time (niche-aware Pexels), so every card in the grid shows a real image instantly — no more purple placeholders
+- blog page GET auto-starts background generation for any company with queued blogs — content is written without any clicks; published articles appear as they complete
+- schedule + connect-website routes store previewImage; article reuses the same photo for card/article consistency
+- reader shows the preview photo for queued blogs too
+- scripts/backfillPreviewImages.cjs: one-off backfill (45 pending schedules updated)
