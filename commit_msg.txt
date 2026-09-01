@@ -1,6 +1,1 @@
-fix(blogs): reliable full-content generation + images on every card
-
-- Gemini: maxOutputTokens 65536 (3000-word JSON was truncating mid-parse -> failed) + 180s timeout for long-form writes
-- background loop: retries failed rows once per run with gentle pacing (no rate-limit trips), so stuck blogs recover automatically
-- backfill v2: preview images set on failed/generating rows too - every card now shows a real photo
-- UI copy: no date-based promises; cards say "In AI writing queue", reader says "AI is writing this article"
+fix(regenerate): 180s AI timeout + friendly 502 message (was 500 on long rewrites)

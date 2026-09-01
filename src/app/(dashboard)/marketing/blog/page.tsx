@@ -213,7 +213,8 @@ export default function BlogPage() {
         fetchPosts();
         setShowReader(null);
       } else {
-        alert('Regeneration failed — please try again.');
+        const d = await res.json().catch(() => null);
+        alert((d && d.error) || 'Regeneration failed — please try again.');
       }
     } catch (e) { console.error(e); }
     setRegenerating(null);

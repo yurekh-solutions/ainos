@@ -36,7 +36,7 @@ Existing tags: ${Array.isArray(post.tags) ? (post.tags as string[]).join(', ') :
 
 Write a completely new, publish-ready version of this post.`;
 
-    const aiRaw = await generateAIText(systemPrompt, userPrompt, { json: true });
+    const aiRaw = await generateAIText(systemPrompt, userPrompt, { json: true, timeoutMs: 180_000 });
 
     let data: { excerpt?: string; content?: string; tags?: string[] };
     try {
@@ -65,6 +65,6 @@ Write a completely new, publish-ready version of this post.`;
     return NextResponse.json(updated);
   } catch (error) {
     console.error('Error regenerating blog post:', error);
-    return NextResponse.json({ error: 'Failed to regenerate blog post' }, { status: 500 });
+    return NextResponse.json({ error: 'The AI is busy right now — please try again in a moment.' }, { status: 502 });
   }
 }
