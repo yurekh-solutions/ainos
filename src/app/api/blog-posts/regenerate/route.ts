@@ -50,7 +50,7 @@ Write a completely new, publish-ready version of this post.`;
     if (!data.content) return NextResponse.json({ error: 'Regeneration returned empty content' }, { status: 502 });
 
     // Fresh high-quality featured image (Pexels → Unsplash → Pollinations fallback)
-    const featuredImage = await getBlogImage(post.title);
+    const featuredImage = await getBlogImage(post.title, post.category || undefined);
 
     const updated = await prisma.blogPost.update({
       where: { id: postId },

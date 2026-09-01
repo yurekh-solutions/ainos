@@ -241,31 +241,47 @@ export default function BlogPage() {
     setGeneratingNow(null);
   };
 
-  // Bulk-generate every queued (scheduled) blog sequentially with live progress
+  // One click: server writes ALL queued blogs in the background (full article +
+  // premium image each); UI polls the list so published cards appear live
   const [bulkGenerating, setBulkGenerating] = useState(false);
   const [bulkProgress, setBulkProgress] = useState('');
   const handleGenerateAll = async () => {
     const queued = posts.filter(p => p.isSchedule);
     if (!queued.length) return;
-    if (!confirm(`Generate all ${queued.length} queued blogs now? Each blog takes ~30-60 seconds (full 3000-word article + premium image).`)) return;
+    if (!confirm(`Generate all ${queued.length} queued blogs now? The AI writes each one in the background (full article + premium image) — you can keep using the app while they publish.`)) return;
     setBulkGenerating(true);
-    let done = 0;
-    for (const p of queued) {
-      setBulkProgress(`Writing blog ${done + 1} of ${queued.length}...`);
-      try {
-        await fetch('/api/blog-agent/generate-now', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ scheduleId: p.id }),
-        });
-      } catch { /* keep going */ }
-      done++;
-      setBulkProgress(`Published ${done} of ${queued.length}...`);
+    setBulkProgress('Starting AI...');
+    try {
+      const res = await fetch('/api/blog-agent/generate-all', { method: 'POST' });
+      if (!res.ok) {
+        const d = await res.json();
+        alert(d.error || 'Could not start generation — please try again.');
+        setBulkGenerating(false); setBulkProgress('');
+        return;
+      }
+    } catch {
+      alert('Could not start generation — please try again.');
+      setBulkGenerating(false); setBulkProgress('');
+      return;
     }
-    await fetchPosts();
-    setBulkGenerating(false);
-    setBulkProgress('');
-    alert('All queued blogs generated & published!');
+    const poll = setInterval(async () => {
+      try {
+        const r = await fetch('/api/blog-posts');
+        if (!r.ok) return;
+        const data = await r.json();
+        setPosts(data.posts || []);
+        setCategories(data.categories || []);
+        const left = (data.posts || []).filter((p: BlogPost) => p.isSchedule).length;
+        if (left > 0) {
+          setBulkProgress(`AI writing in background... ${left} queued left`);
+        } else {
+          clearInterval(poll);
+          setBulkGenerating(false);
+          setBulkProgress('');
+          alert('All queued blogs generated & published!');
+        }
+      } catch { /* keep polling */ }
+    }, 15000);
   };
 
   const filtered = posts.filter(p => {

@@ -3,6 +3,7 @@ import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { ensureCompany } from '@/lib/prisma-helpers';
 import { connectAndAnalyzeWebsite } from '@/lib/website-scraper';
+import { startBackgroundGeneration } from '@/lib/schedule-generator';
 
 // POST /api/blog-agent/connect-website
 // Connect a website, scrape it, analyze with AI, create subscription + initial schedules
@@ -138,6 +139,10 @@ export async function POST(req: NextRequest) {
       });
       schedules.push(schedule);
     }
+
+    // Start writing the queued blogs right away in the background —
+    // the user sees published, image-rich articles within minutes of connecting
+    startBackgroundGeneration(company.id);
 
     return NextResponse.json({
       website: {

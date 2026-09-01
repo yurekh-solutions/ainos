@@ -1,5 +1,5 @@
-fix(blog-agent): clear disconnect flow, one-website-per-account policy, cancel schedules on disconnect
+feat(blogs): auto background generation + niche-aware premium images
 
-- website card: "View Details" mislabeled button renamed to "Schedule 30 More"; hidden three-dot icon replaced with a labeled red Disconnect button
-- disconnect now cancels all pending/generating/failed schedules so the cron stops writing for a removed site
-- connect-website enforces one active website per account: must disconnect before connecting a new site
+- connect-website now starts background generation immediately: all 30 queued blogs get written (full article + image) right after connecting, no clicks needed
+- Generate All Queued: one click starts server-side background writing; UI polls and shows live progress, tab can stay open
+- blog-images: stopword-filtered, niche-aware Pexels/Unsplash queries (AV blogs now get AV/event photos, not rain boots); 10 results pool for variety

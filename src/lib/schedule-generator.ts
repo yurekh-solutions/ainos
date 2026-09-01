@@ -127,7 +127,8 @@ Requirements:
     }
 
     // Featured image: Pexels → Unsplash → Pollinations fallback
-    const imageUrl = await getBlogImage(schedule.topic);
+    // (niche as context so photos match the business, not just the title words)
+    const imageUrl = await getBlogImage(schedule.topic, website.niche || undefined);
 
     // Create BlogPost
     const blogPost = await prisma.blogPost.create({
@@ -206,4 +207,30 @@ Requirements:
     });
     return { status: 'failed', reason: message };
   }
+}
+
+// Module-level guard: only one background batch runs at a time per server instance
+let backgroundRunning = false;
+
+// Kicks off server-side background generation of every pending scheduled blog
+// for a company. Returns immediately; the server keeps writing blogs one by one
+// (full article + premium image) and they appear as published. Safe to call
+// right after connecting a website or from the "Generate All" button.
+export function startBackgroundGeneration(companyId: string): boolean {
+  if (backgroundRunning) return false;
+  backgroundRunning = true;
+  (async () => {
+    try {
+      for (;;) {
+        const next = await prisma.blogSchedule.findFirst({
+          where: { companyId, status: 'pending' },
+          orderBy: { scheduledDate: 'asc' },
+        });
+        if (!next) break;
+        await generateScheduleNow(next.id);
+      }
+    } catch { /* stop silently; cron will catch up later */ }
+    finally { backgroundRunning = false; }
+  })();
+  return true;
 }

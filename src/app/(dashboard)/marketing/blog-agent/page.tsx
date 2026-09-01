@@ -118,24 +118,8 @@ export default function BlogAgentPage() {
         setAnalysisResult(data);
         setForm({ url: '', publishMethod: 'ainos', webhookUrl: '', webhookSecret: '', wordpressUrl: '', wordpressUsername: '', wordpressAppPassword: '', deliveryEmail: '' });
         refreshData();
-        // Immediately generate the first scheduled blog in the background so the
-        // user sees a readable, published article right after connecting
-        (async () => {
-          try {
-            const sRes = await fetch('/api/blog-agent/schedule');
-            if (!sRes.ok) return;
-            const sData = await sRes.json();
-            const first = (sData.schedules || []).find((s: { status: string }) => s.status === 'pending');
-            if (first?.id) {
-              await fetch('/api/blog-agent/generate-now', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ scheduleId: first.id }),
-              });
-              refreshData();
-            }
-          } catch { /* non-blocking */ }
-        })();
+        // The server now auto-generates the queued blogs in the background
+        // right after connecting (startBackgroundGeneration in connect-website).
       } else {
         const data = await res.json();
         alert(data.error || 'Failed to connect website');
