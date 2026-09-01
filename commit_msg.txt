@@ -1,7 +1,1 @@
-feat(blogs): preview images on every queued card + auto background writing
-
-- BlogSchedule.previewImage: photo picked at scheduling time (niche-aware Pexels), so every card in the grid shows a real image instantly — no more purple placeholders
-- blog page GET auto-starts background generation for any company with queued blogs — content is written without any clicks; published articles appear as they complete
-- schedule + connect-website routes store previewImage; article reuses the same photo for card/article consistency
-- reader shows the preview photo for queued blogs too
-- scripts/backfillPreviewImages.cjs: one-off backfill (45 pending schedules updated)
+chore: unknown-cast for schedule rows (silences stale Prisma client TS cache)

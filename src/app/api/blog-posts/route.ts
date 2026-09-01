@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
         ...(platform ? { company: { select: { name: true, id: true } } } : {}),
       },
       orderBy: { scheduledDate: 'desc' },
-    }) as Array<{
+    }) as unknown as Array<{
       id: string;
       topic: string;
       keywords: string | null;
