@@ -69,12 +69,24 @@
   }
 
   function detectDarkMode() {
-    const bg = getComputedStyle(document.body).backgroundColor;
-    const rgb = parseRgb(bg);
-    if (!rgb) return false;
-    // If background is dark (< 80 brightness), it's dark mode
-    const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
-    return brightness < 80;
+    // Walk from the widget container up to <html> and use the FIRST
+    // non-transparent background. Many sites (and our preview page) keep
+    // <body> transparent and paint the wrapper instead — treating a
+    // transparent body as "dark" produced ugly dark boxes on light pages.
+    const candidates = [];
+    const container = document.querySelector('#ainos-blog, .ainos-blog-widget, [data-ainos-blog]');
+    let el = container;
+    while (el && el !== document.documentElement) { candidates.push(el); el = el.parentElement; }
+    candidates.push(document.body, document.documentElement);
+    for (const node of candidates) {
+      if (!node) continue;
+      const rgb = parseRgb(getComputedStyle(node).backgroundColor);
+      if (rgb && rgb.a > 0.1) {
+        const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+        return brightness < 80;
+      }
+    }
+    return false; // no painted background anywhere -> assume light page
   }
 
   function detectColorFromElements() {
@@ -110,18 +122,18 @@
 
   function parseRgb(str) {
     if (!str) return null;
-    const match = str.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+    const match = str.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?/);
     if (match) {
-      return { r: parseInt(match[1]), g: parseInt(match[2]), b: parseInt(match[3]) };
+      return { r: parseInt(match[1]), g: parseInt(match[2]), b: parseInt(match[3]), a: match[4] === undefined ? 1 : parseFloat(match[4]) };
     }
     // Try hex
     const hexMatch = str.match(/^#([0-9a-f]{3,6})$/i);
     if (hexMatch) {
       const hex = hexMatch[1];
       if (hex.length === 3) {
-        return { r: parseInt(hex[0]+hex[0],16), g: parseInt(hex[1]+hex[1],16), b: parseInt(hex[2]+hex[2],16) };
+        return { r: parseInt(hex[0]+hex[0],16), g: parseInt(hex[1]+hex[1],16), b: parseInt(hex[2]+hex[2],16), a: 1 };
       }
-      return { r: parseInt(hex.substring(0,2),16), g: parseInt(hex.substring(2,4),16), b: parseInt(hex.substring(4,6),16) };
+      return { r: parseInt(hex.substring(0,2),16), g: parseInt(hex.substring(2,4),16), b: parseInt(hex.substring(4,6),16), a: 1 };
     }
     return null;
   }

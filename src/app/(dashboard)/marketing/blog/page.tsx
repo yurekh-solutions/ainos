@@ -526,8 +526,8 @@ export default function BlogPage() {
               <CalendarRange className="w-4 h-4" />
             </button>
           </div>
-          {/* Generate All Queued Button */}
-                    {queuedCount > 0 && (
+          {/* Generate All Queued Button — own-company action, hidden in platform view */}
+                    {!platformMode && queuedCount > 0 && (
                       <button onClick={handleGenerateAll} disabled={bulkGenerating}
                         className="px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center gap-2 disabled:opacity-60">
                         {bulkGenerating ? (
@@ -542,11 +542,13 @@ export default function BlogPage() {
                         )}
                       </button>
                     )}
-          {/* Publish to Website Button */}
+          {/* Publish to Website Button — hidden in platform view (it applies to your own site only) */}
+          {!platformMode && (
           <button onClick={() => setShowEmbed(true)}
             className="px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center gap-2">
             <Globe className="w-4 h-4" /> Publish to Website
           </button>
+          )}
         </div>
 
         {/* Category Tabs */}
