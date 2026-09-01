@@ -1,1 +1,1 @@
-fix(embed): no more dark boxes on light pages (transparent-body theme bug) + hide Publish/Generate boxes in platform view
+chore: remove See Live Preview button and /embed-preview page - publish modal stays simple copy-paste only

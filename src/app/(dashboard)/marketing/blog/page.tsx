@@ -86,20 +86,6 @@ export default function BlogPage() {
   const [showEmbed, setShowEmbed] = useState(false);
   const [copiedCode, setCopiedCode] = useState('');
   const [embedPlatform, setEmbedPlatform] = useState('WordPress');
-  const [embedSite, setEmbedSite] = useState('');
-
-  // When the publish modal opens, remember the connected website so we can
-  // offer a live preview of the widget with that site's blogs
-  useEffect(() => {
-    if (!showEmbed) return;
-    fetch('/api/blog-agent/websites')
-      .then(r => (r.ok ? r.json() : null))
-      .then(d => {
-        const w = ((d && d.websites) || []).find((x: { isActive?: boolean }) => x.isActive !== false);
-        setEmbedSite((w && w.url) || '');
-      })
-      .catch(() => { /* preview is optional */ });
-  }, [showEmbed]);
   const [platformMode, setPlatformMode] = useState(false);
 
   // Platform-wide view is admin-only (platform owner account)
@@ -1174,12 +1160,6 @@ export default function BlogPage() {
                     </button>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mt-3">
-                    {embedSite && (
-                      <a href={`${baseUrl}/embed-preview?site=${encodeURIComponent(embedSite)}`} target="_blank" rel="noopener noreferrer"
-                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 transition-colors flex items-center gap-1.5 text-white text-xs font-medium">
-                        <Eye className="w-3.5 h-3.5" /> See Live Preview
-                      </a>
-                    )}
                     <p className="text-[10px] text-gray-500">No technical knowledge needed — if you can copy-paste, you can do this!</p>
                   </div>
                 </div>
