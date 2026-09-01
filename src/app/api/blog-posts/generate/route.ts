@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
+import { generateAIText } from '@/lib/ai-provider';
+import { getBlogImage } from '@/lib/blog-images';
 
-// AI Blog Agent - generates SEO-friendly blog posts with featured images using Pollinations.ai (100% free)
+// AI Blog Agent - generates SEO-friendly blog posts with high-quality featured images
+// (Pexels → Unsplash → Pollinations fallback) via unified AI provider (Gemini first)
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(req);
@@ -54,26 +57,14 @@ Requirements:
 - Include a strong CTA at the end
 - Make it rank on Google AND get cited by AI engines.`;
 
-    // Generate blog content via Pollinations
-    const pollinationsRes = await fetch('https://text.pollinations.ai/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'openai',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-      }),
-    });
-
+    // Generate blog content via unified AI provider (Gemini first, Pollinations fallback)
     let result;
-    if (pollinationsRes.ok) {
-      const text = await pollinationsRes.text();
+    try {
+      const aiRaw = await generateAIText(systemPrompt, userPrompt, { json: true });
       try {
-        result = JSON.parse(text);
+        result = JSON.parse(aiRaw);
       } catch {
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        const jsonMatch = aiRaw.replace(/```(?:json)?/gi, '').match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           result = JSON.parse(jsonMatch[0]);
         } else {
@@ -81,14 +72,14 @@ Requirements:
           result = {
             title: topic,
             slug,
-            excerpt: text.substring(0, 160),
-            content: text,
+            excerpt: aiRaw.substring(0, 160),
+            content: aiRaw,
             tags: [topic.toLowerCase().split(' ')[0], 'blog', 'seo'],
             category: industry || 'General Business',
           };
         }
       }
-    } else {
+    } catch {
       const slug = topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       result = {
         title: topic,
@@ -136,6 +127,9 @@ Requirements:
         result.content += `\n\n---\n\n**Share this article:** ${hashtags}`;
       }
     }
+
+    // Attach a high-quality featured image (Pexels → Unsplash → Pollinations fallback)
+    result.featuredImage = await getBlogImage(topic);
 
     return NextResponse.json(result);
   } catch (error) {

@@ -15,7 +15,7 @@ jobs:
       - name: Ping AINOS health endpoint
         run: |
           echo "Pinging AINOS server to prevent cold start..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://ainos-ywu0.onrender.com/ainos/api/ping)
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://ainos-ywu0.onrender.com/api/ping)
           echo "Response status: $response"
           if [ "$response" = "200" ]; then
             echo "✅ Server is alive"
@@ -32,7 +32,7 @@ jobs:
           echo "Triggering daily blog auto-publishing..."
           response=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET || 'ainos-cron-2024' }}" \
-            https://ainos-ywu0.onrender.com/ainos/api/blog-agent/auto-generate)
+            https://ainos-ywu0.onrender.com/api/blog-agent/auto-generate)
           echo "Auto-publish status: $response"
           if [ "$response" = "200" ]; then
             echo "✅ Blog auto-publishing triggered"

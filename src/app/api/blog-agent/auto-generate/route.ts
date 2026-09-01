@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { scrapePage } from '@/lib/website-scraper';
 import { publishBlog } from '@/lib/blog-publisher';
+import { generateAIText } from '@/lib/ai-provider';
+import { getBlogImage } from '@/lib/blog-images';
 
 // POST /api/blog-agent/auto-generate
-// Called daily by cron - generates pending blogs scheduled for today
+// Called daily by cron - generates today's pending blogs, catches up overdue
+// pending schedules, and retries failed ones from the last 3 days
 export async function POST(req: NextRequest) {
   try {
     // Verify cron secret (optional security)
@@ -18,14 +21,16 @@ export async function POST(req: NextRequest) {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Find all pending schedules for today
+    // Catch-up window: today's pending + any overdue pending + failed (last 3 days) for retry
+    const retryCutoff = new Date(today);
+    retryCutoff.setDate(retryCutoff.getDate() - 3);
+
     const pendingSchedules = await prisma.blogSchedule.findMany({
       where: {
-        status: 'pending',
-        scheduledDate: {
-          gte: today,
-          lt: tomorrow,
-        },
+        OR: [
+          { status: 'pending', scheduledDate: { lt: tomorrow } },
+          { status: 'failed', scheduledDate: { gte: retryCutoff, lt: tomorrow } },
+        ],
       },
       include: {
         subscription: {
@@ -34,6 +39,7 @@ export async function POST(req: NextRequest) {
           },
         },
       },
+      orderBy: { scheduledDate: 'asc' },
     });
 
     const results = [];
@@ -82,7 +88,7 @@ export async function POST(req: NextRequest) {
           }
         } catch { /* skip if scrape fails */ }
 
-        // Generate blog content via Pollinations
+        // Generate blog content via unified AI provider (Gemini first, Pollinations fallback)
         const systemPrompt = `You are an expert SEO content writer. Write a comprehensive, SEO-optimized blog post of approximately ${schedule.targetWordCount} words.
 
 Rules:
@@ -127,39 +133,22 @@ Requirements:
 - Use EEAT signals
 - Strong CTA at the end`;
 
-        const aiRes = await fetch('https://text.pollinations.ai/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: 'openai',
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userPrompt },
-            ],
-          }),
-        });
+        const aiRaw = await generateAIText(systemPrompt, userPrompt, { json: true });
 
         let blogData;
-        if (aiRes.ok) {
-          const text = await aiRes.text();
-          try {
-            blogData = JSON.parse(text);
-          } catch {
-            const jsonMatch = text.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              blogData = JSON.parse(jsonMatch[0]);
-            } else {
-              throw new Error('Could not parse AI response');
-            }
+        try {
+          blogData = JSON.parse(aiRaw);
+        } catch {
+          const jsonMatch = aiRaw.replace(/```(?:json)?/gi, '').match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            blogData = JSON.parse(jsonMatch[0]);
+          } else {
+            throw new Error('Could not parse AI response');
           }
-        } else {
-          throw new Error('AI generation failed');
         }
 
-        // Generate featured image
-        const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
-          `Professional blog header image about ${schedule.topic}, modern business concept, clean design, high quality, 16:9`
-        )}?width=1200&height=630&nologo=true&seed=${Date.now()}`;
+        // Featured image: Pexels → Unsplash → Pollinations fallback
+        const imageUrl = await getBlogImage(schedule.topic);
 
         // Create BlogPost
         const blogPost = await prisma.blogPost.create({

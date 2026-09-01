@@ -6,7 +6,7 @@ import {
   X, FileText, Eye, Calendar, Sparkles, Wand2, Search,
   Clock, Trash2, Edit3, CheckCircle, Send, ArrowLeft,
   BookOpen, Layers, ExternalLink, Globe, CalendarRange, TrendingUp, Shield, Zap,
-  Code, Copy, Check, Rss, Map, Palette
+  Code, Copy, Check, Rss, Map, Palette, RefreshCw
 } from 'lucide-react';
 
 interface BlogPost {
@@ -200,6 +200,23 @@ export default function BlogPage() {
       const res = await fetch(`/api/blog-posts?id=${id}`, { method: 'DELETE' });
       if (res.ok) fetchPosts();
     } catch (e) { console.error(e); }
+  };
+
+  // Regenerate post content + image with AI
+  const [regenerating, setRegenerating] = useState<string | null>(null);
+  const handleRegenerate = async (id: string) => {
+    if (!confirm('Regenerate this blog with AI? Current content and image will be replaced.')) return;
+    setRegenerating(id);
+    try {
+      const res = await fetch(`/api/blog-posts/regenerate?id=${id}`, { method: 'POST' });
+      if (res.ok) {
+        fetchPosts();
+        setShowReader(null);
+      } else {
+        alert('Regeneration failed — please try again.');
+      }
+    } catch (e) { console.error(e); }
+    setRegenerating(null);
   };
 
   const filtered = posts.filter(p => {
@@ -552,6 +569,13 @@ export default function BlogPage() {
                           <Send className="w-3.5 h-3.5 text-emerald-500" />
                         </button>
                       )}
+                      {!post.isSchedule && (
+                        <button onClick={(e) => { e.stopPropagation(); handleRegenerate(post.id); }}
+                          disabled={regenerating === post.id}
+                          className="p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20" title="Regenerate with AI">
+                          <RefreshCw className={`w-3.5 h-3.5 text-purple-500 ${regenerating === post.id ? 'animate-spin' : ''}`} />
+                        </button>
+                      )}
                       <button onClick={(e) => { e.stopPropagation(); handleDelete(post.id); }}
                         className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete">
                         <Trash2 className="w-3.5 h-3.5 text-red-400" />
@@ -875,6 +899,11 @@ export default function BlogPage() {
                       <Send className="w-3.5 h-3.5" /> Publish
                     </button>
                   )}
+                  <button onClick={() => handleRegenerate(showReader.id)}
+                    disabled={regenerating === showReader.id}
+                    className="px-4 py-2 rounded-xl text-sm font-semibold text-purple-600 border border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors flex items-center gap-2">
+                    <RefreshCw className={`w-3.5 h-3.5 ${regenerating === showReader.id ? 'animate-spin' : ''}`} /> Regenerate
+                  </button>
                   <button onClick={() => { handleDelete(showReader.id); setShowReader(null); }}
                     className="px-4 py-2 rounded-xl text-sm font-semibold text-red-600 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2">
                     <Trash2 className="w-3.5 h-3.5" /> Delete
