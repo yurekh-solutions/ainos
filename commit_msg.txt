@@ -1,1 +1,1 @@
-fix(embed): tenant guard on single-post (slug) view - no cross-client article leakage
+fix(embed-preview): load embed.js post-hydration (client component) so React never wipes the widget
