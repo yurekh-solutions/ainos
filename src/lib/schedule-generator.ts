@@ -120,16 +120,29 @@ Requirements:
     } catch {
       const jsonMatch = aiRaw.replace(/```(?:json)?/gi, '').match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        blogData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('Could not parse AI response');
+        try { blogData = JSON.parse(jsonMatch[0]); } catch { blogData = null; }
       }
+      if (!blogData && aiRaw.length > 800) {
+        // Salvage: AI replied with raw markdown instead of JSON — publish it
+        // as the article instead of failing the schedule
+        blogData = {
+          title: schedule.topic,
+          slug: schedule.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+          excerpt: aiRaw.replace(/[#*`]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160),
+          content: aiRaw.replace(/```(?:json)?/gi, ''),
+          tags: [],
+          category: website.niche || 'General',
+        };
+      }
+      if (!blogData) throw new Error('Could not parse AI response');
     }
 
-    // Featured image: reuse the preview image picked at scheduling time so the
-    // card and the article stay consistent; otherwise fetch fresh
-    // (Pexels → Unsplash → Pollinations fallback, niche as context)
-    const imageUrl = schedule.previewImage || await getBlogImage(schedule.topic, website.niche || undefined);
+    // Featured image: prefer a fresh real photo (Pexels/Unsplash) when a
+    // provider key is configured; otherwise keep the preview picked at
+    // scheduling time so card and article stay consistent
+    const imageUrl = (process.env.PEXELS_API_KEY || process.env.UNSPLASH_ACCESS_KEY)
+      ? await getBlogImage(schedule.topic, website.niche || undefined)
+      : (schedule.previewImage || await getBlogImage(schedule.topic, website.niche || undefined));
 
     // Create BlogPost
     const blogPost = await prisma.blogPost.create({
@@ -202,11 +215,16 @@ Requirements:
     return { status: 'published', blogPostId: blogPost.id };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
+    console.error(`[blog-gen] schedule ${scheduleId} not published:`, message);
+    // Quota/rate-limit errors (Gemini 429, Pollinations 402) are temporary —
+    // keep the row pending ("Preparing") so it retries on the next run or
+    // daily quota reset instead of showing a scary FAILED card.
+    const quota = /429|403|402|quota|payment required|busy right now/i.test(message);
     await prisma.blogSchedule.update({
       where: { id: schedule.id },
-      data: { status: 'failed' },
+      data: { status: quota ? 'pending' : 'failed' },
     });
-    return { status: 'failed', reason: message };
+    return { status: quota ? 'pending' : 'failed', reason: message };
   }
 }
 
@@ -245,6 +263,9 @@ export function startBackgroundGeneration(companyId: string): boolean {
         if (!next) break;
         attempted.add(next.id);
         const result = await generateScheduleNow(next.id);
+        // quota exhausted on every provider — stop burning attempts; the
+        // remaining rows stay pending and retry on the next run/reset
+        if (result.status === 'pending') break;
         // gentle pacing so AI rate limits never trip
         await sleep(result.status === 'failed' ? 6000 : 2500);
       }

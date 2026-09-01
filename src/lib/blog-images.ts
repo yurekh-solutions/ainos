@@ -16,7 +16,11 @@ export async function getBlogImage(topic: string, context?: string): Promise<str
     .split(/[^a-zA-Z0-9]+/)
     .filter(w => w.length > 2 && !STOPWORDS.has(w.toLowerCase()));
   const query = ((context ? `${context} ` : '') + words.slice(0, 4).join(' ')).trim() || 'business';
-  const seed = Date.now() % 100000;
+  // Stable per-topic hash so every blog gets its OWN photo (Date-based seeds
+  // made blogs created in the same loop pick the identical image)
+  let hash = 7;
+  for (const ch of topic) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  const seed = hash % 100000;
 
   // 1) Pexels — real high-quality photos
   if (process.env.PEXELS_API_KEY) {
@@ -29,7 +33,7 @@ export async function getBlogImage(topic: string, context?: string): Promise<str
         const data: { photos?: Array<{ src?: { large?: string; landscape?: string } }> } = await res.json();
         const photos = data.photos || [];
         if (photos.length) {
-          const pick = photos[seed % photos.length];
+          const pick = photos[hash % photos.length];
           const url = pick.src?.large || pick.src?.landscape;
           if (url) return url;
         }
@@ -48,7 +52,7 @@ export async function getBlogImage(topic: string, context?: string): Promise<str
         const data: { results?: Array<{ urls?: { regular?: string } }> } = await res.json();
         const results = data.results || [];
         if (results.length) {
-          const pick = results[seed % results.length];
+          const pick = results[hash % results.length];
           const url = pick.urls?.regular;
           if (url) return url;
         }

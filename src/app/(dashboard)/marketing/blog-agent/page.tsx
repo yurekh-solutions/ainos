@@ -179,7 +179,7 @@ def ainos_webhook():
     return jsonify({'success': True})`,
   };
 
-  const recentActivity = schedules.slice(0, 5);
+  const recentActivity = schedules.filter(s => s.status !== 'cancelled').slice(0, 5);
 
   const statCards = [
     { label: 'Connected Sites', value: websites.length, sub: 'Active Websites', icon: Globe, iconBg: 'bg-purple-100', iconColor: 'text-purple-600', subColor: 'text-purple-500' },

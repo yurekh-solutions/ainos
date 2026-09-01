@@ -5,8 +5,16 @@
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 
+// Supports multiple keys so quota rotates: GEMINI_API_KEYS="key1,key2" and/or GEMINI_API_KEY
+function geminiKeys(): string[] {
+  const list = (process.env.GEMINI_API_KEYS || '').split(',').map(s => s.trim()).filter(Boolean);
+  const single = (process.env.GEMINI_API_KEY || '').trim();
+  if (single && !list.includes(single)) list.push(single);
+  return list;
+}
+
 function geminiKey(): string | undefined {
-  return process.env.GEMINI_API_KEY || undefined;
+  return geminiKeys()[0];
 }
 
 async function fetchWithTimeout(url: string, init: RequestInit, ms: number): Promise<Response> {
@@ -36,8 +44,8 @@ async function callGemini(
   parts: GeminiPart[],
   options: { systemPrompt?: string; json?: boolean; timeoutMs?: number } = {}
 ): Promise<string> {
-  const key = geminiKey();
-  if (!key) throw new Error('No Gemini key');
+  const keys = geminiKeys();
+  if (!keys.length) throw new Error('No Gemini key');
 
   const body: Record<string, unknown> = {
     contents: [{ role: 'user', parts }],
@@ -52,27 +60,34 @@ async function callGemini(
     body.generationConfig = { responseMimeType: 'application/json', maxOutputTokens: 65536 };
   }
 
-  const res = await fetchWithTimeout(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    },
-    options.timeoutMs ?? 60_000
-  );
+  // Rotate keys on quota errors (429/403) so multiple free keys pool their limits
+  let lastErr = '';
+  for (const key of keys) {
+    const res = await fetchWithTimeout(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+      options.timeoutMs ?? 60_000
+    );
 
-  if (!res.ok) {
+    if (res.ok) {
+      const data = await res.json();
+      const text = (data.candidates?.[0]?.content?.parts ?? [])
+        .map((p: { text?: string }) => p.text ?? '')
+        .join('');
+      if (!text) throw new Error('Gemini returned empty response');
+      return text;
+    }
+
     const errText = await res.text().catch(() => '');
-    throw new Error(`Gemini error ${res.status}: ${errText.slice(0, 200)}`);
+    lastErr = `Gemini error ${res.status}: ${errText.slice(0, 200)}`;
+    // quota/billing on this key — try the next one; other errors fail fast
+    if (res.status !== 429 && res.status !== 403) throw new Error(lastErr);
   }
-
-  const data = await res.json();
-  const text = (data.candidates?.[0]?.content?.parts ?? [])
-    .map((p: { text?: string }) => p.text ?? '')
-    .join('');
-  if (!text) throw new Error('Gemini returned empty response');
-  return text;
+  throw new Error(lastErr || 'Gemini quota exceeded on all keys');
 }
 
 // ─── Pollinations helpers (fallback) ────────────────────────────────────────

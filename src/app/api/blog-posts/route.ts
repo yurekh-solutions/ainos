@@ -74,25 +74,35 @@ export async function GET(req: NextRequest) {
     if (!platform && user.companyId) pendingCompanies.add(user.companyId);
     pendingCompanies.forEach(cid => startBackgroundGeneration(cid));
 
-    // Convert schedules to blog post format for unified display
-    const scheduledPosts = schedules.map((s) => ({
-      id: s.id,
-      title: s.topic,
-      slug: s.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
-      content: '',
-      excerpt: '',
-      featuredImage: s.previewImage,
-      category: s.subscription?.connectedWebsite?.niche || 'General',
-      status: 'scheduled',
-      author: null,
-      publishedAt: null,
-      scheduledAt: s.scheduledDate,
-      tags: s.keywords ? (s.keywords as string).split(',').map(k => k.trim()) : [],
-      views: 0,
-      createdAt: s.createdAt || new Date(),
-      isSchedule: true,
-      company: s.company ? { name: s.company.name, id: s.company.id } : null,
-    }));
+    // Convert schedules to blog post format for unified display.
+    // Queued cards get a readable content preview built from the site's
+    // niche + keywords so every card shows heading, content and image.
+    const scheduledPosts = schedules.map((s) => {
+      const niche = s.subscription?.connectedWebsite?.niche || 'Business';
+      const kwList = s.keywords
+        ? (s.keywords as string).split(',').map(k => k.trim())
+            .filter(k => k && k.toLowerCase() !== niche.toLowerCase())
+        : [];
+      const teaser = kwList.slice(0, 3).join(', ');
+      return {
+        id: s.id,
+        title: s.topic,
+        slug: s.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+        content: '',
+        excerpt: `A complete ${niche.toLowerCase()} guide with practical strategies, expert insights and actionable steps${teaser ? ` covering ${teaser}` : ''}.`,
+        featuredImage: s.previewImage,
+        category: s.subscription?.connectedWebsite?.niche || 'General',
+        status: 'scheduled',
+        author: null,
+        publishedAt: null,
+        scheduledAt: s.scheduledDate,
+        tags: s.keywords ? (s.keywords as string).split(',').map(k => k.trim()) : [],
+        views: 0,
+        createdAt: s.createdAt || new Date(),
+        isSchedule: true,
+        company: s.company ? { name: s.company.name, id: s.company.id } : null,
+      };
+    });
 
     // Get distinct categories for filtering
     const allPosts = await prisma.blogPost.findMany({

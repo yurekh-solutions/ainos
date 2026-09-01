@@ -1,5 +1,5 @@
-// One-off backfill: set previewImage on pending schedules that lack one,
-// so every queued blog card shows a real niche-matched photo immediately.
+// One-off backfill: give every pending/failed schedule a real Pexels photo —
+// fills missing previewImage AND replaces low-quality Pollinations previews.
 const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
 const path = require('path');
@@ -16,7 +16,8 @@ function buildQuery(topic, context) {
 
 async function getBlogImage(topic, context) {
   const query = buildQuery(topic, context);
-  const seed = Date.now() % 100000;
+  let hash = 7;
+  for (const ch of topic) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
   if (KEY) {
     try {
       const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=10&orientation=landscape`, { headers: { Authorization: KEY } });
@@ -24,23 +25,29 @@ async function getBlogImage(topic, context) {
         const data = await res.json();
         const photos = data.photos || [];
         if (photos.length) {
-          const pick = photos[seed % photos.length];
+          const pick = photos[hash % photos.length];
           const url = (pick.src && (pick.src.large || pick.src.landscape));
           if (url) return url;
         }
       }
     } catch { /* fall through */ }
   }
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(`Professional blog header image about ${topic}, modern business concept, clean design, high quality, 16:9`)}?width=1200&height=630&nologo=true&seed=${seed}`;
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(`Professional blog header image about ${topic}, modern business concept, clean design, high quality, 16:9`)}?width=1200&height=630&nologo=true&seed=${hash % 100000}`;
 }
 
 const prisma = new PrismaClient();
 (async () => {
   const rows = await prisma.blogSchedule.findMany({
-    where: { status: { in: ['pending', 'failed', 'generating'] }, previewImage: null },
+    where: {
+      status: { in: ['pending', 'failed', 'generating'] },
+      OR: [
+        { previewImage: null },
+        { previewImage: { contains: 'pollinations' } },
+      ],
+    },
     include: { subscription: { include: { connectedWebsite: true } } },
   });
-  console.log('Pending schedules without preview image:', rows.length);
+  console.log('Schedules needing a real photo:', rows.length);
   for (const s of rows) {
     const niche = (s.subscription && s.subscription.connectedWebsite && s.subscription.connectedWebsite.niche) || undefined;
     const url = await getBlogImage(s.topic, niche);

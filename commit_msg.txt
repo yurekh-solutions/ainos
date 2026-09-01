@@ -1,17 +1,22 @@
-Blog Agent fresh start after disconnect + SEO hardening
+Blog cards show content preview + AI generation quota resilience + real photos
 
-Fresh start:
-- Websites list shows only active connections, so after Disconnect the
-  account sees the clean "Connect Website" empty state
-- Reconnecting a previously disconnected URL now works: stale inactive
-  row (schedules + subscription + site) is cleaned up and a brand-new
-  site, subscription and 30 topics are created
-- Disconnect confirm copy mentions reconnecting for a fresh start
+Cards:
+- Queued (Preparing) cards now show a readable content preview built
+  from niche + keywords, so every card shows heading, content, image
+- Recent Blog Activity no longer lists CANCELLED rows from old
+  disconnected sites
 
-SEO:
-- Canonical/OG/sitemap URLs now fall back to the live Render domain
-  instead of the wrong ainos.vercel.app
-- Added public/robots.txt pointing at the XML blog sitemap
-- Public /blog listing gets proper title/description/OG meta via
-  blog/layout.tsx
-- Removed "Free" from public blog CTA copy
+Generation resilience (Gemini free quota 429 / Pollinations 402):
+- Multiple Gemini keys rotate on quota errors: GEMINI_API_KEYS="k1,k2"
+- Quota/rate-limit errors keep rows pending ("Preparing") instead of
+  FAILED and the batch stops instead of burning attempts; rows retry
+  automatically on the next run / daily quota reset
+- Non-JSON AI replies are salvaged as markdown articles instead of failing
+- Failure reasons are now logged server-side
+
+Images (Pollinations rejected as low quality):
+- Per-topic hash picks a distinct Pexels photo per blog (Date-based
+  seed previously gave identical images to blogs created in one loop)
+- Publish step prefers a fresh real photo when Pexels/Unsplash is configured
+- DB fix applied: all 29 published posts with Pollinations images
+  replaced with topic-matched Pexels photos
