@@ -68,71 +68,136 @@ export async function generateScheduleNow(scheduleId: string): Promise<{ status:
     } catch { /* skip if scrape fails */ }
 
     // Generate blog content via unified AI provider (Gemini first, Pollinations fallback)
-    const systemPrompt = `You are an expert SEO content writer. Write a comprehensive, SEO-optimized blog post of approximately ${schedule.targetWordCount} words.
+    const systemPrompt = `You are a senior SEO content strategist and expert writer with 15+ years of experience. You write premium, publication-quality long-form blog posts that rank on Google page 1 AND get cited by ChatGPT/Perplexity/Google AI Overviews.
 
-Rules:
-- Write in ${schedule.tone} tone
-- Use the website's brand voice and style
-- Include proper H2 and H3 headings
-- Write in markdown format
-- Include an engaging introduction and strong conclusion with CTA
-- Include FAQ section (5 questions) for AEO/AI citation
-- Use EEAT signals throughout
-- Include internal linking suggestions
-- Optimize for Google search ranking AND AI citation (ChatGPT, Perplexity, Gemini)
-- Make it actionable and valuable
+ABSOLUTE QUALITY RULES (MUST follow — articles failing these are rejected):
+- MINIMUM ${schedule.targetWordCount} words in the "content" field. Going under is a failure.
+- EXACTLY 8 to 12 H2 sections (## Heading) in the content. NOT 0, NOT 4 — at least 8.
+- Each H2 section MUST be 350-500 words. NO H2 under 250 words.
+- Each H2 section should have 2-3 H3 subsections (### Heading).
+- Include AT LEAST 3 inline images using markdown: ![descriptive alt text](https://images.pexels.com/photos/...). Use real Pexels-style image URLs (e.g. https://images.pexels.com/photos/<id>/pexels-photo-<id>.jpeg). Place images after the H2 heading they relate to.
+- Include AT LEAST 5 tags in the "tags" array. NO empty tags.
+- Include a strong CTA in the conclusion. NEVER skip the CTA.
+- Include a "Table of Contents" section right after the intro listing all H2 headings.
+- Include a "Frequently Asked Questions" section with 5 questions and detailed answers.
+- Use ONLY markdown (## for H2, ### for H3, ![](url) for images, **bold**, - for bullets, 1. for numbered lists).
 
-Respond in this exact JSON format (no other text):
+WRITING VOICE:
+- Conversational yet authoritative. Sound like a human expert, NOT a generic AI.
+- Every claim needs a number, a stat, a brand name, a location, or a real example.
+- Reference the company's actual services, products, and target market where relevant.
+- Use "Pro Tip:" or "Industry Insight:" callouts in at least 3 sections.
+- Write for the reader who needs to make a buying decision — not for search engines.
+
+SEO & AEO STRUCTURE:
+- Title (50-60 chars), keyword-rich, compelling.
+- Excerpt: 150-160 chars meta description with a hook.
+- 8-12 H2 sections covering the topic comprehensively.
+- FAQ answers must be self-contained and citable (each starts with a clear answer sentence).
+- Tags: 5-7 keywords mixing primary, secondary, long-tail, and intent terms.
+
+JSON FORMAT (no other text, no markdown code fences):
 {
-  "title": "SEO-optimized compelling title",
+  "title": "...",
   "slug": "url-friendly-slug",
-  "excerpt": "150-160 char meta description",
-  "content": "Full blog post in markdown",
-  "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
-  "category": "Relevant category",
-  "seoScore": 85,
-  "seoTips": ["Tip 1", "Tip 2"]
+  "excerpt": "...",
+  "content": "Full markdown with 8-12 H2 sections, 350-500 words each, 3+ inline images, table of contents, FAQ, CTA",
+  "tags": ["tag1","tag2","tag3","tag4","tag5"],
+  "category": "Most relevant category",
+  "seoScore": 92,
+  "seoTips": ["tip 1","tip 2","tip 3"]
 }`;
 
-    const userPrompt = `Write a ${schedule.targetWordCount}-word SEO and AEO optimized blog post about: "${schedule.topic}"
+    const userPrompt = `Write a premium, ${schedule.targetWordCount}+ word SEO and AEO optimized blog post about:
 
-Website Context:
+"${schedule.topic}"
+
+WEBSITE CONTEXT:
 ${websiteContext}
 
-Fresh Website Data:
+FRESH WEBSITE DATA (from live scrape):
 ${freshContext}
 
-${schedule.keywords ? `Primary keywords: ${schedule.keywords}` : ''}
+${schedule.keywords ? `PRIMARY KEYWORDS: ${schedule.keywords}` : ''}
 
-Requirements:
-- Target word count: ${schedule.targetWordCount} words
-- Optimize for Google search ranking (SEO)
-- Optimize for AI citation (AEO)
-- Include 5 FAQ questions
-- Use EEAT signals
-- Strong CTA at the end`;
+WRITING INSTRUCTIONS:
+- Tone: ${schedule.tone}
+- Target audience: visitors to this specific website
+- The blog must feel like it was written BY this company FOR their customers
+- Reference the company's actual services, products, and location where relevant
+- Include 2-3 specific case studies or real-world scenarios
+- Every H2 section must have genuine depth (400+ words each)
+- NO fluff, NO repetitive content, NO generic advice that applies to any business
+- Write for humans first, search engines second
+- The reader should finish feeling they got genuine expert value`;
 
     const aiRaw = await generateAIText(systemPrompt, userPrompt, { json: true, timeoutMs: 180_000 });
 
     let blogData;
+    // Strip markdown code fences and any leading explanation text before parsing
+    const cleanRaw = aiRaw
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/```\s*$/i, '')
+      .trim();
     try {
-      blogData = JSON.parse(aiRaw);
+      blogData = JSON.parse(cleanRaw);
     } catch {
-      const jsonMatch = aiRaw.replace(/```(?:json)?/gi, '').match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try { blogData = JSON.parse(jsonMatch[0]); } catch { blogData = null; }
+      // Try a more careful extraction: find first { and last balanced }
+      const firstBrace = cleanRaw.indexOf('{');
+      if (firstBrace !== -1) {
+        // Find matching closing brace by counting depth
+        let depth = 0;
+        let end = -1;
+        let inStr = false;
+        let esc = false;
+        for (let i = firstBrace; i < cleanRaw.length; i++) {
+          const c = cleanRaw[i];
+          if (esc) { esc = false; continue; }
+          if (c === '\\') { esc = true; continue; }
+          if (c === '"') { inStr = !inStr; continue; }
+          if (inStr) continue;
+          if (c === '{') depth++;
+          else if (c === '}') { depth--; if (depth === 0) { end = i; break; } }
+        }
+        if (end !== -1) {
+          const candidate = cleanRaw.slice(firstBrace, end + 1);
+          try { blogData = JSON.parse(candidate); } catch { blogData = null; }
+        }
       }
       if (!blogData && aiRaw.length > 800) {
-        // Salvage: AI replied with raw markdown instead of JSON — publish it
-        // as the article instead of failing the schedule
-        blogData = {
-          title: schedule.topic,
-          slug: schedule.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
-          excerpt: aiRaw.replace(/[#*`]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160),
-          content: aiRaw.replace(/```(?:json)?/gi, ''),
-          tags: [],
-          category: website.niche || 'General',
-        };
+        // Salvage: try to extract the markdown content field by regex
+        const contentMatch = cleanRaw.match(/"content"\s*:\s*"([\s\S]*?)(?<!\\)"\s*[,}]/);
+        const titleMatch = cleanRaw.match(/"title"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+        const tagsMatch = cleanRaw.match(/"tags"\s*:\s*\[([\s\S]*?)\]/);
+        const excerptMatch = cleanRaw.match(/"excerpt"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+        const slugMatch = cleanRaw.match(/"slug"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+
+        if (contentMatch) {
+          // Unescape the captured markdown
+          const rawContent = contentMatch[1]
+            .replace(/\\n/g, '\n')
+            .replace(/\\"/g, '"')
+            .replace(/\\\\/g, '\\')
+            .replace(/\\t/g, '\t');
+          blogData = {
+            title: titleMatch ? titleMatch[1] : schedule.topic,
+            slug: slugMatch ? slugMatch[1] : schedule.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+            excerpt: excerptMatch ? excerptMatch[1].slice(0, 160) : rawContent.replace(/[#*`]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160),
+            content: rawContent,
+            tags: tagsMatch ? tagsMatch[1].match(/"((?:[^"\\]|\\.)*)"/g)?.map(s => s.replace(/^"|"$/g, '').replace(/\\"/g, '"')) || [] : [],
+            category: website.niche || 'General',
+          };
+        } else {
+          // Last resort: AI returned raw markdown — publish it
+          blogData = {
+            title: schedule.topic,
+            slug: schedule.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+            excerpt: aiRaw.replace(/[#*`]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160),
+            content: cleanRaw,
+            tags: [],
+            category: website.niche || 'General',
+          };
+        }
       }
       if (!blogData) throw new Error('Could not parse AI response');
     }
