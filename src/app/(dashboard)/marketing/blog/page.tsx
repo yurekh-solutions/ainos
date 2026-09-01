@@ -219,6 +219,28 @@ export default function BlogPage() {
     setRegenerating(null);
   };
 
+  // Generate a scheduled blog immediately (full article + premium image right now)
+  const [generatingNow, setGeneratingNow] = useState<string | null>(null);
+  const handleGenerateNow = async (scheduleId: string) => {
+    setGeneratingNow(scheduleId);
+    try {
+      const res = await fetch('/api/blog-agent/generate-now', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scheduleId }),
+      });
+      if (res.ok) {
+        await fetchPosts();
+        setShowReader(null);
+        alert('Blog generated & published! Full article + premium image ready.');
+      } else {
+        const d = await res.json();
+        alert(d.error || 'Generation failed — please try again.');
+      }
+    } catch (e) { console.error(e); alert('Generation failed — please try again.'); }
+    setGeneratingNow(null);
+  };
+
   const filtered = posts.filter(p => {
     const matchSearch = !search || p.title.toLowerCase().includes(search.toLowerCase())
       || (p.excerpt || '').toLowerCase().includes(search.toLowerCase())
@@ -551,9 +573,16 @@ export default function BlogPage() {
                           <CalendarRange className="w-3 h-3" />Scheduled: {new Date(post.scheduledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       )}
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />{Math.max(1, Math.ceil((post.content || '').split(' ').length / 200))} min
-                      </span>
+                      {!post.isSchedule && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />{Math.max(1, Math.ceil((post.content || '').split(' ').length / 200))} min
+                        </span>
+                      )}
+                      {post.isSchedule && (
+                        <span className="flex items-center gap-1 text-emerald-500">
+                          <Zap className="w-3 h-3" />Queued
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {post.status === 'published' && (
@@ -567,6 +596,13 @@ export default function BlogPage() {
                         <button onClick={(e) => { e.stopPropagation(); handleUpdateStatus(post.id, 'published'); }}
                           className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20" title="Publish">
                           <Send className="w-3.5 h-3.5 text-emerald-500" />
+                        </button>
+                      )}
+                      {post.isSchedule && (
+                        <button onClick={(e) => { e.stopPropagation(); handleGenerateNow(post.id); }}
+                          disabled={generatingNow === post.id}
+                          className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20" title="Generate Now with AI">
+                          <Zap className={`w-3.5 h-3.5 text-emerald-500 ${generatingNow === post.id ? 'animate-pulse' : ''}`} />
                         </button>
                       )}
                       {!post.isSchedule && (
@@ -871,9 +907,42 @@ export default function BlogPage() {
                 </div>
               )}
 
+              {/* Featured image */}
+              {showReader.featuredImage && !showReader.isSchedule && (
+                <div className="mb-8 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800">
+                  <img src={showReader.featuredImage} alt={showReader.title} className="w-full h-64 md:h-80 object-cover" />
+                </div>
+              )}
+
               {/* Body */}
-              <div className="prose dark:prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(showReader.content || '') }} />
+              {(showReader.isSchedule || !showReader.content) ? (
+                <div className="rounded-2xl border-2 border-dashed border-purple-300 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/10 p-8 md:p-10 text-center">
+                  <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                    <CalendarRange className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Article queued for auto-publishing</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6 leading-relaxed">
+                    This blog is scheduled{showReader.scheduledAt ? ` for ${new Date(showReader.scheduledAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : ''}. It will be written and published automatically on that date — or let the AI write it right now: full article with headings, FAQs and a premium featured image.
+                  </p>
+                  <button onClick={() => handleGenerateNow(showReader.id)}
+                    disabled={generatingNow === showReader.id}
+                    className="px-6 py-3 rounded-xl text-white text-sm font-semibold inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-60 transition-all shadow-lg shadow-purple-600/20">
+                    {generatingNow === showReader.id ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        AI is writing your article (30-60 sec)...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" /> Generate Now with AI
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <div className="prose dark:prose-invert max-w-none"
+                  dangerouslySetInnerHTML={{ __html: renderMarkdown(showReader.content || '') }} />
+              )}
 
               {/* Tags */}
               {showReader.tags && Array.isArray(showReader.tags) && (
@@ -899,11 +968,13 @@ export default function BlogPage() {
                       <Send className="w-3.5 h-3.5" /> Publish
                     </button>
                   )}
-                  <button onClick={() => handleRegenerate(showReader.id)}
-                    disabled={regenerating === showReader.id}
-                    className="px-4 py-2 rounded-xl text-sm font-semibold text-purple-600 border border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors flex items-center gap-2">
-                    <RefreshCw className={`w-3.5 h-3.5 ${regenerating === showReader.id ? 'animate-spin' : ''}`} /> Regenerate
-                  </button>
+                  {!showReader.isSchedule && (
+                    <button onClick={() => handleRegenerate(showReader.id)}
+                      disabled={regenerating === showReader.id}
+                      className="px-4 py-2 rounded-xl text-sm font-semibold text-purple-600 border border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors flex items-center gap-2">
+                      <RefreshCw className={`w-3.5 h-3.5 ${regenerating === showReader.id ? 'animate-spin' : ''}`} /> Regenerate
+                    </button>
+                  )}
                   <button onClick={() => { handleDelete(showReader.id); setShowReader(null); }}
                     className="px-4 py-2 rounded-xl text-sm font-semibold text-red-600 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2">
                     <Trash2 className="w-3.5 h-3.5" /> Delete
