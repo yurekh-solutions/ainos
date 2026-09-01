@@ -84,8 +84,9 @@ async function callGemini(
 
     const errText = await res.text().catch(() => '');
     lastErr = `Gemini error ${res.status}: ${errText.slice(0, 200)}`;
-    // quota/billing/auth on this key — try the next one; other errors fail fast
-    if (res.status !== 429 && res.status !== 403 && res.status !== 401) throw new Error(lastErr);
+    // 429=quota, 403=banned, 401=invalid key, 503=unavailable — all should try next key
+    if (res.status !== 429 && res.status !== 403 && res.status !== 401 && res.status !== 503) throw new Error(lastErr);
+    console.warn(`[gemini] key ${key.slice(0, 8)}... status ${res.status} — rotating to next key`);
   }
   throw new Error(lastErr || 'Gemini quota exceeded on all keys');
 }
