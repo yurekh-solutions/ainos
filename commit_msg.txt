@@ -1,18 +1,7 @@
-Smarter niche detection + re-analyze all websites with correct topics
+chore(scripts): add blog audit, count, schedule status utilities
 
-Scraper improvements:
-- Fallback niche detection now uses 20+ specific niche signal maps
-  (AV Equipment Rental, Fashion, Event Services, Food, Real Estate, etc.)
-  instead of generic keyword matching that misclassified everything as
-  "Technology & Software"
-- AI prompt explicitly instructs topics must match the website's actual
-  business, not generic business advice
-
-Re-analyzed all 3 active websites:
-- skyav.in: "Technology & Software" → "AV Equipment Rental" (30 schedules)
-- tubhyam.in: "tubhyam" → "Fashion & Clothing" (6 schedules)
-- yurekh.com: "Technology & Software" → "Marketing & Advertising" (30 schedules)
-
-New utility: scripts/reanalyzeWebsite.ts — re-scrapes any connected
-website and updates niche + topics + pending schedules.
-Usage: npx tsx scripts/reanalyzeWebsite.ts <url>
+- finalAudit.ts: audit all published blogs for word count, H2/H3, images, tags
+- countBlogs.cjs: quick count of published blogs by company
+- checkSchedules.ts: inspect blog schedule statuses
+- checkBlogs.ts: verify blog content structure
+- Cleanup: removed throwaway test scripts (testAI, testModel, addKey, etc.)
