@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ainos-ywu0.onrender.com/api/blog-sitemap

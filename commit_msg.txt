@@ -1,1 +1,17 @@
-feat(embed): widget mirrors host site fonts/design, image cards, on-domain article pages with SEO schema, live snippet customization
+Blog Agent fresh start after disconnect + SEO hardening
+
+Fresh start:
+- Websites list shows only active connections, so after Disconnect the
+  account sees the clean "Connect Website" empty state
+- Reconnecting a previously disconnected URL now works: stale inactive
+  row (schedules + subscription + site) is cleaned up and a brand-new
+  site, subscription and 30 topics are created
+- Disconnect confirm copy mentions reconnecting for a fresh start
+
+SEO:
+- Canonical/OG/sitemap URLs now fall back to the live Render domain
+  instead of the wrong ainos.vercel.app
+- Added public/robots.txt pointing at the XML blog sitemap
+- Public /blog listing gets proper title/description/OG meta via
+  blog/layout.tsx
+- Removed "Free" from public blog CTA copy

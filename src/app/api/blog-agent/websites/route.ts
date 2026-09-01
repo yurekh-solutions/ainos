@@ -20,8 +20,10 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const platform = searchParams.get('platform') === 'true' && isAdmin(session.user.email);
 
-    // Platform mode: admin sees ALL websites across all companies
-    const where = platform ? {} : { companyId: company.id };
+    // Platform mode: admin sees ALL websites across all companies.
+    // Disconnected (inactive) sites stay hidden so the account gets a clean
+    // slate and can connect again for a fresh start.
+    const where = platform ? { isActive: true } : { companyId: company.id, isActive: true };
 
     const websites = await prisma.connectedWebsite.findMany({
       where,

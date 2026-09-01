@@ -11,7 +11,7 @@ export async function GET() {
       take: 50,
     });
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ainos.vercel.app';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ainos-ywu0.onrender.com';
 
     const rssItems = posts.map((post) => {
       const postUrl = `${siteUrl}/blog/${post.slug}`;

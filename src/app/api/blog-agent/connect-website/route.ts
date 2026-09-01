@@ -40,8 +40,15 @@ export async function POST(req: NextRequest) {
     const existing = await prisma.connectedWebsite.findFirst({
       where: { url: normalizedUrl, companyId: company.id },
     });
-    if (existing) {
+    if (existing?.isActive) {
       return NextResponse.json({ error: 'This website is already connected to your account' }, { status: 409 });
+    }
+    // Fresh start: a previously disconnected row for this URL is cleaned up so
+    // reconnecting creates a brand-new site, subscription and 30 topics.
+    if (existing) {
+      await prisma.blogSchedule.deleteMany({ where: { connectedWebsiteId: existing.id } });
+      await prisma.blogSubscription.deleteMany({ where: { connectedWebsiteId: existing.id } });
+      await prisma.connectedWebsite.delete({ where: { id: existing.id } });
     }
 
     // Policy: one active website per account — disconnect the old one first

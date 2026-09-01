@@ -258,7 +258,7 @@ export default function PublicBlogPage() {
               href="/"
               className="px-6 py-3 rounded-xl text-sm font-semibold bg-white text-purple-700 hover:bg-gray-100 transition-colors inline-flex items-center justify-center gap-2 shadow-lg"
             >
-              Get Started Free <ArrowRight className="w-4 h-4" />
+              Get Started <ArrowRight className="w-4 h-4" />
             </a>
             <a
               href="/marketing/blog/"

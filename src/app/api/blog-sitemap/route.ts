@@ -10,7 +10,7 @@ export async function GET() {
       orderBy: { publishedAt: 'desc' },
     });
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ainos.vercel.app';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ainos-ywu0.onrender.com';
 
     const sitemapUrls = posts.map((post) => {
       const postUrl = `${siteUrl}/blog/${post.slug}`;

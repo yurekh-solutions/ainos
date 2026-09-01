@@ -130,7 +130,7 @@ export default function BlogAgentPage() {
   };
 
   const handleDisconnect = async (id: string) => {
-    if (!confirm('Disconnect this website? Scheduled blogs will be cancelled.')) return;
+    if (!confirm('Disconnect this website? Pending blogs will be cancelled. You can connect again anytime for a fresh start.')) return;
     try { const res = await fetch(`/api/blog-agent/websites?id=${id}`, { method: 'DELETE' }); if (res.ok) refreshData(); } catch { /* ignore */ }
   };
 

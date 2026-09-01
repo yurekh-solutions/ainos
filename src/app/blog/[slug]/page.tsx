@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = await prisma.blogPost.findUnique({ where: { slug, status: 'published' } });
   if (!post) return { title: 'Not Found' };
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ainos.vercel.app';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ainos-ywu0.onrender.com';
   const postUrl = `${siteUrl}/blog/${post.slug}`;
   const contentPreview = post.excerpt || post.content?.substring(0, 160) || post.title;
 
@@ -66,7 +66,7 @@ export default async function BlogPostPage({ params }: Props) {
   if (!post) notFound();
 
   const website = post.schedules?.[0]?.subscription?.connectedWebsite;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ainos.vercel.app';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ainos-ywu0.onrender.com';
   const postUrl = `${siteUrl}/blog/${post.slug}`;
 
   // JSON-LD Schema.org structured data for Google
