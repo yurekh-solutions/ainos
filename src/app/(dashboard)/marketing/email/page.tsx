@@ -44,7 +44,7 @@ export default function SocialMediaPage() {
   const [copiedPlatform, setCopiedPlatform] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['instagram', 'tiktok', 'youtube', 'linkedin', 'twitter', 'facebook']);
-  const [uploadedMedia, setUploadedMedia] = useState<{ file: File; preview: string; type: 'image' | 'video'; frame?: string } | null>(null);
+  const [uploadedMedia, setUploadedMedia] = useState<{ file: File; preview: string; type: 'image' | 'video'; frame?: string; frames?: string[] } | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [scanInfo, setScanInfo] = useState<{ niche?: string; mood?: string; detectedObjects?: string[] } | null>(null);
@@ -62,13 +62,17 @@ export default function SocialMediaPage() {
   };
 
   // Grab a representative frame from a video as a base64 JPEG so AI vision can read reels
-  const extractVideoFrame = (url: string): Promise<string | null> =>
+  // Extract multiple frames from video for better AI analysis
+  const extractVideoFrames = (url: string, frameCount: number = 3): Promise<string[]> =>
     new Promise((resolve) => {
       const video = document.createElement('video');
       video.src = url;
       video.muted = true;
       video.crossOrigin = 'anonymous';
       video.playsInline = true;
+
+      const frames: string[] = [];
+      let frameIndex = 0;
 
       const cleanup = () => {
         video.onloadeddata = null;
@@ -84,26 +88,44 @@ export default function SocialMediaPage() {
           canvas.width = Math.round(video.videoWidth * scale);
           canvas.height = Math.round(video.videoHeight * scale);
           const ctx = canvas.getContext('2d');
-          if (!ctx || !canvas.width || !canvas.height) { cleanup(); resolve(null); return; }
+          if (!ctx || !canvas.width || !canvas.height) {
+            frameIndex++;
+            seekToNextFrame();
+            return;
+          }
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          cleanup();
-          resolve(canvas.toDataURL('image/jpeg', 0.8));
+          frames.push(canvas.toDataURL('image/jpeg', 0.8));
+          frameIndex++;
+          seekToNextFrame();
         } catch {
-          cleanup();
-          resolve(null);
+          frameIndex++;
+          seekToNextFrame();
         }
       };
 
-      video.onloadeddata = () => {
-        // Seek ~1s in (or midpoint for very short reels) to skip black intro frames
-        const target = video.duration && isFinite(video.duration) ? Math.min(1, video.duration / 2) : 0;
-        if (target > 0) video.currentTime = target;
-        else capture();
+      const seekToNextFrame = () => {
+        if (frameIndex >= frameCount) {
+          cleanup();
+          resolve(frames);
+          return;
+        }
+        const duration = video.duration && isFinite(video.duration) ? video.duration : 0;
+        if (duration === 0) {
+          cleanup();
+          resolve(frames);
+          return;
+        }
+        // Extract frames from different timestamps: 10%, 50%, 90% of video
+        const timestamps = [0.1, 0.5, 0.9];
+        const target = duration * timestamps[frameIndex];
+        video.currentTime = Math.max(0.5, Math.min(target, duration - 0.1));
       };
-      video.onseeked = capture;
-      video.onerror = () => { cleanup(); resolve(null); };
 
-      setTimeout(() => { cleanup(); resolve(null); }, 10000);
+      video.onloadeddata = () => seekToNextFrame();
+      video.onseeked = capture;
+      video.onerror = () => { cleanup(); resolve(frames); };
+
+      setTimeout(() => { cleanup(); resolve(frames); }, 10000);
     });
 
   // Scan the media with AI and auto-fill topic + description
@@ -149,9 +171,9 @@ export default function SocialMediaPage() {
     } else if (file.type.startsWith('video/')) {
       const url = URL.createObjectURL(file);
       setUploadedMedia({ file, preview: url, type: 'video' });
-      const frame = await extractVideoFrame(url);
-      if (frame) {
-        setUploadedMedia({ file, preview: url, type: 'video', frame });
+      const frames = await extractVideoFrames(url, 3);
+      if (frames.length > 0) {
+        setUploadedMedia({ file, preview: url, type: 'video', frames });
       }
       // No auto AI scan — user fills topic/description manually.
     } else {
@@ -200,10 +222,13 @@ export default function SocialMediaPage() {
         platforms: selectedPlatforms,
       };
 
-      // Send image (or extracted video frame) as base64 if uploaded
-      const mediaBase64 = uploadedMedia?.type === 'image' ? uploadedMedia.preview : uploadedMedia?.frame;
-      if (mediaBase64) {
-        body.imageBase64 = mediaBase64;
+      // Send image (or extracted video frames) as base64 if uploaded
+      if (uploadedMedia?.type === 'image') {
+        body.imageBase64 = uploadedMedia.preview;
+      } else if (uploadedMedia?.type === 'video' && uploadedMedia.frames && uploadedMedia.frames.length > 0) {
+        body.imageBase64 = uploadedMedia.frames; // Send multiple frames for video
+      } else if (uploadedMedia?.type === 'video' && uploadedMedia.frame) {
+        body.imageBase64 = uploadedMedia.frame; // Fallback to single frame
       }
 
       const res = await fetch('/api/social-caption', {

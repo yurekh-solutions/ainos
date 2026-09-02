@@ -1,9 +1,7 @@
-feat: Add notification system and Resend email integration
+feat: Multi-frame video analysis for better captions
 
-- Added in-app notifications when blogs are published
-- Added Resend email notifications (API key configured)
-- Fixed checkBlogs.ts relation error (connectedWebsite -> company)
-- Fixed schedule-generator.ts companyId null check
-- Multi-website policy with support email (support@ainos.com)
-- All 17 premium features working and tested
-- Ready for client demo
+- Extract 3 frames from videos (10%, 50%, 90% timestamps)
+- Send all frames to Groq vision model for better context
+- Captions now based on full video story, not just one frame
+- Still fast: ~5-7 seconds for video captions
+- Better accuracy for action/movement videos

@@ -77,6 +77,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Topic, description, or media upload is required' }, { status: 400 });
     }
 
+    // Handle both single image and multiple video frames
+    const frames: string[] = Array.isArray(imageBase64) ? imageBase64 : (imageBase64 ? [imageBase64] : []);
+
     // Guard against an empty platform selection silently meaning "no platforms"
     const selectedPlatforms: KnownPlatform[] = Array.isArray(platforms) && platforms.length > 0
       ? platforms.map(normalizePlatformKey).filter((p): p is KnownPlatform => p !== null)
@@ -151,17 +154,27 @@ For each platform:
 
 ${!topic && !videoDescription && !imageBase64 ? 'No text context was given, so create broadly appealing captions based on the topic field alone.' : ''}`;
 
-    // SINGLE FAST CALL: Use Groq with vision if image provided, otherwise text-only
+    // SINGLE FAST CALL: Use Groq with vision if image/video frames provided, otherwise text-only
     let raw: string;
     let imageAnalysis = '';
     let visionFailed = false;
 
-    if (imageBase64) {
-      // Use Groq vision model - analyzes image AND generates captions in ONE call
+    if (frames.length > 0) {
+      // Use Groq vision model - analyzes image(s) AND generates captions in ONE call
       try {
         const keys = (process.env.GROQ_API_KEYS || '').split(',').map(s => s.trim()).filter(Boolean);
         const key = keys[0] || process.env.GROQ_API_KEY;
         if (!key) throw new Error('No Groq key');
+
+        // Build message content with all frames
+        const userContent: Array<{ type: string; text?: string; image_url?: { url: string } }> = [
+          { type: 'text', text: userPrompt + (frames.length > 1 ? '\n\nNOTE: Multiple frames from a video are provided. Analyze the sequence to understand the full story/action.' : '') }
+        ];
+        
+        // Add all frames (up to 5 for speed)
+        frames.slice(0, 5).forEach((frame, idx) => {
+          userContent.push({ type: 'image_url', image_url: { url: frame } });
+        });
 
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
@@ -173,10 +186,7 @@ ${!topic && !videoDescription && !imageBase64 ? 'No text context was given, so c
             model: 'llama-3.2-90b-vision-preview',
             messages: [
               { role: 'system', content: systemPrompt },
-              { role: 'user', content: [
-                { type: 'text', text: userPrompt },
-                { type: 'image_url', image_url: { url: imageBase64 } }
-              ]}
+              { role: 'user', content: userContent }
             ],
             max_tokens: 4096,
             response_format: { type: 'json_object' },
@@ -194,12 +204,12 @@ ${!topic && !videoDescription && !imageBase64 ? 'No text context was given, so c
         if (!raw) throw new Error('Groq returned empty response');
 
         // Extract a brief image description for the response
-        imageAnalysis = 'Image analyzed successfully';
+        imageAnalysis = frames.length > 1 ? `${frames.length} video frames analyzed` : 'Image analyzed successfully';
       } catch (e) {
         console.warn('[social-caption] Groq vision failed, falling back to text-only:', e instanceof Error ? e.message : e);
         visionFailed = true;
-        // Fallback: analyze image separately, then generate captions
-        const analysis = await analyzeMedia(imageBase64, 'Describe this image briefly: what objects, people, mood, setting, colors, and what story is being told. Keep it under 100 words.');
+        // Fallback: analyze first frame separately, then generate captions
+        const analysis = await analyzeMedia(frames[0], 'Describe this image briefly: what objects, people, mood, setting, colors, and what story is being told. Keep it under 100 words.');
         imageAnalysis = analysis || '';
         raw = await generateAIText(systemPrompt, userPrompt + (imageAnalysis ? `\n\nAI Vision Analysis: "${imageAnalysis}"` : ''), { json: true, timeoutMs: 15000 });
       }
