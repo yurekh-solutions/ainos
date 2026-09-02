@@ -8,6 +8,34 @@ import {
   Camera, Film, Globe, Eye
 } from 'lucide-react';
 
+// Resize an image File down to max 768px on the long edge and re-encode as JPEG
+// at quality 0.7. Without this, big phone photos (3-8 MB) blow past Groq's
+// per-request token budget and return HTTP 413.
+async function compressImage(file: File, maxEdge = 768, quality = 0.7): Promise<string> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target?.result as string);
+    reader.onerror = () => reject(new Error('File read failed'));
+    reader.readAsDataURL(file);
+  });
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = () => reject(new Error('Image decode failed'));
+    i.src = dataUrl;
+  });
+  const scale = Math.min(1, maxEdge / Math.max(img.naturalWidth, img.naturalHeight));
+  const w = Math.round(img.naturalWidth * scale);
+  const h = Math.round(img.naturalHeight * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return dataUrl;
+  ctx.drawImage(img, 0, 0, w, h);
+  return canvas.toDataURL('image/jpeg', quality);
+}
+
 interface PlatformCaption {
   platform: string;
   caption: string;
@@ -160,14 +188,21 @@ export default function SocialMediaPage() {
 
   const handleFileSelect = async (file: File) => {
     if (file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64 = e.target?.result as string;
+      try {
+        // Compress large phone photos so Groq's vision model accepts them (≤1024px, JPEG 80%).
+        const base64 = await compressImage(file);
         setUploadedMedia({ file, preview: base64, type: 'image' });
-        // No auto AI scan — user fills topic/description manually.
-        // Optional "Re-scan with AI" button available on the preview.
-      };
-      reader.readAsDataURL(file);
+      } catch {
+        // Fall back to raw file if canvas compression is unavailable (e.g. exotic format)
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setUploadedMedia({ file, preview: e.target?.result as string, type: 'image' });
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+      // No auto AI scan — user fills topic/description manually.
+      // Optional "Re-scan with AI" button available on the preview.
     } else if (file.type.startsWith('video/')) {
       const url = URL.createObjectURL(file);
       setUploadedMedia({ file, preview: url, type: 'video' });
@@ -583,8 +618,8 @@ export default function SocialMediaPage() {
         <AnimatePresence>
           {generated && !generating && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              {/* Image Analysis Result */}
-              {generated.imageAnalysis && (
+              {/* AI Vision Analysis — hidden per user request */}
+              {false && generated.imageAnalysis && (
                 <div className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 rounded-2xl border border-violet-200 dark:border-violet-800 p-4 sm:p-5 mb-4 sm:mb-6">
                   <div className="flex items-center gap-2 mb-2">
                     <Eye className="w-4 h-4 text-violet-600 dark:text-violet-400" />

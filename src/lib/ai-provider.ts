@@ -1,13 +1,41 @@
 // Unified AI provider layer for AINOS tools.
-// Primary: Groq (free, fast, no billing) — text + vision.
-// Secondary: Google Gemini (when GEMINI_API_KEY is set) — text + vision.
-// Fallback: Pollinations.ai anonymous tier (text works intermittently; vision is
-// currently gated with HTTP 402, so it is best-effort only).
+//
+// Fallback chain (text):   Groq → Gemini → Cloudflare → HuggingFace → Pollinations
+// Fallback chain (vision): Groq → Gemini → Cloudflare → HuggingFace → Pollinations
+//
+// All providers are 100% free tiers (no credit card). Code auto-activates
+// each provider when its tokens are present in .env — order is honoured, so
+// missing providers are simply skipped.
+//
+// Why multiple providers?
+// - Groq free keys are fast but get rate-limited (30 req/min) and Groq
+//   periodically decommissions free models. Gemini has been unreliable on
+//   free keys. Pollinations returns 402/502 often. Cloudflare (10K
+//   neurons/day) and HuggingFace (1K req/day) give us two more safety nets
+//   for the demo.
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 const GROQ_API_KEY = (process.env.GROQ_API_KEY || '').trim();
-const GROQ_TEXT_MODEL = process.env.GROQ_TEXT_MODEL || 'llama-3.3-70b-versatile';
-const GROQ_VISION_MODEL = process.env.GROQ_VISION_MODEL || 'llama-3.2-90b-vision-preview';
+// Both models use GPT-OSS family — Groq decommissioned all Llama-3.x and Llama-4
+// variants on the free tier. openai/gpt-oss-20b is the only text model that
+// works reliably on free keys; qwen/qwen3.6-27b is the only vision model that
+// still returns 200 OK.
+const GROQ_TEXT_MODEL = process.env.GROQ_TEXT_MODEL || 'openai/gpt-oss-20b';
+const GROQ_VISION_MODEL = process.env.GROQ_VISION_MODEL || 'qwen/qwen3.6-27b';
+
+// Cloudflare Workers AI — 10K neurons/day free (no card)
+const CLOUDFLARE_API_KEY = (process.env.CLOUDFLARE_API_KEY || '').trim();
+const CLOUDFLARE_ACCOUNT_ID = (process.env.CLOUDFLARE_ACCOUNT_ID || '').trim();
+const CLOUDFLARE_ACCOUNT_EMAIL = (process.env.CLOUDFLARE_ACCOUNT_EMAIL || '').trim();
+const CLOUDFLARE_TEXT_MODEL = process.env.CLOUDFLARE_TEXT_MODEL || '@cf/meta/llama-3.1-8b-instruct';
+const CLOUDFLARE_VISION_MODEL = process.env.CLOUDFLARE_VISION_MODEL || '@cf/llava-hf/llava-1.5-7b-hf';
+
+// HuggingFace Inference API — 1K req/day free (no card)
+const HUGGINGFACE_API_KEY = (process.env.HUGGINGFACE_API_KEY || '').trim();
+const HUGGINGFACE_TEXT_MODEL = process.env.HUGGINGFACE_TEXT_MODEL || 'meta-llama/Llama-3.2-3B-Instruct';
+const HUGGINGFACE_VISION_MODEL = process.env.HUGGINGFACE_VISION_MODEL || 'Salesforce/blip-image-captioning-large';
+
+// ─── Key rotation helpers ───────────────────────────────────────────────────
 
 // Supports multiple keys so rate limits rotate: GROQ_API_KEYS="key1,key2" and/or GROQ_API_KEY
 function groqKeys(): string[] {
@@ -15,15 +43,6 @@ function groqKeys(): string[] {
   const single = (process.env.GROQ_API_KEY || '').trim();
   if (single && !list.includes(single)) list.push(single);
   return list;
-}
-
-let groqKeyIndex = 0;
-function nextGroqKey(): string | undefined {
-  const keys = groqKeys();
-  if (!keys.length) return undefined;
-  const key = keys[groqKeyIndex % keys.length];
-  groqKeyIndex++;
-  return key;
 }
 
 // Supports multiple keys so quota rotates: GEMINI_API_KEYS="key1,key2" and/or GEMINI_API_KEY
@@ -38,6 +57,19 @@ function geminiKey(): string | undefined {
   return geminiKeys()[0];
 }
 
+// Supports multiple keys for Cloudflare and HuggingFace too
+function cloudflareKeys(): string[] {
+  const list = (process.env.CLOUDFLARE_API_KEYS || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (CLOUDFLARE_API_KEY && !list.includes(CLOUDFLARE_API_KEY)) list.push(CLOUDFLARE_API_KEY);
+  return list;
+}
+
+function huggingfaceKeys(): string[] {
+  const list = (process.env.HUGGINGFACE_API_KEYS || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (HUGGINGFACE_API_KEY && !list.includes(HUGGINGFACE_API_KEY)) list.push(HUGGINGFACE_API_KEY);
+  return list;
+}
+
 async function fetchWithTimeout(url: string, init: RequestInit, ms: number): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
@@ -47,6 +79,9 @@ async function fetchWithTimeout(url: string, init: RequestInit, ms: number): Pro
     clearTimeout(timer);
   }
 }
+
+// Sleep helper used between retries
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // ─── Groq helpers (primary — free, fast, no billing) ────────────────────────
 
@@ -193,7 +228,241 @@ async function callGemini(
   throw new Error(lastErr || 'Gemini quota exceeded on all keys');
 }
 
-// ─── Pollinations helpers (fallback) ────────────────────────────────────────
+// ─── Cloudflare Workers AI helpers ──────────────────────────────────────────
+//
+// Free tier: 10,000 neurons/day, no card. Endpoint requires Account ID + API
+// token. Text and vision both available. Vision is via LLaVA-1.5 which is
+// small but stable. Auth: Authorization: Bearer <API_TOKEN>.
+
+function cloudflareConfigured(): boolean {
+  return Boolean(CLOUDFLARE_API_KEY && CLOUDFLARE_ACCOUNT_ID);
+}
+
+async function callCloudflare(
+  path: string,
+  payload: unknown,
+  options: { timeoutMs?: number } = {}
+): Promise<string> {
+  const keys = cloudflareKeys();
+  if (!keys.length || !CLOUDFLARE_ACCOUNT_ID) throw new Error('No Cloudflare credentials');
+
+  const url = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/${path}`;
+
+  // Cloudflare's free tier rarely rate-limits, but rotate if we see 429
+  let lastErr = '';
+  for (const key of keys) {
+    const res = await fetchWithTimeout(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`,
+      },
+      body: JSON.stringify(payload),
+    }, options.timeoutMs ?? 30_000);
+
+    if (res.ok) {
+      const data = await res.json();
+      // Cloudflare returns { result: { response: "..." } } for text and
+      // { result: { description: "..." } } for vision/image-to-text.
+      const result = data.result;
+      if (typeof result === 'string') return result;
+      if (result && typeof result === 'object') {
+        if (typeof (result as { response?: string }).response === 'string') {
+          return (result as { response: string }).response;
+        }
+        if (typeof (result as { description?: string }).description === 'string') {
+          return (result as { description: string }).description;
+        }
+        if (Array.isArray((result as { data?: unknown[] }).data)) {
+          const data = (result as { data: Array<{ text?: string }> }).data;
+          const joined = data.map((d) => d.text ?? '').join('');
+          if (joined) return joined;
+        }
+        // Fallback: serialise the result so we never return empty
+        return JSON.stringify(result);
+      }
+      throw new Error('Cloudflare returned empty response');
+    }
+
+    const errText = await res.text().catch(() => '');
+    lastErr = `Cloudflare error ${res.status}: ${errText.slice(0, 200)}`;
+    if (res.status === 429) {
+      console.warn(`[cloudflare] rate limited — rotating to next key`);
+      continue;
+    }
+    throw new Error(lastErr);
+  }
+  throw new Error(lastErr || 'Cloudflare failed on all keys');
+}
+
+async function cloudflareText(systemPrompt: string, userPrompt: string, options: { json?: boolean } = {}): Promise<string> {
+  // Cloudflare's llama-3.1 chat-style endpoint. JSON is enforced by instructing
+  // the model in the system prompt since Cloudflare doesn't expose a JSON mode.
+  const sys = options.json
+    ? `${systemPrompt}\n\nIMPORTANT: Return ONLY valid JSON. No prose, no markdown.`
+    : systemPrompt;
+  return callCloudflare(CLOUDFLARE_TEXT_MODEL, {
+    messages: [
+      { role: 'system', content: sys },
+      { role: 'user', content: userPrompt },
+    ],
+  });
+}
+
+async function cloudflareVision(imageBase64: string, instruction: string): Promise<string> {
+  // LLaVA-1.5 uses a single text prompt with the image embedded as a data URI
+  return callCloudflare(CLOUDFLARE_VISION_MODEL, {
+    image: imageBase64,
+    prompt: instruction,
+    max_tokens: 512,
+  });
+}
+
+// ─── HuggingFace Inference API helpers ──────────────────────────────────────
+//
+// Free tier: ~1,000 requests/day, no card. Auth: Authorization: Bearer
+// <HF_TOKEN>. Endpoint accepts raw JSON or base64 image bytes depending on the
+// model. We default to small chat + image-to-text models that work reliably
+// on the free inference tier.
+
+function huggingfaceConfigured(): boolean {
+  return Boolean(HUGGINGFACE_API_KEY);
+}
+
+async function callHuggingface(
+  model: string,
+  payload: unknown,
+  options: { timeoutMs?: number; isBinary?: boolean } = {}
+): Promise<string> {
+  const keys = huggingfaceKeys();
+  if (!keys.length) throw new Error('No HuggingFace key');
+
+  const url = `https://router.huggingface.co/v1/chat/completions`;
+
+  let lastErr = '';
+  for (const key of keys) {
+    const res = await fetchWithTimeout(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`,
+      },
+      body: JSON.stringify(payload),
+    }, options.timeoutMs ?? 30_000);
+
+    if (res.ok) {
+      const raw = await res.text();
+      // The HuggingFace router returns OpenAI-compatible chat-completions
+      // shape: { choices: [{ message: { content: "..." } }] }
+      try {
+        const data = JSON.parse(raw);
+        const content = data?.choices?.[0]?.message?.content;
+        if (typeof content === 'string' && content) return content;
+        // Some endpoints (legacy) return array of { generated_text }
+        if (Array.isArray(data) && data.length > 0) {
+          if (typeof data[0] === 'string') return data.join('\n');
+          if (typeof data[0]?.generated_text === 'string') return data[0].generated_text;
+        }
+        if (data && typeof data === 'object' && typeof (data as { generated_text?: string }).generated_text === 'string') {
+          return (data as { generated_text: string }).generated_text;
+        }
+        // Fallback: return raw if we cannot parse
+        return raw;
+      } catch {
+        // Not JSON — return raw
+        return raw;
+      }
+    }
+
+    const errText = await res.text().catch(() => '');
+    lastErr = `HuggingFace error ${res.status}: ${errText.slice(0, 200)}`;
+    // 503 = model loading, 429 = rate limit — both should retry/rotate
+    if (res.status === 429 || res.status === 503) {
+      console.warn(`[huggingface] model ${model} status ${res.status} — rotating`);
+      continue;
+    }
+    throw new Error(lastErr);
+  }
+  throw new Error(lastErr || 'HuggingFace failed on all keys');
+}
+
+async function huggingfaceText(systemPrompt: string, userPrompt: string, options: { json?: boolean } = {}): Promise<string> {
+  // The HF router uses the OpenAI-compatible chat-completions shape, so the
+  // model name goes in the body. JSON mode is enforced via the system prompt
+  // because the router doesn't expose a response_format field for all models.
+  const sys = options.json
+    ? `${systemPrompt}\n\nIMPORTANT: Return ONLY valid JSON. No prose, no markdown.`
+    : systemPrompt;
+  return callHuggingface(HUGGINGFACE_TEXT_MODEL, {
+    model: HUGGINGFACE_TEXT_MODEL,
+    messages: [
+      { role: 'system', content: sys },
+      { role: 'user', content: userPrompt },
+    ],
+    max_tokens: 1024,
+    temperature: 0.7,
+  });
+}
+
+async function huggingfaceVision(imageBase64: string, instruction: string): Promise<string> {
+  // The HF router accepts OpenAI-style messages with image_url content parts.
+  // For vision we use a dedicated vision-capable chat model — Salesforce/blip
+  // still works on the legacy endpoint, so fall back to the legacy call for
+  // vision only (text is routed through the modern chat-completions endpoint).
+  const part = splitDataUrl(imageBase64);
+  const b64 = part ? part.data : imageBase64;
+  return callHuggingfaceLegacyVision(HUGGINGFACE_VISION_MODEL, b64, instruction);
+}
+
+async function callHuggingfaceLegacyVision(
+  model: string,
+  b64: string,
+  instruction: string
+): Promise<string> {
+  // The legacy vision endpoint at api-inference.huggingface.co/models/<model>
+  // accepts raw base64 image bytes in the inputs field. Used only as the
+  // HuggingFace vision fallback. If the legacy endpoint is not reachable
+  // (e.g. ENOTFOUND on the user's network), we throw so the chain can move
+  // on to the next provider.
+  const keys = huggingfaceKeys();
+  if (!keys.length) throw new Error('No HuggingFace key');
+  const url = `https://api-inference.huggingface.co/models/${model}`;
+  let lastErr = '';
+  for (const key of keys) {
+    const res = await fetchWithTimeout(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        inputs: b64,
+        parameters: { prompt: instruction, max_new_tokens: 200 },
+      }),
+    }, 30_000);
+    if (res.ok) {
+      const raw = await res.text();
+      try {
+        const data = JSON.parse(raw);
+        if (Array.isArray(data) && typeof data[0]?.generated_text === 'string') {
+          return data[0].generated_text;
+        }
+        if (data && typeof (data as { generated_text?: string }).generated_text === 'string') {
+          return (data as { generated_text: string }).generated_text;
+        }
+        return raw;
+      } catch {
+        return raw;
+      }
+    }
+    lastErr = `HF vision error ${res.status}: ${(await res.text().catch(() => '')).slice(0, 200)}`;
+    if (res.status === 429 || res.status === 503) continue;
+    throw new Error(lastErr);
+  }
+  throw new Error(lastErr || 'HF vision failed');
+}
+
+// ─── Pollinations helpers (last-resort fallback) ────────────────────────────
 
 async function pollinationsText(systemPrompt: string, userPrompt: string): Promise<string> {
   const body = JSON.stringify({
@@ -261,40 +530,67 @@ async function pollinationsVision(imageBase64: string, instruction: string): Pro
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
-/** Generate text (optionally strict JSON). Groq → Gemini → Pollinations. */
+/**
+ * Generate text (optionally strict JSON).
+ *
+ * Fallback chain: Groq → Gemini → Cloudflare → HuggingFace → Pollinations.
+ * Each step is only attempted if the provider is configured (keys present in
+ * .env) — otherwise we skip directly to the next one.
+ */
 export async function generateAIText(
   systemPrompt: string,
   userPrompt: string,
   options: { json?: boolean; timeoutMs?: number } = {}
 ): Promise<string> {
-  // Try Groq first (free, fast, no billing)
+  // 1️⃣ Groq — fastest, free, but rate-limited
   if (groqKeys().length) {
     try {
       return await groqText(systemPrompt, userPrompt, { json: options.json });
     } catch (e) {
-      console.warn('Groq text generation failed, trying Gemini:', e instanceof Error ? e.message : e);
+      console.warn('Groq text failed, trying Gemini:', e instanceof Error ? e.message : e);
     }
   }
 
-  // Try Gemini second
+  // 2️⃣ Gemini — accurate but free tier is gated
   if (geminiKey()) {
     try {
       return await callGemini([{ text: userPrompt }], { systemPrompt, json: options.json, timeoutMs: options.timeoutMs });
     } catch (e) {
-      console.warn('Gemini text generation failed, falling back to Pollinations:', e instanceof Error ? e.message : e);
+      console.warn('Gemini text failed, trying Cloudflare:', e instanceof Error ? e.message : e);
     }
   }
 
-  // Last resort: Pollinations
+  // 3️⃣ Cloudflare Workers AI — 10K neurons/day, no card, stable
+  if (cloudflareConfigured()) {
+    try {
+      return await cloudflareText(systemPrompt, userPrompt, { json: options.json });
+    } catch (e) {
+      console.warn('Cloudflare text failed, trying HuggingFace:', e instanceof Error ? e.message : e);
+    }
+  }
+
+  // 4️⃣ HuggingFace Inference API — 1K req/day, no card
+  if (huggingfaceConfigured()) {
+    try {
+      return await huggingfaceText(systemPrompt, userPrompt, { json: options.json });
+    } catch (e) {
+      console.warn('HuggingFace text failed, trying Pollinations:', e instanceof Error ? e.message : e);
+    }
+  }
+
+  // 5️⃣ Pollinations — anonymous, best-effort only
   return pollinationsText(systemPrompt, userPrompt);
 }
 
 /**
  * Analyze an image / video frame with AI vision.
- * Groq → Gemini → Pollinations. Returns null when no vision backend is reachable.
+ *
+ * Fallback chain: Groq → Gemini → Cloudflare → HuggingFace → Pollinations.
+ * Returns null when no vision backend is reachable.
  */
 export async function analyzeMedia(imageBase64: string, instruction: string): Promise<string | null> {
-  // Try Groq vision first (free, fast)
+  // 1️⃣ Groq vision — fast, but the qwen vision model has a per-request
+  //    token cap that large phone photos exceed
   if (groqKeys().length) {
     try {
       return await groqVision(imageBase64, instruction);
@@ -303,7 +599,7 @@ export async function analyzeMedia(imageBase64: string, instruction: string): Pr
     }
   }
 
-  // Try Gemini vision second
+  // 2️⃣ Gemini vision — accurate but free keys have been flaky
   if (geminiKey()) {
     const part = splitDataUrl(imageBase64);
     if (part) {
@@ -313,12 +609,30 @@ export async function analyzeMedia(imageBase64: string, instruction: string): Pr
           { inline_data: { mime_type: part.mimeType, data: part.data } },
         ]);
       } catch (e) {
-        console.warn('Gemini vision failed, trying Pollinations:', e instanceof Error ? e.message : e);
+        console.warn('Gemini vision failed, trying Cloudflare:', e instanceof Error ? e.message : e);
       }
     }
   }
 
-  // Last resort: Pollinations vision (currently gated with 402)
+  // 3️⃣ Cloudflare vision (LLaVA-1.5) — stable, free
+  if (cloudflareConfigured()) {
+    try {
+      return await cloudflareVision(imageBase64, instruction);
+    } catch (e) {
+      console.warn('Cloudflare vision failed, trying HuggingFace:', e instanceof Error ? e.message : e);
+    }
+  }
+
+  // 4️⃣ HuggingFace vision (BLIP) — caption-style, free
+  if (huggingfaceConfigured()) {
+    try {
+      return await huggingfaceVision(imageBase64, instruction);
+    } catch (e) {
+      console.warn('HuggingFace vision failed, trying Pollinations:', e instanceof Error ? e.message : e);
+    }
+  }
+
+  // 5️⃣ Pollinations vision (best-effort — currently 402-gated)
   try {
     return await pollinationsVision(imageBase64, instruction);
   } catch (e) {

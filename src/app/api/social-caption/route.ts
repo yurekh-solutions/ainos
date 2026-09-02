@@ -101,14 +101,19 @@ export async function POST(req: NextRequest) {
     // FAST PATH: Single Groq call - vision + captions in one shot (5 seconds!)
     // If image uploaded, use vision model; otherwise use text-only model
     const languageInstruction = LANGUAGE_INSTRUCTIONS[languageKey];
-    const systemPrompt = `Create social media captions. Output ONLY valid JSON: {"platforms":[{"platform":"name","caption":"hook\\nvalue\\ncta\\n#tags","hooks":["h1","h2","h3"],"hashtags":["#t1"]}]}`;
+    const systemPrompt = `You are a social media caption generator. You MUST return ONE caption object for EVERY platform in the user's list — never skip or merge. Output ONLY valid JSON with NO commentary, no markdown, no code fences. Schema: {"platforms":[{"platform":"name","caption":"text","hooks":["h1","h2","h3"],"hashtags":["#t1","#t2"]}]}. The "platforms" array length must equal the number of platforms requested.`;
 
-    const userPrompt = `Topic: ${topic || videoDescription || 'See image/video'}
-Tone: ${tone || 'engaging'}
+    const userPrompt = `You are given ${frames.length > 0 ? (frames.length > 1 ? `${frames.length} video frames` : 'an image') : 'no image'}. Your captions MUST be based PRIMARILY on what you actually SEE in the ${frames.length > 1 ? 'frames' : 'image'} (people, objects, scene, mood, colors, setting, action, text, product, food, etc.) — NOT on the user's text hint.
+${topic || videoDescription ? `\nUser's optional hint (use as tone/angle only, not as the main subject): "${topic || videoDescription}"\n` : ''}Tone: ${tone || 'engaging'}
 Language: ${languageKey}
-Platforms: ${finalPlatforms.join(', ')}
+Platforms (return ALL ${finalPlatforms.length}): ${finalPlatforms.join(', ')}
 
-For each platform: hook (1 line) + value (2 lines) + CTA (1 line) + 5-8 hashtags. Be concise. Output JSON only.`;
+CRITICAL RULES:
+1. First, DESCRIBE the image in your head (what's actually in it — a person holding a coffee cup? a sunset? a product on a table? text on a screen?).
+2. Then write captions ABOUT that visual content.
+3. Return exactly ${finalPlatforms.length} platform entries in the same order, one per platform. Do not stop early.
+4. For each: hook (1 line) + value (2 lines) + CTA (1 line) + 5-8 hashtags.
+5. Output JSON only, no commentary.`;
 
     // SINGLE FAST CALL: Use Groq with vision if image/video frames provided, otherwise text-only
     let raw: string = '';
@@ -141,12 +146,12 @@ For each platform: hook (1 line) + value (2 lines) + CTA (1 line) + 5-8 hashtags
                 'Authorization': `Bearer ${key}`,
               },
               body: JSON.stringify({
-                model: 'llama-3.2-90b-vision-preview',
+                model: 'qwen/qwen3.6-27b',
                 messages: [
                   { role: 'system', content: systemPrompt },
                   { role: 'user', content: userContent }
                 ],
-                max_tokens: 1500,
+                max_tokens: 4096,
                 response_format: { type: 'json_object' },
               }),
               signal: AbortSignal.timeout(20000),
@@ -177,28 +182,38 @@ For each platform: hook (1 line) + value (2 lines) + CTA (1 line) + 5-8 hashtags
           throw new Error(lastError || 'All Groq keys failed');
         }
       } catch (e) {
-        console.warn('[social-caption] Groq vision failed, trying Pollinations:', e instanceof Error ? e.message : e);
+        console.warn('[social-caption] Groq vision failed, trying text-only fallback:', e instanceof Error ? e.message : e);
         visionFailed = true;
-        
-        // FALLBACK: Pollinations (free, no API key, never fails)
+
+        // FALLBACK 1: text-only with the user's topic (no image needed).
+        // Works around Groq 413 ("image too large") and Pollinations outages.
         try {
-          const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
-          const pollUrl = `https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}?model=openai&json=true`;
-          const pollRes = await fetch(pollUrl, {
-            signal: AbortSignal.timeout(20000),
-          });
-          
-          if (pollRes.ok) {
-            const pollText = await pollRes.text();
-            raw = pollText;
-            imageAnalysis = 'Generated (Pollinations)';
-            console.log('[social-caption] Pollinations fallback succeeded');
-          } else {
-            throw new Error(`Pollinations ${pollRes.status}`);
+          raw = await generateAIText(systemPrompt, userPrompt, { json: true, timeoutMs: 20000 });
+          imageAnalysis = 'Text-only generation (image skipped)';
+          console.log('[social-caption] Text-only fallback succeeded');
+        } catch (textErr) {
+          console.warn('[social-caption] Text-only failed, trying Pollinations:', textErr);
+
+          // FALLBACK 2: Pollinations (free, no API key)
+          try {
+            const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
+            const pollUrl = `https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}?model=openai&json=true`;
+            const pollRes = await fetch(pollUrl, {
+              signal: AbortSignal.timeout(20000),
+            });
+
+            if (pollRes.ok) {
+              const pollText = await pollRes.text();
+              raw = pollText;
+              imageAnalysis = 'Generated (Pollinations)';
+              console.log('[social-caption] Pollinations fallback succeeded');
+            } else {
+              throw new Error(`Pollinations ${pollRes.status}`);
+            }
+          } catch (pollErr) {
+            console.error('[social-caption] All methods failed:', pollErr);
+            throw new Error('Caption generation failed. Please try again in 10 seconds.');
           }
-        } catch (pollErr) {
-          console.error('[social-caption] All methods failed:', pollErr);
-          throw new Error('Caption generation failed. Please try again in 10 seconds.');
         }
       }
     } else {

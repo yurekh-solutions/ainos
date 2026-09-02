@@ -427,6 +427,7 @@ model BlogPost {
   content       String?
   excerpt       String?
   author        String?
+  authorName    String?        @map("author_name")
   status        String         @default("draft")
   publishedAt   DateTime?      @map("published_at")
   tags          Json?
@@ -862,6 +863,15 @@ model ConnectedWebsite {
   companyId            String?            @map("company_id")
   createdAt            DateTime           @default(now()) @map("created_at")
   updatedAt            DateTime           @updatedAt @map("updated_at")
+  // Social auto-share credentials (added so the production DB can store them)
+  linkedinAccessToken  String?            @map("linkedin_access_token")
+  linkedinCompanyId    String?            @map("linkedin_company_id")
+  twitterApiKey        String?            @map("twitter_api_key")
+  twitterApiSecret     String?            @map("twitter_api_secret")
+  twitterAccessToken   String?            @map("twitter_access_token")
+  twitterAccessSecret  String?            @map("twitter_access_secret")
+  autoShareLinkedin    Boolean            @default(false) @map("auto_share_linkedin")
+  autoShareTwitter     Boolean            @default(false) @map("auto_share_twitter")
   schedules            BlogSchedule[]
   subscriptions        BlogSubscription[]
   company              Company?           @relation(fields: [companyId], references: [id])
