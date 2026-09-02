@@ -1,1 +1,1 @@
-Fix irrelevant blog images: replace AI-generated Pexels URLs with topic-relevant images, add H4 heading support  
+Strip all AI images from blog content insert one topic-specific Pollinations image instead  

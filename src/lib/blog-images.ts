@@ -93,9 +93,10 @@ export async function getBlogImage(topic: string, context?: string): Promise<str
   return fallbackImage(topic, seed);
 }
 
-// Replace ALL AI-generated images in blog content with topic-relevant images
-// AI often inserts random Pexels URLs (red skirts, candles etc.) that are
-// completely unrelated to the blog topic — this fixes that.
+// Strip ALL AI-generated images from blog content and optionally insert
+// ONE topic-relevant Pollinations image at the top. Pexels/Unsplash inline
+// images are unreliable — they return oceans, portraits etc. for AV blogs.
+// Better to have NO image than a wrong image.
 export async function replaceContentImages(
   content: string,
   topic: string,
@@ -103,68 +104,54 @@ export async function replaceContentImages(
 ): Promise<string> {
   if (!content) return content;
 
-  // Find all markdown images: ![alt](url)
-  const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
-  const matches = [...content.matchAll(imgRegex)];
-  if (matches.length === 0) return content;
+  // Remove ALL markdown images: ![alt](url)
+  // AI inserts random Pexels URLs (oceans, portraits, candles) that are
+  // completely unrelated to the blog topic. Removing them all is better
+  // than showing irrelevant images.
+  let cleaned = content.replace(/!\[[^\]]*\]\([^)]+\)\n?/g, '');
 
-  // Extract topic keywords for image search
+  // Extract topic keywords for a targeted AI image prompt
   const allWords = topic
     .split(/[^a-zA-Z0-9]+/)
     .filter(w => w.length > 2 && !STOPWORDS.has(w.toLowerCase()) && !ABSTRACT_WORDS.has(w.toLowerCase()));
   const nicheQuery = (context || '').trim();
-  const topicKeywords = allWords.slice(0, 2).join(' ');
-  const baseQuery = nicheQuery
-    ? `${nicheQuery}${topicKeywords ? ' ' + topicKeywords : ''}`
-    : (allWords.slice(0, 3).join(' ') || topic);
+  const topicKeywords = allWords.slice(0, 3).join(' ');
+  const imageTopic = nicheQuery
+    ? `${nicheQuery} ${topicKeywords}`.trim()
+    : (topicKeywords || topic);
 
-  let result = content;
-  let imageIndex = 0;
+  // Generate ONE topic-specific AI image with a detailed prompt
+  const prompt = [
+    `Professional photograph of ${imageTopic}`,
+    'modern commercial setting, clean composition',
+    'natural lighting, sharp focus, high detail',
+    'no people faces, no text, no watermarks',
+  ].join(', ');
+  const params = new URLSearchParams({
+    width: '1200',
+    height: '630',
+    model: 'flux-realism',
+    enhance: 'true',
+    nologo: 'true',
+    negative: 'blurry, low quality, distorted, watermark, text, logo, ugly, deformed, oversaturated, people, faces, portrait, ocean, sea, beach, nature landscape',
+  });
+  const aiImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params.toString()}`;
 
-  for (const match of matches) {
-    const [fullMatch, altText, imgUrl] = match;
-
-    // Skip if it's already a Pollinations URL (AI-generated, keep it)
-    if (imgUrl.includes('pollinations.ai')) continue;
-
-    // Generate a topic-relevant image URL
-    let hash = 7;
-    const seedStr = `${topic}-${imageIndex}`;
-    for (const ch of seedStr) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
-    const seed = hash % 100000;
-
-    // Build a specific query for this image position
-    const imageQueries = [
-      baseQuery,
-      `${baseQuery} professional`,
-      `${baseQuery} equipment`,
-      `${baseQuery} setup`,
-    ];
-    const query = imageQueries[imageIndex % imageQueries.length];
-
-    // Try Pexels first, then fallback to Pollinations
-    let newUrl = fallbackImage(query, seed + imageIndex);
-
-    if (process.env.PEXELS_API_KEY) {
-      try {
-        const res = await fetch(
-          `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=10&orientation=landscape`,
-          { headers: { Authorization: process.env.PEXELS_API_KEY } }
-        );
-        if (res.ok) {
-          const data = await res.json();
-          const photos = data.photos || [];
-          if (photos.length) {
-            const pick = photos[(seed + imageIndex) % photos.length];
-            newUrl = pick.src?.large || pick.src?.landscape || newUrl;
-          }
-        }
-      } catch { /* use fallback */ }
+  // Insert the single AI image after the first H2 heading (or at top if no H2)
+  const h2Match = cleaned.match(/^## .+$/m);
+  if (h2Match) {
+    const h2Index = cleaned.indexOf(h2Match[0]);
+    const afterH2 = h2Index + h2Match[0].length;
+    cleaned = cleaned.slice(0, afterH2) + `\n\n![${topic}](${aiImageUrl})\n\n` + cleaned.slice(afterH2);
+  } else {
+    // No H2 found — insert after the first heading of any level
+    const anyHeading = cleaned.match(/^#+ .+$/m);
+    if (anyHeading) {
+      const idx = cleaned.indexOf(anyHeading[0]);
+      const afterHeading = idx + anyHeading[0].length;
+      cleaned = cleaned.slice(0, afterHeading) + `\n\n![${topic}](${aiImageUrl})\n\n` + cleaned.slice(afterHeading);
     }
-
-    result = result.replace(fullMatch, `![${altText || topic}](${newUrl})`);
-    imageIndex++;
   }
 
-  return result;
+  return cleaned;
 }
