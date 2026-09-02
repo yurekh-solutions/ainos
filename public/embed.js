@@ -328,7 +328,9 @@
 
   // Render blog card with featured image. Links use hash routing so the
   // article opens ON the client's own website (not on AINOS).
-  function renderCard(post, style) {
+  // opts: { showTags, showMeta, showCategory } — all default true
+  function renderCard(post, style, opts) {
+    opts = opts || {};
     const safeTitle = sanitize(post.title);
     const safeExcerpt = sanitize(post.excerpt || '');
     const safeCategory = sanitize(post.category || '');
@@ -338,7 +340,11 @@
       ? `<div class="ainos-blog-card-img"><img src="${safeImage}" alt="${safeTitle}" loading="lazy"/></div>`
       : '';
 
-    const tagsHtml = post.tags && post.tags.length
+    const showTags = opts.showTags !== false;
+    const showMeta = opts.showMeta !== false;
+    const showCategory = opts.showCategory !== false;
+
+    const tagsHtml = showTags && post.tags && post.tags.length
       ? `<div class="ainos-blog-tags">${post.tags.slice(0, 3).map(t => `<span class="ainos-blog-tag">#${sanitize(t)}</span>`).join('')}</div>`
       : '';
 
@@ -347,14 +353,14 @@
         <article class="ainos-blog-card ainos-blog-card-list">
           ${imgHtml}
           <div class="ainos-blog-content">
-            ${safeCategory ? `<span class="ainos-blog-category">${safeCategory}</span>` : ''}
+            ${showCategory && safeCategory ? `<span class="ainos-blog-category">${safeCategory}</span>` : ''}
             <h3 class="ainos-blog-title"><a href="${articleHref}">${safeTitle}</a></h3>
             <p class="ainos-blog-excerpt">${safeExcerpt}</p>
             ${tagsHtml}
-            <div class="ainos-blog-meta">
+            ${showMeta ? `<div class="ainos-blog-meta">
               <span class="ainos-blog-date">${formatDate(post.publishedAt)}</span>
               <span class="ainos-blog-readtime">${post.readTime} min read</span>
-            </div>
+            </div>` : ''}
           </div>
         </article>`;
     }
@@ -363,14 +369,14 @@
       <article class="ainos-blog-card">
         ${imgHtml}
         <div class="ainos-blog-content">
-          ${safeCategory ? `<span class="ainos-blog-category">${safeCategory}</span>` : ''}
+          ${showCategory && safeCategory ? `<span class="ainos-blog-category">${safeCategory}</span>` : ''}
           <h3 class="ainos-blog-title"><a href="${articleHref}">${safeTitle}</a></h3>
           <p class="ainos-blog-excerpt">${safeExcerpt}</p>
           ${tagsHtml}
-          <div class="ainos-blog-meta">
+          ${showMeta ? `<div class="ainos-blog-meta">
             <span class="ainos-blog-date">${formatDate(post.publishedAt)}</span>
             <span class="ainos-blog-readtime">${post.readTime} min read</span>
-          </div>
+          </div>` : ''}
         </div>
       </article>`;
   }
@@ -439,6 +445,13 @@
     const style = container.getAttribute('data-style') || 'grid';
     const category = container.getAttribute('data-category') || '';
 
+    // Customization options from data attributes
+    const opts = {
+      showTags: container.getAttribute('data-show-tags') !== 'false',
+      showMeta: container.getAttribute('data-show-meta') !== 'false',
+      showCategory: container.getAttribute('data-show-category') !== 'false',
+    };
+
     container.innerHTML = '<div class="ainos-blog-loading">Loading articles...</div>';
 
     try {
@@ -461,7 +474,7 @@
       const gridClass = style === 'list' ? 'ainos-blog-list' : 'ainos-blog-grid';
       container.innerHTML = `
         <div class="${gridClass}">
-          ${posts.map(p => renderCard(p, style)).join('')}
+          ${posts.map(p => renderCard(p, style, opts)).join('')}
         </div>
         ${data.categories && data.categories.length ? `
           <div class="ainos-blog-categories">
@@ -523,8 +536,9 @@
 
     const css = `
       .ainos-blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+      #ainos-blog.ainos-blog-grid, .ainos-blog-widget.ainos-blog-grid, [data-ainos-blog].ainos-blog-grid { grid-template-columns: repeat(var(--ainos-cols, auto-fill), minmax(280px, 1fr)); }
       .ainos-blog-list { display: flex; flex-direction: column; gap: 20px; }
-      .ainos-blog-card { background: ${t.cardBg}; border-radius: ${typo.radius}px; overflow: hidden; box-shadow: ${t.cardShadow}; transition: transform 0.3s, box-shadow 0.3s; border: 1px solid ${t.cardBorder}; font-family: ${typo.bodyFont}; }
+      .ainos-blog-card { background: ${t.cardBg}; border-radius: var(--ainos-radius, ${typo.radius}px); overflow: hidden; box-shadow: var(--ainos-shadow, ${t.cardShadow}); transition: transform 0.3s, box-shadow 0.3s; border: 1px solid ${t.cardBorder}; font-family: ${typo.bodyFont}; }
       .ainos-blog-card:hover { transform: translateY(-4px); box-shadow: ${t.cardShadowHover}; }
       .ainos-blog-card-list { display: flex; flex-direction: row; }
       .ainos-blog-card-img { height: ${px(160)}px; overflow: hidden; }
@@ -583,6 +597,26 @@
     style.id = 'ainos-blog-styles';
     style.textContent = css;
     document.head.appendChild(style);
+  }
+
+  // Apply per-container CSS custom properties for customization
+  function applyContainerStyles(container) {
+    const cols = container.getAttribute('data-columns');
+    const radius = container.getAttribute('data-card-radius');
+    const primaryColor = container.getAttribute('data-primary-color');
+    const bgColor = container.getAttribute('data-bg-color');
+    const cardShadow = container.getAttribute('data-card-shadow');
+
+    let cssVars = '';
+    if (cols) cssVars += `--ainos-cols: ${cols};`;
+    if (radius) cssVars += `--ainos-radius: ${radius}px;`;
+    if (primaryColor) cssVars += `--ainos-primary: ${primaryColor};`;
+    if (bgColor) cssVars += `--ainos-bg: ${bgColor};`;
+    if (cardShadow) {
+      const shadows = { none: 'none', sm: '0 1px 3px rgba(0,0,0,0.08)', md: '0 4px 12px rgba(0,0,0,0.1)', lg: '0 8px 30px rgba(0,0,0,0.12)' };
+      cssVars += `--ainos-shadow: ${shadows[cardShadow] || cardShadow};`;
+    }
+    if (cssVars) container.style.cssText = cssVars;
   }
 
   // Auto-reposition: if blog container is after <footer>, move it before footer
@@ -652,6 +686,9 @@
 
     // Auto-reposition each container: if after footer, move before footer
     containers.forEach(autoReposition);
+
+    // Apply per-container customization styles
+    containers.forEach(applyContainerStyles);
 
     const renderFor = (c) => {
       const slug = c.getAttribute('data-slug') || currentHashSlug();

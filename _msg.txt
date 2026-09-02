@@ -1,0 +1,1 @@
+Add blog widget customization: columns colors radius shadow show-hide tags-meta-category  

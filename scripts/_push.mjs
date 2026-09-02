@@ -7,5 +7,5 @@ function run(cmd, args) {
   return r;
 }
 run('git', ['add', '-A']);
-run('git', ['commit', '-m', 'Add markdown image rendering to embed widget, blog publisher, and dashboard blog reader']);
+run('git', ['commit', '-m', 'Add blog widget customization: columns, colors, radius, shadow, show/hide tags-meta-category']);
 run('git', ['push', 'origin', 'main']);
