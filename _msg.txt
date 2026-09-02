@@ -1,1 +1,1 @@
-Add blog widget customization: columns colors radius shadow show-hide tags-meta-category  
+Fix irrelevant blog images: replace AI-generated Pexels URLs with topic-relevant images, add H4 heading support  

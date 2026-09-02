@@ -303,7 +303,8 @@
       .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<div class="ainos-blog-inline-img"><img src="$2" alt="$1" loading="lazy" style="width:100%;max-height:420px;object-fit:cover;border-radius:12px;margin:24px 0;display:block;"></div>')
       // Links
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-      // Headings
+      // Headings (process H4 first to avoid H3/H2/H1 matching ####)
+      .replace(/^#### (.*$)/gm, '<h4>' + '$1' + '</h4>')
       .replace(/^### (.*$)/gm, '<h3>' + '$1' + '</h3>')
       .replace(/^## (.*$)/gm, '<h2>' + '$1' + '</h2>')
       .replace(/^# (.*$)/gm, '<h1>' + '$1' + '</h1>')
@@ -570,6 +571,7 @@
       .ainos-blog-body { font-size: ${px(16)}px; line-height: 1.8; color: ${t.bodyColor}; }
       .ainos-blog-body h1, .ainos-blog-body h2 { font-size: ${px(24)}px; font-weight: 700; margin: 32px 0 16px; color: ${t.headingColor}; font-family: ${typo.headingFont}; }
       .ainos-blog-body h3 { font-size: ${px(20)}px; font-weight: 600; margin: 24px 0 12px; color: ${t.headingColor}; font-family: ${typo.headingFont}; }
+      .ainos-blog-body h4 { font-size: ${px(17)}px; font-weight: 600; margin: 20px 0 10px; color: ${t.headingColor}; font-family: ${typo.headingFont}; }
       .ainos-blog-body p { margin: 16px 0; }
       .ainos-blog-body ul { margin: 16px 0; padding-left: 24px; }
       .ainos-blog-body li { margin: 8px 0; }

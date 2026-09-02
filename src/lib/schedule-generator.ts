@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { scrapePage } from '@/lib/website-scraper';
 import { publishBlog } from '@/lib/blog-publisher';
 import { generateAIText } from '@/lib/ai-provider';
-import { getBlogImage } from '@/lib/blog-images';
+import { getBlogImage, replaceContentImages } from '@/lib/blog-images';
 
 // Generates ONE scheduled blog immediately: AI writes SEO/AEO content,
 // a premium featured image is attached (Pexels -> Unsplash -> Pollinations),
@@ -209,12 +209,19 @@ WRITING INSTRUCTIONS:
       ? await getBlogImage(schedule.topic, website.niche || undefined)
       : (schedule.previewImage || await getBlogImage(schedule.topic, website.niche || undefined));
 
+    // Replace ALL AI-generated images in content with topic-relevant images
+    // AI often inserts random Pexels URLs unrelated to the blog topic
+    let finalContent = blogData.content || '';
+    if (finalContent) {
+      finalContent = await replaceContentImages(finalContent, schedule.topic, website.niche || undefined);
+    }
+
     // Create BlogPost
     const blogPost = await prisma.blogPost.create({
       data: {
         title: blogData.title || schedule.topic,
         slug: blogData.slug || schedule.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
-        content: blogData.content || '',
+        content: finalContent,
         excerpt: blogData.excerpt || '',
         featuredImage: imageUrl,
         category: blogData.category || website.niche || 'General',

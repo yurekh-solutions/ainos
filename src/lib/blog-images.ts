@@ -92,3 +92,79 @@ export async function getBlogImage(topic: string, context?: string): Promise<str
   // 3) Pollinations generated image (no key required)
   return fallbackImage(topic, seed);
 }
+
+// Replace ALL AI-generated images in blog content with topic-relevant images
+// AI often inserts random Pexels URLs (red skirts, candles etc.) that are
+// completely unrelated to the blog topic — this fixes that.
+export async function replaceContentImages(
+  content: string,
+  topic: string,
+  context?: string
+): Promise<string> {
+  if (!content) return content;
+
+  // Find all markdown images: ![alt](url)
+  const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+  const matches = [...content.matchAll(imgRegex)];
+  if (matches.length === 0) return content;
+
+  // Extract topic keywords for image search
+  const allWords = topic
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(w => w.length > 2 && !STOPWORDS.has(w.toLowerCase()) && !ABSTRACT_WORDS.has(w.toLowerCase()));
+  const nicheQuery = (context || '').trim();
+  const topicKeywords = allWords.slice(0, 2).join(' ');
+  const baseQuery = nicheQuery
+    ? `${nicheQuery}${topicKeywords ? ' ' + topicKeywords : ''}`
+    : (allWords.slice(0, 3).join(' ') || topic);
+
+  let result = content;
+  let imageIndex = 0;
+
+  for (const match of matches) {
+    const [fullMatch, altText, imgUrl] = match;
+
+    // Skip if it's already a Pollinations URL (AI-generated, keep it)
+    if (imgUrl.includes('pollinations.ai')) continue;
+
+    // Generate a topic-relevant image URL
+    let hash = 7;
+    const seedStr = `${topic}-${imageIndex}`;
+    for (const ch of seedStr) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+    const seed = hash % 100000;
+
+    // Build a specific query for this image position
+    const imageQueries = [
+      baseQuery,
+      `${baseQuery} professional`,
+      `${baseQuery} equipment`,
+      `${baseQuery} setup`,
+    ];
+    const query = imageQueries[imageIndex % imageQueries.length];
+
+    // Try Pexels first, then fallback to Pollinations
+    let newUrl = fallbackImage(query, seed + imageIndex);
+
+    if (process.env.PEXELS_API_KEY) {
+      try {
+        const res = await fetch(
+          `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=10&orientation=landscape`,
+          { headers: { Authorization: process.env.PEXELS_API_KEY } }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const photos = data.photos || [];
+          if (photos.length) {
+            const pick = photos[(seed + imageIndex) % photos.length];
+            newUrl = pick.src?.large || pick.src?.landscape || newUrl;
+          }
+        }
+      } catch { /* use fallback */ }
+    }
+
+    result = result.replace(fullMatch, `![${altText || topic}](${newUrl})`);
+    imageIndex++;
+  }
+
+  return result;
+}

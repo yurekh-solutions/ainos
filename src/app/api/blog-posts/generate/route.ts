@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { generateAIText } from '@/lib/ai-provider';
-import { getBlogImage } from '@/lib/blog-images';
+import { getBlogImage, replaceContentImages } from '@/lib/blog-images';
 
 // AI Blog Agent - generates SEO-friendly blog posts with high-quality featured images
 // (Pexels → Unsplash → Pollinations fallback) via unified AI provider (Gemini first)
@@ -131,7 +131,13 @@ Requirements:
     }
 
     // Attach a high-quality featured image (Pexels → Unsplash → Pollinations fallback)
-    result.featuredImage = await getBlogImage(topic);
+    result.featuredImage = await getBlogImage(topic, industry);
+
+    // Replace ALL AI-generated images in content with topic-relevant images
+    // AI often inserts random Pexels URLs (red skirts, candles etc.) unrelated to topic
+    if (result.content) {
+      result.content = await replaceContentImages(result.content, topic, industry);
+    }
 
     return NextResponse.json(result);
   } catch (error) {

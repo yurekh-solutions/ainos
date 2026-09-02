@@ -229,7 +229,8 @@ function markdownToHTML(md: string): string {
     .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%;border-radius:8px;margin:16px 0;">')
     // Links
     .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>')
-    // Headings
+    // Headings (H4 first to avoid conflicts)
+    .replace(/^#### (.*$)/gm, '<h4>$1</h4>')
     .replace(/^### (.*$)/gm, '<h3>$1</h3>')
     .replace(/^## (.*$)/gm, '<h2>$1</h2>')
     .replace(/^# (.*$)/gm, '<h1>$1</h1>')
