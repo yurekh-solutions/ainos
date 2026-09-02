@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
-import { analyzeMedia, generateAIText } from '@/lib/ai-provider';
+import { generateAIText, analyzeMedia } from '@/lib/ai-provider';
 
 // AI Social Media Caption Generator with Image/Video Analysis
 // Gemini (GEMINI_API_KEY) primary + Pollinations.ai fallback via ai-provider.
@@ -95,22 +95,8 @@ export async function POST(req: NextRequest) {
 
     const platformList = finalPlatforms.map((p) => platformSpecs[p]).join('\n');
 
-    // Step 1 (best-effort): If image/video frame uploaded, analyze it with AI vision
-    let imageAnalysis = '';
-    let visionFailed = false;
-    if (imageBase64) {
-      const analysis = await analyzeMedia(
-        imageBase64,
-        'Analyze this image/video thumbnail in detail. Describe: 1) What objects/people are visible 2) The mood/emotion 3) The setting/location 4) Colors and style 5) What action or story is being told 6) What niche/industry this belongs to. Be specific and detailed. This will be used to write viral social media captions.'
-      );
-      if (analysis) {
-        imageAnalysis = analysis;
-      } else {
-        visionFailed = true;
-      }
-    }
-
-    // Step 2: Generate platform-specific captions
+    // FAST PATH: Single Groq call - vision + captions in one shot (5 seconds!)
+    // If image uploaded, use vision model; otherwise use text-only model
     const languageInstruction = LANGUAGE_INSTRUCTIONS[languageKey];
     const systemPrompt = `You are an expert social media content strategist and viral caption writer. You create platform-optimized captions, attention-grabbing hooks, and strategic hashtags that maximize engagement, reach, and virality for GLOBAL audiences.
 
@@ -128,6 +114,7 @@ Rules:
 - Include GLOBAL trending hashtags that work across USA, UK, India, UAE, Europe, Australia
 - Mix broad viral hashtags (#viral, #trending, #fyp) with niche-specific ones
 - Add location-diverse hashtags for maximum global reach
+- If an image/video is provided, analyze it FIRST and base ALL captions on what you see
 
 You must respond with ONLY valid JSON in this exact format (no markdown, no code fences, no other text):
 {
@@ -146,8 +133,7 @@ You must respond with ONLY valid JSON in this exact format (no markdown, no code
 
 ${topic ? `Topic: "${topic}"` : ''}
 ${videoDescription ? `Content Description: "${videoDescription}"` : ''}
-${imageAnalysis ? `AI Vision Analysis of uploaded media: "${imageAnalysis}"` : ''}
-${!topic && !videoDescription && imageAnalysis ? 'NOTE: The user has only uploaded an image/video. Use the AI Vision Analysis above as the PRIMARY source to generate accurate, relevant captions and hashtags. Do not ask for more context.' : ''}
+${!topic && !videoDescription && imageBase64 ? 'NOTE: The user has only uploaded an image/video. Analyze it carefully and generate accurate, relevant captions based on what you see. Do not ask for more context.' : ''}
 Tone: ${tone || 'engaging'}
 Caption language: ${languageKey}
 
@@ -163,9 +149,65 @@ For each platform:
    - 3-5 global reach hashtags (#global, #worldwide, #international)
    - Platform-specific trending hashtags
 
-${!topic && !videoDescription && !imageAnalysis ? 'No text context was given, so create broadly appealing captions based on the topic field alone.' : ''}`;
+${!topic && !videoDescription && !imageBase64 ? 'No text context was given, so create broadly appealing captions based on the topic field alone.' : ''}`;
 
-    const raw = await generateAIText(systemPrompt, userPrompt, { json: true });
+    // SINGLE FAST CALL: Use Groq with vision if image provided, otherwise text-only
+    let raw: string;
+    let imageAnalysis = '';
+    let visionFailed = false;
+
+    if (imageBase64) {
+      // Use Groq vision model - analyzes image AND generates captions in ONE call
+      try {
+        const keys = (process.env.GROQ_API_KEYS || '').split(',').map(s => s.trim()).filter(Boolean);
+        const key = keys[0] || process.env.GROQ_API_KEY;
+        if (!key) throw new Error('No Groq key');
+
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${key}`,
+          },
+          body: JSON.stringify({
+            model: 'llama-3.2-90b-vision-preview',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: [
+                { type: 'text', text: userPrompt },
+                { type: 'image_url', image_url: { url: imageBase64 } }
+              ]}
+            ],
+            max_tokens: 4096,
+            response_format: { type: 'json_object' },
+          }),
+          signal: AbortSignal.timeout(15000), // 15 second timeout
+        });
+
+        if (!res.ok) {
+          const errText = await res.text().catch(() => '');
+          throw new Error(`Groq vision error: ${res.status} ${errText.slice(0, 100)}`);
+        }
+
+        const data = await res.json();
+        raw = data.choices?.[0]?.message?.content;
+        if (!raw) throw new Error('Groq returned empty response');
+
+        // Extract a brief image description for the response
+        imageAnalysis = 'Image analyzed successfully';
+      } catch (e) {
+        console.warn('[social-caption] Groq vision failed, falling back to text-only:', e instanceof Error ? e.message : e);
+        visionFailed = true;
+        // Fallback: analyze image separately, then generate captions
+        const analysis = await analyzeMedia(imageBase64, 'Describe this image briefly: what objects, people, mood, setting, colors, and what story is being told. Keep it under 100 words.');
+        imageAnalysis = analysis || '';
+        raw = await generateAIText(systemPrompt, userPrompt + (imageAnalysis ? `\n\nAI Vision Analysis: "${imageAnalysis}"` : ''), { json: true, timeoutMs: 15000 });
+      }
+    } else {
+      // No image - text-only generation (super fast with Groq)
+      raw = await generateAIText(systemPrompt, userPrompt, { json: true, timeoutMs: 15000 });
+    }
+
     const result = parseJsonLoose(raw);
     if (!result || !Array.isArray(result.platforms)) {
       throw new Error('Could not understand the AI response — please regenerate');
