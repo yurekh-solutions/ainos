@@ -225,6 +225,64 @@ WRITING INSTRUCTIONS:
       },
     });
 
+    // Create notification for all users in the company
+    if (!schedule.companyId) {
+      console.warn('[Notifications] Skipping - no companyId on schedule');
+    } else {
+      const companyUsers = await prisma.user.findMany({
+        where: { companyId: schedule.companyId },
+        select: { id: true, email: true, name: true },
+      });
+      for (const user of companyUsers) {
+        if (!user.id) continue;
+        await prisma.notification.create({
+          data: {
+            userId: user.id,
+            company: { connect: { id: schedule.companyId } },
+            title: 'New Blog Published!',
+            message: `"${blogPost.title}" has been published and is live on your website.`,
+            type: 'blog_published',
+            read: false,
+          },
+        });
+      }
+
+      // Send email notification to all company users (if Resend is configured)
+      if (process.env.RESEND_API_KEY) {
+        try {
+          const emailRecipients = companyUsers.map(u => u.email).filter(Boolean);
+          if (emailRecipients.length > 0) {
+            const emailHtml = `
+              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #7c3aed;">🎉 New Blog Published!</h2>
+                <p><strong>"${blogPost.title}"</strong> has been published and is now live.</p>
+                <p style="color: #666;">Category: ${blogPost.category}</p>
+                <a href="/blog/${blogPost.slug}" style="display: inline-block; background: #7c3aed; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; margin-top: 16px;">Read Blog</a>
+                <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
+                <p style="color: #999; font-size: 12px;">You're receiving this because you're registered on AINOS.</p>
+              </div>
+            `;
+            await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                from: 'AINOS Blog <onboarding@resend.dev>',
+                to: emailRecipients,
+                subject: `New Blog Published: ${blogPost.title}`,
+                html: emailHtml,
+              }),
+              signal: AbortSignal.timeout(10000),
+            });
+          }
+        } catch (emailErr) {
+          console.error('[Email Notification] Failed to send:', emailErr);
+        }
+      }
+    }
+
     // Update schedule
     await prisma.blogSchedule.update({
       where: { id: schedule.id },

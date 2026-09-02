@@ -56,7 +56,11 @@ export async function POST(req: NextRequest) {
       where: { companyId: company.id, isActive: true },
     });
     if (activeCount >= 1) {
-      return NextResponse.json({ error: 'Your account already has a connected website (one website per account). Disconnect it from Blog Agent first, then connect a new one.' }, { status: 409 });
+      return NextResponse.json({ 
+        error: 'Your account already has a connected website (one website per account).',
+        supportMessage: 'Need to connect another website? Email us at support@ainos.com to upgrade your plan for multi-website support.',
+        supportEmail: 'support@ainos.com'
+      }, { status: 409 });
     }
 
     // Scrape and analyze the website

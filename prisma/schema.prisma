@@ -472,12 +472,21 @@ model BlogPost {
   content       String?   @db.Text
   excerpt       String?
   author        String?
+  authorName    String?   @map("author_name")
+  authorBio     String?   @map("author_bio") @db.Text
+  authorImage   String?   @map("author_image")
   featuredImage String?   @map("featured_image")
   category      String?
+  language      String    @default("en")
   status        String    @default("draft")
   publishedAt   DateTime? @map("published_at")
   scheduledAt   DateTime? @map("scheduled_at")
   tags          Json?
+  views         Int       @default(0)
+  avgTimeOnPage Float?    @map("avg_time_on_page")
+  bounceRate    Float?    @map("bounce_rate")
+  ctaClicks     Int       @default(0) @map("cta_clicks")
+  conversions   Int       @default(0)
   companyId     String?   @map("company_id")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
@@ -956,6 +965,14 @@ model ConnectedWebsite {
   wordpressUsername     String?   @map("wordpress_username")
   wordpressAppPassword  String?   @map("wordpress_app_password")
   deliveryEmail         String?   @map("delivery_email")
+  linkedinAccessToken   String?   @map("linkedin_access_token")
+  linkedinCompanyId     String?   @map("linkedin_company_id")
+  twitterApiKey         String?   @map("twitter_api_key")
+  twitterApiSecret      String?   @map("twitter_api_secret")
+  twitterAccessToken    String?   @map("twitter_access_token")
+  twitterAccessSecret   String?   @map("twitter_access_secret")
+  autoShareLinkedin     Boolean   @default(false) @map("auto_share_linkedin")
+  autoShareTwitter      Boolean   @default(false) @map("auto_share_twitter")
   isActive              Boolean   @default(true) @map("is_active")
   companyId             String?   @map("company_id")
   createdAt             DateTime  @default(now()) @map("created_at")

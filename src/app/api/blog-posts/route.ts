@@ -3,6 +3,7 @@ import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { isAdmin } from '@/lib/admin';
 import { startBackgroundGeneration } from '@/lib/schedule-generator';
+import { autoShareBlog } from '@/lib/social-share';
 
 export async function GET(req: NextRequest) {
   try {
@@ -155,7 +156,53 @@ export async function PUT(req: NextRequest) {
       body.slug = body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     }
 
+    // Get existing post to check if status is changing to 'published'
+    const existingPost = await prisma.blogPost.findUnique({ where: { id } });
+    const wasPublished = existingPost?.status === 'published';
+    const isNowPublished = body.status === 'published';
+    const justPublished = !wasPublished && isNowPublished;
+
     const post = await prisma.blogPost.update({ where: { id }, data: body });
+
+    // Auto-share to social media when blog is first published
+    if (justPublished && post.companyId) {
+      // Get company's connected website for social config
+      const website = await prisma.connectedWebsite.findFirst({
+        where: { companyId: post.companyId, isActive: true },
+      });
+
+      if (website && ((website as Record<string, unknown>).autoShareLinkedin || (website as Record<string, unknown>).autoShareTwitter)) {
+        const platforms: string[] = [];
+        if ((website as Record<string, unknown>).autoShareLinkedin) platforms.push('linkedin');
+        if ((website as Record<string, unknown>).autoShareTwitter) platforms.push('twitter');
+
+        // Fire and forget - don't block the response
+        autoShareBlog(
+          {
+            title: post.title,
+            slug: post.slug,
+            excerpt: post.excerpt || '',
+            featuredImage: post.featuredImage || undefined,
+            tags: (post.tags as string[]) || [],
+            publishedAt: post.publishedAt?.toISOString() || new Date().toISOString(),
+          },
+          {
+            linkedinAccessToken: (website as Record<string, unknown>).linkedinAccessToken as string | null,
+            linkedinCompanyId: (website as Record<string, unknown>).linkedinCompanyId as string | null,
+            twitterApiKey: (website as Record<string, unknown>).twitterApiKey as string | null,
+            twitterApiSecret: (website as Record<string, unknown>).twitterApiSecret as string | null,
+            twitterAccessToken: (website as Record<string, unknown>).twitterAccessToken as string | null,
+            twitterAccessSecret: (website as Record<string, unknown>).twitterAccessSecret as string | null,
+          },
+          platforms
+        ).then(results => {
+          console.log('[Social Share] Results:', results);
+        }).catch(err => {
+          console.error('[Social Share] Error:', err);
+        });
+      }
+    }
+
     return NextResponse.json(post);
   } catch (error) {
     console.error('Error updating blog post:', error);

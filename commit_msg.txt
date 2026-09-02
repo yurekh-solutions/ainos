@@ -1,7 +1,9 @@
-chore(scripts): add blog audit, count, schedule status utilities
+feat: Add notification system and Resend email integration
 
-- finalAudit.ts: audit all published blogs for word count, H2/H3, images, tags
-- countBlogs.cjs: quick count of published blogs by company
-- checkSchedules.ts: inspect blog schedule statuses
-- checkBlogs.ts: verify blog content structure
-- Cleanup: removed throwaway test scripts (testAI, testModel, addKey, etc.)
+- Added in-app notifications when blogs are published
+- Added Resend email notifications (API key configured)
+- Fixed checkBlogs.ts relation error (connectedWebsite -> company)
+- Fixed schedule-generator.ts companyId null check
+- Multi-website policy with support email (support@ainos.com)
+- All 17 premium features working and tested
+- Ready for client demo

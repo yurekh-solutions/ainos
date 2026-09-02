@@ -69,6 +69,23 @@ export default async function BlogPostPage({ params }: Props) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ainos-ywu0.onrender.com';
   const postUrl = `${siteUrl}/blog/${post.slug}`;
 
+  // Extract FAQ questions from content for FAQPage schema
+  const faqItems: { q: string; a: string }[] = [];
+  if (post.content) {
+    const faqSection = post.content.match(/(?:FAQ|Frequently Asked Questions)[\s\S]*?(?=\n## |$)/i);
+    if (faqSection) {
+      const questions = faqSection[0].match(/###\s+(.+?)\n([\s\S]*?)(?=###|$)/g);
+      if (questions) {
+        for (const qBlock of questions) {
+          const lines = qBlock.trim().split('\n');
+          const q = lines[0].replace(/^###\s+/, '').trim();
+          const a = lines.slice(1).join(' ').replace(/\*\*/g, '').trim().substring(0, 300);
+          if (q && a) faqItems.push({ q, a });
+        }
+      }
+    }
+  }
+
   // JSON-LD Schema.org structured data for Google
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -78,7 +95,12 @@ export default async function BlogPostPage({ params }: Props) {
     image: post.featuredImage ? [post.featuredImage] : [],
     datePublished: post.publishedAt?.toISOString() || post.createdAt?.toISOString(),
     dateModified: post.createdAt?.toISOString(),
-    author: {
+    author: (post as Record<string, unknown>).authorName ? {
+      '@type': 'Person',
+      name: (post as Record<string, unknown>).authorName as string,
+      image: (post as Record<string, unknown>).authorImage ? [(post as Record<string, unknown>).authorImage as string] : [],
+      description: ((post as Record<string, unknown>).authorBio as string) || '',
+    } : {
       '@type': 'Organization',
       name: website?.name || 'AINOS AI Blog Agent',
       url: website?.url || siteUrl,
@@ -116,12 +138,29 @@ export default async function BlogPostPage({ params }: Props) {
     orderBy: { publishedAt: 'desc' },
   });
 
+  // FAQPage schema for rich snippets
+  const faqJsonLd = faqItems.length > 0 ? {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqItems.map(f => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  } : null;
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      {faqJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
+      )}
       <BlogArticleClient post={JSON.parse(JSON.stringify(post))} relatedPosts={JSON.parse(JSON.stringify(relatedPosts))} />
     </>
   );

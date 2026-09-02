@@ -7,7 +7,7 @@ import {
   X, FileText, Eye, Calendar, Sparkles, Wand2, Search,
   Clock, Trash2, Edit3, CheckCircle, Send, ArrowLeft,
   BookOpen, Layers, ExternalLink, Globe, CalendarRange, TrendingUp, Shield, Zap,
-  Code, Copy, Check, Rss, Map, Palette, RefreshCw
+  Code, Copy, Check, Rss, Map, Palette, RefreshCw, BarChart3, Share2, Target, Award
 } from 'lucide-react';
 
 interface BlogPost {

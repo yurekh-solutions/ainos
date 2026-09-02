@@ -117,7 +117,10 @@ export default function SocialMediaPage() {
         body: JSON.stringify({ imageBase64: base64, mediaType: type }),
       });
       if (!res.ok) {
-        showToast('Could not scan media — fill the fields manually', 'error');
+        const msg = res.status === 503
+          ? 'AI scan is unavailable right now — fill the fields manually'
+          : 'Could not scan media — fill the fields manually';
+        showToast(msg, 'error');
         return;
       }
       const data = await res.json();
@@ -139,21 +142,18 @@ export default function SocialMediaPage() {
       reader.onload = (e) => {
         const base64 = e.target?.result as string;
         setUploadedMedia({ file, preview: base64, type: 'image' });
-        autoFillFromMedia(base64, 'image');
+        // No auto AI scan — user fills topic/description manually.
+        // Optional "Re-scan with AI" button available on the preview.
       };
       reader.readAsDataURL(file);
     } else if (file.type.startsWith('video/')) {
       const url = URL.createObjectURL(file);
       setUploadedMedia({ file, preview: url, type: 'video' });
-      setAnalyzing(true);
       const frame = await extractVideoFrame(url);
       if (frame) {
         setUploadedMedia({ file, preview: url, type: 'video', frame });
-        autoFillFromMedia(frame, 'video');
-      } else {
-        setAnalyzing(false);
-        showToast('Could not read the reel frame — describe it manually', 'error');
       }
+      // No auto AI scan — user fills topic/description manually.
     } else {
       showToast('Please upload an image or video file', 'error');
     }
@@ -226,7 +226,7 @@ export default function SocialMediaPage() {
       }
     } catch (e) {
       console.error(e);
-      showToast('Failed to generate captions', 'error');
+      showToast('Failed to generate captions — please try again', 'error');
     } finally {
       setGenerating(false);
     }
@@ -287,32 +287,31 @@ export default function SocialMediaPage() {
   ];
 
   return (
-    <div className="p-4 md:p-6 h-full overflow-auto bg-gray-50 dark:bg-gray-950">
+    <div className="p-3 sm:p-4 md:p-6 h-full overflow-auto bg-gray-50 dark:bg-gray-950">
       <div className="max-w-[1400px] mx-auto">
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-4 sm:mb-8">
+          <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Social Media Caption Generator</h1>
-              <p className="text-sm mt-0.5 text-gray-600 dark:text-gray-400">Upload a reel or image. Get platform-optimized captions, hooks & global hashtags — in seconds.</p>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white leading-tight">Social Media Caption Generator</h1>
+              <p className="text-xs sm:text-sm mt-0.5 text-gray-600 dark:text-gray-400">Upload a reel or image. Get platform-optimized captions, hooks &amp; global hashtags.</p>
             </div>
           </div>
         </motion.div>
 
         {/* Input Section */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 mb-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Left: Inputs + Upload */}
             <div className="space-y-4">
               {/* Media Upload Area */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
                   <Camera className="w-3.5 h-3.5 text-purple-500" /> Upload Image or Video
-                  <span className="ml-auto text-[10px] font-normal text-purple-500">AI auto-fills the details</span>
                 </label>
                 {!uploadedMedia ? (
                   <div
@@ -320,7 +319,11 @@ export default function SocialMediaPage() {
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onClick={() => fileInputRef.current?.click()}
-                    className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click(); } }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Upload image or video file"
+                    className={`relative border-2 border-dashed rounded-xl p-4 sm:p-6 text-center cursor-pointer transition-all outline-none focus-visible:ring-2 focus-visible:ring-purple-500 ${
                       dragOver
                         ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
                         : 'border-gray-300 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-600 bg-gray-50 dark:bg-gray-800/50'
@@ -338,21 +341,23 @@ export default function SocialMediaPage() {
                       {dragOver ? 'Drop your file here' : 'Drag & drop or click to upload'}
                     </p>
                     <p className="text-[10px] text-gray-400 mt-1">Images (JPG, PNG, WebP) &amp; Videos (MP4, MOV) up to 50MB</p>
-                    <p className="text-[10px] text-purple-500 mt-1 font-medium">AI will scan it and fill the title &amp; description for you</p>
                   </div>
                 ) : (
                   <div className="relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
                     {uploadedMedia.type === 'image' ? (
-                      <img src={uploadedMedia.preview} alt="Uploaded" className="w-full h-40 object-cover" />
+                      <img src={uploadedMedia.preview} alt={`Uploaded ${uploadedMedia.type}: ${uploadedMedia.file.name}`} className="w-full h-32 sm:h-40 object-cover" />
                     ) : (
-                      <video src={uploadedMedia.preview} className="w-full h-40 object-cover" controls muted />
+                      <video src={uploadedMedia.preview} className="w-full h-32 sm:h-40 object-cover" controls muted aria-label={`Uploaded video: ${uploadedMedia.file.name}`} />
                     )}
                     <button onClick={removeMedia}
-                      className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 hover:bg-black/80 transition-colors">
+                      className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 hover:bg-black/80 transition-colors"
+                      aria-label="Remove uploaded media">
                       <X className="w-4 h-4 text-white" />
                     </button>
-                    <button onClick={rescanMedia} disabled={analyzing} title="Re-scan with AI"
-                      className="absolute top-2 right-11 p-1.5 rounded-full bg-black/60 hover:bg-black/80 disabled:opacity-40 transition-colors">
+                    <button onClick={rescanMedia} disabled={analyzing}
+                      className="absolute top-2 right-11 p-1.5 rounded-full bg-black/60 hover:bg-black/80 disabled:opacity-40 transition-colors"
+                      aria-label="Re-scan media with AI"
+                      title="Re-scan with AI">
                       <RefreshCw className={`w-4 h-4 text-white ${analyzing ? 'animate-spin' : ''}`} />
                     </button>
                     <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-black/60">
@@ -398,7 +403,7 @@ export default function SocialMediaPage() {
                 <input
                   value={topic}
                   onChange={e => setTopic(e.target.value)}
-                  placeholder={analyzing ? 'AI is reading your media...' : 'e.g., New product launch, Behind the scenes, Tutorial...'}
+                  placeholder={uploadedMedia ? 'Edit freely or leave blank' : 'e.g., New product launch, Behind the scenes, Tutorial...'}
                   className="w-full px-4 py-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
                 />
               </div>
@@ -411,7 +416,7 @@ export default function SocialMediaPage() {
                 <textarea
                   value={videoDescription}
                   onChange={e => setVideoDescription(e.target.value)}
-                  placeholder={analyzing ? 'AI is writing the description...' : uploadedMedia ? 'AI filled this from your media — edit freely' : 'What happens in your video? What does your image show?'}
+                  placeholder={uploadedMedia ? 'Edit freely or describe in your own words' : 'What happens in your video? What does your image show?'}
                   rows={2}
                   className="w-full px-4 py-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 resize-none"
                 />
@@ -425,7 +430,8 @@ export default function SocialMediaPage() {
                 <div className="flex flex-wrap gap-2">
                   {tones.map(t => (
                     <button key={t.value} onClick={() => setTone(t.value)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      aria-pressed={tone === t.value}
+                      className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                         tone === t.value ? 'bg-purple-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                       }`}>
                       {t.label}
@@ -442,7 +448,8 @@ export default function SocialMediaPage() {
                 <div className="flex flex-wrap gap-2">
                   {languages.map(l => (
                     <button key={l.value} onClick={() => setLanguage(l.value)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      aria-pressed={language === l.value}
+                      className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                         language === l.value ? 'bg-pink-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                       }`}>
                       {l.label}
@@ -463,7 +470,8 @@ export default function SocialMediaPage() {
                   const isSelected = selectedPlatforms.includes(key);
                   return (
                     <button key={key} onClick={() => togglePlatform(key)}
-                      className={`flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all ${
+                      aria-pressed={isSelected}
+                      className={`flex items-center gap-2 sm:gap-2.5 p-2.5 sm:p-3 rounded-xl border text-left transition-all ${
                         isSelected ? `${config.bgColor} border-2` : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 opacity-50'
                       }`}>
                       <Icon className={`w-5 h-5 ${config.color}`} />
@@ -491,23 +499,27 @@ export default function SocialMediaPage() {
           </div>
 
           {/* Generate Button */}
-          <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-100 dark:border-gray-800">
             <button onClick={handleGenerate}
+              aria-busy={generating || analyzing}
               disabled={generating || analyzing || selectedPlatforms.length === 0 || (!topic.trim() && !videoDescription.trim() && !uploadedMedia)}
-              className="w-full py-3.5 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-purple-600/20">
+              className="w-full py-3 sm:py-3.5 rounded-xl text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-purple-600/20">
               {analyzing ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Scanning your media...
+                  <span className="truncate">Scanning media...</span>
                 </>
               ) : generating ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  AI is analyzing your media & crafting viral captions...
+                  <span className="truncate sm:hidden">Generating captions...</span>
+                  <span className="hidden sm:inline">AI is analyzing your media &amp; crafting viral captions...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4" /> Generate Viral Captions with Global Hashtags
+                  <Sparkles className="w-4 h-4 shrink-0" />
+                  <span className="truncate sm:hidden">Generate Viral Captions</span>
+                  <span className="hidden sm:inline">Generate Viral Captions with Global Hashtags</span>
                 </>
               )}
             </button>
@@ -520,7 +532,7 @@ export default function SocialMediaPage() {
         {/* Generating Animation */}
         {generating && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 mb-6">
+            className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6 mb-4 sm:mb-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white animate-pulse" />
@@ -548,7 +560,7 @@ export default function SocialMediaPage() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
               {/* Image Analysis Result */}
               {generated.imageAnalysis && (
-                <div className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 rounded-2xl border border-violet-200 dark:border-violet-800 p-5 mb-6">
+                <div className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 rounded-2xl border border-violet-200 dark:border-violet-800 p-4 sm:p-5 mb-4 sm:mb-6">
                   <div className="flex items-center gap-2 mb-2">
                     <Eye className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                     <h3 className="text-sm font-bold text-violet-900 dark:text-violet-200">AI Vision Analysis</h3>
@@ -559,7 +571,7 @@ export default function SocialMediaPage() {
 
               {/* Vision fallback note */}
               {generated.visionFailed && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-200 dark:border-amber-800 p-4 mb-6 flex items-start gap-2">
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-200 dark:border-amber-800 p-4 mb-4 sm:mb-6 flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
                   <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
                     AI media scan is temporarily unavailable, so captions were crafted from your topic &amp; description. Edit them above or regenerate in a few minutes.
@@ -569,7 +581,7 @@ export default function SocialMediaPage() {
 
               {/* General Tips */}
               {(generated.generalTips?.length ?? 0) > 0 && (
-                <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl border border-amber-200 dark:border-amber-800 p-5 mb-6">
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl border border-amber-200 dark:border-amber-800 p-4 sm:p-5 mb-4 sm:mb-6">
                   <div className="flex items-center gap-2 mb-3">
                     <TrendingUp className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                     <h3 className="text-sm font-bold text-amber-900 dark:text-amber-200">Pro Tips for Maximum Global Reach</h3>
@@ -599,7 +611,7 @@ export default function SocialMediaPage() {
 
                   return (
                     <motion.div key={p.platform} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-                      className={`rounded-2xl border p-5 ${config.bgColor}`}>
+                      className={`rounded-2xl border p-4 sm:p-5 ${config.bgColor}`}>
                       {/* Platform Header */}
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2.5">
@@ -616,7 +628,8 @@ export default function SocialMediaPage() {
                             {fullLength <= config.maxChars ? 'Optimal' : 'Too Long'}
                           </span>
                           <button onClick={() => handleCopy(p.platform, fullCaption)}
-                            className="p-1.5 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="Copy full caption">
+                            className="p-1.5 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            aria-label={`Copy full ${config.label} caption`} title="Copy full caption">
                             {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-gray-500" />}
                           </button>
                         </div>
@@ -646,8 +659,9 @@ export default function SocialMediaPage() {
                         <div className="flex items-center justify-between mb-1.5">
                           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Caption</p>
                           {p.caption && (
-                            <button onClick={() => handleCopy(`${p.platform}-caption`, p.caption)} title="Copy caption only"
-                              className="p-1 rounded-md hover:bg-white/70 dark:hover:bg-gray-800 transition-colors">
+                            <button onClick={() => handleCopy(`${p.platform}-caption`, p.caption)}
+                              className="p-1 rounded-md hover:bg-white/70 dark:hover:bg-gray-800 transition-colors"
+                              aria-label={`Copy ${config.label} caption only`} title="Copy caption only">
                               {copiedPlatform === `${p.platform}-caption` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-gray-400" />}
                             </button>
                           )}
@@ -660,8 +674,9 @@ export default function SocialMediaPage() {
                         <div>
                           <div className="flex items-center justify-between mb-1.5">
                             <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Global Hashtags</p>
-                            <button onClick={() => handleCopy(`${p.platform}-hashtags`, hashtags.join(' '))} title="Copy hashtags only"
-                              className="p-1 rounded-md hover:bg-white/70 dark:hover:bg-gray-800 transition-colors">
+                            <button onClick={() => handleCopy(`${p.platform}-hashtags`, hashtags.join(' '))}
+                              className="p-1 rounded-md hover:bg-white/70 dark:hover:bg-gray-800 transition-colors"
+                              aria-label={`Copy ${config.label} hashtags only`} title="Copy hashtags only">
                               {copiedPlatform === `${p.platform}-hashtags` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-gray-400" />}
                             </button>
                           </div>
@@ -680,7 +695,7 @@ export default function SocialMediaPage() {
               {/* Regenerate */}
               <div className="mt-6 flex justify-center">
                 <button onClick={handleGenerate}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
+                  className="flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
                   <RefreshCw className="w-4 h-4" /> Regenerate Captions
                 </button>
               </div>
@@ -691,13 +706,13 @@ export default function SocialMediaPage() {
         {/* Empty State */}
         {!generated && !generating && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="text-center py-16 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800">
+            className="text-center py-10 sm:py-16 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 flex items-center justify-center mx-auto mb-4">
               <Sparkles className="w-8 h-8 text-purple-400" />
             </div>
-            <p className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Ready to go viral?</p>
-            <p className="text-sm text-gray-500 max-w-md mx-auto">
-              Upload an image or video and AI will scan it, then generate captions with global hashtags optimized for every platform. Or enter a topic for text-based captions.
+            <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-1">Ready to go viral?</p>
+            <p className="text-xs sm:text-sm text-gray-500 max-w-md mx-auto px-4">
+              Upload an image or video, then generate captions with global hashtags optimized for every platform. Or enter a topic for text-based captions.
             </p>
             <div className="flex items-center justify-center gap-4 mt-6">
               {[Instagram, Video, Youtube, Linkedin, Twitter, Facebook].map((Icon, i) => (
@@ -714,7 +729,9 @@ export default function SocialMediaPage() {
       <AnimatePresence>
         {toast && (
           <motion.div initial={{ opacity: 0, y: 50, x: '-50%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-6 left-1/2 z-[100] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl"
+            role="status"
+            aria-live="polite"
+            className="fixed bottom-4 sm:bottom-6 left-1/2 z-[100] flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl shadow-2xl max-w-[90vw]"
             style={{ background: toast.type === 'success' ? 'hsl(142 76% 36%)' : 'hsl(0 72% 51%)', color: 'white' }}>
             {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
             <span className="text-sm font-medium">{toast.message}</span>

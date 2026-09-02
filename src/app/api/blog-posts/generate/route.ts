@@ -10,14 +10,16 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { topic, keywords, tone, length, industry } = await req.json();
+    const { topic, keywords, tone, length, industry, language } = await req.json();
     if (!topic) return NextResponse.json({ error: 'Topic is required' }, { status: 400 });
 
+    const langName = language === 'hi' ? 'Hindi' : language === 'mr' ? 'Marathi' : 'English';
     const wordCount = length === 'short' ? '400-500' : length === 'long' ? '1200-1500' : '700-900';
 
     const systemPrompt = `You are an expert SEO and AEO (Answer Engine Optimization) content writer and blog agent. You write highly engaging, SEO-optimized blog posts that rank on Google, get cited by AI (ChatGPT, Perplexity, Gemini), and drive organic traffic.
 
 Rules:
+- Write in ${langName} language
 - Write in ${tone || 'professional'} tone
 - Target industry: ${industry || 'general business'}
 - Word count: ${wordCount} words

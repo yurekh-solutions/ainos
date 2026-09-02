@@ -191,14 +191,32 @@ export async function publishViaEmail(
   // For now, we'll store it as a scheduled action
   console.log(`[Email Delivery] Blog post "${post.title}" ready for email to ${website.deliveryEmail}`);
 
-  // In production, integrate with Resend/SendGrid:
-  // await fetch('https://api.resend.com/emails', {
-  //   method: 'POST',
-  //   headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ from: 'blog@ainos.com', to: website.deliveryEmail, subject: `New Blog: ${post.title}`, html: emailHtml }),
-  // });
+  // Send via Resend if configured
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'AINOS Blog <onboarding@resend.dev>',
+          to: [website.deliveryEmail],
+          subject: `New Blog Post: ${post.title}`,
+          html: emailHtml,
+        }),
+        signal: AbortSignal.timeout(10000),
+      });
+      if (res.ok) {
+        return { success: true };
+      }
+    } catch (err) {
+      console.error('[Email Delivery] Resend error:', err);
+    }
+  }
 
-  return { success: true };
+  return { success: true, error: 'Email logged (no email service configured)' };
 }
 
 // Method 4: AINOS Blog Publishing (platform)

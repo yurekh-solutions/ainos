@@ -123,7 +123,12 @@ export default function BlogAgentPage() {
         // right after connecting (startBackgroundGeneration in connect-website).
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to connect website');
+        if (data.supportEmail) {
+          // Show support email message for multi-website upgrade
+          alert(`${data.error}\n\n${data.supportMessage}\n\nEmail: ${data.supportEmail}`);
+        } else {
+          alert(data.error || 'Failed to connect website');
+        }
       }
     } catch { alert('Failed to connect website'); }
     finally { setConnecting(false); }
