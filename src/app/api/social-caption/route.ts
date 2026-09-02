@@ -155,7 +155,7 @@ For each platform:
 ${!topic && !videoDescription && !imageBase64 ? 'No text context was given, so create broadly appealing captions based on the topic field alone.' : ''}`;
 
     // SINGLE FAST CALL: Use Groq with vision if image/video frames provided, otherwise text-only
-    let raw: string;
+    let raw: string = '';
     let imageAnalysis = '';
     let visionFailed = false;
 
@@ -163,59 +163,90 @@ ${!topic && !videoDescription && !imageBase64 ? 'No text context was given, so c
       // Use Groq vision model - analyzes image(s) AND generates captions in ONE call
       try {
         const keys = (process.env.GROQ_API_KEYS || '').split(',').map(s => s.trim()).filter(Boolean);
-        const key = keys[0] || process.env.GROQ_API_KEY;
-        if (!key) throw new Error('No Groq key');
-
-        // Build message content with all frames
-        const userContent: Array<{ type: string; text?: string; image_url?: { url: string } }> = [
-          { type: 'text', text: userPrompt + (frames.length > 1 ? '\n\nNOTE: Multiple frames from a video are provided. Analyze the sequence to understand the full story/action.' : '') }
-        ];
         
-        // Add all frames (up to 5 for speed)
-        frames.slice(0, 5).forEach((frame, idx) => {
-          userContent.push({ type: 'image_url', image_url: { url: frame } });
-        });
+        let lastError = '';
+        let success = false;
+        
+        // Try each Groq key with rotation
+        for (let attempt = 0; attempt < keys.length && !success; attempt++) {
+          const key = keys[attempt];
+          try {
+            // Build message content with all frames
+            const userContent: Array<{ type: string; text?: string; image_url?: { url: string } }> = [
+              { type: 'text', text: userPrompt + (frames.length > 1 ? '\n\nNOTE: Multiple frames from a video are provided. Analyze the sequence to understand the full story/action.' : '') }
+            ];
+            
+            // Add all frames (up to 3 for speed)
+            frames.slice(0, 3).forEach((frame) => {
+              userContent.push({ type: 'image_url', image_url: { url: frame } });
+            });
 
-        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${key}`,
-          },
-          body: JSON.stringify({
-            model: 'llama-3.2-90b-vision-preview',
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userContent }
-            ],
-            max_tokens: 4096,
-            response_format: { type: 'json_object' },
-          }),
-          signal: AbortSignal.timeout(15000), // 15 second timeout
-        });
+            const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}`,
+              },
+              body: JSON.stringify({
+                model: 'llama-3.2-90b-vision-preview',
+                messages: [
+                  { role: 'system', content: systemPrompt },
+                  { role: 'user', content: userContent }
+                ],
+                max_tokens: 4096,
+                response_format: { type: 'json_object' },
+              }),
+              signal: AbortSignal.timeout(30000), // 30 second timeout for vision
+            });
 
-        if (!res.ok) {
-          const errText = await res.text().catch(() => '');
-          throw new Error(`Groq vision error: ${res.status} ${errText.slice(0, 100)}`);
+            if (res.ok) {
+              const data = await res.json();
+              raw = data.choices?.[0]?.message?.content;
+              if (raw) {
+                success = true;
+                imageAnalysis = frames.length > 1 ? `${frames.length} video frames analyzed` : 'Image analyzed successfully';
+              } else {
+                lastError = 'Empty response';
+              }
+            } else {
+              const errText = await res.text().catch(() => '');
+              lastError = `Groq ${res.status}: ${errText.slice(0, 100)}`;
+              console.warn(`[social-caption] Key ${key.slice(0, 12)}... failed:`, lastError);
+              
+              // If rate limited, try next key
+              if (res.status === 429) continue;
+            }
+          } catch (e) {
+            lastError = e instanceof Error ? e.message : String(e);
+            console.warn(`[social-caption] Key ${key.slice(0, 12)}... error:`, lastError);
+          }
         }
-
-        const data = await res.json();
-        raw = data.choices?.[0]?.message?.content;
-        if (!raw) throw new Error('Groq returned empty response');
-
-        // Extract a brief image description for the response
-        imageAnalysis = frames.length > 1 ? `${frames.length} video frames analyzed` : 'Image analyzed successfully';
+        
+        if (!success) {
+          throw new Error(lastError || 'All Groq keys failed');
+        }
       } catch (e) {
-        console.warn('[social-caption] Groq vision failed, falling back to text-only:', e instanceof Error ? e.message : e);
+        console.warn('[social-caption] Groq vision failed, using text-only fallback:', e instanceof Error ? e.message : e);
         visionFailed = true;
-        // Fallback: analyze first frame separately, then generate captions
-        const analysis = await analyzeMedia(frames[0], 'Describe this image briefly: what objects, people, mood, setting, colors, and what story is being told. Keep it under 100 words.');
-        imageAnalysis = analysis || '';
-        raw = await generateAIText(systemPrompt, userPrompt + (imageAnalysis ? `\n\nAI Vision Analysis: "${imageAnalysis}"` : ''), { json: true, timeoutMs: 15000 });
+        
+        // Fallback: Try Gemini for vision, then generate captions
+        try {
+          const analysis = await analyzeMedia(frames[0], 'Describe this image briefly: what objects, people, mood, setting, colors. Under 100 words.');
+          imageAnalysis = analysis || '';
+          raw = await generateAIText(systemPrompt, userPrompt + (imageAnalysis ? `\n\nAI Vision Analysis: "${imageAnalysis}"` : ''), { json: true, timeoutMs: 30000 });
+        } catch (fallbackErr) {
+          console.error('[social-caption] All vision methods failed:', fallbackErr);
+          throw new Error('AI vision service temporarily unavailable. Please try again in a few seconds.');
+        }
       }
     } else {
       // No image - text-only generation (super fast with Groq)
-      raw = await generateAIText(systemPrompt, userPrompt, { json: true, timeoutMs: 15000 });
+      try {
+        raw = await generateAIText(systemPrompt, userPrompt, { json: true, timeoutMs: 30000 });
+      } catch (e) {
+        console.error('[social-caption] Text generation failed:', e);
+        throw new Error('AI service temporarily busy. Please try again in a few seconds.');
+      }
     }
 
     const result = parseJsonLoose(raw);
