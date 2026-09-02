@@ -555,11 +555,19 @@
       .ainos-blog-footer a { color: ${t.primary}; text-decoration: none; font-weight: 600; }
       .ainos-blog-loading, .ainos-blog-empty, .ainos-blog-error { text-align: center; padding: 40px; color: ${t.loadingColor}; font-size: ${px(14)}px; font-family: ${typo.bodyFont}; }
       .ainos-blog-error { color: #dc2626; }
+      .ainos-blog-section { max-width: 1280px; margin: 0 auto; padding: 60px 24px 80px; }
+      .ainos-blog-section-heading { text-align: center; font-size: 28px; font-weight: 800; margin-bottom: 8px; color: inherit; }
+      .ainos-blog-section-subheading { text-align: center; color: #888; margin-bottom: 40px; font-size: 15px; }
+      .ainos-blog-view-all { text-align: center; margin-top: 40px; }
+      .ainos-blog-view-all a { display: inline-block; padding: 12px 32px; border-radius: 8px; background: ${t.primary}; color: #fff; text-decoration: none; font-weight: 600; font-size: 14px; transition: opacity 0.2s; }
+      .ainos-blog-view-all a:hover { opacity: 0.85; }
       @media (max-width: 768px) {
         .ainos-blog-grid { grid-template-columns: 1fr; }
         .ainos-blog-card-list { flex-direction: column; }
         .ainos-blog-card-list .ainos-blog-card-img { width: 100%; height: ${px(160)}px; }
         .ainos-blog-title-full { font-size: ${px(24)}px; }
+        .ainos-blog-section { padding: 40px 16px 60px; }
+        .ainos-blog-section-heading { font-size: 22px; }
       }
     `;
 
@@ -567,6 +575,51 @@
     style.id = 'ainos-blog-styles';
     style.textContent = css;
     document.head.appendChild(style);
+  }
+
+  // Auto-reposition: if blog container is after <footer>, move it before footer
+  // and wrap in a properly styled section with heading
+  function autoReposition(container) {
+    // Find the nearest footer element
+    var footer = document.querySelector('footer') || document.querySelector('[role="contentinfo"]');
+    if (!footer) return; // no footer found, leave as-is
+
+    // Check if container is AFTER footer in DOM order
+    var containerPos = container.compareDocumentPosition(footer);
+    var isAfterFooter = (containerPos & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+
+    if (isAfterFooter) {
+      // Create a styled section wrapper
+      var section = document.createElement('section');
+      section.className = 'ainos-blog-section';
+
+      // Add heading
+      var heading = document.createElement('h2');
+      heading.className = 'ainos-blog-section-heading';
+      heading.textContent = container.getAttribute('data-heading') || 'Latest from Our Blog';
+      var subheading = document.createElement('p');
+      subheading.className = 'ainos-blog-section-subheading';
+      subheading.textContent = container.getAttribute('data-subheading') || 'Expert insights, tips and industry updates';
+
+      section.appendChild(heading);
+      section.appendChild(subheading);
+
+      // Move container into section, then insert section before footer
+      footer.parentNode.insertBefore(section, footer);
+      section.appendChild(container);
+
+      // Add "View All" button if data-view-all is set
+      var viewAllUrl = container.getAttribute('data-view-all');
+      if (viewAllUrl) {
+        var viewAllDiv = document.createElement('div');
+        viewAllDiv.className = 'ainos-blog-view-all';
+        var viewAllLink = document.createElement('a');
+        viewAllLink.href = viewAllUrl;
+        viewAllLink.textContent = container.getAttribute('data-view-all-text') || 'View All Articles';
+        viewAllDiv.appendChild(viewAllLink);
+        section.appendChild(viewAllDiv);
+      }
+    }
   }
 
   // Auto-initialize on DOM ready
@@ -588,6 +641,9 @@
     if (!containers.length) {
       containers = [makeFallback()];
     }
+
+    // Auto-reposition each container: if after footer, move before footer
+    containers.forEach(autoReposition);
 
     const renderFor = (c) => {
       const slug = c.getAttribute('data-slug') || currentHashSlug();

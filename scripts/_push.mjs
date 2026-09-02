@@ -7,5 +7,5 @@ function run(cmd, args) {
   return r;
 }
 run('git', ['add', '-A']);
-run('git', ['commit', '-m', 'Fix blog content: strip JSON wrapper, clean markdown, fix readTime']);
+run('git', ['commit', '-m', 'Auto-reposition blog widget before footer, add section heading, View All button, customization options']);
 run('git', ['push', 'origin', 'main']);
