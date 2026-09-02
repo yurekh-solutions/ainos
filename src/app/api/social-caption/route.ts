@@ -226,29 +226,21 @@ For each platform: hook (1 line) + value (2 lines) + CTA (1 line) + 5-8 hashtags
         } catch (groqErr) {
           console.warn('[social-caption] Groq also failed, trying Pollinations:', groqErr);
           
-          // ULTIMATE FALLBACK: Pollinations (free, no API key, never fails)
+          // ULTIMATE FALLBACK: Pollinations (free, no API key, simple GET endpoint)
           try {
-            const pollRes = await fetch('https://text.pollinations.ai/openai', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                model: 'openai',
-                messages: [
-                  { role: 'system', content: systemPrompt },
-                  { role: 'user', content: userPrompt }
-                ],
-                max_tokens: 2048,
-              }),
+            const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
+            const pollUrl = `https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}?model=openai&json=true`;
+            const pollRes = await fetch(pollUrl, {
               signal: AbortSignal.timeout(20000),
             });
             
             if (pollRes.ok) {
-              const pollData = await pollRes.json();
-              raw = pollData.choices?.[0]?.message?.content || '';
+              const pollText = await pollRes.text();
+              raw = pollText;
               imageAnalysis = 'Generated (Pollinations)';
               console.log('[social-caption] Pollinations fallback succeeded');
             } else {
-              throw new Error('Pollinations failed');
+              throw new Error(`Pollinations ${pollRes.status}`);
             }
           } catch (pollErr) {
             console.error('[social-caption] All methods failed:', pollErr);
@@ -259,32 +251,24 @@ For each platform: hook (1 line) + value (2 lines) + CTA (1 line) + 5-8 hashtags
     } else {
       // No image - text-only generation (super fast with Groq)
       try {
-        raw = await generateAIText(systemPrompt, userPrompt, { json: true, timeoutMs: 30000 });
+        raw = await generateAIText(systemPrompt, userPrompt, { json: true, timeoutMs: 20000 });
       } catch (e) {
         console.warn('[social-caption] Groq text failed, trying Pollinations:', e);
         
-        // Fallback to Pollinations
+        // Fallback to Pollinations simple GET
         try {
-          const pollRes = await fetch('https://text.pollinations.ai/openai', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: 'openai',
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt }
-              ],
-              max_tokens: 2048,
-            }),
+          const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
+          const pollUrl = `https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}?model=openai&json=true`;
+          const pollRes = await fetch(pollUrl, {
             signal: AbortSignal.timeout(20000),
           });
           
           if (pollRes.ok) {
-            const pollData = await pollRes.json();
-            raw = pollData.choices?.[0]?.message?.content || '';
+            const pollText = await pollRes.text();
+            raw = pollText;
             console.log('[social-caption] Pollinations text fallback succeeded');
           } else {
-            throw new Error('Pollinations failed');
+            throw new Error(`Pollinations ${pollRes.status}`);
           }
         } catch (pollErr) {
           console.error('[social-caption] All text methods failed:', pollErr);
