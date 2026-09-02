@@ -21,6 +21,44 @@ function cleanExcerpt(raw: string, maxLen = 200): string {
     .substring(0, maxLen) + (raw.length > maxLen ? '...' : '');
 }
 
+// Extract clean markdown from content that may be JSON-wrapped
+// Handles: `{ "content": "# Markdown..." }` or raw JSON at start of content
+function cleanContent(raw: string): string {
+  if (!raw) return '';
+  const trimmed = raw.trim();
+  // If content starts with {, try to extract the actual markdown
+  if (trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      // If parsed JSON has a content field, use that
+      if (parsed.content && typeof parsed.content === 'string') {
+        return parsed.content;
+      }
+      // If it's a JSON object but no content field, stringify the markdown parts
+      if (parsed.title && parsed.excerpt) {
+        return `# ${parsed.title}\n\n${parsed.excerpt}\n\n${parsed.content || ''}`;
+      }
+    } catch {
+      // Not valid JSON — might be markdown that starts with {
+      // Strip JSON-like prefix lines
+      const lines = trimmed.split('\n');
+      let startIdx = 0;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim().startsWith('# ') || lines[i].trim().startsWith('## ')) {
+          startIdx = i;
+          break;
+        }
+        // Skip JSON lines
+        if (lines[i].includes('"') && (lines[i].includes('title') || lines[i].includes('slug') || lines[i].includes('excerpt'))) {
+          startIdx = i + 1;
+        }
+      }
+      return lines.slice(startIdx).join('\n').trim();
+    }
+  }
+  return trimmed;
+}
+
 // "https://www.SkyAV.in/some/path" -> "skyav.in"
 function normalizeHost(u: string): string {
   try {
@@ -76,6 +114,7 @@ export async function GET(req: NextRequest) {
 
       const responseData = {
         ...post,
+        content: cleanContent(post.content || ''),
         websiteName: website?.name || null,
         websiteUrl: website?.url || null,
         websiteNiche: website?.niche || post.category,
@@ -201,13 +240,13 @@ export async function GET(req: NextRequest) {
         title: post.title,
         slug: post.slug,
         excerpt: cleanedExcerpt,
-        content: post.content,
+        content: cleanContent(post.content || ''),
         category: post.category,
         tags: Array.isArray(post.tags) ? post.tags : [],
         featuredImage: post.featuredImage,
         publishedAt: post.publishedAt,
         createdAt: post.createdAt,
-        readTime: Math.max(1, Math.ceil((post.content || '').split(' ').length / 200)),
+        readTime: Math.max(1, Math.ceil((cleanContent(post.content || '') || '').split(' ').length / 200)),
         websiteName: website?.name || null,
         websiteUrl: website?.url || null,
         url: `${website?.url || ''}/blog/${post.slug}`,

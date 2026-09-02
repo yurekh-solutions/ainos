@@ -271,9 +271,33 @@
     };
   }
 
+  // Strip JSON wrapper from blog content — extract only the markdown
+  function cleanBlogContent(raw) {
+    if (!raw) return '';
+    var trimmed = raw.trim();
+    if (trimmed.charAt(0) === '{') {
+      try {
+        var parsed = JSON.parse(trimmed);
+        if (parsed.content && typeof parsed.content === 'string') return parsed.content;
+        if (parsed.title && parsed.excerpt) return '# ' + parsed.title + '\n\n' + parsed.excerpt + '\n\n' + (parsed.content || '');
+      } catch (e) {
+        // Not valid JSON — strip JSON-like prefix lines until we hit markdown
+        var lines = trimmed.split('\n');
+        var startIdx = 0;
+        for (var i = 0; i < lines.length; i++) {
+          if (lines[i].trim().charAt(0) === '#' && lines[i].trim().charAt(1) === ' ') { startIdx = i; break; }
+          if (lines[i].indexOf('"') > -1 && (lines[i].indexOf('title') > -1 || lines[i].indexOf('slug') > -1 || lines[i].indexOf('excerpt') > -1)) { startIdx = i + 1; }
+        }
+        return lines.slice(startIdx).join('\n').trim();
+      }
+    }
+    return trimmed;
+  }
+
   // Markdown to HTML converter (sanitized)
   function renderMarkdown(md) {
     if (!md) return '';
+    md = cleanBlogContent(md);
     return md
       .replace(/^### (.*$)/gm, '<h3>' + '$1' + '</h3>')
       .replace(/^## (.*$)/gm, '<h2>' + '$1' + '</h2>')
