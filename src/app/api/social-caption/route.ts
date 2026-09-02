@@ -101,19 +101,26 @@ export async function POST(req: NextRequest) {
     // FAST PATH: Single Groq call - vision + captions in one shot (5 seconds!)
     // If image uploaded, use vision model; otherwise use text-only model
     const languageInstruction = LANGUAGE_INSTRUCTIONS[languageKey];
-    const systemPrompt = `You are a viral social media caption writer. Create platform-optimized captions with hooks and hashtags.
+    const systemPrompt = `You are a viral social media caption writer. Create structured captions with this exact flow:
+
+CAPTION STRUCTURE (5-6 lines, 500 words total per caption):
+1. HOOK - First line grabs attention (question, bold statement, or curiosity)
+2. VALUE - 2-3 lines explaining what you're showing (product/content)
+3. CTA - Tell people what to do (comment, share, click link, etc.)
+4. HASHTAGS - 5-10 relevant tags (mix of niche + trending, NO random tags)
 
 Rules:
 - Tone: ${tone || 'engaging'}
 - Language: ${languageInstruction}
-- 3 hooks per platform (scroll-stopping first lines)
-- Full caption with CTA
-- Hashtags: 15-30 for Instagram, 3-5 for others
-- Mix viral (#viral, #trending) + niche + global tags
-- If image/video provided, base captions on what you see
+- 3 hooks per platform (5-10 words each, scroll-stopping)
+- Caption body: 3-4 sentences MAX (hook + value + CTA)
+- Hashtags: 5-10 for Instagram, 3-5 for others
+- If image/video provided, base content on what you see
+- Keep it LIGHTWEIGHT and PUNCHY, no fluff
+- Each platform caption: 500 words MAX, 5-6 lines
 
 Respond ONLY with valid JSON (no markdown, no extra text):
-{"platforms":[{"platform":"instagram","caption":"...","hooks":["h1","h2","h3"],"hashtags":["#tag1"]}],"generalTips":["tip1"]}`;
+{"platforms":[{"platform":"instagram","caption":"Hook line\\n\\nValue line 1\\nValue line 2\\n\\nCTA line\\n\\n#tag1 #tag2 #tag3","hooks":["h1","h2","h3"],"hashtags":["#tag1","#tag2"]}],"generalTips":["tip1"]}`;
 
     const userPrompt = `Create viral, platform-optimized social media captions for this content:
 

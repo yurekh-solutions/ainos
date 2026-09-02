@@ -502,7 +502,7 @@ export default function SocialMediaPage() {
                       <Icon className={`w-5 h-5 ${config.color}`} />
                       <div>
                         <p className={`text-xs font-semibold ${config.color}`}>{config.label}</p>
-                        <p className="text-[10px] text-gray-400">{config.maxChars.toLocaleString()} chars max</p>
+                        <p className="text-[10px] text-gray-400">{config.label}</p>
                       </div>
                       {isSelected && <Check className="w-4 h-4 ml-auto text-emerald-500" />}
                     </button>
@@ -643,15 +643,9 @@ export default function SocialMediaPage() {
                           <Icon className={`w-5 h-5 ${config.color}`} />
                           <div>
                             <h3 className={`text-sm font-bold ${config.color}`}>{config.label}</h3>
-                            <p className="text-[10px] text-gray-400">{fullLength.toLocaleString()} / {config.maxChars.toLocaleString()} chars</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                            fullLength <= config.maxChars ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                          }`}>
-                            {fullLength <= config.maxChars ? 'Optimal' : 'Too Long'}
-                          </span>
                           <button onClick={() => handleCopy(p.platform, fullCaption)}
                             className="p-1.5 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                             aria-label={`Copy full ${config.label} caption`} title="Copy full caption">
