@@ -6,7 +6,7 @@
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 const GROQ_API_KEY = (process.env.GROQ_API_KEY || '').trim();
-const GROQ_TEXT_MODEL = process.env.GROQ_TEXT_MODEL || 'openai/gpt-oss-20b';
+const GROQ_TEXT_MODEL = process.env.GROQ_TEXT_MODEL || 'llama-3.3-70b-versatile';
 const GROQ_VISION_MODEL = process.env.GROQ_VISION_MODEL || 'llama-3.2-90b-vision-preview';
 
 // Supports multiple keys so rate limits rotate: GROQ_API_KEYS="key1,key2" and/or GROQ_API_KEY
@@ -60,7 +60,9 @@ async function callGroq(
   const body: Record<string, unknown> = {
     model: GROQ_TEXT_MODEL,
     messages,
-    max_tokens: 16384,
+    // openai/gpt-oss-20b has an 8k TPM limit — keep max_tokens small enough
+    // that a single request stays under it, otherwise Groq returns 413.
+    max_tokens: 4096,
   };
   if (options.json) {
     body.response_format = { type: 'json_object' };
