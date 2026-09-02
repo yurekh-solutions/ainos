@@ -160,83 +160,116 @@ ${!topic && !videoDescription && !imageBase64 ? 'No text context was given, so c
     let visionFailed = false;
 
     if (frames.length > 0) {
-      // Use Groq vision model - analyzes image(s) AND generates captions in ONE call
+      // PRIMARY: Use Gemini vision (faster & more reliable)
+      // FALLBACK: Use Groq vision if Gemini fails
       try {
-        const keys = (process.env.GROQ_API_KEYS || '').split(',').map(s => s.trim()).filter(Boolean);
+        const geminiKeysList = (process.env.GEMINI_API_KEYS || '').split(',').map(s => s.trim()).filter(Boolean);
+        const geminiKey = geminiKeysList[0] || process.env.GEMINI_API_KEY;
         
-        let lastError = '';
-        let success = false;
-        
-        // Try each Groq key with rotation
-        for (let attempt = 0; attempt < keys.length && !success; attempt++) {
-          const key = keys[attempt];
-          try {
-            // Build message content with all frames
-            const userContent: Array<{ type: string; text?: string; image_url?: { url: string } }> = [
-              { type: 'text', text: userPrompt + (frames.length > 1 ? '\n\nNOTE: Multiple frames from a video are provided. Analyze the sequence to understand the full story/action.' : '') }
-            ];
-            
-            // Add all frames (up to 3 for speed)
-            frames.slice(0, 3).forEach((frame) => {
-              userContent.push({ type: 'image_url', image_url: { url: frame } });
-            });
-
-            const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${key}`,
-              },
-              body: JSON.stringify({
-                model: 'llama-3.2-90b-vision-preview',
-                messages: [
-                  { role: 'system', content: systemPrompt },
-                  { role: 'user', content: userContent }
-                ],
-                max_tokens: 4096,
-                response_format: { type: 'json_object' },
-              }),
-              signal: AbortSignal.timeout(30000), // 30 second timeout for vision
-            });
-
-            if (res.ok) {
-              const data = await res.json();
-              raw = data.choices?.[0]?.message?.content;
-              if (raw) {
-                success = true;
-                imageAnalysis = frames.length > 1 ? `${frames.length} video frames analyzed` : 'Image analyzed successfully';
-              } else {
-                lastError = 'Empty response';
-              }
-            } else {
-              const errText = await res.text().catch(() => '');
-              lastError = `Groq ${res.status}: ${errText.slice(0, 100)}`;
-              console.warn(`[social-caption] Key ${key.slice(0, 12)}... failed:`, lastError);
-              
-              // If rate limited, try next key
-              if (res.status === 429) continue;
+        if (geminiKey) {
+          // Build Gemini vision request
+          const parts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } }> = [
+            { text: systemPrompt + '\n\n' + userPrompt + (frames.length > 1 ? '\n\nNOTE: Multiple frames from a video are provided. Analyze the sequence.' : '') }
+          ];
+          
+          // Add frames to Gemini request
+          frames.slice(0, 3).forEach((frame) => {
+            const match = frame.match(/^data:(image\/\w+);base64,(.+)$/);
+            if (match) {
+              parts.push({ inline_data: { mime_type: match[1], data: match[2] } });
             }
-          } catch (e) {
-            lastError = e instanceof Error ? e.message : String(e);
-            console.warn(`[social-caption] Key ${key.slice(0, 12)}... error:`, lastError);
+          });
+
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts }],
+              generationConfig: {
+                maxOutputTokens: 4096,
+                responseMimeType: 'application/json',
+              },
+            }),
+            signal: AbortSignal.timeout(30000),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            if (raw) {
+              imageAnalysis = frames.length > 1 ? `${frames.length} video frames analyzed (Gemini)` : 'Image analyzed (Gemini)';
+            } else {
+              throw new Error('Gemini returned empty response');
+            }
+          } else {
+            const errText = await res.text().catch(() => '');
+            console.warn('[social-caption] Gemini vision failed:', errText.slice(0, 200));
+            throw new Error(`Gemini ${res.status}`);
           }
-        }
-        
-        if (!success) {
-          throw new Error(lastError || 'All Groq keys failed');
+        } else {
+          throw new Error('No Gemini key available');
         }
       } catch (e) {
-        console.warn('[social-caption] Groq vision failed, using text-only fallback:', e instanceof Error ? e.message : e);
+        console.warn('[social-caption] Gemini vision failed, trying Groq:', e instanceof Error ? e.message : e);
         visionFailed = true;
         
-        // Fallback: Try Gemini for vision, then generate captions
+        // FALLBACK: Try Groq vision with key rotation
         try {
-          const analysis = await analyzeMedia(frames[0], 'Describe this image briefly: what objects, people, mood, setting, colors. Under 100 words.');
-          imageAnalysis = analysis || '';
-          raw = await generateAIText(systemPrompt, userPrompt + (imageAnalysis ? `\n\nAI Vision Analysis: "${imageAnalysis}"` : ''), { json: true, timeoutMs: 30000 });
-        } catch (fallbackErr) {
-          console.error('[social-caption] All vision methods failed:', fallbackErr);
-          throw new Error('AI vision service temporarily unavailable. Please try again in a few seconds.');
+          const keys = (process.env.GROQ_API_KEYS || '').split(',').map(s => s.trim()).filter(Boolean);
+          let lastError = '';
+          let success = false;
+          
+          for (let attempt = 0; attempt < keys.length && !success; attempt++) {
+            const key = keys[attempt];
+            try {
+              const userContent: Array<{ type: string; text?: string; image_url?: { url: string } }> = [
+                { type: 'text', text: userPrompt + (frames.length > 1 ? '\n\nNOTE: Multiple frames from a video.' : '') }
+              ];
+              
+              frames.slice(0, 3).forEach((frame) => {
+                userContent.push({ type: 'image_url', image_url: { url: frame } });
+              });
+
+              const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${key}`,
+                },
+                body: JSON.stringify({
+                  model: 'llama-3.2-90b-vision-preview',
+                  messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userContent }
+                  ],
+                  max_tokens: 4096,
+                  response_format: { type: 'json_object' },
+                }),
+                signal: AbortSignal.timeout(30000),
+              });
+
+              if (res.ok) {
+                const data = await res.json();
+                raw = data.choices?.[0]?.message?.content || '';
+                if (raw) {
+                  success = true;
+                  imageAnalysis = frames.length > 1 ? `${frames.length} video frames analyzed (Groq)` : 'Image analyzed (Groq)';
+                }
+              } else {
+                lastError = `Groq ${res.status}`;
+                if (res.status === 429) continue;
+              }
+            } catch (err) {
+              lastError = err instanceof Error ? err.message : String(err);
+            }
+          }
+          
+          if (!success) {
+            throw new Error(lastError || 'All Groq keys failed');
+          }
+        } catch (groqErr) {
+          console.error('[social-caption] All vision methods failed:', groqErr);
+          throw new Error('AI vision service temporarily unavailable. Please try again in 10 seconds.');
         }
       }
     } else {
