@@ -116,136 +116,89 @@ For each platform: hook (1 line) + value (2 lines) + CTA (1 line) + 5-8 hashtags
     let visionFailed = false;
 
     if (frames.length > 0) {
-      // PRIMARY: Use Gemini vision (faster & more reliable)
-      // FALLBACK: Use Groq vision if Gemini fails
+      // PRIMARY: Use Groq vision (4 keys rotation for reliability)
       try {
-        const geminiKeysList = (process.env.GEMINI_API_KEYS || '').split(',').map(s => s.trim()).filter(Boolean);
-        const geminiKey = geminiKeysList[0] || process.env.GEMINI_API_KEY;
+        const keys = (process.env.GROQ_API_KEYS || '').split(',').map(s => s.trim()).filter(Boolean);
+        let lastError = '';
+        let success = false;
         
-        if (geminiKey) {
-          // Build Gemini vision request
-          const parts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } }> = [
-            { text: systemPrompt + '\n\n' + userPrompt + (frames.length > 1 ? '\n\nNOTE: Multiple frames from a video are provided. Analyze the sequence.' : '') }
-          ];
-          
-          // Add frames to Gemini request
-          frames.slice(0, 3).forEach((frame) => {
-            const match = frame.match(/^data:(image\/\w+);base64,(.+)$/);
-            if (match) {
-              parts.push({ inline_data: { mime_type: match[1], data: match[2] } });
-            }
-          });
-
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts }],
-              generationConfig: {
-                maxOutputTokens: 1500,
-                responseMimeType: 'application/json',
-              },
-            }),
-            signal: AbortSignal.timeout(20000), // 20 second timeout
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-            if (raw) {
-              imageAnalysis = frames.length > 1 ? `${frames.length} video frames analyzed (Gemini)` : 'Image analyzed (Gemini)';
-            } else {
-              throw new Error('Gemini returned empty response');
-            }
-          } else {
-            const errText = await res.text().catch(() => '');
-            console.warn('[social-caption] Gemini vision failed:', errText.slice(0, 200));
-            throw new Error(`Gemini ${res.status}`);
-          }
-        } else {
-          throw new Error('No Gemini key available');
-        }
-      } catch (e) {
-        console.warn('[social-caption] Gemini vision failed, trying Groq:', e instanceof Error ? e.message : e);
-        visionFailed = true;
-        
-        // FALLBACK: Try Groq vision with key rotation
-        try {
-          const keys = (process.env.GROQ_API_KEYS || '').split(',').map(s => s.trim()).filter(Boolean);
-          let lastError = '';
-          let success = false;
-          
-          for (let attempt = 0; attempt < keys.length && !success; attempt++) {
-            const key = keys[attempt];
-            try {
-              const userContent: Array<{ type: string; text?: string; image_url?: { url: string } }> = [
-                { type: 'text', text: userPrompt + (frames.length > 1 ? '\n\nNOTE: Multiple frames from a video.' : '') }
-              ];
-              
-              frames.slice(0, 3).forEach((frame) => {
-                userContent.push({ type: 'image_url', image_url: { url: frame } });
-              });
-
-              const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${key}`,
-                },
-                body: JSON.stringify({
-                  model: 'llama-3.2-90b-vision-preview',
-                  messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: userContent }
-                  ],
-                  max_tokens: 2048,
-                  response_format: { type: 'json_object' },
-                }),
-                signal: AbortSignal.timeout(30000),
-              });
-
-              if (res.ok) {
-                const data = await res.json();
-                raw = data.choices?.[0]?.message?.content || '';
-                if (raw) {
-                  success = true;
-                  imageAnalysis = frames.length > 1 ? `${frames.length} video frames analyzed (Groq)` : 'Image analyzed (Groq)';
-                }
-              } else {
-                lastError = `Groq ${res.status}`;
-                if (res.status === 429) continue;
-              }
-            } catch (err) {
-              lastError = err instanceof Error ? err.message : String(err);
-            }
-          }
-          
-          if (!success) {
-            throw new Error(lastError || 'All Groq keys failed');
-          }
-        } catch (groqErr) {
-          console.warn('[social-caption] Groq also failed, trying Pollinations:', groqErr);
-          
-          // ULTIMATE FALLBACK: Pollinations (free, no API key, simple GET endpoint)
+        // Try each Groq key with rotation
+        for (let attempt = 0; attempt < keys.length && !success; attempt++) {
+          const key = keys[attempt];
           try {
-            const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
-            const pollUrl = `https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}?model=openai&json=true`;
-            const pollRes = await fetch(pollUrl, {
+            const userContent: Array<{ type: string; text?: string; image_url?: { url: string } }> = [
+              { type: 'text', text: userPrompt + (frames.length > 1 ? '\n\nNOTE: Multiple video frames provided.' : '') }
+            ];
+            
+            frames.slice(0, 3).forEach((frame) => {
+              userContent.push({ type: 'image_url', image_url: { url: frame } });
+            });
+
+            const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}`,
+              },
+              body: JSON.stringify({
+                model: 'llama-3.2-90b-vision-preview',
+                messages: [
+                  { role: 'system', content: systemPrompt },
+                  { role: 'user', content: userContent }
+                ],
+                max_tokens: 1500,
+                response_format: { type: 'json_object' },
+              }),
               signal: AbortSignal.timeout(20000),
             });
-            
-            if (pollRes.ok) {
-              const pollText = await pollRes.text();
-              raw = pollText;
-              imageAnalysis = 'Generated (Pollinations)';
-              console.log('[social-caption] Pollinations fallback succeeded');
+
+            if (res.ok) {
+              const data = await res.json();
+              raw = data.choices?.[0]?.message?.content || '';
+              if (raw) {
+                success = true;
+                imageAnalysis = frames.length > 1 ? `${frames.length} video frames analyzed (Groq)` : 'Image analyzed (Groq)';
+              } else {
+                lastError = 'Empty response';
+              }
             } else {
-              throw new Error(`Pollinations ${pollRes.status}`);
+              const errText = await res.text().catch(() => '');
+              lastError = `Groq ${res.status}: ${errText.slice(0, 100)}`;
+              console.warn(`[social-caption] Key ${key.slice(0, 12)}... failed:`, lastError);
+              if (res.status === 429) continue; // Rate limited, try next key
             }
-          } catch (pollErr) {
-            console.error('[social-caption] All methods failed:', pollErr);
-            throw new Error('Caption generation failed. Please try again in 10 seconds.');
+          } catch (err) {
+            lastError = err instanceof Error ? err.message : String(err);
+            console.warn(`[social-caption] Key ${key.slice(0, 12)}... error:`, lastError);
           }
+        }
+        
+        if (!success) {
+          throw new Error(lastError || 'All Groq keys failed');
+        }
+      } catch (e) {
+        console.warn('[social-caption] Groq vision failed, trying Pollinations:', e instanceof Error ? e.message : e);
+        visionFailed = true;
+        
+        // FALLBACK: Pollinations (free, no API key, never fails)
+        try {
+          const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
+          const pollUrl = `https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}?model=openai&json=true`;
+          const pollRes = await fetch(pollUrl, {
+            signal: AbortSignal.timeout(20000),
+          });
+          
+          if (pollRes.ok) {
+            const pollText = await pollRes.text();
+            raw = pollText;
+            imageAnalysis = 'Generated (Pollinations)';
+            console.log('[social-caption] Pollinations fallback succeeded');
+          } else {
+            throw new Error(`Pollinations ${pollRes.status}`);
+          }
+        } catch (pollErr) {
+          console.error('[social-caption] All methods failed:', pollErr);
+          throw new Error('Caption generation failed. Please try again in 10 seconds.');
         }
       }
     } else {
