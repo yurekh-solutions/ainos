@@ -618,16 +618,14 @@ export default function SocialMediaPage() {
         <AnimatePresence>
           {generated && !generating && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              {/* AI Vision Analysis — hidden per user request */}
-              {false && generated.imageAnalysis && (
-                <div className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 rounded-2xl border border-violet-200 dark:border-violet-800 p-4 sm:p-5 mb-4 sm:mb-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Eye className="w-4 h-4 text-violet-600 dark:text-violet-400" />
-                    <h3 className="text-sm font-bold text-violet-900 dark:text-violet-200">AI Vision Analysis</h3>
-                  </div>
-                  <p className="text-xs text-violet-800 dark:text-violet-300 leading-relaxed">{generated.imageAnalysis}</p>
-                </div>
-              )}
+              {/* AI Vision Analysis — hidden per user request. To re-enable, replace this comment with the original block:
+                  {generated?.imageAnalysis && (
+                    <div className="...border-violet-200...">
+                      <h3>AI Vision Analysis</h3>
+                      <p>{generated.imageAnalysis}</p>
+                    </div>
+                  )} */}
+              {false && null}
 
               {/* Vision fallback note */}
               {generated.visionFailed && (
