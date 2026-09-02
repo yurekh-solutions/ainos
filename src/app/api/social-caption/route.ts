@@ -101,48 +101,14 @@ export async function POST(req: NextRequest) {
     // FAST PATH: Single Groq call - vision + captions in one shot (5 seconds!)
     // If image uploaded, use vision model; otherwise use text-only model
     const languageInstruction = LANGUAGE_INSTRUCTIONS[languageKey];
-    const systemPrompt = `You are a viral social media caption writer. Create structured captions with this exact flow:
+    const systemPrompt = `Create social media captions. Output ONLY valid JSON: {"platforms":[{"platform":"name","caption":"hook\\nvalue\\ncta\\n#tags","hooks":["h1","h2","h3"],"hashtags":["#t1"]}]}`;
 
-CAPTION STRUCTURE (5-6 lines, 500 words total per caption):
-1. HOOK - First line grabs attention (question, bold statement, or curiosity)
-2. VALUE - 2-3 lines explaining what you're showing (product/content)
-3. CTA - Tell people what to do (comment, share, click link, etc.)
-4. HASHTAGS - 5-10 relevant tags (mix of niche + trending, NO random tags)
-
-Rules:
-- Tone: ${tone || 'engaging'}
-- Language: ${languageInstruction}
-- 3 hooks per platform (5-10 words each, scroll-stopping)
-- Caption body: 3-4 sentences MAX (hook + value + CTA)
-- Hashtags: 5-10 for Instagram, 3-5 for others
-- If image/video provided, base content on what you see
-- Keep it LIGHTWEIGHT and PUNCHY, no fluff
-- Each platform caption: 500 words MAX, 5-6 lines
-
-Respond ONLY with valid JSON (no markdown, no extra text):
-{"platforms":[{"platform":"instagram","caption":"Hook line then value then CTA then hashtags","hooks":["h1","h2","h3"],"hashtags":["#tag1","#tag2"]}],"generalTips":["tip1"]}`;
-
-    const userPrompt = `Create viral, platform-optimized social media captions for this content:
-
-${topic ? `Topic: "${topic}"` : ''}
-${videoDescription ? `Content Description: "${videoDescription}"` : ''}
-${!topic && !videoDescription && imageBase64 ? 'NOTE: The user has only uploaded an image/video. Analyze it carefully and generate accurate, relevant captions based on what you see. Do not ask for more context.' : ''}
+    const userPrompt = `Topic: ${topic || videoDescription || 'See image/video'}
 Tone: ${tone || 'engaging'}
-Caption language: ${languageKey}
+Language: ${languageKey}
+Platforms: ${finalPlatforms.join(', ')}
 
-Generate captions for EXACTLY these platforms (use these exact platform keys in the JSON):
-${platformList}
-
-For each platform:
-1. Write 3 different scroll-stopping hooks (first lines)
-2. Write a full optimized caption with CTA
-3. Generate strategic hashtags including:
-   - 3-5 broad viral hashtags (#viral, #trending, #fyp, #explore)
-   - 5-10 niche-specific hashtags based on the content
-   - 3-5 global reach hashtags (#global, #worldwide, #international)
-   - Platform-specific trending hashtags
-
-${!topic && !videoDescription && !imageBase64 ? 'No text context was given, so create broadly appealing captions based on the topic field alone.' : ''}`;
+For each platform: hook (1 line) + value (2 lines) + CTA (1 line) + 5-8 hashtags. Be concise. Output JSON only.`;
 
     // SINGLE FAST CALL: Use Groq with vision if image/video frames provided, otherwise text-only
     let raw: string = '';
@@ -176,11 +142,11 @@ ${!topic && !videoDescription && !imageBase64 ? 'No text context was given, so c
             body: JSON.stringify({
               contents: [{ parts }],
               generationConfig: {
-                maxOutputTokens: 2048,
+                maxOutputTokens: 1500,
                 responseMimeType: 'application/json',
               },
             }),
-            signal: AbortSignal.timeout(30000),
+            signal: AbortSignal.timeout(20000), // 20 second timeout
           });
 
           if (res.ok) {
