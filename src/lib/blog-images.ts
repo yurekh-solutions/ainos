@@ -27,11 +27,24 @@ const fallbackImage = (topic: string, seed: number) => {
 // Words that add no visual meaning — dropped so image search hits the real subject
 const STOPWORDS = new Set(['the','a','an','and','or','but','if','for','nor','on','in','of','to','from','by','at','with','about','into','over','after','before','between','under','during','through','how','what','when','where','why','which','who','whom','this','that','these','those','is','are','was','were','be','been','being','do','does','did','will','would','shall','should','may','might','must','can','could','vs','via','your','you','their','they','our','we','my','it','its','as','per','out','up','down','off','again','more','most','best','top','guide','checklist','complete','ultimate','essential','ways','tips']);
 
+// Abstract / non-visual words that produce irrelevant stock photos
+const ABSTRACT_WORDS = new Set(['guide','plan','action','strategy','strategies','steps','tips','checklist','complete','ultimate','essential','measure','success','kpi','kpis','metrics','results','zero','build','building','first','regulations','regulation','compliance','must','know','impact','impacts','customer','experience','loyalty','budget','smart','compromise','quality','actually','matter','terms','glossary','client','should','every','psychology','behind','decisions','directly','flawless','events','celebrations','step','day','flawless','what','every','business','latest','trends','expert','cost','saving','discover','execute','corporate','grand','practical','insights','actionable','behind','smart','decisions']);
+
 export async function getBlogImage(topic: string, context?: string): Promise<string> {
-  const words = topic
+  // Strategy: niche-first query, then only concrete visual keywords from topic
+  // This avoids abstract words like "budget", "measure", "glossary" that return
+  // irrelevant stock photos (wallets, code, laptops instead of AV equipment)
+  const allWords = topic
     .split(/[^a-zA-Z0-9]+/)
-    .filter(w => w.length > 2 && !STOPWORDS.has(w.toLowerCase()));
-  const query = ((context ? `${context} ` : '') + words.slice(0, 4).join(' ')).trim() || 'business';
+    .filter(w => w.length > 2 && !STOPWORDS.has(w.toLowerCase()) && !ABSTRACT_WORDS.has(w.toLowerCase()));
+
+  // Build query: niche (context) is the PRIMARY search term
+  // Add at most 2 concrete visual keywords from the topic for specificity
+  const nicheQuery = (context || '').trim();
+  const topicKeywords = allWords.slice(0, 2).join(' ');
+  const query = nicheQuery
+    ? `${nicheQuery}${topicKeywords ? ' ' + topicKeywords : ''}`
+    : (allWords.slice(0, 3).join(' ') || 'business');
   // Stable per-topic hash so every blog gets its OWN photo (Date-based seeds
   // made blogs created in the same loop pick the identical image)
   let hash = 7;
