@@ -120,7 +120,7 @@ Rules:
 - Each platform caption: 500 words MAX, 5-6 lines
 
 Respond ONLY with valid JSON (no markdown, no extra text):
-{"platforms":[{"platform":"instagram","caption":"Hook line\\n\\nValue line 1\\nValue line 2\\n\\nCTA line\\n\\n#tag1 #tag2 #tag3","hooks":["h1","h2","h3"],"hashtags":["#tag1","#tag2"]}],"generalTips":["tip1"]}`;
+{"platforms":[{"platform":"instagram","caption":"Hook line then value then CTA then hashtags","hooks":["h1","h2","h3"],"hashtags":["#tag1","#tag2"]}],"generalTips":["tip1"]}`;
 
     const userPrompt = `Create viral, platform-optimized social media captions for this content:
 
@@ -329,6 +329,7 @@ ${!topic && !videoDescription && !imageBase64 ? 'No text context was given, so c
 
     const result = parseJsonLoose(raw);
     if (!result || !Array.isArray(result.platforms)) {
+      console.error('[social-caption] Failed to parse AI response. Raw output:', raw?.slice(0, 500));
       throw new Error('Could not understand the AI response — please regenerate');
     }
 
