@@ -437,6 +437,12 @@ model BlogPost {
   category      String?
   featuredImage String?        @map("featured_image")
   scheduledAt   DateTime?      @map("scheduled_at")
+  // Analytics fields (added so blog-analytics + conversion-tracking routes compile)
+  views         Int            @default(0)
+  avgTimeOnPage Float?         @map("avg_time_on_page")
+  ctaClicks     Int            @default(0) @map("cta_clicks")
+  conversions   Int            @default(0)
+  bounceRate    Float?         @map("bounce_rate")
   company       Company?       @relation(fields: [companyId], references: [id])
   schedules     BlogSchedule[]
 
