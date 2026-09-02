@@ -60,12 +60,20 @@ const platformSteps: Record<string, string[]> = {
 // Simple markdown to HTML converter
 function renderMarkdown(md: string): string {
   return md
+    // Images first (before links)
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%;border-radius:12px;margin:20px 0;display:block;">')
+    // Links
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-purple-600 underline">$1</a>')
+    // Headings
     .replace(/^### (.*$)/gm, '<h3 class="text-lg font-bold mt-6 mb-2 text-gray-900 dark:text-white">$1</h3>')
     .replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold mt-8 mb-3 text-gray-900 dark:text-white">$1</h2>')
     .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold mt-8 mb-4 text-gray-900 dark:text-white">$1</h1>')
+    // Bold & italic
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    // Lists
     .replace(/^- (.*$)/gm, '<li class="ml-4 mb-1 text-gray-700 dark:text-gray-300">• $1</li>')
+    // Paragraphs
     .replace(/^(?!<)(.*$)/gm, '<p class="mb-3 text-gray-700 dark:text-gray-300 leading-relaxed">$1</p>')
     .replace(/<p class="mb-3.*?><\/p>/g, '');
 }

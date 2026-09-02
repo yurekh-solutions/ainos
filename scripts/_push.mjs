@@ -7,5 +7,5 @@ function run(cmd, args) {
   return r;
 }
 run('git', ['add', '-A']);
-run('git', ['commit', '-m', 'Auto-reposition blog widget before footer, add section heading, View All button, customization options']);
+run('git', ['commit', '-m', 'Add markdown image rendering to embed widget, blog publisher, and dashboard blog reader']);
 run('git', ['push', 'origin', 'main']);

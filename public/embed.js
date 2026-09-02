@@ -299,13 +299,21 @@
     if (!md) return '';
     md = cleanBlogContent(md);
     return md
+      // Images: ![alt](url) — must come BEFORE links to avoid conflict
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<div class="ainos-blog-inline-img"><img src="$2" alt="$1" loading="lazy" style="width:100%;max-height:420px;object-fit:cover;border-radius:12px;margin:24px 0;display:block;"></div>')
+      // Links
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+      // Headings
       .replace(/^### (.*$)/gm, '<h3>' + '$1' + '</h3>')
       .replace(/^## (.*$)/gm, '<h2>' + '$1' + '</h2>')
       .replace(/^# (.*$)/gm, '<h1>' + '$1' + '</h1>')
+      // Bold & italic
       .replace(/\*\*(.*?)\*\*/g, '<strong>' + '$1' + '</strong>')
       .replace(/\*(.*?)\*/g, '<em>' + '$1' + '</em>')
+      // Lists
       .replace(/^- (.*$)/gm, '<li>' + '$1' + '</li>')
       .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+      // Paragraphs
       .replace(/\n\n/g, '</p><p>')
       .replace(/^(?!<[hul])/gm, '<p>')
       .replace(/(<p>[^<].*)$/gm, '$1</p>');

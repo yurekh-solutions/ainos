@@ -225,14 +225,21 @@ export async function publishViaEmail(
 // Utility: Simple Markdown to HTML converter
 function markdownToHTML(md: string): string {
   return md
+    // Images first (before links)
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%;border-radius:8px;margin:16px 0;">')
+    // Links
+    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>')
+    // Headings
     .replace(/^### (.*$)/gm, '<h3>$1</h3>')
     .replace(/^## (.*$)/gm, '<h2>$1</h2>')
     .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+    // Bold & italic
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    // Lists
     .replace(/^- (.*$)/gm, '<li>$1</li>')
     .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
-    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>')
+    // Paragraphs
     .replace(/^(?!<[hul]).+(?!\w)$/gm, '<p>$&</p>')
     .replace(/\n\n/g, '</p><p>')
     .replace(/<p><\/p>/g, '');
