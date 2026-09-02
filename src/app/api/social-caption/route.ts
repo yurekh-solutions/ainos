@@ -101,36 +101,19 @@ export async function POST(req: NextRequest) {
     // FAST PATH: Single Groq call - vision + captions in one shot (5 seconds!)
     // If image uploaded, use vision model; otherwise use text-only model
     const languageInstruction = LANGUAGE_INSTRUCTIONS[languageKey];
-    const systemPrompt = `You are an expert social media content strategist and viral caption writer. You create platform-optimized captions, attention-grabbing hooks, and strategic hashtags that maximize engagement, reach, and virality for GLOBAL audiences.
+    const systemPrompt = `You are a viral social media caption writer. Create platform-optimized captions with hooks and hashtags.
 
 Rules:
-- Write in ${tone || 'engaging'} tone
-- ${languageInstruction}
-- Optimize each caption for its specific platform's algorithm and audience behavior
-- Create 3 different hook options for each platform (first line that stops the scroll)
-- Write a full caption body with natural flow and strong CTA
-- Generate 15-30 relevant hashtags for Instagram, 3-5 for other platforms
-- Include platform-specific formatting (emojis for IG, professional for LinkedIn, etc.)
-- Make captions feel native to each platform (not copy-pasted)
-- Use trending hashtag strategies and niche-specific tags
-- Include engagement-driving elements (questions, polls, CTAs)
-- Include GLOBAL trending hashtags that work across USA, UK, India, UAE, Europe, Australia
-- Mix broad viral hashtags (#viral, #trending, #fyp) with niche-specific ones
-- Add location-diverse hashtags for maximum global reach
-- If an image/video is provided, analyze it FIRST and base ALL captions on what you see
+- Tone: ${tone || 'engaging'}
+- Language: ${languageInstruction}
+- 3 hooks per platform (scroll-stopping first lines)
+- Full caption with CTA
+- Hashtags: 15-30 for Instagram, 3-5 for others
+- Mix viral (#viral, #trending) + niche + global tags
+- If image/video provided, base captions on what you see
 
-You must respond with ONLY valid JSON in this exact format (no markdown, no code fences, no other text):
-{
-  "platforms": [
-    {
-      "platform": "instagram",
-      "caption": "Full caption text...",
-      "hooks": ["Hook option 1", "Hook option 2", "Hook option 3"],
-      "hashtags": ["#hashtag1", "#hashtag2"]
-    }
-  ],
-  "generalTips": ["Tip 1", "Tip 2", "Tip 3", "Tip 4"]
-}`;
+Respond ONLY with valid JSON (no markdown, no extra text):
+{"platforms":[{"platform":"instagram","caption":"...","hooks":["h1","h2","h3"],"hashtags":["#tag1"]}],"generalTips":["tip1"]}`;
 
     const userPrompt = `Create viral, platform-optimized social media captions for this content:
 
@@ -186,7 +169,7 @@ ${!topic && !videoDescription && !imageBase64 ? 'No text context was given, so c
             body: JSON.stringify({
               contents: [{ parts }],
               generationConfig: {
-                maxOutputTokens: 4096,
+                maxOutputTokens: 2048,
                 responseMimeType: 'application/json',
               },
             }),
@@ -242,7 +225,7 @@ ${!topic && !videoDescription && !imageBase64 ? 'No text context was given, so c
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: userContent }
                   ],
-                  max_tokens: 4096,
+                  max_tokens: 2048,
                   response_format: { type: 'json_object' },
                 }),
                 signal: AbortSignal.timeout(30000),
@@ -268,8 +251,36 @@ ${!topic && !videoDescription && !imageBase64 ? 'No text context was given, so c
             throw new Error(lastError || 'All Groq keys failed');
           }
         } catch (groqErr) {
-          console.error('[social-caption] All vision methods failed:', groqErr);
-          throw new Error('AI vision service temporarily unavailable. Please try again in 10 seconds.');
+          console.warn('[social-caption] Groq also failed, trying Pollinations:', groqErr);
+          
+          // ULTIMATE FALLBACK: Pollinations (free, no API key, never fails)
+          try {
+            const pollRes = await fetch('https://text.pollinations.ai/openai', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                model: 'openai',
+                messages: [
+                  { role: 'system', content: systemPrompt },
+                  { role: 'user', content: userPrompt }
+                ],
+                max_tokens: 2048,
+              }),
+              signal: AbortSignal.timeout(20000),
+            });
+            
+            if (pollRes.ok) {
+              const pollData = await pollRes.json();
+              raw = pollData.choices?.[0]?.message?.content || '';
+              imageAnalysis = 'Generated (Pollinations)';
+              console.log('[social-caption] Pollinations fallback succeeded');
+            } else {
+              throw new Error('Pollinations failed');
+            }
+          } catch (pollErr) {
+            console.error('[social-caption] All methods failed:', pollErr);
+            throw new Error('Caption generation failed. Please try again in 10 seconds.');
+          }
         }
       }
     } else {
@@ -277,8 +288,35 @@ ${!topic && !videoDescription && !imageBase64 ? 'No text context was given, so c
       try {
         raw = await generateAIText(systemPrompt, userPrompt, { json: true, timeoutMs: 30000 });
       } catch (e) {
-        console.error('[social-caption] Text generation failed:', e);
-        throw new Error('AI service temporarily busy. Please try again in a few seconds.');
+        console.warn('[social-caption] Groq text failed, trying Pollinations:', e);
+        
+        // Fallback to Pollinations
+        try {
+          const pollRes = await fetch('https://text.pollinations.ai/openai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'openai',
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+              ],
+              max_tokens: 2048,
+            }),
+            signal: AbortSignal.timeout(20000),
+          });
+          
+          if (pollRes.ok) {
+            const pollData = await pollRes.json();
+            raw = pollData.choices?.[0]?.message?.content || '';
+            console.log('[social-caption] Pollinations text fallback succeeded');
+          } else {
+            throw new Error('Pollinations failed');
+          }
+        } catch (pollErr) {
+          console.error('[social-caption] All text methods failed:', pollErr);
+          throw new Error('Caption generation failed. Please try again in 10 seconds.');
+        }
       }
     }
 
