@@ -7,5 +7,5 @@ function run(cmd, args) {
   return r;
 }
 run('git', ['add', '-A']);
-run('git', ['commit', '-m', 'Add TopBar with dynamic notifications and profile avatar on all pages']);
+run('git', ['commit', '-m', 'Fix blog excerpts: strip JSON/markdown, clean plain text output']);
 run('git', ['push', 'origin', 'main']);

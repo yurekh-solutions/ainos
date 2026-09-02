@@ -4,6 +4,23 @@ import { prisma } from '@/lib/prisma';
 // CORS-enabled public API for embedding blogs on ANY website
 // Supports: WordPress, Shopify, React, HTML, Wix, Squarespace, etc.
 
+// Clean raw text: strip JSON, markdown, HTML — return plain readable text
+function cleanExcerpt(raw: string, maxLen = 200): string {
+  if (!raw) return '';
+  return raw
+    .replace(/^\s*```[\s\S]*?```\s*/gm, '')
+    .replace(/^\s*json\s*/i, '')
+    .replace(/[{}\[\]"]/g, '')
+    .replace(/#[\w-]+/g, '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\n{2,}/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .substring(0, maxLen) + (raw.length > maxLen ? '...' : '');
+}
+
 // "https://www.SkyAV.in/some/path" -> "skyav.in"
 function normalizeHost(u: string): string {
   try {
@@ -64,7 +81,7 @@ export async function GET(req: NextRequest) {
         websiteNiche: website?.niche || post.category,
         // SEO data
         seoTitle: post.title,
-        seoDescription: post.excerpt || post.content?.substring(0, 160) || '',
+        seoDescription: cleanExcerpt(post.excerpt || post.content || '', 160),
         seoKeywords: Array.isArray(post.tags) ? post.tags.join(', ') : '',
         canonicalUrl: `${website?.url || ''}/blog/${post.slug}`,
         // Structured data for Google
@@ -72,7 +89,7 @@ export async function GET(req: NextRequest) {
           '@context': 'https://schema.org',
           '@type': 'BlogPosting',
           headline: post.title,
-          description: post.excerpt || post.content?.substring(0, 160) || '',
+          description: cleanExcerpt(post.excerpt || post.content || '', 160),
           author: {
             '@type': 'Organization',
             name: website?.name || 'AINOS Blog',
@@ -165,11 +182,25 @@ export async function GET(req: NextRequest) {
 
     const formattedPosts = posts.map((post) => {
       const website = post.schedules?.[0]?.subscription?.connectedWebsite;
+      // Clean excerpt: strip JSON, markdown, HTML tags — return plain text only
+      const rawExcerpt = post.excerpt || post.content || '';
+      const cleanedExcerpt = rawExcerpt
+        .replace(/^\s*```[\s\S]*?```\s*/gm, '')   // strip code blocks
+        .replace(/^\s*json\s*/i, '')                // strip leading 'json' keyword
+        .replace(/[{}\[\]"]/g, '')                  // strip JSON brackets/quotes
+        .replace(/#[\w-]+/g, '')                     // strip markdown headings
+        .replace(/\*\*(.*?)\*\*/g, '$1')            // strip bold
+        .replace(/\*(.*?)\*/g, '$1')                // strip italic
+        .replace(/<[^>]+>/g, '')                     // strip HTML tags
+        .replace(/\n{2,}/g, ' ')                     // collapse newlines
+        .replace(/\s+/g, ' ')                        // collapse whitespace
+        .trim()
+        .substring(0, 200) + (rawExcerpt.length > 200 ? '...' : '');
       return {
         id: post.id,
         title: post.title,
         slug: post.slug,
-        excerpt: post.excerpt || post.content?.substring(0, 200) + '...' || '',
+        excerpt: cleanedExcerpt,
         content: post.content,
         category: post.category,
         tags: Array.isArray(post.tags) ? post.tags : [],
