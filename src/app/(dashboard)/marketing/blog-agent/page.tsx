@@ -7,7 +7,7 @@ import {
   Globe, Plus, X, Loader2, Sparkles,
   Zap, Link2, Mail, Code, FileText, CheckCircle,
   Clock, ChevronRight, Copy, Check, Bot, Shield, MoreVertical,
-  Bell, Wand2, Calendar, Trash2
+  Wand2, Calendar, Trash2
 } from 'lucide-react';
 
 interface Website {
@@ -225,13 +225,6 @@ def ainos_webhook():
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-md shadow-purple-500/20 transition-all">
             <Link2 className="w-3.5 h-3.5" /> Connect Website
           </motion.button>
-          <button className="relative p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-            <Bell className="w-4 h-4 text-slate-500" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-          </button>
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">
-            S
-          </div>
         </div>
       </div>
 

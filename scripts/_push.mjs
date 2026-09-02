@@ -7,5 +7,5 @@ function run(cmd, args) {
   return r;
 }
 run('git', ['add', '-A']);
-run('git', ['commit', '-m', 'Fix blog excerpts: strip JSON/markdown, clean plain text output']);
+run('git', ['commit', '-m', 'Remove duplicate bell/avatar from Blog Agent header, keep Connect Website button']);
 run('git', ['push', 'origin', 'main']);
