@@ -8,8 +8,6 @@ import {
   Sparkles, FileText, Globe, Zap, Send, ArrowRight, Mail,
 } from 'lucide-react';
 
-import { NotificationsBell } from '@/components/layout/NotificationsBell';
-
 interface MarketingTool {
   title: string;
   description: string;
@@ -117,7 +115,7 @@ export default function DashboardPage() {
               </p>
             </div>
             <div className="flex-shrink-0">
-              <NotificationsBell />
+              {/* Notifications moved to TopBar */}
             </div>
           </div>
         </motion.header>
