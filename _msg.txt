@@ -1,1 +1,1 @@
-Section-specific images per H2 heading improved AI prompts with SEO AEO pipeline no inline images  
+Add topic relevance validation and content quality checks reject off-topic blogs  

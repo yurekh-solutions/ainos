@@ -41,6 +41,35 @@ export async function generateScheduleNow(scheduleId: string): Promise<{ status:
       return { status: 'failed', reason: 'No connected website' };
     }
 
+    // CRITICAL: Validate topic relevance to website niche
+    // Reject topics that are clearly unrelated (e.g., "skincare" for AV company)
+    const niche = (website.niche || '').toLowerCase();
+    const topic = (schedule.topic || '').toLowerCase();
+    const nicheWords = niche.split(/[^a-z0-9]+/).filter(w => w.length > 2);
+    const topicWords = topic.split(/[^a-z0-9]+/).filter(w => w.length > 2);
+
+    // Check if topic shares ANY meaningful words with niche
+    const nicheStopWords = new Set(['the','and','for','are','but','not','you','all','can','how','what','when','where','which','who','why','this','that','with','from','your','their','our','about','into','over','after','before','between','under','during','through','equipment','rental','services','solutions','business','guide','tips','best','top','complete','ultimate','essential','strategy','strategies','trends','decisions','smart','practical','expert','professional','maximize','roi','hidden','costs','alternatives','comparison','perspective','psychology','behind','small','build','winning','regional','global','industry','insight','non','negotiable','sound','quality','real','world','scenario','interchangeable','speaker','blades','pro','tip','use','cables','connectivity','integrating','gear','existing','setup','leverage','data','reviews','mitigate','uncertainty','party','review','awards','performance','analytics','social','proof','client','testimonials','case','studies','corporate','conferences','weddings','understanding','needs','choosing','right','provider','negotiating','deals','avoiding','costly','mistakes','getting','started','nobody','warns','honest','buyers','by','region']);
+    const meaningfulNiche = nicheWords.filter(w => !nicheStopWords.has(w));
+    const meaningfulTopic = topicWords.filter(w => !nicheStopWords.has(w));
+
+    // If niche has meaningful words, check overlap
+    if (meaningfulNiche.length > 0) {
+      const overlap = meaningfulNiche.filter(w => meaningfulTopic.includes(w));
+      // Also check if topic contains niche words as substrings
+      const substringMatch = meaningfulNiche.some(nw => meaningfulTopic.some(tw => tw.includes(nw) || nw.includes(tw)));
+
+      if (overlap.length === 0 && !substringMatch) {
+        // Topic is completely unrelated to niche — reject
+        console.warn(`[Topic Rejection] "${schedule.topic}" is unrelated to niche "${website.niche}"`);
+        await prisma.blogSchedule.update({
+          where: { id: schedule.id },
+          data: { status: 'failed' },
+        });
+        return { status: 'failed', reason: `Topic "${schedule.topic}" is not relevant to website niche "${website.niche}"` };
+      }
+    }
+
     // Build website context for AI
     let websiteContext = '';
     if (website.description) {
@@ -202,6 +231,45 @@ WRITING INSTRUCTIONS:
         }
       }
       if (!blogData) throw new Error('Could not parse AI response');
+    }
+
+    // CONTENT QUALITY VALIDATION
+    // 1. If content starts with {, it's a JSON wrapper — extract real content
+    let rawContent = blogData.content || '';
+    if (rawContent.trim().startsWith('{')) {
+      try {
+        const parsed = JSON.parse(rawContent.trim());
+        if (parsed.content && typeof parsed.content === 'string') {
+          rawContent = parsed.content;
+        } else if (parsed.title) {
+          rawContent = `# ${parsed.title}\n\n${parsed.excerpt || ''}\n\n${parsed.content || ''}`;
+        }
+      } catch {
+        // Not valid JSON — strip JSON-like prefix lines
+        const lines = rawContent.split('\n');
+        let startIdx = 0;
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].trim().startsWith('# ') || lines[i].trim().startsWith('## ')) { startIdx = i; break; }
+          if (lines[i].includes('"') && (lines[i].includes('title') || lines[i].includes('slug'))) { startIdx = i + 1; }
+        }
+        rawContent = lines.slice(startIdx).join('\n').trim();
+      }
+      blogData.content = rawContent;
+    }
+
+    // 2. Check minimum content quality
+    const wordCount = (rawContent || '').split(/\s+/).filter((w: string) => w.length > 0).length;
+    const h2Count = (rawContent || '').match(/^## /gm)?.length || 0;
+
+    if (wordCount < 300) {
+      console.warn(`[Content Rejection] "${schedule.topic}" has only ${wordCount} words (minimum 300)`);
+      await prisma.blogSchedule.update({ where: { id: schedule.id }, data: { status: 'failed' } });
+      return { status: 'failed', reason: `Content too short: ${wordCount} words` };
+    }
+    if (h2Count < 3) {
+      console.warn(`[Content Rejection] "${schedule.topic}" has only ${h2Count} H2 sections (minimum 3)`);
+      await prisma.blogSchedule.update({ where: { id: schedule.id }, data: { status: 'failed' } });
+      return { status: 'failed', reason: `Not enough sections: ${h2Count} H2 headings` };
     }
 
     // Featured image: prefer a fresh real photo (Pexels/Unsplash) when a
