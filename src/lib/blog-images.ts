@@ -93,10 +93,10 @@ export async function getBlogImage(topic: string, context?: string): Promise<str
   return fallbackImage(topic, seed);
 }
 
-// Strip ALL AI-generated images from blog content and optionally insert
-// ONE topic-relevant Pollinations image at the top. Pexels/Unsplash inline
-// images are unreliable — they return oceans, portraits etc. for AV blogs.
-// Better to have NO image than a wrong image.
+// Strip ALL AI-generated images and insert SECTION-SPECIFIC images.
+// Each H2 section gets its own image based on that section's actual content.
+// Pexels/Unsplash inline images are unreliable — Pollinations AI with
+// detailed section-aware prompts gives consistent, relevant results.
 export async function replaceContentImages(
   content: string,
   topic: string,
@@ -104,54 +104,97 @@ export async function replaceContentImages(
 ): Promise<string> {
   if (!content) return content;
 
-  // Remove ALL markdown images: ![alt](url)
-  // AI inserts random Pexels URLs (oceans, portraits, candles) that are
-  // completely unrelated to the blog topic. Removing them all is better
-  // than showing irrelevant images.
+  // Step 1: Remove ALL existing markdown images (AI inserts random URLs)
   let cleaned = content.replace(/!\[[^\]]*\]\([^)]+\)\n?/g, '');
 
-  // Extract topic keywords for a targeted AI image prompt
+  // Step 2: Extract topic keywords for image prompts
   const allWords = topic
     .split(/[^a-zA-Z0-9]+/)
     .filter(w => w.length > 2 && !STOPWORDS.has(w.toLowerCase()) && !ABSTRACT_WORDS.has(w.toLowerCase()));
   const nicheQuery = (context || '').trim();
   const topicKeywords = allWords.slice(0, 3).join(' ');
-  const imageTopic = nicheQuery
+  const baseTopic = nicheQuery
     ? `${nicheQuery} ${topicKeywords}`.trim()
     : (topicKeywords || topic);
 
-  // Generate ONE topic-specific AI image with a detailed prompt
+  // Step 3: Split content into H2 sections and generate image per section
+  const h2Regex = /^## (.+)$/gm;
+  const sections: Array<{ heading: string; body: string; startIdx: number; endIdx: number }> = [];
+  let h2Match: RegExpExecArray | null;
+
+  while ((h2Match = h2Regex.exec(cleaned)) !== null) {
+    const startIdx = h2Match.index;
+    const heading = h2Match[1].trim();
+    // Find next H2 or end of content
+    const nextH2 = cleaned.indexOf('\n## ', startIdx + 1);
+    const endIdx = nextH2 === -1 ? cleaned.length : nextH2;
+    const body = cleaned.slice(startIdx + h2Match[0].length, endIdx).trim();
+    sections.push({ heading, body, startIdx, endIdx });
+  }
+
+  // If no H2 sections found, insert one image after first heading
+  if (sections.length === 0) {
+    const anyHeading = cleaned.match(/^#+ .+$/m);
+    if (anyHeading) {
+      const idx = cleaned.indexOf(anyHeading[0]);
+      const afterHeading = idx + anyHeading[0].length;
+      const img = buildSectionImage(baseTopic, anyHeading[0].replace(/^#+ /, ''), '', 0);
+      cleaned = cleaned.slice(0, afterHeading) + `\n\n${img}\n\n` + cleaned.slice(afterHeading);
+    }
+    return cleaned;
+  }
+
+  // Step 4: For each H2 section, generate a section-specific image
+  // Process in reverse to preserve string indices
+  for (let i = sections.length - 1; i >= 0; i--) {
+    const section = sections[i];
+
+    // Extract keywords from section body for a specific prompt
+    const bodyWords = section.body
+      .replace(/[#*`\[\]()]/g, '')
+      .split(/\s+/)
+      .filter(w => w.length > 3 && !STOPWORDS.has(w.toLowerCase()) && !ABSTRACT_WORDS.has(w.toLowerCase()));
+
+    // Take first 4 meaningful words from body as image context
+    const bodyKeywords = bodyWords.slice(0, 4).join(' ');
+
+    // Build section-specific image
+    const img = buildSectionImage(baseTopic, section.heading, bodyKeywords, i);
+
+    // Insert image after the H2 heading line
+    const headingEnd = section.startIdx + `## ${section.heading}`.length;
+    cleaned = cleaned.slice(0, headingEnd) + `\n\n${img}\n\n` + cleaned.slice(headingEnd);
+  }
+
+  return cleaned;
+}
+
+// Build a Pollinations image URL with a detailed section-specific prompt
+function buildSectionImage(baseTopic: string, heading: string, bodyKeywords: string, index: number): string {
+  // Combine topic + heading + body keywords for a specific prompt
+  const specificContext = bodyKeywords
+    ? `${baseTopic} ${heading} ${bodyKeywords}`
+    : `${baseTopic} ${heading}`;
+
   const prompt = [
-    `Professional photograph of ${imageTopic}`,
-    'modern commercial setting, clean composition',
-    'natural lighting, sharp focus, high detail',
-    'no people faces, no text, no watermarks',
+    `Professional photograph illustrating ${specificContext}`,
+    'modern commercial or industrial setting',
+    'clean composition, natural lighting, sharp focus',
+    'high detail, professional quality',
+    'no people faces, no text overlays, no watermarks',
   ].join(', ');
+
   const params = new URLSearchParams({
     width: '1200',
     height: '630',
     model: 'flux-realism',
     enhance: 'true',
     nologo: 'true',
-    negative: 'blurry, low quality, distorted, watermark, text, logo, ugly, deformed, oversaturated, people, faces, portrait, ocean, sea, beach, nature landscape',
+    seed: String((index * 7919 + 42) % 100000),
+    negative: 'blurry, low quality, distorted, watermark, text, logo, ugly, deformed, oversaturated, people, faces, portrait, selfie, ocean, sea, beach, forest, nature landscape, food, cooking, animals',
   });
-  const aiImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params.toString()}`;
 
-  // Insert the single AI image after the first H2 heading (or at top if no H2)
-  const h2Match = cleaned.match(/^## .+$/m);
-  if (h2Match) {
-    const h2Index = cleaned.indexOf(h2Match[0]);
-    const afterH2 = h2Index + h2Match[0].length;
-    cleaned = cleaned.slice(0, afterH2) + `\n\n![${topic}](${aiImageUrl})\n\n` + cleaned.slice(afterH2);
-  } else {
-    // No H2 found — insert after the first heading of any level
-    const anyHeading = cleaned.match(/^#+ .+$/m);
-    if (anyHeading) {
-      const idx = cleaned.indexOf(anyHeading[0]);
-      const afterHeading = idx + anyHeading[0].length;
-      cleaned = cleaned.slice(0, afterHeading) + `\n\n![${topic}](${aiImageUrl})\n\n` + cleaned.slice(afterHeading);
-    }
-  }
-
-  return cleaned;
+  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params.toString()}`;
+  const alt = heading.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+  return `![${alt}](${url})`;
 }

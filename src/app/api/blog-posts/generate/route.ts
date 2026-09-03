@@ -16,48 +16,65 @@ export async function POST(req: NextRequest) {
     const langName = language === 'hi' ? 'Hindi' : language === 'mr' ? 'Marathi' : 'English';
     const wordCount = length === 'short' ? '400-500' : length === 'long' ? '1200-1500' : '700-900';
 
-    const systemPrompt = `You are an expert SEO and AEO (Answer Engine Optimization) content writer and blog agent. You write highly engaging, SEO-optimized blog posts that rank on Google, get cited by AI (ChatGPT, Perplexity, Gemini), and drive organic traffic.
+    const systemPrompt = `You are an expert SEO and AEO (Answer Engine Optimization) content writer. You write highly engaging, SEO-optimized blog posts that rank on Google, get cited by AI (ChatGPT, Perplexity, Gemini), and drive organic traffic.
 
-Rules:
+CONTENT STRUCTURE (follow exactly):
+1. Start with a DIRECT ANSWER paragraph (2-3 sentences answering the main query — for AEO/AI citation)
+2. Then write the full article with this structure:
+   - # Title (H1 with primary keyword)
+   - ## Introduction (engaging hook + what reader will learn)
+   - ## Main sections (H2) with ### subsections (H3) where needed
+   - ## FAQ section (3-5 questions with direct answers)
+   - ## Conclusion with strong CTA
+
+RULES:
 - Write in ${langName} language
 - Write in ${tone || 'professional'} tone
 - Target industry: ${industry || 'general business'}
 - Word count: ${wordCount} words
-- Include a compelling meta description (150-160 characters) with primary keyword
-- Include 5-8 relevant tags
-- Use proper H2 and H3 headings for structure
-- Include an engaging introduction and strong conclusion with CTA
-- Optimize for the primary keyword and related terms
-- Write in markdown format with proper headings (# for title, ## for H2, ### for H3)
-- Make it actionable and valuable for readers
-- Suggest a category for this post (e.g., Technology, Marketing, Business, SEO, AI, Startups, etc.)
-- Include FAQ section (3-5 questions) for AEO/AI citation optimization
-- Use EEAT signals (expertise, experience, authoritativeness, trustworthiness)
-- Include internal linking suggestions and external authority links
+- Each H2 section should be 150-300 words with actionable, specific content
+- Use data, statistics, examples, and real-world scenarios
+- Include a DIRECT ANSWER (40-60 words) right after the intro for AEO
+- Optimize for primary keyword and LSI/related terms naturally
+- Use EEAT signals: cite expertise, experience, data sources
+- FAQ answers should be concise (2-3 sentences) for AI citation
+- Write in CLEAN MARKDOWN: # for H1, ## for H2, ### for H3
+- Use bullet points and numbered lists where appropriate
+- Include a strong CTA at the end
+
+CRITICAL: Do NOT include any image URLs or ![markdown images] in the content. Images are handled separately.
 
 You must respond in this exact JSON format (no other text):
 {
-  "title": "SEO-optimized compelling title with keyword",
-  "slug": "url-friendly-slug",
-  "excerpt": "150-160 char meta description with primary keyword",
-  "content": "Full blog post in markdown with headings, FAQ section, and CTA",
-  "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
+  "title": "SEO-optimized compelling title with primary keyword (50-60 chars)",
+  "slug": "url-friendly-slug-with-keywords",
+  "excerpt": "Compelling meta description with primary keyword (150-160 chars)",
+  "content": "Full blog post in clean markdown. NO image URLs. Start with direct answer paragraph, then ## sections.",
+  "tags": ["primary-keyword", "related-term-1", "related-term-2", "related-term-3", "related-term-4"],
   "category": "Most relevant category",
   "seoScore": 85,
-  "seoTips": ["Tip 1", "Tip 2", "Tip 3"]
+  "seoTips": ["Specific actionable tip 1", "Specific actionable tip 2", "Specific actionable tip 3"]
 }`;
 
     const userPrompt = `Write an SEO and AEO optimized blog post about: "${topic}"
 ${keywords ? `Primary keywords: ${keywords}` : ''}
 ${industry ? `Industry: ${industry}` : ''}
 
-Requirements:
-- Optimize for Google search ranking (SEO)
-- Optimize for AI citation by ChatGPT, Perplexity, Gemini (AEO)
-- Include FAQ section with 3-5 commonly asked questions
-- Use EEAT signals throughout
-- Include a strong CTA at the end
-- Make it rank on Google AND get cited by AI engines.`;
+PIPELINE:
+1. Research: Understand the topic deeply
+2. Direct Answer: Write a 40-60 word direct answer first (for AI citation)
+3. Outline: Create 4-6 H2 sections covering the topic comprehensively
+4. Content: Write 150-300 words per section with data, examples, actionable tips
+5. FAQ: Add 3-5 questions with concise answers
+6. CTA: Strong conclusion with call-to-action
+
+QUALITY CHECKS:
+- Every H2 section must have SPECIFIC, ACTIONABLE content (not fluff)
+- Include at least 2-3 statistics or data points
+- Use real-world examples relevant to ${industry || 'the industry'}
+- FAQ answers must be direct (2-3 sentences max)
+- NO generic filler content
+- NO image URLs in content`;
 
     // Generate blog content via unified AI provider (Gemini first, Pollinations fallback)
     let result;

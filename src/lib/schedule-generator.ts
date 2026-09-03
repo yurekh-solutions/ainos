@@ -75,12 +75,12 @@ ABSOLUTE QUALITY RULES (MUST follow — articles failing these are rejected):
 - EXACTLY 8 to 12 H2 sections (## Heading) in the content. NOT 0, NOT 4 — at least 8.
 - Each H2 section MUST be 350-500 words. NO H2 under 250 words.
 - Each H2 section should have 2-3 H3 subsections (### Heading).
-- Include AT LEAST 3 inline images using markdown: ![descriptive alt text](https://images.pexels.com/photos/...). Use real Pexels-style image URLs (e.g. https://images.pexels.com/photos/<id>/pexels-photo-<id>.jpeg). Place images after the H2 heading they relate to.
+- CRITICAL: Do NOT include any image URLs or ![markdown images] in the content. Images are handled separately by the publishing system.
 - Include AT LEAST 5 tags in the "tags" array. NO empty tags.
 - Include a strong CTA in the conclusion. NEVER skip the CTA.
 - Include a "Table of Contents" section right after the intro listing all H2 headings.
 - Include a "Frequently Asked Questions" section with 5 questions and detailed answers.
-- Use ONLY markdown (## for H2, ### for H3, ![](url) for images, **bold**, - for bullets, 1. for numbered lists).
+- Use ONLY markdown (## for H2, ### for H3, **bold**, - for bullets, 1. for numbered lists). NO image syntax.
 
 WRITING VOICE:
 - Conversational yet authoritative. Sound like a human expert, NOT a generic AI.
@@ -92,6 +92,7 @@ WRITING VOICE:
 SEO & AEO STRUCTURE:
 - Title (50-60 chars), keyword-rich, compelling.
 - Excerpt: 150-160 chars meta description with a hook.
+- Start with a DIRECT ANSWER paragraph (40-60 words answering the main query — for AI citation).
 - 8-12 H2 sections covering the topic comprehensively.
 - FAQ answers must be self-contained and citable (each starts with a clear answer sentence).
 - Tags: 5-7 keywords mixing primary, secondary, long-tail, and intent terms.
@@ -101,7 +102,7 @@ JSON FORMAT (no other text, no markdown code fences):
   "title": "...",
   "slug": "url-friendly-slug",
   "excerpt": "...",
-  "content": "Full markdown with 8-12 H2 sections, 350-500 words each, 3+ inline images, table of contents, FAQ, CTA",
+  "content": "Full markdown with 8-12 H2 sections, 350-500 words each, table of contents, FAQ, CTA. NO image URLs.",
   "tags": ["tag1","tag2","tag3","tag4","tag5"],
   "category": "Most relevant category",
   "seoScore": 92,
@@ -129,7 +130,8 @@ WRITING INSTRUCTIONS:
 - Every H2 section must have genuine depth (400+ words each)
 - NO fluff, NO repetitive content, NO generic advice that applies to any business
 - Write for humans first, search engines second
-- The reader should finish feeling they got genuine expert value`;
+- The reader should finish feeling they got genuine expert value
+- NO image URLs or ![image] syntax in content — images are added automatically`;
 
     const aiRaw = await generateAIText(systemPrompt, userPrompt, { json: true, timeoutMs: 180_000 });
 

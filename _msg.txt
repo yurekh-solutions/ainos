@@ -1,1 +1,1 @@
-Strip all AI images from blog content insert one topic-specific Pollinations image instead  
+Section-specific images per H2 heading improved AI prompts with SEO AEO pipeline no inline images  
