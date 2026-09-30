@@ -49,6 +49,7 @@ import {
   Clock,
   Zap,
   Send,
+  Heart,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -131,10 +132,10 @@ const sections: MenuSection[] = [
     title: 'Marketing',
     icon: Mail,
     items: [
+      { icon: Mail, label: 'Email Campaigns', href: '/marketing/campaigns' },
       { icon: Sparkles, label: 'Social Media', href: '/marketing/email' },
       { icon: Globe, label: 'SEO Platform', href: '/marketing/seo' },
       { icon: FileText, label: 'Blog & Content', href: '/marketing/blog' },
-      { icon: Zap, label: 'Blog Agent', href: '/marketing/blog-agent' },
       { icon: Send, label: 'Invitations', href: '/marketing/invitations' },
     ],
   },
@@ -152,7 +153,9 @@ const sections: MenuSection[] = [
     items: [
       { icon: MessageSquare, label: 'Chat', href: '/ai/chat' },
       { icon: Sparkles, label: 'Media Studio', href: '/ai/media' },
+      { icon: Zap, label: 'Video Effects', href: '/ai/effects' },
       { icon: GraduationCap, label: 'AI Skills', href: '/ai/skills' },
+      { icon: Heart, label: 'Projects Gallery', href: '/ai/projects' },
     ],
   },
   {

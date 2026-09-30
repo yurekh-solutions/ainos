@@ -7,7 +7,8 @@ import {
   X, FileText, Eye, Calendar, Sparkles, Wand2, Search,
   Clock, Trash2, Edit3, CheckCircle, Send, ArrowLeft,
   BookOpen, Layers, ExternalLink, Globe, CalendarRange, TrendingUp, Shield, Zap,
-  Code, Copy, Check, Rss, Map, Palette, RefreshCw, BarChart3, Share2, Target, Award
+  Code, Copy, Check, Rss, Map, Palette, RefreshCw, BarChart3, Share2, Target, Award,
+  Link2, Loader2, AlertCircle, ArrowRight, ChevronDown
 } from 'lucide-react';
 
 interface BlogPost {
@@ -22,6 +23,14 @@ interface GeneratedPost {
   title: string; slug: string; excerpt: string; content: string;
   tags: string[]; category: string; featuredImage: string;
   seoScore?: number; seoTips?: string[];
+}
+interface ConnectedWebsite {
+  id: string; url: string; name: string | null; description: string | null;
+  techStack: string | null; niche: string | null; publishMethod: string;
+  isActive: boolean; widgetIntegrated: boolean; widgetIntegratedAt: string | null;
+  totalBlogs: number; publishedBlogs: number; pendingBlogs: number;
+  subscription: { blogsPerMonth: number; blogsUsed: number; blogsRemaining: number; currentPeriodEnd: string; } | null;
+  company?: { name: string | null; id: string } | null;
 }
 
 const tones = ['Professional', 'Casual', 'Authoritative', 'Friendly', 'Technical', 'Conversational'];
@@ -57,11 +66,13 @@ const platformSteps: Record<string, string[]> = {
   ],
 };
 
-// Simple markdown to HTML converter
+// Simple markdown to HTML converter — strips ALL inline images (only featured image on card)
 function renderMarkdown(md: string): string {
   return md
-    // Images first (before links)
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%;border-radius:12px;margin:20px 0;display:block;">')
+    // Remove ALL markdown images: ![alt](url)
+    .replace(/!\[[^\]]*\]\([^)]+\)\n?/g, '')
+    // Remove ALL HTML img tags
+    .replace(/<img[^>]*>\n?/gi, '')
     // Links
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-purple-600 underline">$1</a>')
     // Headings (H4 first to avoid conflicts)
@@ -99,6 +110,47 @@ export default function BlogPage() {
   const [embedLimit, setEmbedLimit] = useState(6);
   const [embedColor, setEmbedColor] = useState('');
   const [platformMode, setPlatformMode] = useState(false);
+
+  // ── Unified tab: 'blogs' | 'websites' ──
+  const [activeTab, setActiveTab] = useState<'blogs' | 'websites'>('blogs');
+
+  // ── Blog Agent (Connected Websites) state ──
+  const [websites, setWebsites] = useState<ConnectedWebsite[]>([]);
+  const [sitesLoading, setSitesLoading] = useState(false);
+  const [showConnect, setShowConnect] = useState(false);
+  const [connectUrl, setConnectUrl] = useState('');
+  const [connecting, setConnecting] = useState(false);
+  const [connectError, setConnectError] = useState('');
+  const [schedulingId, setSchedulingId] = useState<string | null>(null);
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
+
+  // ── Website blogs (expandable) ──
+  const [expandedWebsiteId, setExpandedWebsiteId] = useState<string | null>(null);
+  const [websiteBlogs, setWebsiteBlogs] = useState<Record<string, BlogPost[]>>({});
+  const [websiteBlogsLoading, setWebsiteBlogsLoading] = useState(false);
+
+  const fetchWebsiteBlogs = useCallback(async (websiteId: string) => {
+    setWebsiteBlogsLoading(true);
+    try {
+      const res = await fetch(`/api/blog-posts?websiteId=${websiteId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setWebsiteBlogs(prev => ({ ...prev, [websiteId]: data.posts || [] }));
+      }
+    } catch (e) { console.error(e); }
+    setWebsiteBlogsLoading(false);
+  }, []);
+
+  const toggleExpandWebsite = (websiteId: string) => {
+    if (expandedWebsiteId === websiteId) {
+      setExpandedWebsiteId(null);
+    } else {
+      setExpandedWebsiteId(websiteId);
+      if (!websiteBlogs[websiteId]) {
+        fetchWebsiteBlogs(websiteId);
+      }
+    }
+  };
 
   // Platform-wide view is admin-only (platform owner account)
   const { data: session } = useSession();
@@ -139,6 +191,63 @@ export default function BlogPage() {
   }, [statusFilter, activeCategory, platformMode]);
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]); // eslint-disable-line
+
+  // ── Blog Agent: Connected Websites ──
+  const fetchWebsites = useCallback(async () => {
+    setSitesLoading(true);
+    try {
+      const params = platformMode && isAdminUser ? '?platform=true' : '';
+      const res = await fetch(`/api/blog-agent/websites${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        setWebsites(data.websites || []);
+      }
+    } catch (e) { console.error(e); }
+    setSitesLoading(false);
+  }, [platformMode, isAdminUser]);
+
+  useEffect(() => { fetchWebsites(); }, [fetchWebsites]);
+
+  const handleConnectWebsite = async () => {
+    if (!connectUrl.trim()) return;
+    setConnecting(true); setConnectError('');
+    try {
+      const res = await fetch('/api/blog-agent/connect-website', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: connectUrl.trim(), publishMethod: 'ainos' }),
+      });
+      const data = await res.json();
+      if (res.ok) { setShowConnect(false); setConnectUrl(''); fetchWebsites(); }
+      else setConnectError(data.error || 'Failed to connect website');
+    } catch (e) { setConnectError('Network error. Please try again.'); }
+    setConnecting(false);
+  };
+
+  const handleSchedule30 = async (websiteId: string) => {
+    setSchedulingId(websiteId);
+    try {
+      const res = await fetch('/api/blog-agent/schedule', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ websiteId, count: 30 }),
+      });
+      if (res.ok) fetchWebsites();
+    } catch (e) { console.error(e); }
+    setSchedulingId(null);
+  };
+
+  const handleDisconnectWebsite = async (websiteId: string) => {
+    if (!confirm('Disconnect this website? All pending blogs will be cancelled.')) return;
+    setDisconnectingId(websiteId);
+    try {
+      const res = await fetch(`/api/blog-agent/websites?id=${websiteId}`, { method: 'DELETE' });
+      if (res.ok) fetchWebsites();
+    } catch (e) { console.error(e); }
+    setDisconnectingId(null);
+  };
+
+  const totalSiteBlogs = websites.reduce((s, w) => s + w.totalBlogs, 0);
+  const totalSitePublished = websites.reduce((s, w) => s + w.publishedBlogs, 0);
+  const totalSitePending = websites.reduce((s, w) => s + w.pendingBlogs, 0);
 
   // AI Blog Generation
   const handleGenerate = async () => {
@@ -221,7 +330,10 @@ export default function BlogPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      if (res.ok) fetchPosts();
+      if (res.ok) {
+        fetchPosts();
+        if (expandedWebsiteId) fetchWebsiteBlogs(expandedWebsiteId);
+      }
     } catch (e) { console.error(e); }
   };
 
@@ -239,7 +351,11 @@ export default function BlogPage() {
     if (!confirm('Delete this blog post?')) return;
     try {
       const res = await fetch(`/api/blog-posts?id=${id}`, { method: 'DELETE' });
-      if (res.ok) fetchPosts();
+      if (res.ok) {
+        fetchPosts();
+        if (expandedWebsiteId) fetchWebsiteBlogs(expandedWebsiteId);
+        setShowReader(null);
+      }
     } catch (e) { console.error(e); }
   };
 
@@ -252,6 +368,7 @@ export default function BlogPage() {
       const res = await fetch(`/api/blog-posts/regenerate?id=${id}`, { method: 'POST' });
       if (res.ok) {
         fetchPosts();
+        if (expandedWebsiteId) fetchWebsiteBlogs(expandedWebsiteId);
         setShowReader(null);
       } else {
         const d = await res.json().catch(() => null);
@@ -306,33 +423,40 @@ export default function BlogPage() {
       {/* ═══════════ TOP ACTION BAR ═══════════ */}
       <div className="flex items-center justify-between px-6 py-3 md:px-10 bg-white dark:bg-gray-900 border-b border-gray-200/80 dark:border-gray-800">
         <div className="flex items-center gap-2.5">
-          <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-          <span className="text-sm font-bold text-slate-900 dark:text-white">AI Blog Agent</span>
+          <img src="/ainos.jpg" alt="AINOS" className="w-4 h-4 rounded-full object-cover" />
+          <span className="text-sm font-bold text-slate-900 dark:text-white">Blogs & Content</span>
           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 uppercase tracking-wider">AUTOPILOT</span>
-          {/* Platform-wide toggle — admin only */}
           {isAdminUser && (
-          <div className="ml-3 flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 border border-gray-200 dark:border-gray-700">
-            <button onClick={() => setPlatformMode(false)}
-              className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all ${
-                !platformMode ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}>
-              My Blogs
-            </button>
-            <button onClick={() => setPlatformMode(true)}
-              className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1 ${
-                platformMode ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}>
-              <Globe className="w-3 h-3" /> Platform
-            </button>
-          </div>
+            <div className="ml-3 flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 border border-gray-200 dark:border-gray-700">
+              <button onClick={() => setPlatformMode(false)}
+                className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all ${
+                  !platformMode ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}>
+                My Blogs
+              </button>
+              <button onClick={() => setPlatformMode(true)}
+                className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1 ${
+                  platformMode ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}>
+                <Globe className="w-3 h-3" /> Platform
+              </button>
+            </div>
           )}
         </div>
         <div className="flex items-center gap-3">
-          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-            onClick={() => { setShowAI(true); setGenerated(null); }}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-md shadow-purple-500/20 transition-all">
-            <Wand2 className="w-3.5 h-3.5" /> Generate with AI
-          </motion.button>
+          {activeTab === 'blogs' ? (
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              onClick={() => { setShowAI(true); setGenerated(null); }}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-md shadow-purple-500/20 transition-all">
+              <Wand2 className="w-3.5 h-3.5" /> Generate with AI
+            </motion.button>
+          ) : (
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              onClick={() => setShowConnect(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-md shadow-purple-500/20 transition-all">
+              <Link2 className="w-3.5 h-3.5" /> Connect Website
+            </motion.button>
+          )}
         </div>
       </div>
 
@@ -351,15 +475,12 @@ export default function BlogPage() {
             {/* Left content */}
             <div className="max-w-lg">
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-                <div className="w-10 h-10 rounded-xl bg-purple-500/20 backdrop-blur-sm flex items-center justify-center border border-purple-400/20 mb-5">
-                  <Sparkles className="w-5 h-5 text-purple-300" />
-                </div>
                 <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight leading-[1.2]">
-                  AI SEO Insights &<br />
-                  Growth <span className="text-purple-400">Strategies</span>
+                  Your Content Engine<br />
+                  on Full <span className="text-purple-400">Autopilot</span>
                 </h1>
                 <p className="text-sm text-white/60 max-w-md leading-relaxed">
-                  Generate SEO-optimized blog posts with AI, publish them with beautiful featured images, and drive organic traffic.
+                  AI generates SEO-optimized blogs, auto-publishes them to your website, and drives organic traffic — all on autopilot.
                 </p>
               </motion.div>
             </div>
@@ -409,10 +530,10 @@ export default function BlogPage() {
           className="grid grid-cols-2 md:grid-cols-5 gap-4"
         >
           {[
-            { label: 'Total Posts', value: posts.length, sub: 'All Content', icon: FileText, iconBg: 'bg-purple-100', iconColor: 'text-purple-600', subColor: 'text-purple-500' },
-            { label: 'Published', value: publishedCount, sub: 'Live Now', icon: CheckCircle, iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600', subColor: 'text-emerald-500' },
-            { label: 'Scheduled', value: scheduledCount, sub: 'Upcoming', icon: CalendarRange, iconBg: 'bg-blue-100', iconColor: 'text-blue-600', subColor: 'text-blue-500' },
-            { label: 'Drafts', value: draftCount, sub: 'In Progress', icon: Edit3, iconBg: 'bg-orange-100', iconColor: 'text-orange-600', subColor: 'text-orange-500' },
+            { label: 'Connected Sites', value: websites.length, sub: 'Active Websites', icon: Globe, iconBg: 'bg-purple-100', iconColor: 'text-purple-600', subColor: 'text-purple-500' },
+            { label: 'Blogs Generated', value: totalSiteBlogs, sub: 'This Month', icon: FileText, iconBg: 'bg-blue-100', iconColor: 'text-blue-600', subColor: 'text-blue-500' },
+            { label: 'Published Live', value: totalSitePublished, sub: 'Live on Site', icon: CheckCircle, iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600', subColor: 'text-emerald-500' },
+            { label: 'In Queue', value: totalSitePending, sub: 'Pending', icon: Clock, iconBg: 'bg-orange-100', iconColor: 'text-orange-600', subColor: 'text-orange-500' },
             { label: 'Total Views', value: totalViews, sub: 'All Time', icon: Eye, iconBg: 'bg-pink-100', iconColor: 'text-pink-600', subColor: 'text-pink-500' },
           ].map((s, i) => (
             <motion.div key={s.label}
@@ -434,211 +555,301 @@ export default function BlogPage() {
         </motion.div>
       </div>
 
-      {/* Main Content */}
+      {/* ═══════════ HOW IT WORKS ═══════════ */}
       <div className="px-4 py-4 sm:px-6 sm:py-6 md:px-10 max-w-[1400px] mx-auto">
-        {/* Search & Filter Bar */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search articles..."
-              className="w-full pl-11 pr-4 py-3 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 shadow-sm" />
-          </div>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-            className="px-4 py-3 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 shadow-sm">
-            <option value="">All Status</option>
-            <option value="draft">Drafts</option>
-            <option value="published">Published</option>
-            <option value="scheduled">Scheduled</option>
-          </select>
-          {/* View Toggle */}
-          <div className="flex items-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
-            <button onClick={() => setViewMode('grid')}
-              className={`px-3 py-2.5 text-sm font-medium transition-colors ${viewMode === 'grid' ? 'bg-purple-600 text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>
-              <FileText className="w-4 h-4" />
-            </button>
-            <button onClick={() => setViewMode('calendar')}
-              className={`px-3 py-2.5 text-sm font-medium transition-colors ${viewMode === 'calendar' ? 'bg-purple-600 text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>
-              <CalendarRange className="w-4 h-4" />
-            </button>
-          </div>
-          {/* Publish to Website Button — hidden in platform view (it applies to your own site only) */}
-          {!platformMode && (
-          <button onClick={() => setShowEmbed(true)}
-            className="px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center gap-2">
-            <Globe className="w-4 h-4" /> Publish to Website
-          </button>
-          )}
-        </div>
-
-        {/* Category Tabs */}
-        <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
-          {allCategories.map(cat => (
-            <button key={cat} onClick={() => setActiveCategory(cat)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                activeCategory === cat
-                  ? 'bg-purple-600 text-white shadow-md shadow-purple-600/20'
-                  : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-800 hover:border-purple-300 hover:text-purple-600'
-              }`}>
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* Blog Posts Grid / Calendar View */}
-        {viewMode === 'calendar' ? (
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-800">
-              <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <CalendarRange className="w-5 h-5 text-purple-600" />
-                Content Calendar — {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-              </h3>
+        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/10 dark:to-indigo-900/10 rounded-2xl border border-purple-100 dark:border-purple-800/30 p-5 sm:p-6">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+              <BookOpen className="w-5 h-5 text-purple-600" />
             </div>
-            <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-800">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                <div key={d} className="bg-gray-50 dark:bg-gray-900 p-2 text-center text-xs font-semibold text-gray-500">{d}</div>
-              ))}
-              {getCalendarDays().map((day, i) => {
-                const isToday = day.date.toDateString() === new Date().toDateString();
-                const isCurrentMonth = day.date.getMonth() === new Date().getMonth();
-                return (
-                  <div key={i} className={`bg-white dark:bg-gray-900 p-1.5 min-h-[80px] ${!isCurrentMonth ? 'opacity-40' : ''}`}>
-                    <span className={`text-xs font-medium ${isToday ? 'w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center' : 'text-gray-500'}`}>
-                      {day.date.getDate()}
-                    </span>
-                    {day.posts.map(p => (
-                      <div key={p.id} className={`mt-1 px-1.5 py-0.5 rounded text-[10px] truncate cursor-pointer ${
-                        p.status === 'published' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
-                        : p.status === 'scheduled' ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400'
-                        : 'bg-gray-50 dark:bg-gray-800 text-gray-500'
-                      }`} onClick={() => setShowReader(p)} title={p.title}>
-                        {p.title}
-                      </div>
-                    ))}
+            <div className="flex-1">
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3">How Blog Automation Works</h3>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">Connect Website</p>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400">Add your website URL. AINOS analyzes niche & brand voice.</p>
                   </div>
-                );
-              })}
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">Paste Embed Code</p>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400">Add 2-line script to your site. AINOS auto-detects integration.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">Daily New Blogs</p>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400">AI generates 1 fresh SEO blog every day. Each gets its own page URL.</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">4</span>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">Auto Cleanup (7 Days)</p>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400">Blogs older than 7 days auto-remove. Always fresh content.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 pt-3 border-t border-purple-100 dark:border-purple-800/30 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-4 text-[11px] text-gray-500 dark:text-gray-400">
+                  <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-green-500" /> Individual blog pages (<code className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-[10px]">blog/slug</code>)</span>
+                  <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-green-500" /> Replaces existing blog sections</span>
+                  <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-green-500" /> SEO-optimized with JSON-LD</span>
+                  <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-green-500" /> Zero maintenance required</span>
+                </div>
+                <a href="/marketing/blog/guide" className="flex items-center gap-1 text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors flex-shrink-0">
+                  Read Full Integration Guide <ArrowRight className="w-3.5 h-3.5" />
+                </a>
+              </div>
             </div>
           </div>
-        ) : loading ? (
-          <div className="text-center py-20">
+        </div>
+      </div>
+
+      {/* ═══════════ CONNECTED WEBSITES ═══════════ */}
+      <div className="px-4 py-6 sm:px-6 sm:py-8 md:px-10 max-w-[1400px] mx-auto">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <Globe className="w-5 h-5 text-purple-600" /> Connected Websites
+          </h2>
+          <button onClick={() => setShowConnect(true)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-md shadow-purple-500/20 transition-all">
+            <Link2 className="w-3.5 h-3.5" /> Connect Website
+          </button>
+        </div>
+
+        {sitesLoading ? (
+          <div className="text-center py-16">
             <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-sm text-gray-500">Loading articles...</p>
+            <p className="text-sm text-gray-500">Loading websites...</p>
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-20 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800">
+        ) : websites.length === 0 ? (
+          <div className="text-center py-16 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800">
             <div className="w-16 h-16 rounded-2xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center mx-auto mb-4">
-              <BookOpen className="w-8 h-8 text-purple-400" />
+              <Globe className="w-8 h-8 text-purple-400" />
             </div>
-            <p className="text-lg font-semibold text-gray-900 dark:text-white mb-1">No articles found</p>
-            <p className="text-sm text-gray-500 mb-6">Try adjusting your search or generate your first AI blog post</p>
-            <button onClick={() => { setShowAI(true); setGenerated(null); }}
+            <p className="text-lg font-semibold text-gray-900 dark:text-white mb-1">No websites connected</p>
+            <p className="text-sm text-gray-500 mb-6">Connect your website to start auto-generating blogs</p>
+            <button onClick={() => setShowConnect(true)}
               className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 transition-colors inline-flex items-center gap-2">
-              <Sparkles className="w-4 h-4" /> Generate with AI
+              <Link2 className="w-4 h-4" /> Connect Website
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((post, i) => (
-              <motion.article key={post.id}
-                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                className="group bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-xl hover:border-purple-200 dark:hover:border-purple-800 transition-all duration-300 cursor-pointer"
-                onClick={() => setShowReader(post)}>
-                {/* Featured image (branded placeholder for queued blogs) */}
-                {post.featuredImage ? (
-                  <div className="h-40 overflow-hidden rounded-t-2xl">
-                    <img src={post.featuredImage} alt={post.title} loading="lazy"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  </div>
-                ) : (
-                  <div className="h-40 rounded-t-2xl bg-gradient-to-br from-purple-600 via-indigo-600 to-indigo-800 flex items-center justify-center">
-                    <FileText className="w-10 h-10 text-white/40" />
-                  </div>
-                )}
-                {/* Content */}
-                <div className="p-6">
-                  {/* Status + Category Row */}
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${
-                      post.status === 'published' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : post.status === 'draft' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
-                    }`}>{post.status}</span>
-                    {post.category && (
-                      <span className="text-[11px] font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded-md">
-                        {post.category}
-                      </span>
-                    )}
-                  </div>
-                  {/* Platform-mode: show which company/user this blog belongs to */}
-                  {platformMode && post.company?.name && (
-                    <div className="mb-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                      <Globe className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                      <span className="text-[10px] font-semibold text-blue-700 dark:text-blue-300 truncate max-w-[180px]">{post.company.name}</span>
-                    </div>
-                  )}
-                  <h3 className="font-bold text-base text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                    {post.title}
-                  </h3>
-                  {post.excerpt && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">{post.excerpt}</p>
-                  )}
-                  {/* Tags */}
-                  {post.tags && Array.isArray(post.tags) && post.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-3">
-                      {post.tags.slice(0, 3).map((tag, j) => (
-                        <span key={j} className="px-2 py-0.5 rounded-md text-[10px] bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 font-medium">
-                          #{tag}
-                        </span>
-                      ))}
-                      {post.tags.length > 3 && (
-                        <span className="text-[10px] text-gray-400">+{post.tags.length - 3}</span>
-                      )}
-                    </div>
-                  )}
-                  {/* Meta */}
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800">
-                    <div className="flex items-center gap-3 text-[11px] text-gray-400">
-                      {post.publishedAt && (
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />{new Date(post.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </span>
-                      )}
-                      {!post.isSchedule && (
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />{Math.max(1, Math.ceil((post.content || '').split(' ').length / 200))} min
-                        </span>
-                      )}
-                      {post.isSchedule && (
-                        <span className="flex items-center gap-1 text-emerald-500">
-                          <Zap className="w-3 h-3" />Preparing
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {post.status === 'published' && (
-                        <a href={`/blog/${post.slug}/`} target="_blank" rel="noopener noreferrer"
-                          onClick={e => e.stopPropagation()}
-                          className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View Public Post">
-                          <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
+          <div className="space-y-4">
+            {websites.map((w, i) => (
+              <motion.div key={w.id}
+                initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+                className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                <div className="p-5 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    {/* Left: Website info */}
+                    <div className="flex items-start gap-4">
+                      <div className="w-14 h-14 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center flex-shrink-0 border border-purple-100 dark:border-purple-800">
+                        <Globe className="w-6 h-6 text-purple-500" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-gray-900 dark:text-white text-sm sm:text-base">{w.name || w.url}</h3>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Connected
+                          </span>
+                          {w.widgetIntegrated ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3" /> Widget Live
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                              <AlertCircle className="w-3 h-3" /> Widget Not Integrated
+                            </span>
+                          )}
+                          {platformMode && w.company?.name && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">{w.company.name}</span>
+                          )}
+                        </div>
+                        <a href={w.url} target="_blank" rel="noopener noreferrer"
+                          className="text-xs text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 mt-0.5">
+                          {w.url} <ExternalLink className="w-3 h-3" />
                         </a>
-                      )}
-                      {post.status === 'draft' && (
-                        <button onClick={(e) => { e.stopPropagation(); handleUpdateStatus(post.id, 'published'); }}
-                          className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20" title="Publish">
-                          <Send className="w-3.5 h-3.5 text-emerald-500" />
-                        </button>
-                      )}
-                      <button onClick={(e) => { e.stopPropagation(); handleRegenerate(post.id); }}
-                        disabled={regenerating === post.id}
-                        className="p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20" title="Regenerate with AI">
-                        <RefreshCw className={`w-3.5 h-3.5 text-purple-500 ${regenerating === post.id ? 'animate-spin' : ''}`} />
+                        {w.niche && <p className="text-[11px] text-gray-400 mt-1">Niche: {w.niche}</p>}
+                        {/* Mini stats */}
+                        <div className="flex items-center gap-4 mt-2">
+                          <div className="text-center">
+                            <p className="text-lg font-bold text-gray-900 dark:text-white">{w.totalBlogs}</p>
+                            <p className="text-[10px] text-gray-400">Blogs Generated</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-lg font-bold text-emerald-600">{w.publishedBlogs}</p>
+                            <p className="text-[10px] text-gray-400">Published</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-lg font-bold text-orange-500">{w.pendingBlogs}</p>
+                            <p className="text-[10px] text-gray-400">In Queue</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Actions */}
+                    <div className="flex items-center gap-2 sm:flex-col sm:items-end">
+                      <button onClick={() => toggleExpandWebsite(w.id)}
+                        className="px-4 py-2 rounded-xl text-xs font-bold text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5" /> {expandedWebsiteId === w.id ? 'Hide Blogs' : 'View Blogs'}
+                        <ChevronDown className={`w-3 h-3 transition-transform ${expandedWebsiteId === w.id ? 'rotate-180' : ''}`} />
                       </button>
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(post.id); }}
-                        className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete">
-                        <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                      <button onClick={() => handleSchedule30(w.id)} disabled={schedulingId === w.id}
+                        className="px-4 py-2 rounded-xl text-xs font-bold text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors flex items-center gap-1.5 disabled:opacity-50">
+                        {schedulingId === w.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Zap className="w-3.5 h-3.5" /> Schedule 30 More</>}
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                      <button onClick={() => handleDisconnectWebsite(w.id)} disabled={disconnectingId === w.id}
+                        className="px-4 py-2 rounded-xl text-xs font-bold text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-1.5 disabled:opacity-50">
+                        {disconnectingId === w.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Trash2 className="w-3.5 h-3.5" /> Disconnect</>}
                       </button>
                     </div>
                   </div>
                 </div>
-              </motion.article>
+
+                {/* Expandable Blog List */}
+                <AnimatePresence>
+                  {expandedWebsiteId === w.id && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden border-t border-gray-200 dark:border-gray-800"
+                    >
+                      <div className="p-5 sm:p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-purple-600" /> Blogs for {w.name || w.url}
+                          </h4>
+                          <span className="text-xs text-gray-500">{(websiteBlogs[w.id] || []).length} blogs</span>
+                        </div>
+
+                        {!w.widgetIntegrated && (
+                          <div className="mb-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 flex items-start gap-3">
+                            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Widget Not Integrated</p>
+                              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                                Blog generation is paused. Paste the embed code on your website first — AINOS will auto-detect the integration and start generating blogs.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {websiteBlogsLoading ? (
+                          <div className="text-center py-8">
+                            <div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-2" />
+                            <p className="text-xs text-gray-500">Loading blogs...</p>
+                          </div>
+                        ) : (websiteBlogs[w.id] || []).length === 0 ? (
+                          <div className="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                            <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                            <p className="text-sm text-gray-500">No blogs yet. Click Schedule 30 More to generate blogs.</p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {(websiteBlogs[w.id] || []).map((post) => (
+                              <motion.div key={post.id}
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                onClick={() => setShowReader(post)}
+                                className="bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden group cursor-pointer hover:shadow-lg hover:border-purple-300 dark:hover:border-purple-700 transition-all"
+                              >
+                                {/* Featured Image — always show image or gradient placeholder */}
+                                <div className="h-32 overflow-hidden bg-gradient-to-br from-purple-600 via-indigo-600 to-indigo-800">
+                                  {post.featuredImage ? (
+                                    <img src={post.featuredImage} alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                      <FileText className="w-8 h-8 text-white/30" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="p-4">
+                                  {/* Status */}
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide ${
+                                      post.status === 'published' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                                      post.status === 'draft' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                                      'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
+                                    }`}>{post.status}</span>
+                                    {post.category && (
+                                      <span className="text-[10px] font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-1.5 py-0.5 rounded">
+                                        {post.category}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {/* Title */}
+                                  <h5 className="font-semibold text-sm text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                                    {post.title}
+                                  </h5>
+                                  {/* Excerpt */}
+                                  {post.excerpt && (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">{post.excerpt}</p>
+                                  )}
+                                  {/* Tags */}
+                                  {post.tags && Array.isArray(post.tags) && post.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mb-3">
+                                      {post.tags.slice(0, 3).map((tag, j) => (
+                                        <span key={j} className="px-1.5 py-0.5 rounded text-[9px] bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 font-medium">
+                                          #{tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {/* Meta + Actions */}
+                                  <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                                    <div className="flex items-center gap-2 text-[10px] text-gray-400">
+                                      {post.publishedAt && (
+                                        <span className="flex items-center gap-1">
+                                          <Calendar className="w-3 h-3" />{new Date(post.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      {post.status === 'published' && (
+                                        <a href={`/blog/${post.slug}/`} target="_blank" rel="noopener noreferrer"
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View Public Post">
+                                          <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
+                                        </a>
+                                      )}
+                                      {post.status === 'draft' && (
+                                        <button onClick={(e) => { e.stopPropagation(); handleUpdateStatus(post.id, 'published'); }}
+                                          className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20" title="Publish">
+                                          <Send className="w-3.5 h-3.5 text-emerald-500" />
+                                        </button>
+                                      )}
+                                      <button onClick={(e) => { e.stopPropagation(); handleRegenerate(post.id); }}
+                                        disabled={regenerating === post.id}
+                                        className="p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20" title="Regenerate with AI">
+                                        <RefreshCw className={`w-3.5 h-3.5 text-purple-500 ${regenerating === post.id ? 'animate-spin' : ''}`} />
+                                      </button>
+                                      <button onClick={(e) => { e.stopPropagation(); handleDelete(post.id); }}
+                                        className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete">
+                                        <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
             ))}
           </div>
         )}
@@ -1148,7 +1359,7 @@ export default function BlogPage() {
                     <Shield className="w-3.5 h-3.5" /> Matches Your Website Automatically
                   </h4>
                   <p className="text-[11px] text-gray-500 leading-relaxed">
-                    The widget reads your website's own fonts, colors and card style, so your blog section looks like it was always part of your site. Articles open on YOUR website — readers never leave your domain, and Google counts every article for your ranking.
+                    The widget reads your website&apos;s own fonts, colors and card style, so your blog section looks like it was always part of your site. Articles open on YOUR website — readers never leave your domain, and Google counts every article for your ranking.
                   </p>
                 </div>
 
@@ -1214,6 +1425,80 @@ export default function BlogPage() {
                     <div className="flex items-start gap-1.5 text-[10px] text-purple-700 dark:text-purple-300"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Auto Theme Color Matching</div>
                   </div>
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ══════ CONNECT WEBSITE MODAL ══════════ */}
+      <AnimatePresence>
+        {showConnect && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center p-4"
+            onClick={() => { setShowConnect(false); setConnectError(''); }}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg border border-gray-200 dark:border-gray-800 shadow-2xl">
+              {/* Header */}
+              <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                      <Link2 className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-gray-900 dark:text-white">Connect Your Website</h2>
+                      <p className="text-xs text-gray-500">AI will analyze your site & auto-generate blogs</p>
+                    </div>
+                  </div>
+                  <button onClick={() => { setShowConnect(false); setConnectError(''); }}
+                    className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <X className="w-5 h-5 text-gray-500" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-5">
+                {connectError && (
+                  <div className="bg-red-50 dark:bg-red-900/10 rounded-xl p-3 border border-red-200 dark:border-red-900/30 flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-red-700 dark:text-red-400">{connectError}</p>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Your Website URL</label>
+                  <input value={connectUrl} onChange={e => setConnectUrl(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleConnectWebsite()}
+                    placeholder="https://yourwebsite.com"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                  <p className="text-[10px] text-gray-400 mt-1">We&apos;ll scrape your site, detect your niche &amp; tech stack</p>
+                </div>
+
+                <div className="bg-purple-50 dark:bg-purple-900/10 rounded-xl p-4 border border-purple-200 dark:border-purple-900/30">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 mb-1">What happens next?</p>
+                      <ul className="text-[10px] text-purple-600/80 dark:text-purple-400/80 space-y-1">
+                        <li>1. AI analyzes your website (niche, brand voice, competitors)</li>
+                        <li>2. 30 SEO blog topics are auto-generated for the month</li>
+                        <li>3. Blogs are written & published automatically every day</li>
+                        <li>4. All content is SEO-optimized with featured images</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <button onClick={handleConnectWebsite} disabled={connecting || !connectUrl.trim()}
+                  className="w-full py-3 rounded-xl text-white text-sm font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {connecting ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing Website...</>
+                  ) : (
+                    <><Wand2 className="w-4 h-4" /> Connect & Auto-Generate 30 Blogs</>
+                  )}
+                </button>
               </div>
             </motion.div>
           </motion.div>

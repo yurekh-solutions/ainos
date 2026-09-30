@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Upload, Sparkles, Copy, Check, CheckCircle2, AlertCircle,
+  Upload, Sparkles, Copy, Check, CheckCircle2, AlertCircle, Share2, MessageCircle,
   Instagram, Youtube, Linkedin, Twitter, Facebook, Video,
   Hash, Zap, TrendingUp, Loader2, X, RefreshCw, Image as ImageIcon,
   Camera, Film, Globe, Eye
@@ -320,6 +320,58 @@ export default function SocialMediaPage() {
     setCopiedPlatform(platform);
     showToast('Copied to clipboard!');
     setTimeout(() => setCopiedPlatform(null), 2000);
+  };
+
+  // Open a link in a new tab; if the browser blocks the popup, navigate in the
+  // same tab instead so the share action never fails silently.
+  const openExternal = (url: string) => {
+    const win = window.open(url, '_blank');
+    if (win) {
+      win.opener = null;
+    } else {
+      window.location.assign(url);
+    }
+  };
+
+  // Push a caption out to its platform with zero setup:
+  // - Mobile: opens the phone's share sheet so the user posts from their own
+  //   logged-in apps (Instagram, WhatsApp, TikTok, …).
+  // - Desktop: X and WhatsApp accept a prefilled compose link; for the rest we
+  //   copy the caption and open the platform so the user just pastes.
+  const shareCaption = async (platform: string, content: string) => {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ text: content });
+        return;
+      } catch (err) {
+        // AbortError = user closed the sheet on purpose — no fallback needed
+        if (err instanceof Error && err.name === 'AbortError') return;
+      }
+    }
+
+    if (platform === 'twitter') {
+      openExternal(`https://twitter.com/intent/tweet?text=${encodeURIComponent(content)}`);
+      return;
+    }
+    if (platform === 'whatsapp') {
+      openExternal(`https://wa.me/?text=${encodeURIComponent(content)}`);
+      return;
+    }
+
+    const targets: Record<string, { name: string; url: string } | undefined> = {
+      instagram: { name: 'Instagram', url: 'https://www.instagram.com/' },
+      facebook: { name: 'Facebook', url: 'https://www.facebook.com/' },
+      linkedin: { name: 'LinkedIn', url: 'https://www.linkedin.com/feed/?shareActive=true' },
+      youtube: { name: 'YouTube Studio', url: 'https://studio.youtube.com/' },
+      tiktok: { name: 'TikTok', url: 'https://www.tiktok.com/upload' },
+    };
+    const target = targets[platform];
+
+    const ok = await copyText(content);
+    if (!ok) { showToast('Copy failed — please select and copy manually', 'error'); return; }
+    showToast(target ? `Caption copied — paste it in ${target.name}` : 'Caption copied!');
+    if (target) openExternal(target.url);
   };
 
   const getFullCaption = (p: PlatformCaption) => {
@@ -739,6 +791,21 @@ export default function SocialMediaPage() {
                           </div>
                         </div>
                       )}
+
+                      {/* Share — phone share sheet on mobile; on desktop, opens the
+                          platform with the caption copied, ready to paste */}
+                      <div className="mt-4 flex items-center gap-2">
+                        <button onClick={() => shareCaption(p.platform, fullCaption)}
+                          className="flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 transition-colors"
+                          aria-label={`Share ${config.label} caption`}>
+                          <Share2 className="w-3.5 h-3.5" /> Share caption
+                        </button>
+                        <button onClick={() => shareCaption('whatsapp', fullCaption)}
+                          className="px-2.5 py-2 rounded-xl flex items-center justify-center bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 transition-colors"
+                          aria-label="Share caption on WhatsApp" title="Share on WhatsApp">
+                          <MessageCircle className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </motion.div>
                   );
                 })}

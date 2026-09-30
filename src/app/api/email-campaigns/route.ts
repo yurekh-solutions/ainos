@@ -53,38 +53,60 @@ export async function PUT(req: NextRequest) {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
+    const action = searchParams.get('action');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
-    // Get the campaign to find recipients
-    const campaign = await prisma.emailCampaign.findUnique({ where: { id } });
-    if (!campaign) return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+    // Verify campaign belongs to user's company
+    const existing = await prisma.emailCampaign.findUnique({ where: { id } });
+    if (!existing) return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
+    if (existing.companyId !== user.companyId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const recipients = campaign.recipients as string[] | null;
-    const recipientCount = Array.isArray(recipients) ? recipients.length : 0;
+    // Send action: mark campaign as sent
+    if (action === 'send') {
+      const recipients = existing.recipients as string[] | null;
+      const recipientCount = Array.isArray(recipients) ? recipients.length : 0;
 
-    // In production, this would integrate with an SMTP service (SendGrid, SES, etc.)
-    // For now, we simulate sending and mark as sent
+      // In production, this would integrate with an SMTP service (SendGrid, SES, etc.)
+      // For now, we simulate sending and mark as sent
+      const updated = await prisma.emailCampaign.update({
+        where: { id },
+        data: {
+          status: 'sent',
+          sentAt: new Date(),
+          sentCount: recipientCount,
+        },
+      });
+
+      console.log(`[Email Campaign] Simulated sending ${recipientCount} emails for campaign: ${existing.name}`);
+      // TODO: Integrate with real SMTP service when SMTP env vars are configured
+      // if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+      //   const transporter = nodemailer.createTransport({ ... });
+      //   for (const email of recipients) { await transporter.sendMail({ ... }); }
+      // }
+
+      return NextResponse.json(updated);
+    }
+
+    // Default: update/edit campaign fields
+    const body = await req.json();
     const updated = await prisma.emailCampaign.update({
       where: { id },
       data: {
-        status: 'sent',
-        sentAt: new Date(),
-        sentCount: recipientCount,
+        name: body.name ?? existing.name,
+        subject: body.subject ?? existing.subject,
+        content: body.content ?? existing.content,
+        recipients: body.recipients ?? existing.recipients,
+        status: body.status ?? existing.status,
       },
     });
-
-    console.log(`[Email Campaign] Simulated sending ${recipientCount} emails for campaign: ${campaign.name}`);
-    // TODO: Integrate with real SMTP service when SMTP env vars are configured
-    // if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-    //   const transporter = nodemailer.createTransport({ ... });
-    //   for (const email of recipients) { await transporter.sendMail({ ... }); }
-    // }
-
     return NextResponse.json(updated);
   } catch (error) {
-    console.error('Error sending campaign:', error);
+    console.error('Error updating campaign:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

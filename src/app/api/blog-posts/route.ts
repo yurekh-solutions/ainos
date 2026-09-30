@@ -16,12 +16,27 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
     const category = searchParams.get('category');
+    const websiteId = searchParams.get('websiteId');
     const platform = searchParams.get('platform') === 'true' && isAdmin(session.user.email);
 
     // Platform mode: admin sees ALL blogs across all companies (no companyId filter)
     const where: Record<string, unknown> = platform ? {} : { companyId: user.companyId };
     if (status) where.status = status;
     if (category && category !== 'All') where.category = category;
+    if (websiteId) {
+      // Get ALL blog IDs from schedules for this website (including published)
+      const allSchedules = await prisma.blogSchedule.findMany({
+        where: { connectedWebsiteId: websiteId, companyId: user.companyId },
+        select: { blogPostId: true },
+      });
+      const blogIds = allSchedules.map(s => s.blogPostId).filter(Boolean) as string[];
+      if (blogIds.length > 0) {
+        where.id = { in: blogIds };
+      } else {
+        // No blog posts yet for this website
+        where.id = { in: [] };
+      }
+    }
 
     const posts = await prisma.blogPost.findMany({
       where,
@@ -32,11 +47,10 @@ export async function GET(req: NextRequest) {
     });
 
     // Also fetch scheduled blogs from BlogSchedule.
-    // ONLY blogs still being prepared show as cards — published or failed
-    // schedule rows must never surface (prevents duplicate cards after
-    // publishing and stuck "queued" cards that confuse delete/regenerate).
+    // Show pending/generating only — hide failed/cancelled (bad UX)
     const scheduleWhere: Record<string, unknown> = platform ? {} : { companyId: user.companyId };
     scheduleWhere.status = { in: ['pending', 'generating'] };
+    if (websiteId) scheduleWhere.connectedWebsiteId = websiteId;
     let schedules = [] as unknown as Array<{
       id: string;
       topic: string;
@@ -53,7 +67,9 @@ export async function GET(req: NextRequest) {
       } | null;
       company?: { name: string | null; id: string } | null;
     }>;
-    if (!status || status === 'scheduled') {
+    // Always fetch schedules when websiteId is provided (show all blogs for that website)
+    // Otherwise only fetch when no status filter or status is 'scheduled'
+    if (websiteId || !status || status === 'scheduled') {
       schedules = await prisma.blogSchedule.findMany({
         where: scheduleWhere,
         include: {
@@ -73,7 +89,12 @@ export async function GET(req: NextRequest) {
     const pendingCompanies = new Set<string>();
     schedules.forEach(s => { if (s.status === 'pending' && s.companyId) pendingCompanies.add(s.companyId); });
     if (!platform && user.companyId) pendingCompanies.add(user.companyId);
-    pendingCompanies.forEach(cid => startBackgroundGeneration(cid));
+    console.log(`[Blog Posts API] Pending companies: ${[...pendingCompanies].join(', ') || 'none'}`);
+    console.log(`[Blog Posts API] Total schedules: ${schedules.length}, Pending: ${schedules.filter(s => s.status === 'pending').length}`);
+    pendingCompanies.forEach(cid => {
+      const started = startBackgroundGeneration(cid);
+      console.log(`[Blog Posts API] startBackgroundGeneration(${cid}) = ${started}`);
+    });
 
     // Convert schedules to blog post format for unified display.
     // Queued cards get a readable content preview built from the site's
@@ -85,19 +106,53 @@ export async function GET(req: NextRequest) {
             .filter(k => k && k.toLowerCase() !== niche.toLowerCase())
         : [];
       const teaser = kwList.slice(0, 3).join(', ');
+
+      // Derive category from topic keywords, not just niche
+      const topicWords = s.topic.split(/[^a-zA-Z0-9]+/).filter(w => w.length > 3);
+      const categoryKeywords = ['Marketing', 'Branding', 'Design', 'SEO', 'Social Media', 'Content', 'Strategy', 'Analytics', 'Advertising', 'Consulting', 'Franchise', 'PPC', 'Landing', 'UI', 'UX', 'B2B', 'SaaS', 'Startup', 'Growth', 'Leadership', 'Management', 'Finance', 'Legal', 'Technology', 'Innovation'];
+      const matchedCategory = categoryKeywords.find(cat =>
+        topicWords.some(w => w.toLowerCase() === cat.toLowerCase()) ||
+        s.topic.toLowerCase().includes(cat.toLowerCase())
+      );
+      const category = matchedCategory || niche.split(' ').slice(0, 2).join(' ') || 'Business';
+
+      // Tags: use topic-specific keywords, not just niche
+      const topicTags = topicWords
+        .filter(w => !['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'her', 'was', 'one', 'our', 'out', 'how', 'what', 'which', 'their', 'this', 'that', 'with', 'from', 'have', 'been', 'will', 'each', 'make', 'like', 'long', 'look', 'many', 'some', 'them', 'then', 'than', 'into', 'more', 'also', 'just', 'over', 'such', 'take', 'year', 'very', 'when', 'come', 'could', 'other', 'after', 'most', 'about', 'would', 'there', 'so', 'up', 'if', 'of', 'in', 'to', 'is', 'it', 'as', 'at', 'by', 'on', 'or', 'an', 'be', 'we', 'he', 'do', 'go', 'no', 'my', 'me', 'us', 'yurekh', 'blueprint', 'approach', 'framework', 'template', 'guide', 'secrets', 'principles', 'strategy', 'strategies'].includes(w.toLowerCase()))
+        .slice(0, 5)
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+      const tags = [...new Set([...topicTags, ...kwList.slice(0, 3)])].slice(0, 6);
+
+      // Generate unique excerpt based on topic
+      const topicLower = s.topic.toLowerCase();
+      let excerpt = '';
+      if (topicLower.includes('how to') || topicLower.includes('guide')) {
+        excerpt = `Step-by-step walkthrough on ${s.topic.toLowerCase()}. Learn proven techniques, real-world examples, and expert tips to master this topic.`;
+      } else if (topicLower.includes('strategy') || topicLower.includes('strategies')) {
+        excerpt = `Discover battle-tested strategies for ${s.topic.toLowerCase()}. Includes case studies, actionable frameworks, and implementation tips.`;
+      } else if (topicLower.includes('tips') || topicLower.includes('best practices')) {
+        excerpt = `Top expert tips and best practices for ${s.topic.toLowerCase()}. Boost your results with these proven recommendations.`;
+      } else if (topicLower.includes('trends') || topicLower.includes('future')) {
+        excerpt = `Explore the latest trends shaping ${s.topic.toLowerCase()}. Stay ahead with insights on what's coming next in the industry.`;
+      } else if (topicLower.includes('mistakes') || topicLower.includes('avoid')) {
+        excerpt = `Common pitfalls to avoid in ${s.topic.toLowerCase()}. Learn from real examples and protect your business from costly errors.`;
+      } else {
+        excerpt = `Comprehensive insights on ${s.topic.toLowerCase()}. Expert analysis, practical takeaways, and actionable recommendations for professionals.`;
+      }
+
       return {
         id: s.id,
         title: s.topic,
         slug: s.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
         content: '',
-        excerpt: `A complete ${niche.toLowerCase()} guide with practical strategies, expert insights and actionable steps${teaser ? ` covering ${teaser}` : ''}.`,
+        excerpt,
         featuredImage: s.previewImage,
-        category: s.subscription?.connectedWebsite?.niche || 'General',
-        status: 'scheduled',
+        category,
+        status: s.status === 'pending' || s.status === 'generating' ? 'scheduled' : s.status,
         author: null,
         publishedAt: null,
         scheduledAt: s.scheduledDate,
-        tags: s.keywords ? (s.keywords as string).split(',').map(k => k.trim()) : [],
+        tags,
         views: 0,
         createdAt: s.createdAt || new Date(),
         isSchedule: true,

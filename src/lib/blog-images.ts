@@ -3,23 +3,25 @@
 // Secondary: Unsplash (UNSPLASH_ACCESS_KEY).
 // Fallback: Pollinations.ai AI-generated image (flux-realism model, Full HD).
 
-const fallbackImage = (topic: string, seed: number) => {
+const fallbackImage = (topic: string, seed: number, context?: string) => {
+  const visualConcept = getVisualConcept(topic, context);
   const prompt = [
-    `Professional blog header image about ${topic}`,
-    'modern editorial photography, shallow depth of field',
-    'cinematic natural lighting, warm tones',
-    'clean composition, rule of thirds',
+    visualConcept,
+    'professional editorial photography',
+    'shallow depth of field, bokeh background',
+    'natural warm lighting, golden hour',
+    'clean minimalist composition',
     'high detail, sharp focus, 8K quality',
-    'no text, no watermarks, no logos',
+    'no text, no watermarks, no logos, no people faces',
   ].join(', ');
   const params = new URLSearchParams({
-    width: '1920',
-    height: '1080',
+    width: '1200',
+    height: '630',
     model: 'flux-realism',
     enhance: 'true',
     nologo: 'true',
     seed: String(seed),
-    negative: 'blurry, low quality, distorted, watermark, text, logo, ugly, deformed, oversaturated',
+    negative: 'blurry, low quality, distorted, watermark, text, logo, ugly, deformed, oversaturated, cartoon, anime, illustration, drawing, painting',
   });
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params.toString()}`;
 };
@@ -28,7 +30,51 @@ const fallbackImage = (topic: string, seed: number) => {
 const STOPWORDS = new Set(['the','a','an','and','or','but','if','for','nor','on','in','of','to','from','by','at','with','about','into','over','after','before','between','under','during','through','how','what','when','where','why','which','who','whom','this','that','these','those','is','are','was','were','be','been','being','do','does','did','will','would','shall','should','may','might','must','can','could','vs','via','your','you','their','they','our','we','my','it','its','as','per','out','up','down','off','again','more','most','best','top','guide','checklist','complete','ultimate','essential','ways','tips']);
 
 // Abstract / non-visual words that produce irrelevant stock photos
-const ABSTRACT_WORDS = new Set(['guide','plan','action','strategy','strategies','steps','tips','checklist','complete','ultimate','essential','measure','success','kpi','kpis','metrics','results','zero','build','building','first','regulations','regulation','compliance','must','know','impact','impacts','customer','experience','loyalty','budget','smart','compromise','quality','actually','matter','terms','glossary','client','should','every','psychology','behind','decisions','directly','flawless','events','celebrations','step','day','flawless','what','every','business','latest','trends','expert','cost','saving','discover','execute','corporate','grand','practical','insights','actionable','behind','smart','decisions']);
+const ABSTRACT_WORDS = new Set(['guide','plan','action','strategy','strategies','steps','tips','checklist','complete','ultimate','essential','measure','success','kpi','kpis','metrics','results','zero','build','building','first','regulations','regulation','compliance','must','know','impact','impacts','customer','experience','loyalty','budget','smart','compromise','quality','actually','matter','terms','glossary','client','should','every','psychology','behind','decisions','directly','flawless','events','celebrations','step','day','flawless','what','every','business','latest','trends','expert','cost','saving','discover','execute','corporate','grand','practical','insights','actionable','behind','smart','decisions','agency','agencies','framework','execution','digital','marketing','online','internet','web','website','seo','sem','ppc','social','media','content','brand','branding']);
+
+// Map abstract topics to concrete visual concepts
+const TOPIC_VISUAL_MAP: Record<string, string> = {
+  'marketing': 'modern marketing team brainstorming with charts and graphs on whiteboard',
+  'digital': 'person working on laptop with analytics dashboard',
+  'agency': 'creative office workspace with design mockups',
+  'seo': 'search engine optimization concept with magnifying glass over website',
+  'finance': 'financial charts and graphs on tablet',
+  'technology': 'modern tech workspace with multiple screens',
+  'healthcare': 'doctor using digital tablet in modern clinic',
+  'ecommerce': 'online shopping concept with packages and laptop',
+  'education': 'student learning with laptop and books',
+  'real estate': 'modern architectural building exterior',
+  'saas': 'cloud software dashboard on multiple devices',
+  'hr': 'professional team collaboration in modern office',
+  'legal': 'law books and gavel on wooden desk',
+  'crypto': 'digital currency concept with blockchain visualization',
+  'ai': 'artificial intelligence concept with neural network visualization',
+  'automation': 'robotic arm working in modern factory',
+  'design': 'graphic designer working on creative project',
+  'photography': 'professional camera with lens on tripod',
+  'travel': 'scenic destination with landmark',
+  'food': 'beautifully plated gourmet dish',
+};
+
+function getVisualConcept(topic: string, context?: string): string {
+  const lowerTopic = topic.toLowerCase();
+  const lowerContext = (context || '').toLowerCase();
+
+  // Check if any visual map keyword matches
+  for (const [keyword, visual] of Object.entries(TOPIC_VISUAL_MAP)) {
+    if (lowerTopic.includes(keyword) || lowerContext.includes(keyword)) {
+      return visual;
+    }
+  }
+
+  // Extract concrete nouns from topic
+  const words = topic.split(/[^a-zA-Z0-9]+/).filter(w => w.length > 3 && !STOPWORDS.has(w.toLowerCase()) && !ABSTRACT_WORDS.has(w.toLowerCase()));
+  if (words.length > 0) {
+    return `professional ${words.slice(0, 3).join(' ')} concept`;
+  }
+
+  return 'professional business concept';
+}
 
 export async function getBlogImage(topic: string, context?: string): Promise<string> {
   // Strategy: niche-first query, then only concrete visual keywords from topic
@@ -90,13 +136,11 @@ export async function getBlogImage(topic: string, context?: string): Promise<str
   }
 
   // 3) Pollinations generated image (no key required)
-  return fallbackImage(topic, seed);
+  return fallbackImage(topic, seed, context);
 }
 
-// Strip ALL AI-generated images and insert SECTION-SPECIFIC images.
-// Each H2 section gets its own image based on that section's actual content.
-// Pexels/Unsplash inline images are unreliable — Pollinations AI with
-// detailed section-aware prompts gives consistent, relevant results.
+// Strip ALL inline images from blog content.
+// Only ONE featured image per blog (on the card) — no images inside content.
 export async function replaceContentImages(
   content: string,
   topic: string,
@@ -104,97 +148,11 @@ export async function replaceContentImages(
 ): Promise<string> {
   if (!content) return content;
 
-  // Step 1: Remove ALL existing markdown images (AI inserts random URLs)
+  // Remove ALL markdown images: ![alt](url)
   let cleaned = content.replace(/!\[[^\]]*\]\([^)]+\)\n?/g, '');
 
-  // Step 2: Extract topic keywords for image prompts
-  const allWords = topic
-    .split(/[^a-zA-Z0-9]+/)
-    .filter(w => w.length > 2 && !STOPWORDS.has(w.toLowerCase()) && !ABSTRACT_WORDS.has(w.toLowerCase()));
-  const nicheQuery = (context || '').trim();
-  const topicKeywords = allWords.slice(0, 3).join(' ');
-  const baseTopic = nicheQuery
-    ? `${nicheQuery} ${topicKeywords}`.trim()
-    : (topicKeywords || topic);
-
-  // Step 3: Split content into H2 sections and generate image per section
-  const h2Regex = /^## (.+)$/gm;
-  const sections: Array<{ heading: string; body: string; startIdx: number; endIdx: number }> = [];
-  let h2Match: RegExpExecArray | null;
-
-  while ((h2Match = h2Regex.exec(cleaned)) !== null) {
-    const startIdx = h2Match.index;
-    const heading = h2Match[1].trim();
-    // Find next H2 or end of content
-    const nextH2 = cleaned.indexOf('\n## ', startIdx + 1);
-    const endIdx = nextH2 === -1 ? cleaned.length : nextH2;
-    const body = cleaned.slice(startIdx + h2Match[0].length, endIdx).trim();
-    sections.push({ heading, body, startIdx, endIdx });
-  }
-
-  // If no H2 sections found, insert one image after first heading
-  if (sections.length === 0) {
-    const anyHeading = cleaned.match(/^#+ .+$/m);
-    if (anyHeading) {
-      const idx = cleaned.indexOf(anyHeading[0]);
-      const afterHeading = idx + anyHeading[0].length;
-      const img = buildSectionImage(baseTopic, anyHeading[0].replace(/^#+ /, ''), '', 0);
-      cleaned = cleaned.slice(0, afterHeading) + `\n\n${img}\n\n` + cleaned.slice(afterHeading);
-    }
-    return cleaned;
-  }
-
-  // Step 4: For each H2 section, generate a section-specific image
-  // Process in reverse to preserve string indices
-  for (let i = sections.length - 1; i >= 0; i--) {
-    const section = sections[i];
-
-    // Extract keywords from section body for a specific prompt
-    const bodyWords = section.body
-      .replace(/[#*`\[\]()]/g, '')
-      .split(/\s+/)
-      .filter(w => w.length > 3 && !STOPWORDS.has(w.toLowerCase()) && !ABSTRACT_WORDS.has(w.toLowerCase()));
-
-    // Take first 4 meaningful words from body as image context
-    const bodyKeywords = bodyWords.slice(0, 4).join(' ');
-
-    // Build section-specific image
-    const img = buildSectionImage(baseTopic, section.heading, bodyKeywords, i);
-
-    // Insert image after the H2 heading line
-    const headingEnd = section.startIdx + `## ${section.heading}`.length;
-    cleaned = cleaned.slice(0, headingEnd) + `\n\n${img}\n\n` + cleaned.slice(headingEnd);
-  }
+  // Remove ALL HTML img tags: <img ... />
+  cleaned = cleaned.replace(/<img[^>]*>\n?/gi, '');
 
   return cleaned;
-}
-
-// Build a Pollinations image URL with a detailed section-specific prompt
-function buildSectionImage(baseTopic: string, heading: string, bodyKeywords: string, index: number): string {
-  // Combine topic + heading + body keywords for a specific prompt
-  const specificContext = bodyKeywords
-    ? `${baseTopic} ${heading} ${bodyKeywords}`
-    : `${baseTopic} ${heading}`;
-
-  const prompt = [
-    `Professional photograph illustrating ${specificContext}`,
-    'modern commercial or industrial setting',
-    'clean composition, natural lighting, sharp focus',
-    'high detail, professional quality',
-    'no people faces, no text overlays, no watermarks',
-  ].join(', ');
-
-  const params = new URLSearchParams({
-    width: '1200',
-    height: '630',
-    model: 'flux-realism',
-    enhance: 'true',
-    nologo: 'true',
-    seed: String((index * 7919 + 42) % 100000),
-    negative: 'blurry, low quality, distorted, watermark, text, logo, ugly, deformed, oversaturated, people, faces, portrait, selfie, ocean, sea, beach, forest, nature landscape, food, cooking, animals',
-  });
-
-  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params.toString()}`;
-  const alt = heading.replace(/[^a-zA-Z0-9 ]/g, '').trim();
-  return `![${alt}](${url})`;
 }

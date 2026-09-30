@@ -41,34 +41,19 @@ export async function generateScheduleNow(scheduleId: string): Promise<{ status:
       return { status: 'failed', reason: 'No connected website' };
     }
 
-    // CRITICAL: Validate topic relevance to website niche
-    // Reject topics that are clearly unrelated (e.g., "skincare" for AV company)
-    const niche = (website.niche || '').toLowerCase();
-    const topic = (schedule.topic || '').toLowerCase();
-    const nicheWords = niche.split(/[^a-z0-9]+/).filter(w => w.length > 2);
-    const topicWords = topic.split(/[^a-z0-9]+/).filter(w => w.length > 2);
-
-    // Check if topic shares ANY meaningful words with niche
-    const nicheStopWords = new Set(['the','and','for','are','but','not','you','all','can','how','what','when','where','which','who','why','this','that','with','from','your','their','our','about','into','over','after','before','between','under','during','through','equipment','rental','services','solutions','business','guide','tips','best','top','complete','ultimate','essential','strategy','strategies','trends','decisions','smart','practical','expert','professional','maximize','roi','hidden','costs','alternatives','comparison','perspective','psychology','behind','small','build','winning','regional','global','industry','insight','non','negotiable','sound','quality','real','world','scenario','interchangeable','speaker','blades','pro','tip','use','cables','connectivity','integrating','gear','existing','setup','leverage','data','reviews','mitigate','uncertainty','party','review','awards','performance','analytics','social','proof','client','testimonials','case','studies','corporate','conferences','weddings','understanding','needs','choosing','right','provider','negotiating','deals','avoiding','costly','mistakes','getting','started','nobody','warns','honest','buyers','by','region']);
-    const meaningfulNiche = nicheWords.filter(w => !nicheStopWords.has(w));
-    const meaningfulTopic = topicWords.filter(w => !nicheStopWords.has(w));
-
-    // If niche has meaningful words, check overlap
-    if (meaningfulNiche.length > 0) {
-      const overlap = meaningfulNiche.filter(w => meaningfulTopic.includes(w));
-      // Also check if topic contains niche words as substrings
-      const substringMatch = meaningfulNiche.some(nw => meaningfulTopic.some(tw => tw.includes(nw) || nw.includes(tw)));
-
-      if (overlap.length === 0 && !substringMatch) {
-        // Topic is completely unrelated to niche — reject
-        console.warn(`[Topic Rejection] "${schedule.topic}" is unrelated to niche "${website.niche}"`);
-        await prisma.blogSchedule.update({
-          where: { id: schedule.id },
-          data: { status: 'failed' },
-        });
-        return { status: 'failed', reason: `Topic "${schedule.topic}" is not relevant to website niche "${website.niche}"` };
-      }
+    // CRITICAL: Only generate blogs if the widget is integrated on the website
+    // AINOS must know the website has actually embedded the blog widget
+    if (!website.widgetIntegrated) {
+      console.log(`[Blog Gen] Skipping ${schedule.topic.substring(0, 50)}... — widget not integrated on ${website.name || website.url}`);
+      await prisma.blogSchedule.update({
+        where: { id: schedule.id },
+        data: { status: 'pending' }, // Keep as pending, will retry when widget is integrated
+      });
+      return { status: 'pending', reason: 'Widget not integrated on website' };
     }
+
+    // Topic relevance check disabled — user-requested blogs should generate regardless
+    // The niche is used for context below, but we don't reject topics anymore
 
     // Build website context for AI
     let websiteContext = '';
@@ -273,11 +258,8 @@ WRITING INSTRUCTIONS:
     }
 
     // Featured image: prefer a fresh real photo (Pexels/Unsplash) when a
-    // provider key is configured; otherwise keep the preview picked at
-    // scheduling time so card and article stay consistent
-    const imageUrl = (process.env.PEXELS_API_KEY || process.env.UNSPLASH_ACCESS_KEY)
-      ? await getBlogImage(schedule.topic, website.niche || undefined)
-      : (schedule.previewImage || await getBlogImage(schedule.topic, website.niche || undefined));
+    // Always generate a fresh topic-relevant image (Pexels -> Unsplash -> improved Pollinations fallback)
+    const imageUrl = await getBlogImage(schedule.topic, website.niche || undefined);
 
     // Replace ALL AI-generated images in content with topic-relevant images
     // AI often inserts random Pexels URLs unrelated to the blog topic
@@ -286,11 +268,17 @@ WRITING INSTRUCTIONS:
       finalContent = await replaceContentImages(finalContent, schedule.topic, website.niche || undefined);
     }
 
-    // Create BlogPost
+    // Create BlogPost — handle slug conflicts by appending unique suffix
+    let slug = blogData.slug || schedule.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const existingSlug = await prisma.blogPost.findUnique({ where: { slug } });
+    if (existingSlug) {
+      slug = `${slug}-${Date.now().toString(36)}`;
+    }
+
     const blogPost = await prisma.blogPost.create({
       data: {
         title: blogData.title || schedule.topic,
-        slug: blogData.slug || schedule.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+        slug,
         content: finalContent,
         excerpt: blogData.excerpt || '',
         featuredImage: imageUrl,
@@ -436,7 +424,11 @@ const runningCompanies = new Set<string>();
 // (full article + premium image) and they appear as published. Safe to call
 // right after connecting a website or from the "Generate All" button.
 export function startBackgroundGeneration(companyId: string): boolean {
-  if (runningCompanies.has(companyId)) return false;
+  if (runningCompanies.has(companyId)) {
+    console.log(`[Blog Gen] Already running for company ${companyId}`);
+    return false;
+  }
+  console.log(`[Blog Gen] Starting background generation for company ${companyId}`);
   runningCompanies.add(companyId);
   (async () => {
     const attempted = new Set<string>();
@@ -461,8 +453,10 @@ export function startBackgroundGeneration(companyId: string): boolean {
           });
         }
         if (!next) break;
+        console.log(`[Blog Gen] Processing: ${next.topic.substring(0, 50)}... (status: ${next.status})`);
         attempted.add(next.id);
         const result = await generateScheduleNow(next.id);
+        console.log(`[Blog Gen] Result: ${result.status} - ${result.reason || 'ok'}`);
         // quota exhausted on every provider — stop burning attempts; the
         // remaining rows stay pending and retry on the next run/reset
         if (result.status === 'pending') break;
@@ -470,7 +464,43 @@ export function startBackgroundGeneration(companyId: string): boolean {
         await sleep(result.status === 'failed' ? 6000 : 2500);
       }
     } catch { /* stop silently; cron will catch up later */ }
-    finally { runningCompanies.delete(companyId); }
+    finally {
+      runningCompanies.delete(companyId);
+      // Auto-cleanup: remove blogs older than 7 days to keep content fresh
+      cleanupOldBlogs(companyId);
+    }
   })();
   return true;
+}
+
+// Remove published blogs older than 7 days — keeps content always fresh
+async function cleanupOldBlogs(companyId: string) {
+  try {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const oldSchedules = await prisma.blogSchedule.findMany({
+      where: {
+        companyId,
+        status: 'published',
+        blogPostId: { not: null },
+        updatedAt: { lt: sevenDaysAgo },
+      },
+      select: { id: true, blogPostId: true },
+    });
+
+    if (oldSchedules.length === 0) return;
+
+    const blogPostIds = oldSchedules.map(s => s.blogPostId!).filter(Boolean);
+    const scheduleIds = oldSchedules.map(s => s.id);
+
+    // Delete blog posts
+    if (blogPostIds.length > 0) {
+      await prisma.blogPost.deleteMany({ where: { id: { in: blogPostIds } } });
+    }
+    // Delete schedules
+    await prisma.blogSchedule.deleteMany({ where: { id: { in: scheduleIds } } });
+
+    console.log(`[Blog Cleanup] Removed ${oldSchedules.length} blogs older than 7 days for company ${companyId}`);
+  } catch (err) {
+    console.error('[Blog Cleanup] Error:', err);
+  }
 }

@@ -67,6 +67,47 @@ function parseJsonLoose(text: string): Record<string, unknown> | null {
   return null;
 }
 
+// Last-resort recovery: a provider can cut the reply at max_tokens, leaving
+// truncated JSON. Walk each "platform" marker back to its opening brace and
+// forward to the matching closing brace (string-aware), keep every complete,
+// parseable object, and rebuild a payload so the user still gets captions.
+function salvagePlatforms(raw: string): Record<string, unknown> | null {
+  const platforms: Array<Record<string, unknown>> = [];
+  const marker = /"platform"\s*:/g;
+  let m: RegExpExecArray | null;
+  while ((m = marker.exec(raw))) {
+    const start = raw.lastIndexOf('{', m.index);
+    if (start === -1) continue;
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    let end = -1;
+    for (let i = start; i < raw.length; i++) {
+      const ch = raw[i];
+      if (escaped) { escaped = false; continue; }
+      if (ch === '\\') { escaped = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === '{') depth++;
+      else if (ch === '}') {
+        depth--;
+        if (depth === 0) { end = i; break; }
+      }
+    }
+    if (end === -1) continue; // truncated mid-object — skip it
+    try {
+      const parsed = JSON.parse(raw.slice(start, end + 1)) as unknown;
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        platforms.push(parsed as Record<string, unknown>);
+      }
+    } catch {
+      /* skip malformed object */
+    }
+    marker.lastIndex = end + 1;
+  }
+  return platforms.length ? { platforms, generalTips: [] } : null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(req);
@@ -139,23 +180,38 @@ CRITICAL RULES:
               userContent.push({ type: 'image_url', image_url: { url: frame } });
             });
 
-            const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            const visionCall = (strictJson: boolean) => fetch('https://api.groq.com/openai/v1/chat/completions', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${key}`,
               },
               body: JSON.stringify({
-                model: 'qwen/qwen3.6-27b',
+                // qwen3.6-27b was decommissioned by Groq (404 "model does not
+                // exist") — qwen3.8-27b is the verified vision successor;
+                // GROQ_VISION_MODEL env var can override without code changes.
+                model: process.env.GROQ_VISION_MODEL || 'qwen/qwen3.8-27b',
                 messages: [
                   { role: 'system', content: systemPrompt },
                   { role: 'user', content: userContent }
                 ],
                 max_tokens: 4096,
-                response_format: { type: 'json_object' },
+                ...(strictJson ? { response_format: { type: 'json_object' } } : {}),
               }),
               signal: AbortSignal.timeout(20000),
             });
+
+            let res = await visionCall(true);
+            let errText = res.ok ? '' : await res.text().catch(() => '');
+
+            // Strict JSON mode can fail with 400 json_validate_failed when the
+            // model output overflows max_tokens. Retry this key once without
+            // the response_format constraint before moving on.
+            if (!res.ok && res.status === 400 && errText.includes('json_validate_failed')) {
+              console.warn('[social-caption] json_validate_failed — retrying without strict JSON mode');
+              res = await visionCall(false);
+              errText = res.ok ? '' : await res.text().catch(() => '');
+            }
 
             if (res.ok) {
               const data = await res.json();
@@ -167,7 +223,6 @@ CRITICAL RULES:
                 lastError = 'Empty response';
               }
             } else {
-              const errText = await res.text().catch(() => '');
               lastError = `Groq ${res.status}: ${errText.slice(0, 100)}`;
               console.warn(`[social-caption] Key ${key.slice(0, 12)}... failed:`, lastError);
               if (res.status === 429) continue; // Rate limited, try next key
@@ -245,7 +300,7 @@ CRITICAL RULES:
       }
     }
 
-    const result = parseJsonLoose(raw);
+    const result = parseJsonLoose(raw) ?? salvagePlatforms(raw);
     if (!result || !Array.isArray(result.platforms)) {
       console.error('[social-caption] Failed to parse AI response. Raw output:', raw?.slice(0, 500));
       throw new Error('Could not understand the AI response — please regenerate');

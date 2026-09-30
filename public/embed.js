@@ -28,14 +28,93 @@
   const scriptSrc = currentScript?.src || '';
   const baseUrl = scriptSrc ? new URL(scriptSrc).origin : 'https://ainos-ywu0.onrender.com';
   const AINOS_API = `${baseUrl}/api/blog-embed`;
+  const WIDGET_PING_API = `${baseUrl}/api/blog-agent/widget-ping`;
 
-  // On-site article routes: #ainos-blog/<slug> keeps readers on the
-  // client's domain instead of sending them to AINOS
+  // Ping AINOS to confirm widget is integrated on this site
+  function sendIntegrationPing() {
+    try {
+      fetch(WIDGET_PING_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ siteUrl: window.location.href }),
+        mode: 'no-cors' // no-cors so it works on any domain without CORS setup
+      }).catch(function() { /* silent — ping is best-effort */ });
+    } catch (e) { /* silent */ }
+  }
+
+  // ─── Routing modes ──────────────────────────────────
+  // Two modes:
+  //   'hash' (default) — URL: yoursite.com/#/blog/slug
+  //     Works on ALL servers with ZERO configuration. Hash is client-side.
+  //   'path' — URL: yoursite.com/blog/slug
+  //     Requires server-side rewrite rule to serve the blog page for /blog/* URLs.
+  // Set data-routing="path" on #ainos-blog container to use path-based routing.
+  const DEFAULT_BLOG_PREFIX = 'blog';
   const HASH_PREFIX = '#ainos-blog/';
+  const HASH_ROUTE_PREFIX = '#/'; // new clean hash route format
 
+  function routingMode(container) {
+    return container.getAttribute('data-routing') === 'path' ? 'path' : 'hash';
+  }
+
+  function pathBlogPrefix(container) {
+    return (container.getAttribute('data-path') || DEFAULT_BLOG_PREFIX).replace(/^\/|\/$/g, '');
+  }
+
+  // Build a URL for a blog article (hash or path based on routing mode)
+  function articleUrl(container, slug) {
+    var mode = routingMode(container);
+    var prefix = pathBlogPrefix(container);
+    var encodedSlug = encodeURIComponent(slug);
+    if (mode === 'path') {
+      return '/' + prefix + '/' + encodedSlug;
+    }
+    // Hash mode: yoursite.com/#/blog/slug — works everywhere, no server config
+    return '/#/' + prefix + '/' + encodedSlug;
+  }
+
+  // Legacy alias for backward compat
+  function pathBlogUrl(container, slug) {
+    return articleUrl(container, slug);
+  }
+
+  // Get slug from hash route: #/blog/slug or #ainos-blog/slug
+  function hashSlug(container) {
+    var h = window.location.hash || '';
+    if (!h) return '';
+    var prefix = pathBlogPrefix(container);
+    // New format: #/blog/slug
+    var newPrefix = HASH_ROUTE_PREFIX + prefix + '/';
+    if (h.indexOf(newPrefix) === 0) {
+      return decodeURIComponent(h.slice(newPrefix.length));
+    }
+    // Legacy format: #ainos-blog/slug
+    if (h.indexOf(HASH_PREFIX) === 0) {
+      return decodeURIComponent(h.slice(HASH_PREFIX.length));
+    }
+    return '';
+  }
+
+  // Legacy alias
   function currentHashSlug() {
-    const h = window.location.hash || '';
+    var h = window.location.hash || '';
     return h.indexOf(HASH_PREFIX) === 0 ? decodeURIComponent(h.slice(HASH_PREFIX.length)) : '';
+  }
+
+  // Detect if the current URL path contains a blog article slug (path-based routing only)
+  function pathCurrentSlug(container) {
+    if (routingMode(container) !== 'path') return '';
+    var prefix = pathBlogPrefix(container);
+    var parts = window.location.pathname.split('/').filter(Boolean);
+    if (parts.length >= 2 && parts[0].toLowerCase() === prefix.toLowerCase()) {
+      return decodeURIComponent(parts[1]);
+    }
+    return '';
+  }
+
+  // Universal slug detector: checks path (if path mode) then hash
+  function getCurrentSlug(container) {
+    return pathCurrentSlug(container) || hashSlug(container) || '';
   }
 
   // Basic HTML sanitizer to prevent XSS
@@ -327,16 +406,16 @@
     return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   }
 
-  // Render blog card with featured image. Links use hash routing so the
-  // article opens ON the client's own website (not on AINOS).
+  // Render blog card with featured image. Links use path-based routing so the
+  // article opens ON the client's own website at /blog/slug (not on AINOS).
   // opts: { showTags, showMeta, showCategory } — all default true
-  function renderCard(post, style, opts) {
+  function renderCard(post, style, opts, containerEl) {
     opts = opts || {};
     const safeTitle = sanitize(post.title);
     const safeExcerpt = sanitize(post.excerpt || '');
     const safeCategory = sanitize(post.category || '');
     const safeImage = post.featuredImage ? sanitize(post.featuredImage) : '';
-    const articleHref = `${HASH_PREFIX}${encodeURIComponent(post.slug)}`;
+    const articleHref = pathBlogUrl(containerEl || document.querySelector('#ainos-blog') || document.body, post.slug);
     const imgHtml = safeImage
       ? `<div class="ainos-blog-card-img"><img src="${safeImage}" alt="${safeTitle}" loading="lazy"/></div>`
       : '';
@@ -360,7 +439,7 @@
             ${tagsHtml}
             ${showMeta ? `<div class="ainos-blog-meta">
               <span class="ainos-blog-date">${formatDate(post.publishedAt)}</span>
-              <span class="ainos-blog-readtime">${post.readTime} min read</span>
+              <span class="ainos-blog-readtime">${post.readTime || 5} min read</span>
             </div>` : ''}
           </div>
         </article>`;
@@ -376,7 +455,7 @@
           ${tagsHtml}
           ${showMeta ? `<div class="ainos-blog-meta">
             <span class="ainos-blog-date">${formatDate(post.publishedAt)}</span>
-            <span class="ainos-blog-readtime">${post.readTime} min read</span>
+            <span class="ainos-blog-readtime">${post.readTime || 5} min read</span>
           </div>` : ''}
         </div>
       </article>`;
@@ -397,7 +476,7 @@
           <h1 class="ainos-blog-title-full">${safeTitle}</h1>
           <div class="ainos-blog-meta">
             <span class="ainos-blog-date">${formatDate(post.publishedAt)}</span>
-            <span class="ainos-blog-readtime">${post.readTime} min read</span>
+            <span class="ainos-blog-readtime">${post.readTime || 5} min read</span>
           </div>
           ${post.tags && post.tags.length ? `<div class="ainos-blog-tags-full">${post.tags.map(t => `<span class="ainos-blog-tag">#${sanitize(t)}</span>`).join('')}</div>` : ''}
         </header>
@@ -475,7 +554,7 @@
       const gridClass = style === 'list' ? 'ainos-blog-list' : 'ainos-blog-grid';
       container.innerHTML = `
         <div class="${gridClass}">
-          ${posts.map(p => renderCard(p, style, opts)).join('')}
+          ${posts.map(p => renderCard(p, style, opts, container)).join('')}
         </div>
         ${data.categories && data.categories.length ? `
           <div class="ainos-blog-categories">
@@ -498,7 +577,7 @@
     }
   }
 
-  // Single article view — rendered ON the client's domain (hash route)
+  // Single article view — rendered ON the client's domain
   async function loadSingle(container, slug) {
     container.innerHTML = '<div class="ainos-blog-loading">Loading article...</div>';
     try {
@@ -509,7 +588,15 @@
       if (!res.ok) throw new Error('Failed to load article');
       const data = await res.json();
 
-      const backHref = sanitize(window.location.pathname + window.location.search);
+      // Back link: go to the blog listing (remove hash or last path segment)
+      var backHref;
+      if (routingMode(container) === 'hash') {
+        // Hash mode: just remove the hash, stay on same page
+        backHref = sanitize(window.location.pathname || '/');
+      } else {
+        // Path mode: go up one level from /blog/slug to /blog
+        backHref = sanitize(window.location.pathname.replace(/\/[^/]+\/?$/, '/') || '/');
+      }
       container.innerHTML =
         `<div class="ainos-blog-back"><a href="${backHref}">&larr; All articles</a></div>` +
         renderFullPost(data);
@@ -518,6 +605,12 @@
       const oldList = document.getElementById('ainos-blog-list-schema');
       if (oldList) oldList.remove();
       injectJsonLd('ainos-blog-post-schema', data.schemaOrg);
+
+      // Update canonical URL for SEO
+      var canonicalEl = document.querySelector('link[rel="canonical"]');
+      if (canonicalEl) {
+        canonicalEl.href = window.location.origin + articleUrl(container, data.slug || slug);
+      }
 
       container.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (err) {
@@ -676,12 +769,49 @@
     return fallback;
   }
 
+  // Detect existing blog sections on the page and replace them
+  // Looks for common blog patterns: .blog, .posts, article listings, etc.
+  function detectAndReplaceExistingBlogs() {
+    // Common selectors for existing blog sections
+    var blogSelectors = [
+      '.blog-section', '.blog-list', '.blog-grid', '.blog-posts',
+      '.posts-list', '.post-grid', '.article-list', '.article-grid',
+      '.recent-posts', '.latest-posts', '.blog-container',
+      'section.blog', 'div.blog', '.wp-block-latest-posts',
+      '.et_pb_blog_grid', '.blog-item-wrapper'
+    ];
+
+    for (var i = 0; i < blogSelectors.length; i++) {
+      var existing = document.querySelector(blogSelectors[i]);
+      if (existing && !existing.id.startsWith('ainos')) {
+        // Found existing blog section — replace with AINOS container
+        var container = document.createElement('div');
+        container.id = 'ainos-blog';
+        container.setAttribute('data-limit', '6');
+        container.setAttribute('data-style', 'grid');
+        existing.parentNode.replaceChild(container, existing);
+        console.log('[AINOS] Replaced existing blog section:', blogSelectors[i]);
+        return [container];
+      }
+    }
+    return [];
+  }
+
   function init() {
+    // Notify AINOS that widget is live on this site
+    sendIntegrationPing();
+
     injectStyles();
+
+    // 1. Check for explicit AINOS container first
     let containers = Array.from(document.querySelectorAll('#ainos-blog, .ainos-blog-widget, [data-ainos-blog]'));
-    // Non-developer safety net: if the user's platform (React/SPA builders)
-    // wiped the pasted div, create our own section at the page bottom so
-    // blogs always show up
+
+    // 2. If no explicit container, detect and replace existing blog sections
+    if (!containers.length) {
+      containers = detectAndReplaceExistingBlogs();
+    }
+
+    // 3. If still nothing, create fallback at page bottom
     if (!containers.length) {
       containers = [makeFallback()];
     }
@@ -693,17 +823,58 @@
     containers.forEach(applyContainerStyles);
 
     const renderFor = (c) => {
-      const slug = c.getAttribute('data-slug') || currentHashSlug();
+      const slug = c.getAttribute('data-slug') || getCurrentSlug(c);
       if (slug) loadSingle(c, slug); else loadBlogs(c);
     };
     containers.forEach(renderFor);
 
-    // On-site article pages: card clicks change the hash (#ainos-blog/slug)
-    // and we swap list <-> article without leaving the client's domain
+    // SPA click delegation: intercept blog card title link clicks
+    // Hash mode: change hash to #/blog/slug, render article in-place
+    // Path mode: pushState to /blog/slug, render article in-place
+    document.addEventListener('click', function (e) {
+      var link = e.target.closest('.ainos-blog-title a');
+      if (!link) return;
+      var href = link.getAttribute('href');
+      if (!href || href.charAt(0) !== '/') return;
+      e.preventDefault();
+
+      var mode = routingMode(containers[0] || document.querySelector('#ainos-blog'));
+      if (mode === 'path') {
+        // Path mode: use pushState for clean URLs
+        if (window.location.pathname !== href) {
+          window.history.pushState({ ainosBlog: true }, '', href);
+        }
+      } else {
+        // Hash mode: change the hash, server always serves the page
+        // href is like /#/blog/slug — extract the hash part
+        var hashPart = href.indexOf('#') >= 0 ? href.substring(href.indexOf('#')) : href;
+        if (window.location.hash !== hashPart) {
+          window.location.hash = hashPart.substring(1); // remove leading #
+        }
+      }
+
+      containers.forEach(function (c) {
+        var slug = getCurrentSlug(c);
+        if (slug) loadSingle(c, slug);
+        else loadBlogs(c);
+      });
+    });
+
+    // Hash change: re-render when hash changes (hash mode routing)
     window.addEventListener('hashchange', () => {
       containers.forEach(c => {
-        if (c.getAttribute('data-slug')) return; // fixed single-post embeds
+        if (c.getAttribute('data-slug')) return;
         renderFor(c);
+      });
+    });
+
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', function () {
+      containers.forEach(function (c) {
+        if (c.getAttribute('data-slug')) return;
+        var slug = getCurrentSlug(c);
+        if (slug) loadSingle(c, slug);
+        else loadBlogs(c);
       });
     });
 

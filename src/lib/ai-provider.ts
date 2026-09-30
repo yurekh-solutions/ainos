@@ -18,10 +18,10 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 const GROQ_API_KEY = (process.env.GROQ_API_KEY || '').trim();
 // Both models use GPT-OSS family — Groq decommissioned all Llama-3.x and Llama-4
 // variants on the free tier. openai/gpt-oss-20b is the only text model that
-// works reliably on free keys; qwen/qwen3.6-27b is the only vision model that
-// still returns 200 OK.
+// works reliably on free keys; qwen/qwen3.8-27b is the only vision model that
+// still returns 200 OK (qwen3.6-27b was decommissioned and now 404s).
 const GROQ_TEXT_MODEL = process.env.GROQ_TEXT_MODEL || 'openai/gpt-oss-20b';
-const GROQ_VISION_MODEL = process.env.GROQ_VISION_MODEL || 'qwen/qwen3.6-27b';
+const GROQ_VISION_MODEL = process.env.GROQ_VISION_MODEL || 'qwen/qwen3.8-27b';
 
 // Cloudflare Workers AI — 10K neurons/day free (no card)
 const CLOUDFLARE_API_KEY = (process.env.CLOUDFLARE_API_KEY || '').trim();
@@ -92,30 +92,50 @@ async function callGroq(
   const keys = groqKeys();
   if (!keys.length) throw new Error('No Groq API key');
 
-  const body: Record<string, unknown> = {
-    model: GROQ_TEXT_MODEL,
-    messages,
-    // openai/gpt-oss-20b has an 8k TPM limit — keep max_tokens small enough
-    // that a single request stays under it, otherwise Groq returns 413.
-    max_tokens: 4096,
+  // gpt-oss is a reasoning model — its hidden reasoning tokens count against
+  // max_tokens. With strict JSON mode the visible JSON can then get cut off
+  // and Groq answers 400 json_validate_failed. Keep reasoning minimal.
+  const isReasoningModel = /gpt-oss/i.test(GROQ_TEXT_MODEL);
+
+  const buildBody = (jsonMode: boolean): Record<string, unknown> => {
+    const body: Record<string, unknown> = {
+      model: GROQ_TEXT_MODEL,
+      messages,
+      // openai/gpt-oss-20b has an 8k TPM limit — keep max_tokens small enough
+      // that a single request stays under it, otherwise Groq returns 413.
+      max_tokens: 4096,
+    };
+    if (isReasoningModel) body.reasoning_effort = 'low';
+    if (jsonMode) body.response_format = { type: 'json_object' };
+    return body;
   };
-  if (options.json) {
-    body.response_format = { type: 'json_object' };
-  }
+
+  const doFetch = (key: string, jsonMode: boolean) =>
+    fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`,
+      },
+      body: JSON.stringify(buildBody(jsonMode)),
+    }, options.timeoutMs ?? 30_000);
 
   // Rotate keys on rate limit (429) so multiple keys pool their limits
   let lastErr = '';
   for (let attempt = 0; attempt < keys.length; attempt++) {
     const key = keys[attempt % keys.length];
     try {
-      const res = await fetchWithTimeout('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${key}`,
-        },
-        body: JSON.stringify(body),
-      }, options.timeoutMs ?? 30_000);
+      let res = await doFetch(key, Boolean(options.json));
+      let errText = res.ok ? '' : await res.text().catch(() => '');
+
+      // 400 json_validate_failed = output overflowed max_tokens inside strict
+      // JSON mode. Retry this key once WITHOUT response_format — the loose
+      // parsers downstream still extract the JSON payload.
+      if (!res.ok && res.status === 400 && options.json && errText.includes('json_validate_failed')) {
+        console.warn('[groq] json_validate_failed — retrying without strict JSON mode');
+        res = await doFetch(key, false);
+        errText = res.ok ? '' : await res.text().catch(() => '');
+      }
 
       if (res.ok) {
         const data = await res.json();
@@ -124,7 +144,6 @@ async function callGroq(
         return text;
       }
 
-      const errText = await res.text().catch(() => '');
       lastErr = `Groq error ${res.status}: ${errText.slice(0, 200)}`;
 
       // 429 = rate limit — try next key
@@ -306,6 +325,9 @@ async function cloudflareText(systemPrompt: string, userPrompt: string, options:
       { role: 'system', content: sys },
       { role: 'user', content: userPrompt },
     ],
+    // Without an explicit cap long JSON replies get truncated mid-object and
+    // fail to parse downstream — give the model room for the full payload.
+    max_tokens: 4096,
   });
 }
 

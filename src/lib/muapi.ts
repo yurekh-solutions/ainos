@@ -202,7 +202,36 @@ export async function generateImage(params: PollinationsParams): Promise<Pollina
 export async function generateVideo(prompt: string): Promise<PollinationsResponse> {
   const encodedPrompt = encodeURIComponent(prompt);
   const url = `${POLLINATIONS_VIDEO_URL}/${encodedPrompt}`;
-  return { url, prompt, model: 'pollinations-video', status: 'complete' };
+  
+  // Pollinations video generation may take time to process
+  // Poll the URL until the video is ready (max 30 seconds)
+  const maxAttempts = 15;
+  const pollInterval = 2000; // 2 seconds
+  
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const res = await fetch(url, { method: 'HEAD' });
+      if (res.ok) {
+        // Check if it's actually a video (not HTML error page)
+        const contentType = res.headers.get('content-type');
+        if (contentType && (contentType.includes('video') || contentType.includes('mp4'))) {
+          return { url, prompt, model: 'pollinations-video', status: 'complete' };
+        }
+        // If content-type is not available but response is OK, assume it's ready
+        if (!contentType) {
+          return { url, prompt, model: 'pollinations-video', status: 'complete' };
+        }
+      }
+    } catch {
+      // Video still processing or service unreachable, wait and retry
+    }
+    
+    // Wait before next attempt
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
+  }
+  
+  // If Pollinations is unreachable, return empty to show thumbnail preview
+  return { url: '', prompt, model: 'pollinations-video', status: 'complete' };
 }
 
 export async function getAvailableModels(): Promise<string[]> {

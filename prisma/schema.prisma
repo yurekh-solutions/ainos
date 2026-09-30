@@ -866,6 +866,8 @@ model ConnectedWebsite {
   wordpressAppPassword String?            @map("wordpress_app_password")
   deliveryEmail        String?            @map("delivery_email")
   isActive             Boolean            @default(true) @map("is_active")
+  widgetIntegrated     Boolean            @default(false) @map("widget_integrated")
+  widgetIntegratedAt   DateTime?          @map("widget_integrated_at")
   companyId            String?            @map("company_id")
   createdAt            DateTime           @default(now()) @map("created_at")
   updatedAt            DateTime           @updatedAt @map("updated_at")
