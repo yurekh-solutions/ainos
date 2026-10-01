@@ -52,6 +52,9 @@ import {
   Heart,
   Bell,
   Palette,
+  Landmark,
+  Megaphone,
+  Hash,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -94,12 +97,12 @@ const sections: MenuSection[] = [
   },
   {
     title: 'Finance',
-    icon: DollarSign,
+    icon: Landmark,
     items: [
       { icon: FileText, label: 'Invoices', href: '/invoices' },
       { icon: Users, label: 'Customers', href: '/customers' },
       { icon: Package, label: 'Products', href: '/products' },
-      { icon: DollarSign, label: 'Expenses', href: '/finance/expenses' },
+      { icon: Wallet, label: 'Expenses', href: '/finance/expenses' },
       { icon: FileSpreadsheet, label: 'Quotations', href: '/finance/quotes' },
       { icon: Truck, label: 'Delivery Challans', href: '/finance/challans' },
       { icon: FileSpreadsheet, label: 'Tally / Excel', href: '/finance/tally' },
@@ -139,10 +142,10 @@ const sections: MenuSection[] = [
   },
   {
     title: 'Marketing',
-    icon: Mail,
+    icon: Megaphone,
     items: [
       { icon: Mail, label: 'Email Campaigns', href: '/marketing/campaigns' },
-      { icon: Sparkles, label: 'Social Media', href: '/marketing/email' },
+      { icon: Hash, label: 'Social Media', href: '/marketing/email' },
       { icon: Globe, label: 'SEO Platform', href: '/marketing/seo' },
       { icon: FileText, label: 'Blog & Content', href: '/marketing/blog' },
       { icon: Send, label: 'Invitations', href: '/marketing/invitations' },

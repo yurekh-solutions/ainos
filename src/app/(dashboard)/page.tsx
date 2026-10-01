@@ -5,8 +5,8 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  Sparkles, FileText, Globe, Zap, Send, ArrowRight, Mail,
-  Receipt, Users, Package, TrendingUp, DollarSign, FileBarChart,
+  Megaphone, FileText, Globe, Zap, Send, ArrowRight, Mail,
+  Receipt, Users, Package, TrendingUp, Clock, Wallet, FileBarChart,
   Truck, FileSpreadsheet, Bell, Palette,
 } from 'lucide-react';
 
@@ -192,7 +192,7 @@ export default function DashboardPage() {
   const formatINR = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 
   const suiteStats: StatCard[] = [
-    { label: 'Marketing Tools', value: '5', sub: 'All active & ready', icon: Sparkles, gradient: 'from-violet-500 to-purple-600', color: '#6c5ce7' },
+    { label: 'Marketing Tools', value: '5', sub: 'All active & ready', icon: Megaphone, gradient: 'from-violet-500 to-purple-600', color: '#6c5ce7' },
     { label: 'Invitation Templates', value: templateLabel, sub: 'Festivals & occasions covered', icon: Send, gradient: 'from-pink-500 to-rose-600', color: '#e84393' },
     { label: 'Social Platforms', value: '6', sub: 'Captions, hooks & hashtags', icon: Mail, gradient: 'from-sky-500 to-blue-600', color: '#0984e3' },
     { label: 'SEO Health', value: '92/100', sub: 'Latest site audit score', icon: Globe, gradient: 'from-emerald-500 to-teal-600', color: '#00b894' },
@@ -201,7 +201,7 @@ export default function DashboardPage() {
   const financeStatCards: StatCard[] = [
     { label: 'Total Invoices', value: financeStats.invoices.toString(), sub: 'All time', icon: Receipt, gradient: 'from-indigo-500 to-blue-600', color: '#6366f1' },
     { label: 'Revenue', value: `₹${formatINR(financeStats.revenue)}`, sub: 'Total billed', icon: TrendingUp, gradient: 'from-emerald-500 to-green-600', color: '#10b981' },
-    { label: 'Pending', value: `₹${formatINR(financeStats.pending)}`, sub: 'Awaiting payment', icon: DollarSign, gradient: 'from-amber-500 to-orange-600', color: '#f59e0b' },
+    { label: 'Pending', value: `₹${formatINR(financeStats.pending)}`, sub: 'Awaiting payment', icon: Clock, gradient: 'from-amber-500 to-orange-600', color: '#f59e0b' },
     { label: 'Products', value: financeStats.products.toString(), sub: 'In catalog', icon: Package, gradient: 'from-rose-500 to-pink-600', color: '#f43f5e' },
   ];
 
@@ -211,7 +211,7 @@ export default function DashboardPage() {
     { title: 'Invoices', description: 'Create GST-compliant invoices with CGST/SGST/IGST split, HSN codes & profit tracking.', icon: Receipt, href: '/invoices', stat: `${financeStats.invoices} invoices`, gradient: 'from-indigo-500 to-blue-600', accent: '#6366f1' },
     { title: 'Customers', description: 'Manage customer database with GSTIN, PAN, state-wise billing addresses.', icon: Users, href: '/customers', stat: 'GST-ready profiles', gradient: 'from-cyan-500 to-teal-600', accent: '#06b6d4' },
     { title: 'Products', description: 'Product catalog with HSN codes, GST rates, cost price, MRP & barcodes.', icon: Package, href: '/products', stat: `${financeStats.products} items`, gradient: 'from-rose-500 to-pink-600', accent: '#f43f5e' },
-    { title: 'Expenses', description: 'Track business expenses across categories — software, salaries, marketing & more.', icon: DollarSign, href: '/finance/expenses', stat: 'Category-wise tracking', gradient: 'from-amber-500 to-orange-600', accent: '#f59e0b' },
+    { title: 'Expenses', description: 'Track business expenses across categories — software, salaries, marketing & more.', icon: Wallet, href: '/finance/expenses', stat: 'Category-wise tracking', gradient: 'from-amber-500 to-orange-600', accent: '#f59e0b' },
     { title: 'Quotations', description: 'Send professional quotes to clients with multi-item support & tax breakdown.', icon: FileBarChart, href: '/finance/quotes', stat: 'Convert to invoice', gradient: 'from-violet-500 to-purple-600', accent: '#8b5cf6' },
     { title: 'Delivery Challans', description: 'Generate delivery challans for goods transport with sequential numbering.', icon: Truck, href: '/finance/challans', stat: 'DC series ready', gradient: 'from-teal-500 to-emerald-600', accent: '#14b8a6' },
     { title: 'Tally / Excel', description: 'Import & export data in Tally-compatible Excel format for accounting sync.', icon: FileSpreadsheet, href: '/finance/tally', stat: 'Excel export ready', gradient: 'from-green-500 to-emerald-600', accent: '#22c55e' },

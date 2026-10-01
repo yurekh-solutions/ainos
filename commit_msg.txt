@@ -1,10 +1,12 @@
-feat(invoices): PDF now uses custom template settings
+feat(ui): replace common icons with unique professional ones
 
-- PDF generation now reads company's saved InvoiceTemplate
-- Applies custom colors (primary, text), fonts, font sizes
-- Logo position (left/center/right) and size (small/medium/large)
-- Accent bar width (thin/medium/thick)
-- CGST/SGST/IGST split display in totals
-- Toggle bank details, terms & conditions visibility
-- Custom header text and footer text from template
-- Falls back to defaults if no template saved
+Dashboard:
+- Marketing Tools: Sparkles → Megaphone (bullhorn)
+- Pending: DollarSign → Clock (awaiting payment)
+- Expenses tool card: DollarSign → Wallet
+
+Sidebar:
+- Finance section: DollarSign → Landmark (bank building)
+- Marketing section: Mail → Megaphone (bullhorn)
+- Social Media: Sparkles → Hash (hashtag)
+- Expenses item: DollarSign → Wallet
