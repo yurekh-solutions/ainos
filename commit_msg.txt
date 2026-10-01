@@ -1,1 +1,26 @@
-fix: replace Sparkles with Hash in dashboard Social Media tool card
+feat(ui): upgrade all icons to professional unique set
+
+Dashboard stat cards:
+- Marketing Tools: Megaphone → Radio (broadcast tower)
+- Invitation Templates: Send → MailOpen (opened envelope)
+- Social Platforms: Mail → Share2 (share nodes)
+- SEO Health: Globe → SearchCheck (search + checkmark)
+- Total Invoices: Receipt → ScrollText (scroll document)
+- Revenue: TrendingUp → BarChart3 (bar chart)
+- Pending: Clock → Hourglass (hourglass)
+- Products: Package → Layers (stacked layers)
+
+Dashboard tool cards:
+- SEO Platform: Globe → SearchCheck
+- Blog & Content: FileText → PenTool
+- Blog Agent: Zap → Bot (robot)
+- Invitations: Send → MailOpen
+- Invoices: Receipt → ScrollText
+- Customers: Users → Contact2
+- Products: Package → Boxes
+- Expenses: Wallet → BadgePercent
+- Payment Reminders: Bell → BellRing
+- Template Designer: Palette → Paintbrush
+
+Sidebar:
+- Marketing section: Megaphone → Radio

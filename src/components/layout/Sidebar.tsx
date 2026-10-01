@@ -53,7 +53,7 @@ import {
   Bell,
   Palette,
   Landmark,
-  Megaphone,
+  Radio,
   Hash,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -142,7 +142,7 @@ const sections: MenuSection[] = [
   },
   {
     title: 'Marketing',
-    icon: Megaphone,
+    icon: Radio,
     items: [
       { icon: Mail, label: 'Email Campaigns', href: '/marketing/campaigns' },
       { icon: Hash, label: 'Social Media', href: '/marketing/email' },

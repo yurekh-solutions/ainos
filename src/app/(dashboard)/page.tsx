@@ -5,9 +5,9 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  Megaphone, FileText, Globe, Zap, Send, ArrowRight, Mail,
-  Receipt, Users, Package, TrendingUp, Clock, Wallet, FileBarChart,
-  Truck, FileSpreadsheet, Bell, Palette, Hash,
+  Radio, FileText, Zap, ArrowRight,
+  ScrollText, Contact2, Boxes, BarChart3, Hourglass, BadgePercent, FileBarChart,
+  Truck, FileSpreadsheet, BellRing, Paintbrush, Hash, SearchCheck, PenTool, Bot, MailOpen, Share2, Layers,
 } from 'lucide-react';
 
 interface Tool {
@@ -154,7 +154,7 @@ export default function DashboardPage() {
     {
       title: 'SEO Platform',
       description: 'Site audits, keyword research, competitor & content insights.',
-      icon: Globe,
+      icon: SearchCheck,
       href: '/marketing/seo',
       stat: '92/100 health score',
       gradient: 'from-emerald-500 to-teal-600',
@@ -163,7 +163,7 @@ export default function DashboardPage() {
     {
       title: 'Blog & Content',
       description: 'SEO-optimized content generation and one-click publishing.',
-      icon: FileText,
+      icon: PenTool,
       href: '/marketing/blog',
       stat: '4 drafts ready',
       gradient: 'from-sky-500 to-blue-600',
@@ -172,7 +172,7 @@ export default function DashboardPage() {
     {
       title: 'Blog Agent',
       description: 'Autonomous agent that researches, writes and publishes blogs.',
-      icon: Zap,
+      icon: Bot,
       href: '/marketing/blog-agent',
       stat: 'Agent ready',
       gradient: 'from-amber-500 to-orange-600',
@@ -181,7 +181,7 @@ export default function DashboardPage() {
     {
       title: 'Invitations',
       description: `${templateLabel} festival & occasion invitation templates with your branding.`,
-      icon: Send,
+      icon: MailOpen,
       href: '/marketing/invitations',
       stat: `${templateLabel} templates`,
       gradient: 'from-pink-500 to-rose-600',
@@ -192,31 +192,31 @@ export default function DashboardPage() {
   const formatINR = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 
   const suiteStats: StatCard[] = [
-    { label: 'Marketing Tools', value: '5', sub: 'All active & ready', icon: Megaphone, gradient: 'from-violet-500 to-purple-600', color: '#6c5ce7' },
-    { label: 'Invitation Templates', value: templateLabel, sub: 'Festivals & occasions covered', icon: Send, gradient: 'from-pink-500 to-rose-600', color: '#e84393' },
-    { label: 'Social Platforms', value: '6', sub: 'Captions, hooks & hashtags', icon: Mail, gradient: 'from-sky-500 to-blue-600', color: '#0984e3' },
-    { label: 'SEO Health', value: '92/100', sub: 'Latest site audit score', icon: Globe, gradient: 'from-emerald-500 to-teal-600', color: '#00b894' },
+    { label: 'Marketing Tools', value: '5', sub: 'All active & ready', icon: Radio, gradient: 'from-violet-500 to-purple-600', color: '#6c5ce7' },
+    { label: 'Invitation Templates', value: templateLabel, sub: 'Festivals & occasions covered', icon: MailOpen, gradient: 'from-pink-500 to-rose-600', color: '#e84393' },
+    { label: 'Social Platforms', value: '6', sub: 'Captions, hooks & hashtags', icon: Share2, gradient: 'from-sky-500 to-blue-600', color: '#0984e3' },
+    { label: 'SEO Health', value: '92/100', sub: 'Latest site audit score', icon: SearchCheck, gradient: 'from-emerald-500 to-teal-600', color: '#00b894' },
   ];
 
   const financeStatCards: StatCard[] = [
-    { label: 'Total Invoices', value: financeStats.invoices.toString(), sub: 'All time', icon: Receipt, gradient: 'from-indigo-500 to-blue-600', color: '#6366f1' },
-    { label: 'Revenue', value: `₹${formatINR(financeStats.revenue)}`, sub: 'Total billed', icon: TrendingUp, gradient: 'from-emerald-500 to-green-600', color: '#10b981' },
-    { label: 'Pending', value: `₹${formatINR(financeStats.pending)}`, sub: 'Awaiting payment', icon: Clock, gradient: 'from-amber-500 to-orange-600', color: '#f59e0b' },
-    { label: 'Products', value: financeStats.products.toString(), sub: 'In catalog', icon: Package, gradient: 'from-rose-500 to-pink-600', color: '#f43f5e' },
+    { label: 'Total Invoices', value: financeStats.invoices.toString(), sub: 'All time', icon: ScrollText, gradient: 'from-indigo-500 to-blue-600', color: '#6366f1' },
+    { label: 'Revenue', value: `₹${formatINR(financeStats.revenue)}`, sub: 'Total billed', icon: BarChart3, gradient: 'from-emerald-500 to-green-600', color: '#10b981' },
+    { label: 'Pending', value: `${formatINR(financeStats.pending)}`, sub: 'Awaiting payment', icon: Hourglass, gradient: 'from-amber-500 to-orange-600', color: '#f59e0b' },
+    { label: 'Products', value: financeStats.products.toString(), sub: 'In catalog', icon: Layers, gradient: 'from-rose-500 to-pink-600', color: '#f43f5e' },
   ];
 
   const allStats = [...suiteStats, ...financeStatCards];
 
   const financeTools: Tool[] = [
-    { title: 'Invoices', description: 'Create GST-compliant invoices with CGST/SGST/IGST split, HSN codes & profit tracking.', icon: Receipt, href: '/invoices', stat: `${financeStats.invoices} invoices`, gradient: 'from-indigo-500 to-blue-600', accent: '#6366f1' },
-    { title: 'Customers', description: 'Manage customer database with GSTIN, PAN, state-wise billing addresses.', icon: Users, href: '/customers', stat: 'GST-ready profiles', gradient: 'from-cyan-500 to-teal-600', accent: '#06b6d4' },
-    { title: 'Products', description: 'Product catalog with HSN codes, GST rates, cost price, MRP & barcodes.', icon: Package, href: '/products', stat: `${financeStats.products} items`, gradient: 'from-rose-500 to-pink-600', accent: '#f43f5e' },
-    { title: 'Expenses', description: 'Track business expenses across categories — software, salaries, marketing & more.', icon: Wallet, href: '/finance/expenses', stat: 'Category-wise tracking', gradient: 'from-amber-500 to-orange-600', accent: '#f59e0b' },
+    { title: 'Invoices', description: 'Create GST-compliant invoices with CGST/SGST/IGST split, HSN codes & profit tracking.', icon: ScrollText, href: '/invoices', stat: `${financeStats.invoices} invoices`, gradient: 'from-indigo-500 to-blue-600', accent: '#6366f1' },
+    { title: 'Customers', description: 'Manage customer database with GSTIN, PAN, state-wise billing addresses.', icon: Contact2, href: '/customers', stat: 'GST-ready profiles', gradient: 'from-cyan-500 to-teal-600', accent: '#06b6d4' },
+    { title: 'Products', description: 'Product catalog with HSN codes, GST rates, cost price, MRP & barcodes.', icon: Boxes, href: '/products', stat: `${financeStats.products} items`, gradient: 'from-rose-500 to-pink-600', accent: '#f43f5e' },
+    { title: 'Expenses', description: 'Track business expenses across categories — software, salaries, marketing & more.', icon: BadgePercent, href: '/finance/expenses', stat: 'Category-wise tracking', gradient: 'from-amber-500 to-orange-600', accent: '#f59e0b' },
     { title: 'Quotations', description: 'Send professional quotes to clients with multi-item support & tax breakdown.', icon: FileBarChart, href: '/finance/quotes', stat: 'Convert to invoice', gradient: 'from-violet-500 to-purple-600', accent: '#8b5cf6' },
     { title: 'Delivery Challans', description: 'Generate delivery challans for goods transport with sequential numbering.', icon: Truck, href: '/finance/challans', stat: 'DC series ready', gradient: 'from-teal-500 to-emerald-600', accent: '#14b8a6' },
     { title: 'Tally / Excel', description: 'Import & export data in Tally-compatible Excel format for accounting sync.', icon: FileSpreadsheet, href: '/finance/tally', stat: 'Excel export ready', gradient: 'from-green-500 to-emerald-600', accent: '#22c55e' },
-    { title: 'Payment Reminders', description: 'Track overdue invoices & send WhatsApp payment reminders to clients.', icon: Bell, href: '/finance/reminders', stat: `₹${formatINR(financeStats.pending)} pending`, gradient: 'from-red-500 to-rose-600', accent: '#ef4444' },
-    { title: 'Template Designer', description: 'Customize invoice templates with 18 brand presets, colors, fonts & layouts.', icon: Palette, href: '/finance/templates', stat: '18 presets', gradient: 'from-fuchsia-500 to-pink-600', accent: '#d946ef' },
+    { title: 'Payment Reminders', description: 'Track overdue invoices & send WhatsApp payment reminders to clients.', icon: BellRing, href: '/finance/reminders', stat: `₹${formatINR(financeStats.pending)} pending`, gradient: 'from-red-500 to-rose-600', accent: '#ef4444' },
+    { title: 'Template Designer', description: 'Customize invoice templates with 18 brand presets, colors, fonts & layouts.', icon: Paintbrush, href: '/finance/templates', stat: '18 presets', gradient: 'from-fuchsia-500 to-pink-600', accent: '#d946ef' },
   ];
 
   const getGreeting = () => {
@@ -300,7 +300,7 @@ export default function DashboardPage() {
           <div className="absolute -bottom-24 right-24 w-48 h-48 rounded-full bg-cyan-400/20 blur-2xl" />
           <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-5">
             <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center shadow-lg ring-2 ring-white/30">
-              <Receipt className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+              <ScrollText className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[11px] font-bold uppercase tracking-widest text-blue-200 mb-1">AINOS Finance Suite</p>
