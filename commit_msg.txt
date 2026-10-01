@@ -1,6 +1,5 @@
-refactor(dashboard): remove repetition with reusable components
+feat(tally): add Excel import template download button
 
-- Extract StatItem, ToolCard, SectionHeader as reusable components
-- Combine Marketing + Finance stats into single 8-card grid
-- Eliminate duplicate JSX for stat cards, tool cards, and section headers
-- Reduced from 413 lines to ~340 lines with same functionality
+- Add "Template" button to download sample Excel format
+- Template includes all required columns with example data
+- Users can fill template and re-import for GST filing

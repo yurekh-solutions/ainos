@@ -51,6 +51,27 @@ export default function TallyPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const handleDownloadTemplate = () => {
+    const template = [{
+      'Voucher No': 'INV-001',
+      'Date': '2026-01-15',
+      'Party Name': 'Rajesh Enterprises',
+      'Party GSTIN': '27AABCU9603R1ZM',
+      'Party State': 'Maharashtra',
+      'Item': 'Website Design',
+      'Qty': 1,
+      'Rate': 50000,
+      'GST%': 18,
+      'Amount': 59000,
+    }];
+    const ws = XLSX.utils.json_to_sheet(template);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Import Template');
+    XLSX.writeFile(wb, 'AINOS_Import_Template.xlsx');
+    setToast({ message: 'Template downloaded! Fill it and re-import.', type: 'success' });
+    setTimeout(() => setToast(null), 3000);
+  };
+
   const handleExportExcel = () => {
     if (vouchers.length === 0) {
       setToast({ message: 'No data to export', type: 'error' });
@@ -162,6 +183,11 @@ export default function TallyPage() {
               </div>
             </div>
             <div className="flex gap-3">
+              <button onClick={handleDownloadTemplate}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all"
+                style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}>
+                <Download className="w-4 h-4" /> Template
+              </button>
               <button onClick={handleExportExcel}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all"
                 style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}>
