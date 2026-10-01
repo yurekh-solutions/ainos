@@ -1,12 +1,1 @@
-feat(ui): replace common icons with unique professional ones
-
-Dashboard:
-- Marketing Tools: Sparkles → Megaphone (bullhorn)
-- Pending: DollarSign → Clock (awaiting payment)
-- Expenses tool card: DollarSign → Wallet
-
-Sidebar:
-- Finance section: DollarSign → Landmark (bank building)
-- Marketing section: Mail → Megaphone (bullhorn)
-- Social Media: Sparkles → Hash (hashtag)
-- Expenses item: DollarSign → Wallet
+fix: replace Sparkles with Hash in dashboard Social Media tool card

@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import {
   Megaphone, FileText, Globe, Zap, Send, ArrowRight, Mail,
   Receipt, Users, Package, TrendingUp, Clock, Wallet, FileBarChart,
-  Truck, FileSpreadsheet, Bell, Palette,
+  Truck, FileSpreadsheet, Bell, Palette, Hash,
 } from 'lucide-react';
 
 interface Tool {
@@ -145,7 +145,7 @@ export default function DashboardPage() {
     {
       title: 'Social Media',
       description: 'AI-powered captions, hooks & hashtags for every platform.',
-      icon: Sparkles,
+      icon: Hash,
       href: '/marketing/email',
       stat: '6 platforms ready',
       gradient: 'from-violet-500 to-purple-600',
