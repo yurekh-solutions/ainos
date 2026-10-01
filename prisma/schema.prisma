@@ -65,6 +65,8 @@ model Company {
   users              User[]
   vendors            Vendor[]
   warehouses         Warehouse[]
+  deliveryChallans   DeliveryChallan[]
+  invoiceTemplates   InvoiceTemplate[]
 
   @@map("companies")
 }
@@ -133,18 +135,22 @@ model Lead {
 }
 
 model Customer {
-  id         String   @id @default(uuid())
-  name       String
-  email      String?
-  phone      String?
-  company    String?
-  address    String?
-  status     String   @default("active")
-  notes      String?
-  companyId  String?  @map("company_id")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-  companyRef Company? @relation(fields: [companyId], references: [id])
+  id            String   @id @default(uuid())
+  name          String
+  email         String?
+  phone         String?
+  company       String?
+  address       String?
+  gstNumber     String?  @map("gst_number")
+  panNumber     String?  @map("pan_number")
+  state         String?
+  pincode       String?
+  status        String   @default("active")
+  notes         String?
+  companyId     String?  @map("company_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  companyRef    Company? @relation(fields: [companyId], references: [id])
 
   @@index([companyId])
   @@map("customers")
@@ -198,6 +204,11 @@ model Product {
   description String?
   price       Float?
   cost        Float?
+  costPrice   Float?   @map("cost_price")
+  mrp         Float?
+  hsnCode     String?  @map("hsn_code")
+  barcode     String?  @unique
+  gstRate     Float?   @map("gst_rate")
   category    String?
   stock       Int      @default(0)
   unit        String?  @default("pcs")
@@ -236,6 +247,32 @@ model Invoice {
   taxRate           Float?    @map("tax_rate")
   taxTotal          Float?    @map("tax_total")
   totalAmount       Float?    @map("total_amount")
+  // GST split fields
+  cgstAmount        Float?    @map("cgst_amount")
+  sgstAmount        Float?    @map("sgst_amount")
+  igstAmount        Float?    @map("igst_amount")
+  billingType       String?   @map("billing_type")
+  supplyType        String?   @map("supply_type")
+  discountAmount    Float?    @map("discount_amount")
+  discountType      String?   @map("discount_type")
+  profitAmount      Float?    @map("profit_amount")
+  // E-Invoice fields
+  einvoiceIrn       String?   @map("einvoice_irn")
+  einvoiceQr        String?   @map("einvoice_qr")
+  einvoiceAck       String?   @map("einvoice_ack")
+  // E-Way Bill fields
+  ewayBillNo        String?   @map("eway_bill_no")
+  ewayBillDate      DateTime? @map("eway_bill_date")
+  ewayBillValid     DateTime? @map("eway_bill_valid")
+  transportDocNo    String?   @map("transport_doc_no")
+  vehicleNo         String?   @map("vehicle_no")
+  // Payment tracking
+  paymentMethod     String?   @map("payment_method")
+  payments          Json?
+  paidAmount        Float?    @map("paid_amount")
+  placeOfSupply     String?   @map("place_of_supply")
+  customerState     String?   @map("customer_state")
+  customerPan       String?   @map("customer_pan")
   company           Company?  @relation(fields: [companyId], references: [id])
 
   @@index([companyId])
@@ -943,4 +980,73 @@ model BlogSchedule {
   @@index([scheduledDate])
   @@index([status])
   @@map("blog_schedules")
+}
+
+model DeliveryChallan {
+  id              String    @id @default(uuid())
+  challanNumber   String    @unique @map("challan_number")
+  customerId      String?   @map("customer_id")
+  customerName    String    @map("customer_name")
+  customerAddress String?   @map("customer_address")
+  customerGst     String?   @map("customer_gst")
+  customerState   String?   @map("customer_state")
+  items           Json?
+  subtotal        Float?
+  cgstAmount      Float?    @map("cgst_amount")
+  sgstAmount      Float?    @map("sgst_amount")
+  igstAmount      Float?    @map("igst_amount")
+  taxTotal        Float?    @map("tax_total")
+  totalAmount     Float?    @map("total_amount")
+  status          String    @default("open")
+  invoiceId       String?   @map("invoice_id")
+  deliveryDate    DateTime? @map("delivery_date")
+  vehicleNo       String?   @map("vehicle_no")
+  transportDocNo  String?   @map("transport_doc_no")
+  notes           String?
+  supplyType      String?   @map("supply_type")
+  companyId       String?   @map("company_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  company         Company?  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@map("delivery_challans")
+}
+
+model InvoiceTemplate {
+  id              String   @id @default(uuid())
+  name            String
+  isDefault       Boolean  @default(false)
+  // Branding
+  primaryColor    String   @default("#6D28D9") @map("primary_color")
+  secondaryColor  String   @default("#8B5CF6") @map("secondary_color")
+  backgroundColor String   @default("#FFFFFF") @map("background_color")
+  textColor       String   @default("#1F2937") @map("text_color")
+  // Typography
+  fontFamily      String   @default("Helvetica") @map("font_family")
+  fontSize        String   @default("medium") @map("font_size")
+  // Layout
+  layout          String   @default("standard") // standard, compact, modern, minimal
+  showLogo        Boolean  @default(true) @map("show_logo")
+  logoSize        String   @default("medium") @map("logo_size")
+  logoPosition    String   @default("left") @map("logo_position")
+  // Content
+  showQrCode      Boolean  @default(false) @map("show_qr_code")
+  showBankDetails Boolean  @default(true) @map("show_bank_details")
+  showTerms       Boolean  @default(true) @map("show_terms")
+  terms           String?
+  notes           String?
+  headerText      String?  @map("header_text")
+  footerText      String?  @map("footer_text")
+  // Accent
+  accentWidth     String   @default("thin") @map("accent_width")
+  borderRadius    String   @default("medium") @map("border_radius")
+  // Tenant
+  companyId       String?  @map("company_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  company         Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@map("invoice_templates")
 }

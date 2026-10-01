@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2, CheckCircle2, AlertCircle, TrendingUp, Bell } from 'lucide-react';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
 
@@ -13,11 +13,19 @@ interface Invoice {
   customerEmail: string;
   customerAddress?: string;
   customerGst?: string;
+  customerGstNumber?: string;
   totalAmount: number;
   subtotal: number;
   taxTotal: number;
   taxRate: number;
-  status: 'draft' | 'sent' | 'paid' | 'overdue';
+  cgstAmount?: number;
+  sgstAmount?: number;
+  igstAmount?: number;
+  profitAmount?: number;
+  supplyType?: string;
+  billingType?: string;
+  paidAmount?: number;
+  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
   createdAt: string;
   dueDate?: string;
   items: {
@@ -61,6 +69,7 @@ export default function InvoicesPage() {
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -353,10 +362,16 @@ export default function InvoicesPage() {
     return result.trim();
   };
 
-  const filteredInvoices = invoices.filter(inv =>
-    inv.invoiceNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    inv.customerName?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredInvoices = invoices.filter(inv => {
+    const matchesSearch = (inv.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (inv.invoiceNumber || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || inv.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const totalRevenue = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + (i.totalAmount || 0), 0);
+  const totalPending = invoices.filter(i => i.status !== 'paid' && i.status !== 'cancelled').reduce((s, i) => s + (i.totalAmount || 0), 0);
+  const totalProfit = invoices.reduce((s, i) => s + (i.profitAmount || 0), 0);
 
   return (
     <div className="h-full overflow-y-auto p-4 sm:p-6 lg:p-8" style={{ background: 'var(--page-gradient)' }}>
@@ -433,6 +448,43 @@ export default function InvoicesPage() {
           </div>
         </div>
 
+        {/* Summary Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(142 76% 36% / 0.1)' }}>
+                <CheckCircle2 className="w-5 h-5" style={{ color: 'hsl(142 76% 36%)' }} />
+              </div>
+              <div>
+                <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Collected</p>
+                <p className="text-lg font-bold" style={{ color: 'hsl(142 76% 36%)' }}>₹{totalRevenue.toLocaleString('en-IN')}</p>
+              </div>
+            </div>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="glass-card p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.1)' }}>
+                <Bell className="w-5 h-5" style={{ color: 'hsl(var(--primary))' }} />
+              </div>
+              <div>
+                <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Pending</p>
+                <p className="text-lg font-bold" style={{ color: 'hsl(var(--primary))' }}>₹{totalPending.toLocaleString('en-IN')}</p>
+              </div>
+            </div>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(280 60% 55% / 0.1)' }}>
+                <TrendingUp className="w-5 h-5" style={{ color: 'hsl(280 60% 55%)' }} />
+              </div>
+              <div>
+                <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Profit</p>
+                <p className={`text-lg font-bold ${totalProfit >= 0 ? 'text-green-500' : 'text-red-500'}`}>₹{totalProfit.toLocaleString('en-IN')}</p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
         {/* Search & Filter */}
         <div className="glass-card p-4 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
@@ -450,14 +502,16 @@ export default function InvoicesPage() {
               }}
             />
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-            style={{ 
-              background: 'hsl(var(--muted))',
-              color: 'hsl(var(--foreground))'
-            }}>
-            <Filter className="w-4 h-4" />
-            Filter
-          </button>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+            className="px-4 py-2 rounded-xl text-sm font-medium focus:outline-none"
+            style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))', border: '1px solid hsl(var(--border) / 0.5)' }}>
+            <option value="all">All Status</option>
+            <option value="draft">Draft</option>
+            <option value="sent">Sent</option>
+            <option value="paid">Paid</option>
+            <option value="overdue">Overdue</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
         </div>
 
         {/* Invoices List */}
@@ -472,62 +526,93 @@ export default function InvoicesPage() {
               <table className="w-full">
                 <thead>
                   <tr style={{ background: 'hsl(var(--muted))' }}>
-                    <th className="text-left py-4 px-6 text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>Invoice</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>Customer</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>Amount (INR)</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>Status</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>Date</th>
-                    <th className="py-4 px-6">Actions</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium" style={{ color: 'hsl(var(--foreground))' }}>Invoice</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium" style={{ color: 'hsl(var(--foreground))' }}>Customer</th>
+                    <th className="text-right py-3 px-4 text-xs font-medium" style={{ color: 'hsl(var(--foreground))' }}>Amount</th>
+                    <th className="text-right py-3 px-4 text-xs font-medium" style={{ color: 'hsl(var(--foreground))' }}>GST</th>
+                    <th className="text-right py-3 px-4 text-xs font-medium" style={{ color: 'hsl(var(--foreground))' }}>Profit</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium" style={{ color: 'hsl(var(--foreground))' }}>Status</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium" style={{ color: 'hsl(var(--foreground))' }}>Date</th>
+                    <th className="py-3 px-4"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredInvoices.map((invoice, index) => (
-                    <motion.tr
-                      key={invoice.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="border-t transition-colors hover:bg-[hsl(var(--muted))]"
-                      style={{ borderColor: 'hsl(var(--border))' }}
-                    >
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                            style={{ background: 'hsl(var(--primary) / 0.1)' }}>
-                            <FileText className="w-5 h-5" style={{ color: 'hsl(var(--primary))' }} />
+                  {filteredInvoices.map((invoice, index) => {
+                    const gstAmt = (invoice.cgstAmount || 0) + (invoice.sgstAmount || 0) + (invoice.igstAmount || 0);
+                    return (
+                      <motion.tr
+                        key={invoice.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="border-t transition-colors hover:bg-[hsl(var(--muted))]"
+                        style={{ borderColor: 'hsl(var(--border))' }}
+                      >
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                              style={{ background: 'hsl(var(--primary) / 0.1)' }}>
+                              <FileText className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
+                            </div>
+                            <div>
+                              <span className="font-medium text-sm" style={{ color: 'hsl(var(--foreground))' }}>
+                                {invoice.invoiceNumber}
+                              </span>
+                              {invoice.supplyType && (
+                                <span className="block text-[10px] px-1.5 py-0.5 rounded mt-0.5 w-fit"
+                                  style={{ background: invoice.supplyType === 'inter' ? 'hsl(280 60% 55% / 0.1)' : 'hsl(var(--primary) / 0.1)', color: invoice.supplyType === 'inter' ? 'hsl(280 60% 70%)' : 'hsl(var(--primary))' }}>
+                                  {invoice.supplyType === 'inter' ? 'IGST' : 'CGST+SGST'}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <span className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>
-                            {invoice.invoiceNumber}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="text-sm" style={{ color: 'hsl(var(--foreground))' }}>{invoice.customerName || 'N/A'}</div>
+                          {(invoice.customerGstNumber || invoice.customerGst) && (
+                            <div className="text-[10px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                              GST: {invoice.customerGstNumber || invoice.customerGst}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <span className="text-sm font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
+                            ₹{invoice.totalAmount?.toLocaleString('en-IN') || '0'}
                           </span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6" style={{ color: 'hsl(var(--foreground))' }}>
-                        {invoice.customerName || 'N/A'}
-                      </td>
-                      <td className="py-4 px-6 font-medium" style={{ color: 'hsl(var(--foreground))' }}>
-                        ₹{invoice.totalAmount?.toLocaleString('en-IN') || '0'}
-                      </td>
-                      <td className="py-4 px-6">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize border ${getStatusColor(invoice.status)}`}>
-                          {invoice.status}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                        {new Date(invoice.createdAt).toLocaleDateString('en-IN')}
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => downloadPDF(invoice)}
-                            className="p-2 rounded-lg transition-colors hover:bg-[hsl(var(--primary)/0.1)]"
-                            title="Download PDF"
-                          >
-                            <Download className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
-                          </button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                            {gstAmt > 0 ? `₹${gstAmt.toLocaleString('en-IN')}` : '-'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <span className={`text-xs font-medium ${
+                            (invoice.profitAmount || 0) >= 0 ? 'text-green-500' : 'text-red-500'
+                          }`}>
+                            {invoice.profitAmount !== undefined && invoice.profitAmount !== null
+                              ? `₹${invoice.profitAmount.toLocaleString('en-IN')}` : '-'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-medium capitalize border ${getStatusColor(invoice.status)}`}>
+                            {invoice.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                          {new Date(invoice.createdAt).toLocaleDateString('en-IN')}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => downloadPDF(invoice)}
+                              className="p-1.5 rounded-lg transition-colors hover:bg-[hsl(var(--primary)/0.1)]"
+                              title="Download PDF">
+                              <Download className="w-3.5 h-3.5" style={{ color: 'hsl(var(--primary))' }} />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

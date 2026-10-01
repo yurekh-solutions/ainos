@@ -50,6 +50,8 @@ import {
   Zap,
   Send,
   Heart,
+  Bell,
+  Palette,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -94,8 +96,15 @@ const sections: MenuSection[] = [
     title: 'Finance',
     icon: DollarSign,
     items: [
+      { icon: FileText, label: 'Invoices', href: '/invoices' },
+      { icon: Users, label: 'Customers', href: '/customers' },
+      { icon: Package, label: 'Products', href: '/products' },
       { icon: DollarSign, label: 'Expenses', href: '/finance/expenses' },
       { icon: FileSpreadsheet, label: 'Quotations', href: '/finance/quotes' },
+      { icon: Truck, label: 'Delivery Challans', href: '/finance/challans' },
+      { icon: FileSpreadsheet, label: 'Tally / Excel', href: '/finance/tally' },
+      { icon: Bell, label: 'Payment Reminders', href: '/finance/reminders' },
+            { icon: Palette, label: 'Template Designer', href: '/finance/templates' },
     ],
   },
   {
@@ -168,15 +177,12 @@ const sections: MenuSection[] = [
   },
 ];
 
-// Marketing-only mode: keep the full menus above, but only render
-// Dashboard + the Marketing section. Set MARKETING_ONLY to false to restore.
-const MARKETING_ONLY = true;
-const visibleMainItems = MARKETING_ONLY
-  ? mainItems.filter((item) => item.href === '/')
-  : mainItems;
-const visibleSections = MARKETING_ONLY
-  ? sections.filter((section) => section.title === 'Marketing')
-  : sections;
+// Focused mode: Dashboard + Marketing + Accounts (Finance) only.
+// Other sections (CRM, HR, Inventory, Projects, Support, Compliance, AI) are hidden.
+const visibleMainItems = mainItems.filter((item) => item.href === '/');
+const visibleSections = sections.filter((section) =>
+  section.title === 'Marketing' || section.title === 'Finance'
+);
 
 function SectionGroup({
   section,
