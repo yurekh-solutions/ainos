@@ -1,5 +1,10 @@
-feat(tally): add Excel import template download button
+feat(invoices): PDF now uses custom template settings
 
-- Add "Template" button to download sample Excel format
-- Template includes all required columns with example data
-- Users can fill template and re-import for GST filing
+- PDF generation now reads company's saved InvoiceTemplate
+- Applies custom colors (primary, text), fonts, font sizes
+- Logo position (left/center/right) and size (small/medium/large)
+- Accent bar width (thin/medium/thick)
+- CGST/SGST/IGST split display in totals
+- Toggle bank details, terms & conditions visibility
+- Custom header text and footer text from template
+- Falls back to defaults if no template saved
