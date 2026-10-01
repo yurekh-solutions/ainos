@@ -1,7 +1,6 @@
-feat(dashboard): add Finance section with stats and 9 tool cards
+refactor(dashboard): remove repetition with reusable components
 
-- Add Finance stats row: Total Invoices, Revenue, Pending, Products
-- Add Finance Suite hero banner with quick links
-- Add 9 Finance tool cards: Invoices, Customers, Products, Expenses, Quotations, Delivery Challans, Tally/Excel, Payment Reminders, Template Designer
-- Fetch live data from /api/invoices and /api/products for real-time stats
-- Dashboard now shows both Marketing and Finance suites
+- Extract StatItem, ToolCard, SectionHeader as reusable components
+- Combine Marketing + Finance stats into single 8-card grid
+- Eliminate duplicate JSX for stat cards, tool cards, and section headers
+- Reduced from 413 lines to ~340 lines with same functionality

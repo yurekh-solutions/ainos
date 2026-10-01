@@ -10,7 +10,7 @@ import {
   Truck, FileSpreadsheet, Bell, Palette,
 } from 'lucide-react';
 
-interface MarketingTool {
+interface Tool {
   title: string;
   description: string;
   icon: React.ElementType;
@@ -18,6 +18,90 @@ interface MarketingTool {
   stat: string;
   gradient: string;
   accent: string;
+}
+
+interface StatCard {
+  label: string;
+  value: string;
+  sub: string;
+  icon: React.ElementType;
+  gradient: string;
+  color: string;
+}
+
+// ─ Reusable Stat Card ──
+function StatItem({ stat, delay }: { stat: StatCard; delay: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+      whileHover={{ y: -6, transition: { duration: 0.2 } }}
+      className="relative p-5 sm:p-6 rounded-2xl overflow-hidden"
+      style={{
+        background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)',
+        border: '1px solid hsl(var(--border) / 0.5)',
+        boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
+      }}
+    >
+      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-lg mb-4`}>
+        <stat.icon className="w-5 h-5 text-white" />
+      </div>
+      <p className="text-xs font-medium uppercase tracking-wide mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{stat.label}</p>
+      <p className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: 'hsl(var(--foreground))' }}>{stat.value}</p>
+      <p className="text-xs font-medium" style={{ color: stat.color }}>{stat.sub}</p>
+    </motion.div>
+  );
+}
+
+// ── Reusable Tool Card ──
+function ToolCard({ tool, delay }: { tool: Tool; delay: number }) {
+  const Icon = tool.icon;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+      whileHover={{ y: -6, transition: { duration: 0.25 } }}
+      className="relative p-6 rounded-2xl flex flex-col h-full overflow-hidden group"
+      style={{
+        background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)',
+        border: '1px solid hsl(var(--border) / 0.5)',
+        boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
+      }}
+    >
+      <div className="flex items-start justify-between mb-5">
+        <motion.div whileHover={{ scale: 1.1, rotate: 5 }} className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tool.gradient} flex items-center justify-center shadow-lg`}>
+          <Icon className="w-6 h-6 text-white" />
+        </motion.div>
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Active
+        </span>
+      </div>
+      <h3 className="text-base font-bold mb-2" style={{ color: 'hsl(var(--foreground))' }}>{tool.title}</h3>
+      <p className="text-xs leading-relaxed mb-5 flex-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{tool.description}</p>
+      <div className="mt-auto flex items-center justify-between">
+        <p className="text-xs font-medium" style={{ color: tool.accent }}>{tool.stat}</p>
+        <Link href={tool.href}>
+          <motion.button whileHover={{ scale: 1.05, x: 3 }} whileTap={{ scale: 0.95 }} className="px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all" style={{ color: 'hsl(var(--primary))', background: 'hsl(var(--primary) / 0.1)', border: '1px solid hsl(var(--primary) / 0.2)' }}>
+            Open <ArrowRight className="w-3.5 h-3.5" />
+          </motion.button>
+        </Link>
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Reusable Section Header ──
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2 mb-4 sm:mb-5">
+      <h2 className="text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{title}</h2>
+      <span className="flex items-center gap-1.5 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> All systems active
+      </span>
+    </div>
+  );
 }
 
 export default function DashboardPage() {
@@ -57,7 +141,7 @@ export default function DashboardPage() {
 
   const templateLabel = templateCount ? `${templateCount}` : '500+';
 
-  const marketingTools: MarketingTool[] = [
+  const marketingTools: Tool[] = [
     {
       title: 'Social Media',
       description: 'AI-powered captions, hooks & hashtags for every platform.',
@@ -107,21 +191,23 @@ export default function DashboardPage() {
 
   const formatINR = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 
-  const suiteStats = [
+  const suiteStats: StatCard[] = [
     { label: 'Marketing Tools', value: '5', sub: 'All active & ready', icon: Sparkles, gradient: 'from-violet-500 to-purple-600', color: '#6c5ce7' },
     { label: 'Invitation Templates', value: templateLabel, sub: 'Festivals & occasions covered', icon: Send, gradient: 'from-pink-500 to-rose-600', color: '#e84393' },
     { label: 'Social Platforms', value: '6', sub: 'Captions, hooks & hashtags', icon: Mail, gradient: 'from-sky-500 to-blue-600', color: '#0984e3' },
     { label: 'SEO Health', value: '92/100', sub: 'Latest site audit score', icon: Globe, gradient: 'from-emerald-500 to-teal-600', color: '#00b894' },
   ];
 
-  const financeStatCards = [
+  const financeStatCards: StatCard[] = [
     { label: 'Total Invoices', value: financeStats.invoices.toString(), sub: 'All time', icon: Receipt, gradient: 'from-indigo-500 to-blue-600', color: '#6366f1' },
     { label: 'Revenue', value: `₹${formatINR(financeStats.revenue)}`, sub: 'Total billed', icon: TrendingUp, gradient: 'from-emerald-500 to-green-600', color: '#10b981' },
     { label: 'Pending', value: `₹${formatINR(financeStats.pending)}`, sub: 'Awaiting payment', icon: DollarSign, gradient: 'from-amber-500 to-orange-600', color: '#f59e0b' },
     { label: 'Products', value: financeStats.products.toString(), sub: 'In catalog', icon: Package, gradient: 'from-rose-500 to-pink-600', color: '#f43f5e' },
   ];
 
-  const financeTools: MarketingTool[] = [
+  const allStats = [...suiteStats, ...financeStatCards];
+
+  const financeTools: Tool[] = [
     { title: 'Invoices', description: 'Create GST-compliant invoices with CGST/SGST/IGST split, HSN codes & profit tracking.', icon: Receipt, href: '/invoices', stat: `${financeStats.invoices} invoices`, gradient: 'from-indigo-500 to-blue-600', accent: '#6366f1' },
     { title: 'Customers', description: 'Manage customer database with GSTIN, PAN, state-wise billing addresses.', icon: Users, href: '/customers', stat: 'GST-ready profiles', gradient: 'from-cyan-500 to-teal-600', accent: '#06b6d4' },
     { title: 'Products', description: 'Product catalog with HSN codes, GST rates, cost price, MRP & barcodes.', icon: Package, href: '/products', stat: `${financeStats.products} items`, gradient: 'from-rose-500 to-pink-600', accent: '#f43f5e' },
@@ -196,55 +282,10 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        {/* Suite Stats */}
+        {/* Combined Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-6 sm:mb-8">
-          {suiteStats.map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 + i * 0.08 }}
-              whileHover={{ y: -6, transition: { duration: 0.2 } }}
-              className="relative p-5 sm:p-6 rounded-2xl overflow-hidden"
-              style={{
-                background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)',
-                border: '1px solid hsl(var(--border) / 0.5)',
-                boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
-              }}
-            >
-              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-lg mb-4`}>
-                <stat.icon className="w-5 h-5 text-white" />
-              </div>
-              <p className="text-xs font-medium uppercase tracking-wide mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{stat.label}</p>
-              <p className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: 'hsl(var(--foreground))' }}>{stat.value}</p>
-              <p className="text-xs font-medium" style={{ color: stat.color }}>{stat.sub}</p>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Finance Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-8 sm:mb-10">
-          {financeStatCards.map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 + i * 0.08 }}
-              whileHover={{ y: -6, transition: { duration: 0.2 } }}
-              className="relative p-5 sm:p-6 rounded-2xl overflow-hidden"
-              style={{
-                background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)',
-                border: '1px solid hsl(var(--border) / 0.5)',
-                boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
-              }}
-            >
-              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-lg mb-4`}>
-                <stat.icon className="w-5 h-5 text-white" />
-              </div>
-              <p className="text-xs font-medium uppercase tracking-wide mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{stat.label}</p>
-              <p className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: 'hsl(var(--foreground))' }}>{stat.value}</p>
-              <p className="text-xs font-medium" style={{ color: stat.color }}>{stat.sub}</p>
-            </motion.div>
+          {allStats.map((stat: StatCard, i: number) => (
+            <StatItem key={stat.label} stat={stat} delay={0.15 + i * 0.05} />
           ))}
         </div>
 
@@ -282,129 +323,19 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* Finance Tools */}
-        <div className="flex items-center justify-between gap-2 mb-4 sm:mb-5">
-          <h2 className="text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Your Finance Tools</h2>
-          <span className="flex items-center gap-1.5 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> All systems active
-          </span>
-        </div>
-
+        <SectionHeader title="Your Finance Tools" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mb-8 sm:mb-10">
-          {financeTools.map((tool, i) => {
-            const Icon = tool.icon;
-            return (
-              <motion.div
-                key={tool.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 + i * 0.05 }}
-                whileHover={{ y: -6, transition: { duration: 0.25 } }}
-                className="relative p-6 rounded-2xl flex flex-col h-full overflow-hidden group"
-                style={{
-                  background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)',
-                  border: '1px solid hsl(var(--border) / 0.5)',
-                  boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
-                }}
-              >
-                <div className="flex items-start justify-between mb-5">
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tool.gradient} flex items-center justify-center shadow-lg`}
-                  >
-                    <Icon className="w-6 h-6 text-white" />
-                  </motion.div>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    Active
-                  </span>
-                </div>
-
-                <h3 className="text-base font-bold mb-2" style={{ color: 'hsl(var(--foreground))' }}>{tool.title}</h3>
-                <p className="text-xs leading-relaxed mb-5 flex-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{tool.description}</p>
-
-                <div className="mt-auto flex items-center justify-between">
-                  <p className="text-xs font-medium" style={{ color: tool.accent }}>{tool.stat}</p>
-                  <Link href={tool.href}>
-                    <motion.button
-                      whileHover={{ scale: 1.05, x: 3 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all"
-                      style={{
-                        color: 'hsl(var(--primary))',
-                        background: 'hsl(var(--primary) / 0.1)',
-                        border: '1px solid hsl(var(--primary) / 0.2)',
-                      }}
-                    >
-                      Open <ArrowRight className="w-3.5 h-3.5" />
-                    </motion.button>
-                  </Link>
-                </div>
-              </motion.div>
-            );
-          })}
+          {financeTools.map((tool, i) => (
+            <ToolCard key={tool.title} tool={tool} delay={0.3 + i * 0.05} />
+          ))}
         </div>
 
         {/* Marketing Tools */}
-        <div className="flex items-center justify-between gap-2 mb-4 sm:mb-5">
-          <h2 className="text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Your Marketing Tools</h2>
-          <span className="flex items-center gap-1.5 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> All systems active
-          </span>
-        </div>
-
+        <SectionHeader title="Your Marketing Tools" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-          {marketingTools.map((tool, i) => {
-            const Icon = tool.icon;
-            return (
-              <motion.div
-                key={tool.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 + i * 0.06 }}
-                whileHover={{ y: -6, transition: { duration: 0.25 } }}
-                className="relative p-6 rounded-2xl flex flex-col h-full overflow-hidden group"
-                style={{
-                  background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)',
-                  border: '1px solid hsl(var(--border) / 0.5)',
-                  boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
-                }}
-              >
-                <div className="flex items-start justify-between mb-5">
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tool.gradient} flex items-center justify-center shadow-lg`}
-                  >
-                    <Icon className="w-6 h-6 text-white" />
-                  </motion.div>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    Active
-                  </span>
-                </div>
-
-                <h3 className="text-base font-bold mb-2" style={{ color: 'hsl(var(--foreground))' }}>{tool.title}</h3>
-                <p className="text-xs leading-relaxed mb-5 flex-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{tool.description}</p>
-
-                <div className="mt-auto flex items-center justify-between">
-                  <p className="text-xs font-medium" style={{ color: tool.accent }}>{tool.stat}</p>
-                  <Link href={tool.href}>
-                    <motion.button
-                      whileHover={{ scale: 1.05, x: 3 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all"
-                      style={{
-                        color: 'hsl(var(--primary))',
-                        background: 'hsl(var(--primary) / 0.1)',
-                        border: '1px solid hsl(var(--primary) / 0.2)',
-                      }}
-                    >
-                      Open <ArrowRight className="w-3.5 h-3.5" />
-                    </motion.button>
-                  </Link>
-                </div>
-              </motion.div>
-            );
-          })}
+          {marketingTools.map((tool, i) => (
+            <ToolCard key={tool.title} tool={tool} delay={0.4 + i * 0.06} />
+          ))}
         </div>
       </div>
     </div>
