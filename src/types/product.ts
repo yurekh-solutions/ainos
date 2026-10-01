@@ -9,6 +9,11 @@ export interface Product {
   sku?: string;
   category?: string;
   isActive: boolean;
+  hsnCode?: string;
+  gstRate?: number;
+  costPrice?: number;
+  mrp?: number;
+  barcode?: string;
   createdAt: string;
   updatedAt: string;
 }

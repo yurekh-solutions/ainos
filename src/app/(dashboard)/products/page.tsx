@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Package, Search, X, DollarSign, Tag, TrendingUp, Grid3X3, List, Edit2, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -15,6 +16,7 @@ const chartData = [
 ];
 
 export default function ProductsPage() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,7 +24,10 @@ export default function ProductsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [formData, setFormData] = useState({ name: '', description: '', price: '', taxRate: '0', sku: '' });
+  const [formData, setFormData] = useState({
+    name: '', description: '', price: '', taxRate: '0', sku: '',
+    hsnCode: '', gstRate: '18', costPrice: '', mrp: '', barcode: '',
+  });
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -60,8 +65,11 @@ export default function ProductsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          price: parseFloat(formData.price),
-          taxRate: parseFloat(formData.taxRate),
+          price: parseFloat(formData.price) || 0,
+          taxRate: parseFloat(formData.taxRate) || 0,
+          gstRate: parseFloat(formData.gstRate) || 0,
+          costPrice: parseFloat(formData.costPrice) || 0,
+          mrp: parseFloat(formData.mrp) || 0,
         }),
       });
       if (res.ok) {
@@ -98,15 +106,20 @@ export default function ProductsPage() {
     setFormData({
       name: product.name,
       description: product.description || '',
-      price: product.price.toString(),
+      price: product.price?.toString() || '',
       taxRate: product.taxRate?.toString() || '0',
       sku: product.sku || '',
+      hsnCode: product.hsnCode || '',
+      gstRate: product.gstRate?.toString() || '18',
+      costPrice: product.costPrice?.toString() || '',
+      mrp: product.mrp?.toString() || '',
+      barcode: product.barcode || '',
     });
     setShowForm(true);
   };
 
   const resetForm = () => {
-    setFormData({ name: '', description: '', price: '', taxRate: '0', sku: '' });
+    setFormData({ name: '', description: '', price: '', taxRate: '0', sku: '', hsnCode: '', gstRate: '18', costPrice: '', mrp: '', barcode: '' });
     setEditingProduct(null);
     setShowForm(false);
   };
@@ -148,7 +161,7 @@ export default function ProductsPage() {
             <motion.button 
               whileHover={{ scale: 1.02 }} 
               whileTap={{ scale: 0.98 }} 
-              onClick={() => { resetForm(); setShowForm(true); }}
+              onClick={() => router.push('/products/new')}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-medium transition-all"
               style={{ 
                 background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%)',
@@ -245,7 +258,7 @@ export default function ProductsPage() {
                 initial={{ scale: 0.95 }} 
                 animate={{ scale: 1 }} 
                 exit={{ scale: 0.95 }}
-                className="w-full max-w-md glass-card p-6"
+                className="w-full max-w-lg glass-card p-6"
               >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
@@ -268,14 +281,23 @@ export default function ProductsPage() {
                     className="w-full glass-input px-4 py-2.5 text-sm"
                     required 
                   />
-                  <input 
-                    type="text" 
-                    placeholder="SKU" 
-                    value={formData.sku}
-                    onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                    className="w-full glass-input px-4 py-2.5 text-sm"
-                  />
                   <div className="grid grid-cols-2 gap-3">
+                    <input 
+                      type="text" 
+                      placeholder="SKU" 
+                      value={formData.sku}
+                      onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                      className="w-full glass-input px-4 py-2.5 text-sm"
+                    />
+                    <input 
+                      type="text" 
+                      placeholder="HSN / SAC Code" 
+                      value={formData.hsnCode}
+                      onChange={(e) => setFormData({ ...formData, hsnCode: e.target.value })}
+                      className="w-full glass-input px-4 py-2.5 text-sm"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
                     <input 
                       type="number" 
                       placeholder="Price (₹) *" 
@@ -286,11 +308,40 @@ export default function ProductsPage() {
                     />
                     <input 
                       type="number" 
-                      placeholder="Tax Rate %" 
-                      value={formData.taxRate}
-                      onChange={(e) => setFormData({ ...formData, taxRate: e.target.value })}
+                      placeholder="Cost Price (₹)" 
+                      value={formData.costPrice}
+                      onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
                       className="w-full glass-input px-4 py-2.5 text-sm"
-                      min="0" max="100" 
+                      min="0" step="0.01" 
+                    />
+                    <input 
+                      type="number" 
+                      placeholder="MRP (₹)" 
+                      value={formData.mrp}
+                      onChange={(e) => setFormData({ ...formData, mrp: e.target.value })}
+                      className="w-full glass-input px-4 py-2.5 text-sm"
+                      min="0" step="0.01" 
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <select 
+                      value={formData.gstRate}
+                      onChange={(e) => setFormData({ ...formData, gstRate: e.target.value, taxRate: e.target.value })}
+                      className="w-full glass-input px-4 py-2.5 text-sm"
+                      style={{ color: 'hsl(var(--foreground))' }}
+                    >
+                      <option value="0">GST Rate: 0%</option>
+                      <option value="5">GST Rate: 5%</option>
+                      <option value="12">GST Rate: 12%</option>
+                      <option value="18">GST Rate: 18%</option>
+                      <option value="28">GST Rate: 28%</option>
+                    </select>
+                    <input 
+                      type="text" 
+                      placeholder="Barcode" 
+                      value={formData.barcode}
+                      onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                      className="w-full glass-input px-4 py-2.5 text-sm"
                     />
                   </div>
                   <input 
@@ -410,7 +461,8 @@ export default function ProductsPage() {
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>{product.name}</p>
-                          {product.sku && <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>SKU: {product.sku}</p>}
+                          {product.sku && <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>SKU: {product.sku}{product.hsnCode ? ` | HSN: ${product.hsnCode}` : ''}</p>}
+                          {product.gstRate != null && <p className="text-xs" style={{ color: 'hsl(var(--primary))' }}>GST: {product.gstRate}%{product.costPrice ? ` | Profit: ₹${(product.price - product.costPrice).toFixed(0)}` : ''}</p>}
                         </div>
                         <span className="text-lg font-bold" style={{ color: 'hsl(var(--foreground))' }}>₹{product.price.toFixed(2)}</span>
                       </div>

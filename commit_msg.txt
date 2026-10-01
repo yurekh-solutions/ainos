@@ -1,7 +1,8 @@
-feat: Multi-frame video analysis for better captions
+feat(finance): replace popups with full-page forms + extend product fields
 
-- Extract 3 frames from videos (10%, 50%, 90% timestamps)
-- Send all frames to Groq vision model for better context
-- Captions now based on full video story, not just one frame
-- Still fast: ~5-7 seconds for video captions
-- Better accuracy for action/movement videos
+- Add /products/new full-page product form with HSN, GST Rate, Cost Price, MRP, Barcode
+- Add /finance/expenses/new full-page expense form
+- Add /finance/quotes/new multi-item quotation form with tax/discount
+- Remove modal popups from Products, Expenses, Quotations list pages
+- Extend Product type with hsnCode, gstRate, costPrice, mrp, barcode fields
+- All 13 finance routes tested and working

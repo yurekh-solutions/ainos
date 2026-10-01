@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, FileText, TrendingUp, Search, Calendar, DollarSign } from 'lucide-react';
 
@@ -8,6 +9,7 @@ interface Quote { id: string; quoteNumber: string; clientName: string; items: { 
 const statusColors: Record<string, string> = { draft: '#636e72', sent: '#0984e3', viewed: '#fdcb6e', accepted: '#00b894', rejected: '#d63031', expired: '#636e72', converted: '#6c5ce7' };
 
 export default function QuotesPage() {
+  const router = useRouter();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -60,7 +62,7 @@ export default function QuotesPage() {
             <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'hsl(var(--foreground))' }}>Quotations</h1>
             <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Create and manage estimates & quotes</p>
           </div>
-          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowForm(true)}
+          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => router.push('/finance/quotes/new')}
             className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-medium"
             style={{ background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%)', boxShadow: '0 4px 14px 0 hsl(var(--primary) / 0.39)' }}>
             <Plus className="w-4 h-4" /> New Quote
@@ -134,42 +136,7 @@ export default function QuotesPage() {
               </table>
             </div>
           )}
-
-        <AnimatePresence>
-          {showForm && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
-              <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} onClick={e => e.stopPropagation()}
-                className="w-full max-w-md p-6 rounded-2xl"
-                style={{ background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)', border: '1px solid hsl(var(--border) / 0.5)', boxShadow: '0 20px 60px -10px rgb(0 0 0 / 0.3)' }}>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-bold" style={{ color: 'hsl(var(--foreground))' }}>New Quotation</h2>
-                  <button onClick={() => setShowForm(false)} className="p-2 rounded-xl hover:opacity-70"><X className="w-5 h-5" style={{ color: 'hsl(var(--muted-foreground))' }} /></button>
-                </div>
-                <form onSubmit={handleSubmit} className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <input required placeholder="Quote #" value={form.quoteNumber} onChange={e => setForm({ ...form, quoteNumber: e.target.value })} className="glass-input w-full px-4 py-2.5 rounded-xl text-sm" />
-                    <input required placeholder="Client Name *" value={form.clientName} onChange={e => setForm({ ...form, clientName: e.target.value })} className="glass-input w-full px-4 py-2.5 rounded-xl text-sm" />
-                  </div>
-                  <input placeholder="Item Description" value={form.itemDesc} onChange={e => setForm({ ...form, itemDesc: e.target.value })} className="glass-input w-full px-4 py-2.5 rounded-xl text-sm" />
-                  <div className="grid grid-cols-2 gap-3">
-                    <input type="number" placeholder="Quantity" value={form.itemQty} onChange={e => setForm({ ...form, itemQty: e.target.value })} className="glass-input w-full px-4 py-2.5 rounded-xl text-sm" />
-                    <input type="number" placeholder="Rate (₹)" value={form.itemRate} onChange={e => setForm({ ...form, itemRate: e.target.value })} className="glass-input w-full px-4 py-2.5 rounded-xl text-sm" />
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <input type="number" placeholder="Tax %" value={form.tax} onChange={e => setForm({ ...form, tax: e.target.value })} className="glass-input w-full px-4 py-2.5 rounded-xl text-sm" />
-                    <input type="number" placeholder="Discount %" value={form.discount} onChange={e => setForm({ ...form, discount: e.target.value })} className="glass-input w-full px-4 py-2.5 rounded-xl text-sm" />
-                    <input type="date" placeholder="Valid Until" value={form.validUntil} onChange={e => setForm({ ...form, validUntil: e.target.value })} className="glass-input w-full px-4 py-2.5 rounded-xl text-sm" />
-                  </div>
-                  <textarea placeholder="Notes" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className="glass-input w-full px-4 py-2.5 rounded-xl text-sm" rows={2} />
-                  <button type="submit" className="w-full py-2.5 rounded-xl text-white text-sm font-semibold"
-                    style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>Create Quote</button>
-                </form>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+        </motion.div>
     </div>
   );
 }
