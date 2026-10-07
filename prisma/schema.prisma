@@ -17,12 +17,30 @@ model Company {
   email              String?
   phone              String?
   website            String?
+  country            String?
+  companyType        String?             @map("company_type")
+  uploadedDocs       Json?               @map("uploaded_docs")
   bankName           String?             @map("bank_name")
   bankAccountNumber  String?             @map("bank_account_number")
   bankIfscCode       String?             @map("bank_ifsc_code")
   createdBy          String              @map("created_by")
   createdAt          DateTime            @default(now()) @map("created_at")
   updatedAt          DateTime            @updatedAt @map("updated_at")
+  
+  // TOOL ACCESS FLAGS (scalable - add more tools as needed)
+  autoBlog           Boolean             @default(false) @map("auto_blog")
+  invoiceGen         Boolean             @default(false) @map("invoice_gen")
+  crmAccess          Boolean             @default(false) @map("crm_access")
+  inventoryMgmt      Boolean             @default(false) @map("inventory_mgmt")
+  hrPayroll          Boolean             @default(false) @map("hr_payroll")
+  emailMarketing     Boolean             @default(false) @map("email_marketing")
+  aiAssistant        Boolean             @default(false) @map("ai_assistant")
+  websiteGen         Boolean             @default(false) @map("website_gen")
+  
+  // SUBSCRIPTION STATUS
+  subscriptionStatus String              @default("inactive") @map("subscription_status")
+  subscriptionEndsAt DateTime?           @map("subscription_ends_at")
+  
   aiChatSessions     AIChatSession[]
   attendance         Attendance[]
   automations        Automation[]
@@ -62,6 +80,7 @@ model Company {
   tasks              Task[]
   timesheets         Timesheet[]
   toolRuns           ToolRun[]
+  toolActivations    ToolActivation[]
   users              User[]
   vendors            Vendor[]
   warehouses         Warehouse[]
@@ -598,16 +617,20 @@ model Notification {
 model Subscription {
   id               String    @id @default(uuid())
   plan             String?
+  planName         String?   @map("plan_name")
   status           String    @default("pending")
   startDate        DateTime? @map("start_date")
   endDate          DateTime? @map("end_date")
   amount           Float?
+  currency         String    @default("INR")
   billingCycle     String?   @map("billing_cycle")
   paymentMethod    String?   @map("payment_method")
+  paymentId        String?   @map("payment_id")
   companyId        String?   @map("company_id")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
   apps             Json?
+  toolsIncluded    Json?     @map("tools_included")
   currentPeriodEnd DateTime? @map("current_period_end")
   partnerCode      String?   @map("partner_code")
   trialEndsAt      DateTime? @map("trial_ends_at")
@@ -615,6 +638,7 @@ model Subscription {
   company          Company?  @relation(fields: [companyId], references: [id])
 
   @@index([companyId])
+  @@index([status])
   @@map("subscriptions")
 }
 
@@ -1049,4 +1073,21 @@ model InvoiceTemplate {
 
   @@index([companyId])
   @@map("invoice_templates")
+}
+
+model ToolActivation {
+  id            String    @id @default(uuid())
+  companyId     String    @map("company_id")
+  toolName      String    @map("tool_name")
+  activated     Boolean   @default(true)
+  activatedBy   String?   @map("activated_by")
+  activatedAt   DateTime  @default(now()) @map("activated_at")
+  deactivatedAt DateTime? @map("deactivated_at")
+  reason        String?
+  
+  company       Company   @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([toolName])
+  @@map("tool_activations")
 }

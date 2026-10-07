@@ -6,9 +6,10 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "cross-env NODE_OPTIONS=--max-old-space-size=8192 next dev",
+    "predev": "rmdir /s /q .next 2>nul || echo Skipping .next cleanup",
+    "dev": "cross-env NODE_OPTIONS=--max-old-space-size=12288 next dev --turbopack",
     "prebuild": "prisma generate && prisma db push --accept-data-loss --skip-generate",
-    "build": "NODE_OPTIONS=--max-old-space-size=8192 next build",
+    "build": "NODE_OPTIONS=--max-old-space-size=12288 next build",
     "start": "node server.js",
     "lint": "eslint",
     "postinstall": "prisma generate"

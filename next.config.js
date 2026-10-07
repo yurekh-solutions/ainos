@@ -22,12 +22,6 @@ const nextConfig = {
       },
     ],
   },
-  turbopack: {
-    root: __dirname,
-  },
-  experimental: {
-    turbopackUseSystemTlsCerts: true,
-  },
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.externals.push('mongoose');
