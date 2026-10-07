@@ -172,7 +172,7 @@ export default function SignInPage() {
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/ainos-robot.png" alt="AINOS" className="w-full h-full object-cover" />
+              <img src="/ainos.jpg" alt="AINOS" className="w-full h-full object-cover" />
             </div>
             <div className="text-left">
               <h1 className="text-xl font-bold text-gray-900">AINOS</h1>
