@@ -253,32 +253,156 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="relative mb-6 sm:mb-8 p-5 sm:p-8 rounded-3xl overflow-hidden bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 dark:from-purple-950 dark:via-indigo-950 dark:to-purple-900"
+          className="relative mb-6 sm:mb-8 rounded-3xl overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, #1a0533 0%, #2d1b69 40%, #4c1d95 70%, #6d28d9 100%)',
+          }}
         >
-          <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/10 blur-2xl" />
-          <div className="absolute -bottom-24 right-24 w-48 h-48 rounded-full bg-pink-400/20 blur-2xl" />
-          <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-5">
-            <img
-              src="/ainos-robot.png"
-              alt="AINOS Assistant"
-              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover shadow-lg ring-2 ring-white/30"
+          {/* Animated Gradient Orbs */}
+          <div className="absolute inset-0 overflow-hidden">
+            <motion.div
+              animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
+              transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute -top-20 -left-20 w-80 h-80 rounded-full opacity-50"
+              style={{ background: 'radial-gradient(circle, #7c3aed 0%, transparent 70%)', filter: 'blur(60px)' }}
             />
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-purple-200 mb-1">AINOS Marketing Suite</p>
-              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Everything you need to market your business</h2>
-              <p className="text-sm text-purple-100/90 mb-4 max-w-2xl">
+            <motion.div
+              animate={{ x: [0, -20, 0], y: [0, 30, 0] }}
+              transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute -bottom-32 right-20 w-96 h-96 rounded-full opacity-40"
+              style={{ background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)', filter: 'blur(80px)' }}
+            />
+            <motion.div
+              animate={{ x: [0, 15, 0], y: [0, 15, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute top-1/3 right-1/3 w-64 h-64 rounded-full opacity-30"
+              style={{ background: 'radial-gradient(circle, #c084fc 0%, transparent 70%)', filter: 'blur(50px)' }}
+            />
+          </div>
+
+          {/* Shimmer Effect */}
+          <div className="absolute inset-0 overflow-hidden">
+            <motion.div
+              animate={{ x: ['-100%', '200%'] }}
+              transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+              className="absolute top-0 left-0 w-1/2 h-full"
+              style={{
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)',
+              }}
+            />
+          </div>
+
+          {/* Dot Grid Pattern */}
+          <div className="absolute inset-0 opacity-20" style={{
+            backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)',
+            backgroundSize: '32px 32px'
+          }} />
+
+          {/* Content */}
+          <div className="relative p-6 sm:p-10">
+            {/* Top Row: Badge + Stats */}
+            <div className="flex items-center justify-between mb-6">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full"
+                style={{
+                  background: 'rgba(255,255,255,0.08)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                }}
+              >
+                <div className="relative">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                  <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                </div>
+                <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/90">AINOS Marketing Suite</span>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="hidden sm:flex items-center gap-3 px-5 py-2.5 rounded-2xl"
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                }}
+              >
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-white/50 font-semibold">Active Tools</p>
+                  <p className="text-xl font-bold text-white">{marketingTools.length}</p>
+                </div>
+                <div className="w-px h-8 bg-white/10" />
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-white/50 font-semibold">Status</p>
+                  <p className="text-sm font-semibold text-emerald-400">Live</p>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Main Heading */}
+            <div className="mb-6">
+              <motion.h2
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-3 leading-[1.1] tracking-tight"
+              >
+                Everything you need to
+                <br />
+                <span
+                  className="bg-clip-text text-transparent"
+                  style={{
+                    backgroundImage: 'linear-gradient(135deg, #f5f3ff 0%, #c4b5fd 30%, #f0abfc 60%, #fbbf24 100%)',
+                  }}
+                >
+                  market your business
+                </span>
+              </motion.h2>
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+                className="text-sm sm:text-base text-white/60 max-w-2xl leading-relaxed font-light"
+              >
                 Social captions, SEO audits, AI blogs and branded invitations — pick a tool below and start growing.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {marketingTools.map((tool) => (
-                  <Link key={tool.href} href={tool.href}>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-white/15 hover:bg-white/25 border border-white/20 backdrop-blur-sm transition-colors">
-                      <tool.icon className="w-3.5 h-3.5" />
-                      {tool.title}
-                    </span>
-                  </Link>
-                ))}
-              </div>
+              </motion.p>
+            </div>
+
+            {/* Tool Buttons */}
+            <div className="flex flex-wrap gap-2.5">
+              {marketingTools.map((tool, idx) => (
+                <Link key={tool.href} href={tool.href}>
+                  <motion.span
+                    initial={{ opacity: 0, y: 15, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ delay: 0.3 + idx * 0.06, type: 'spring', stiffness: 200 }}
+                    whileHover={{ scale: 1.05, y: -3 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="group inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-white/90 transition-all cursor-pointer"
+                    style={{
+                      background: 'rgba(255,255,255,0.07)',
+                      backdropFilter: 'blur(12px)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.background = 'rgba(168,85,247,0.2)';
+                      (e.currentTarget as HTMLElement).style.borderColor = 'rgba(168,85,247,0.4)';
+                      (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 32px rgba(124,58,237,0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.07)';
+                      (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.12)';
+                      (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+                    }}
+                  >
+                    <tool.icon className="w-4 h-4" />
+                    {tool.title}
+                    <ArrowRight className="w-3 h-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                  </motion.span>
+                </Link>
+              ))}
             </div>
           </div>
         </motion.div>

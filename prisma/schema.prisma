@@ -89,6 +89,13 @@ model Company {
   warehouses         Warehouse[]
   deliveryChallans   DeliveryChallan[]
   invoiceTemplates   InvoiceTemplate[]
+  accounts           Account[]
+  journalEntries     JournalEntry[]
+  creditNotes        CreditNote[]
+  debitNotes         DebitNote[]
+  recurringInvoices  RecurringInvoice[]
+  bankAccounts       BankAccount[]
+  bankTransactions   BankTransaction[]
 
   @@map("companies")
 }
@@ -1095,4 +1102,184 @@ model ToolActivation {
   @@index([companyId])
   @@index([toolName])
   @@map("tool_activations")
+}
+
+// ══════════════════════════════════════════
+// ACCOUNTING MODELS (Chart of Accounts, Ledger)
+// ═══════════════════════════════════════════
+
+model Account {
+  id          String    @id @default(uuid())
+  code        String    @unique
+  name        String
+  type        String    // asset, liability, equity, income, expense
+  parentId    String?   @map("parent_id")
+  balance     Float     @default(0)
+  description String?
+  isActive    Boolean   @default(true) @map("is_active")
+  companyId   String?   @map("company_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  company     Company?  @relation(fields: [companyId], references: [id])
+  parent      Account?  @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children    Account[] @relation("AccountHierarchy")
+  entries     LedgerEntry[]
+
+  @@index([companyId])
+  @@index([type])
+  @@map("accounts")
+}
+
+model JournalEntry {
+  id          String    @id @default(uuid())
+  date        DateTime
+  description String?
+  reference   String?   // invoice number, etc.
+  status      String    @default("posted") // draft, posted, void
+  companyId   String?   @map("company_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  entries     LedgerEntry[]
+  company     Company?  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([date])
+  @@map("journal_entries")
+}
+
+model LedgerEntry {
+  id          String   @id @default(uuid())
+  journalId   String   @map("journal_id")
+  accountId   String   @map("account_id")
+  debit       Float    @default(0)
+  credit      Float    @default(0)
+  description String?
+  journal     JournalEntry @relation(fields: [journalId], references: [id])
+  account     Account      @relation(fields: [accountId], references: [id])
+
+  @@index([journalId])
+  @@index([accountId])
+  @@map("ledger_entries")
+}
+
+// ═══════════════════════════════════════════
+// CREDIT / DEBIT NOTES
+// ═══════════════════════════════════════════
+
+model CreditNote {
+  id            String   @id @default(uuid())
+  noteNumber    String   @unique @map("note_number")
+  customerId    String?  @map("customer_id")
+  customerName  String?  @map("customer_name")
+  invoiceId     String?  @map("invoice_id")
+  items         Json?
+  subtotal      Float?
+  tax           Float?
+  cgstAmount    Float?   @map("cgst_amount")
+  sgstAmount    Float?   @map("sgst_amount")
+  igstAmount    Float?   @map("igst_amount")
+  total         Float?
+  reason        String?
+  status        String   @default("draft")
+  companyId     String?  @map("company_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  company       Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@map("credit_notes")
+}
+
+model DebitNote {
+  id            String   @id @default(uuid())
+  noteNumber    String   @unique @map("note_number")
+  vendorId      String?  @map("vendor_id")
+  vendorName    String?  @map("vendor_name")
+  purchaseId    String?  @map("purchase_id")
+  items         Json?
+  subtotal      Float?
+  tax           Float?
+  cgstAmount    Float?   @map("cgst_amount")
+  sgstAmount    Float?   @map("sgst_amount")
+  igstAmount    Float?   @map("igst_amount")
+  total         Float?
+  reason        String?
+  status        String   @default("draft")
+  companyId     String?  @map("company_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  company       Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@map("debit_notes")
+}
+
+// ═══════════════════════════════════════════
+// RECURRING INVOICES
+// ═══════════════════════════════════════════
+
+model RecurringInvoice {
+  id            String   @id @default(uuid())
+  customerId    String?  @map("customer_id")
+  customerName  String?  @map("customer_name")
+  items         Json?
+  frequency     String   // daily, weekly, monthly, quarterly, yearly
+  startDate     DateTime @map("start_date")
+  endDate       DateTime? @map("end_date")
+  nextRunDate   DateTime @map("next_run_date")
+  status        String   @default("active") // active, paused, completed
+  lastInvoiceId String?  @map("last_invoice_id")
+  notes         String?
+  companyId     String?  @map("company_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  company       Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([nextRunDate])
+  @@index([status])
+  @@map("recurring_invoices")
+}
+
+// ═══════════════════════════════════════════
+// BANK ACCOUNTS & RECONCILIATION
+// ══════════════════════════════════════════
+
+model BankAccount {
+  id            String   @id @default(uuid())
+  name          String
+  accountNumber String   @map("account_number")
+  ifscCode      String?  @map("ifsc_code")
+  bankName      String?  @map("bank_name")
+  balance       Float    @default(0)
+  companyId     String?  @map("company_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  company       Company? @relation(fields: [companyId], references: [id])
+  transactions  BankTransaction[]
+
+  @@index([companyId])
+  @@map("bank_accounts")
+}
+
+model BankTransaction {
+  id            String    @id @default(uuid())
+  accountId     String    @map("account_id")
+  date          DateTime
+  description   String?
+  debit         Float     @default(0)
+  credit        Float     @default(0)
+  balance       Float?
+  reference     String?
+  matched       Boolean   @default(false)
+  matchedWith   String?   @map("matched_with") // invoice ID or expense ID
+  companyId     String?   @map("company_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  account       BankAccount @relation(fields: [accountId], references: [id])
+  company       Company?  @relation(fields: [companyId], references: [id])
+
+  @@index([accountId])
+  @@index([companyId])
+  @@index([date])
+  @@map("bank_transactions")
 }
