@@ -8,6 +8,7 @@ import {
   Radio, FileText, Zap, ArrowRight,
   ScrollText, Contact2, Boxes, BarChart3, Hourglass, BadgePercent, FileBarChart,
   Truck, FileSpreadsheet, BellRing, Paintbrush, Hash, SearchCheck, PenTool, Bot, MailOpen, Share2, Layers,
+  Plus, TrendingUp, Users, Calendar, Clock, CheckCircle2, Circle, Sparkles, Megaphone, Receipt, Wallet,
 } from 'lucide-react';
 
 interface Tool {
@@ -319,6 +320,105 @@ export default function DashboardPage() {
                 ))}
               </div>
             </div>
+          </div>
+        </motion.div>
+
+        {/* Quick Actions */}
+        <SectionHeader title="Quick Actions" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-10">
+          {[
+            { icon: Plus, label: 'New Invoice', href: '/invoices', gradient: 'from-violet-500 to-purple-600' },
+            { icon: Users, label: 'Add Customer', href: '/customers', gradient: 'from-cyan-500 to-blue-600' },
+            { icon: Megaphone, label: 'Create Caption', href: '/marketing/email', gradient: 'from-pink-500 to-rose-600' },
+            { icon: Sparkles, label: 'AI Blog Post', href: '/marketing/blog', gradient: 'from-amber-500 to-orange-600' },
+          ].map((action, i) => (
+            <motion.div
+              key={action.label}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 + i * 0.05 }}
+              whileHover={{ y: -3 }}
+            >
+              <Link href={action.href} className="block p-4 rounded-2xl border border-gray-100 bg-white hover:shadow-md transition-all group">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${action.gradient} flex items-center justify-center shadow-md mb-3 group-hover:scale-110 transition-transform`}>
+                  <action.icon className="w-5 h-5 text-white" />
+                </div>
+                <p className="text-sm font-semibold text-gray-900">{action.label}</p>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Getting Started Checklist */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="mb-8 sm:mb-10 p-5 sm:p-6 rounded-2xl border border-gray-100 bg-white"
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md">
+              <CheckCircle2 className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-gray-900">Getting Started</h3>
+              <p className="text-xs text-gray-500">Complete these steps to set up your workspace</p>
+            </div>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-2.5">
+            {[
+              { label: 'Create your first invoice', href: '/invoices', done: financeStats.invoices > 0 },
+              { label: 'Add a customer profile', href: '/customers', done: false },
+              { label: 'Set up your company details', href: '/company', done: false },
+              { label: 'Generate a social media caption', href: '/marketing/email', done: false },
+            ].map((item, i) => (
+              <Link key={item.label} href={item.href} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors group">
+                {item.done ? (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                ) : (
+                  <Circle className="w-5 h-5 text-gray-300 flex-shrink-0 group-hover:text-purple-400 transition-colors" />
+                )}
+                <span className={`text-sm ${item.done ? 'text-gray-400 line-through' : 'text-gray-700 font-medium'}`}>{item.label}</span>
+              </Link>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Recent Activity */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-8 sm:mb-10 p-5 sm:p-6 rounded-2xl border border-gray-100 bg-white"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md">
+                <Clock className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-gray-900">Recent Activity</h3>
+                <p className="text-xs text-gray-500">Your latest actions across AINOS</p>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {[
+              { icon: Receipt, text: 'Invoice system ready', time: 'Just now', color: 'text-emerald-500', bg: 'bg-emerald-50' },
+              { icon: Megaphone, text: 'Marketing Suite activated', time: 'Just now', color: 'text-purple-500', bg: 'bg-purple-50' },
+              { icon: Wallet, text: 'Finance dashboard configured', time: 'Just now', color: 'text-blue-500', bg: 'bg-blue-50' },
+              { icon: TrendingUp, text: 'SEO audit score: 92/100', time: 'Today', color: 'text-amber-500', bg: 'bg-amber-50' },
+            ].map((activity, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50/50">
+                <div className={`w-8 h-8 rounded-lg ${activity.bg} flex items-center justify-center flex-shrink-0`}>
+                  <activity.icon className={`w-4 h-4 ${activity.color}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">{activity.text}</p>
+                  <p className="text-xs text-gray-400">{activity.time}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </motion.div>
 
