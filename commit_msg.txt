@@ -1,1 +1,1 @@
-Fix company creation: map panNumber to taxId in API route to match Prisma schema
+Fix Render build: add empty turbopack config for Next.js 16 compatibility
