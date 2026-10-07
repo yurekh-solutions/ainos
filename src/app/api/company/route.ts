@@ -17,8 +17,16 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     
+    // Map frontend field names to schema field names
+    const { panNumber, ...restBody } = body;
+    const companyData = {
+      ...restBody,
+      taxId: panNumber || restBody.taxId,
+      createdBy: user.id
+    };
+    
     const company = await prisma.company.create({
-      data: { ...body, createdBy: user.id }
+      data: companyData
     });
 
     await prisma.user.update({

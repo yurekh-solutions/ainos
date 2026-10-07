@@ -2,7 +2,7 @@
 
 import { signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import { Shield, FileText, ArrowRight, Globe, Loader2, AlertCircle, Eye, EyeOff, LogIn, Zap, BarChart3, Lock, Sparkles } from 'lucide-react';
+import { Shield, FileText, ArrowRight, Globe, Loader2, AlertCircle, Eye, EyeOff, LogIn, Zap, BarChart3, Lock, UserPlus } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -154,7 +154,7 @@ export default function SignInPage() {
             >
               <div className="flex items-start gap-4">
                 <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#4c1d95' }}>
-                  <Sparkles className="w-5 h-5 text-white" />
+                  <UserPlus className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-base font-bold text-gray-900 mb-1">New to AINOS?</h3>

@@ -1,1 +1,1 @@
-Force Render rebuild: deploy forgot-password and reset-password pages
+Fix company creation: map panNumber to taxId in API route to match Prisma schema
