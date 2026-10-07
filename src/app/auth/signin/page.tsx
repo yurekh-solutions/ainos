@@ -321,9 +321,9 @@ export default function SignInPage() {
 
                 {/* Forgot Password */}
                 <div className="text-center">
-                  <a href="#" className="text-sm font-medium underline decoration-1 underline-offset-2" style={{ color: '#6d28d9' }}>
+                  <Link href="/auth/forgot-password" className="text-sm font-medium underline decoration-1 underline-offset-2" style={{ color: '#6d28d9' }}>
                     Forgot your password?
-                  </a>
+                  </Link>
                 </div>
 
                 {/* Important Note */}
