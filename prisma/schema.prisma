@@ -20,6 +20,9 @@ model Company {
   country            String?
   companyType        String?             @map("company_type")
   uploadedDocs       Json?               @map("uploaded_docs")
+  docsVerified       Boolean             @default(false) @map("docs_verified")
+  docsVerifiedAt     DateTime?           @map("docs_verified_at")
+  docsVerifiedBy     String?             @map("docs_verified_by")
   bankName           String?             @map("bank_name")
   bankAccountNumber  String?             @map("bank_account_number")
   bankIfscCode       String?             @map("bank_ifsc_code")

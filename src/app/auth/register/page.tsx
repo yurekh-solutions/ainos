@@ -185,8 +185,15 @@ export default function RegisterPage() {
   const [country, setCountry] = useState('India');
   const [gstNumber, setGstNumber] = useState('');
 
-  const [documents, setDocuments] = useState<Record<string, string>>({});
-  const handleFile = (doc: string, f: File | null) => { if (f) setDocuments(p => ({ ...p, [doc]: f.name })); };
+  const [documents, setDocuments] = useState<Record<string, { filename: string; fileUrl: string }>>({});
+  const [uploading, setUploading] = useState<Record<string, boolean>>({});
+  
+  const handleFile = async (doc: string, f: File | null) => {
+    if (!f) return;
+    
+    // For now, store temporarily - will upload after company is created
+    setDocuments(p => ({ ...p, [doc]: { filename: f.name, fileUrl: '' } }));
+  };
 
   const goNext = () => {
     setError(null);
@@ -206,13 +213,61 @@ export default function RegisterPage() {
     setError(null);
     setLoading(true);
     try {
+      // Step 1: Create company first
       const res = await fetch('/api/auth/register-company', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email: userEmail, phone: userPhone, password, companyName, companyType, companyEmail, companyPhone, companyAddress, country, gstNumber: gstNumber || undefined, documents }),
+        body: JSON.stringify({ 
+          name, email: userEmail, phone: userPhone, password, 
+          companyName, companyType, companyEmail, companyPhone, 
+          companyAddress, country, gstNumber: gstNumber || undefined, 
+          documents: {} // Empty initially
+        }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Registration failed'); setLoading(false); return; }
+      
+      const companyId = data.company.id;
+      
+      // Step 2: Upload documents if any
+      const uploadedDocs: Record<string, { filename: string; fileUrl: string }> = {};
+      for (const [docName, docData] of Object.entries(documents)) {
+        if (docData.filename) {
+          // Find the original file from the input
+          const fileInput = document.querySelector(`input[data-doc-name="${docName}"]`) as HTMLInputElement;
+          const file = fileInput?.files?.[0];
+          
+          if (file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('docType', docName);
+            formData.append('companyId', companyId);
+            
+            const uploadRes = await fetch('/api/upload-document', {
+              method: 'POST',
+              body: formData,
+            });
+            
+            if (uploadRes.ok) {
+              const uploadData = await uploadRes.json();
+              uploadedDocs[docName] = {
+                filename: docData.filename,
+                fileUrl: uploadData.fileUrl,
+              };
+            }
+          }
+        }
+      }
+      
+      // Step 3: Update company with uploaded documents
+      if (Object.keys(uploadedDocs).length > 0) {
+        await fetch('/api/company', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uploadedDocs }),
+        });
+      }
+      
       setSuccess(true);
       setTimeout(async () => {
         const r = await signIn('credentials', { email: userEmail, password, redirect: false });
@@ -529,10 +584,10 @@ export default function RegisterPage() {
                                         </div>
                                       </div>
                                       <label className="flex-shrink-0 ml-2 cursor-pointer">
-                                        <input type="file" className="hidden" onChange={e => handleFile(d.name, e.target.files?.[0] || null)} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+                                        <input type="file" className="hidden" data-doc-name={d.name} onChange={e => handleFile(d.name, e.target.files?.[0] || null)} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
                                         <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${uploaded ? 'bg-green-50 text-green-700 border border-green-200' : 'text-white border'}`}
                                           style={uploaded ? {} : { background: '#4c1d95', borderColor: '#4c1d95' }}>
-                                          {uploaded ? <><Check className="w-3.5 h-3.5" /><span className="hidden sm:inline max-w-[80px] truncate">{documents[d.name]}</span><span className="sm:hidden">Done</span></> : <><Upload className="w-3.5 h-3.5" />Upload</>}
+                                          {uploaded ? <><Check className="w-3.5 h-3.5" /><span className="hidden sm:inline max-w-[80px] truncate">{documents[d.name]?.filename}</span><span className="sm:hidden">Done</span></> : <><Upload className="w-3.5 h-3.5" />Upload</>}
                                         </div>
                                       </label>
                                     </div>
