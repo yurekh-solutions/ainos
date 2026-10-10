@@ -223,35 +223,45 @@ export default function AinosLandingPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* ─── NAVBAR ──────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-gray-100/80">
-        <div className="flex items-center justify-between w-full px-4 sm:px-6 md:px-16 lg:px-24 xl:px-32 py-4">
-          <Link href="/" className="flex  items-center gap-[2px]">
-            <Image src="/ainos-wordmark.png" alt="AINOS" width={100} height={34} className="h-8 w-auto object-contain" />
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-b border-gray-100/80">
+        <div className="flex items-center justify-between w-full px-4 sm:px-6 lg:px-12 xl:px-20 py-3.5">
+          <Link href="/" className="flex items-center gap-[2px]">
+            <Image src="/ainos-wordmark.png" alt="AINOS" width={100} height={34} className="h-7 sm:h-8 w-auto object-contain" />
           </Link>
 
           {/* Desktop links */}
-          <div className={`max-md:fixed max-md:inset-0 max-md:bg-white/80 max-md:overflow-hidden max-md:transition-[width] max-md:duration-300 max-md:top-0 max-md:left-0 max-md:flex-col max-md:justify-center max-md:text-lg max-md:backdrop-blur-xl flex items-center gap-8 ${menuOpen ? 'max-md:w-full' : 'max-md:w-0'}`}>
+          <div className="hidden md:flex items-center gap-8">
             <a href="#how" className="text-sm text-neutral-700 hover:text-neutral-900 transition-colors" onClick={(e) => handleNavClick(e, '#how')}>How it works</a>
             <a href="#modules" className="text-sm text-neutral-700 hover:text-neutral-900 transition-colors" onClick={(e) => handleNavClick(e, '#modules')}>Modules</a>
             <a href="#workflow" className="text-sm text-neutral-700 hover:text-neutral-900 transition-colors" onClick={(e) => handleNavClick(e, '#workflow')}>Why AINOS</a>
             <a href="#about" className="text-sm text-neutral-700 hover:text-neutral-900 transition-colors" onClick={(e) => handleNavClick(e, '#about')}>About</a>
-            <div className="md:hidden flex flex-col items-center gap-5 mt-6">
-                          <Link href="/auth/register" className="px-8 py-3 bg-[#5b21b6] hover:bg-[#4c1d95] active:scale-95 rounded-full text-white text-base font-semibold transition-all shadow-lg shadow-purple-900/25">Get Started</Link>
-                          <Link href="/auth/signin" className="text-base font-medium text-gray-600 hover:text-gray-900 transition-colors">Sign In</Link>
-                        </div>
-            <button aria-label="close menu" className="size-6 md:hidden" onClick={() => setMenuOpen(false)}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
-            </button>
           </div>
 
           <div className="flex items-center gap-3">
-            <Link href="/auth/signin" className="max-md:hidden text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">Sign In</Link>
-            <Link href="/auth/register" className="max-md:hidden px-5 py-2.5 bg-[#5b21b6] hover:bg-[#4c1d95] active:scale-95 rounded-full text-white text-sm font-semibold transition-all">Get Started</Link>
-            <button aria-label="menu" className="size-6 md:hidden" onClick={() => setMenuOpen(true)}>
+            <Link href="/auth/signin" className="hidden md:inline-flex text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">Sign In</Link>
+            <Link href="/auth/register" className="hidden md:inline-flex px-5 py-2.5 bg-[#5b21b6] hover:bg-[#4c1d95] active:scale-95 rounded-full text-white text-sm font-semibold transition-all">Get Started</Link>
+            <button aria-label="menu" className="md:hidden p-2 text-gray-700" onClick={() => setMenuOpen(true)}>
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18M3 18h18M3 6h18" /></svg>
             </button>
           </div>
         </div>
+
+        {/* Mobile menu */}
+        {menuOpen && (
+          <div className="md:hidden fixed inset-0 top-[60px] bg-white/98 backdrop-blur-xl z-40 flex flex-col items-center justify-center gap-8">
+            <button aria-label="close menu" className="absolute top-4 right-4 p-2 text-gray-700" onClick={() => setMenuOpen(false)}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            </button>
+            <a href="#how" className="text-lg font-medium text-gray-900" onClick={(e) => { handleNavClick(e, '#how'); setMenuOpen(false); }}>How it works</a>
+            <a href="#modules" className="text-lg font-medium text-gray-900" onClick={(e) => { handleNavClick(e, '#modules'); setMenuOpen(false); }}>Modules</a>
+            <a href="#workflow" className="text-lg font-medium text-gray-900" onClick={(e) => { handleNavClick(e, '#workflow'); setMenuOpen(false); }}>Why AINOS</a>
+            <a href="#about" className="text-lg font-medium text-gray-900" onClick={(e) => { handleNavClick(e, '#about'); setMenuOpen(false); }}>About</a>
+            <div className="flex flex-col items-center gap-4 mt-4">
+              <Link href="/auth/register" className="px-8 py-3 bg-[#5b21b6] hover:bg-[#4c1d95] active:scale-95 rounded-full text-white text-base font-semibold transition-all shadow-lg shadow-purple-900/25">Get Started</Link>
+              <Link href="/auth/signin" className="text-base font-medium text-gray-600 hover:text-gray-900 transition-colors">Sign In</Link>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* ─── HERO SECTION ────────────────────────────────────────── */}
