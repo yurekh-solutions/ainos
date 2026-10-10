@@ -255,7 +255,7 @@ export default function AinosLandingPage() {
       </nav>
 
       {/* ─── HERO SECTION ────────────────────────────────────────── */}
-      <section className="relative w-full overflow-hidden pt-28 md:pt-32 pb-12 px-4">
+      <section className="relative w-full overflow-hidden pt-20 md:pt-24 pb-12 px-4">
         {/* Background — subtle dot grid + soft purple glows (self-contained) */}
         <div className="absolute inset-0 bg-[radial-gradient(#e9e4f5_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_75%_65%_at_50%_35%,black,transparent)]" />
         <div className="absolute -top-32 -right-24 w-[440px] h-[440px] rounded-full bg-purple-200/50 blur-3xl" />
