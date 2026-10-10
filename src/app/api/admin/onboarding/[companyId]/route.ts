@@ -55,6 +55,7 @@ async function sendOnboardingEmail(
       body: JSON.stringify({
         from: 'AINOS <onboarding@resend.dev>',
         to: [companyEmail],
+        cc: ['info.ainosio@gmail.com'],
         subject: subjectMap[action],
         html: `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
