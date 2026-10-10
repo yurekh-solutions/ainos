@@ -755,8 +755,10 @@ export default function AinosLandingPage() {
           </div>
 
           <div
+            id="workflow-slider"
             ref={sliderRef}
             className="flex gap-5 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {WORKFLOWS.map((w, i) => (
               <motion.div
@@ -777,6 +779,7 @@ export default function AinosLandingPage() {
             ))}
           </div>
         </div>
+        <style>{`#workflow-slider::-webkit-scrollbar { display: none; }`}</style>
       </section>
 
       {/* ─── ABOUT — MAGNIFIC-STYLE BENTO ────────────────────────── */}
