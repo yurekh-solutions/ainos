@@ -292,8 +292,8 @@ export default function AinosLandingPage() {
 
         <div className="relative w-full md:px-12 lg:px-20 xl:px-28 mx-auto flex flex-col-reverse md:flex-row items-center justify-between gap-8 py-10 md:py-14">
           {/* Left */}
-          <div className="flex flex-col items-start max-w-xl">
-            <Link href="https://yurekh.com/" className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-full p-1 pr-4 text-sm hover:bg-purple-100 transition-colors mx-auto md:mx-0">
+          <div className="flex flex-col items-center md:items-start max-w-xl w-full">
+            <Link href="https://yurekh.com/" className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-full p-1 pr-4 text-sm hover:bg-purple-100 transition-colors">
               <span className="bg-[#5b21b6] text-white text-xs px-3 py-1 rounded-full font-semibold">YUREKH</span>
               <span className="flex items-center gap-2 text-purple-700">
                 <span className="text-sm font-medium">Introducing AINOS OS</span>
@@ -315,7 +315,7 @@ export default function AinosLandingPage() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="text-center md:text-left text-base sm:text-lg text-neutral-600 max-w-md mt-4 mx-auto md:mx-0 font-light leading-relaxed"
+              className="text-center md:text-left text-base sm:text-lg text-neutral-600 max-w-md mt-4 font-light leading-relaxed"
             >
               CRM, Finance, HR, Inventory, Marketing and AI — unified in a single dashboard. Compliance-ready, built to scale worldwide.
             </motion.p>
@@ -329,7 +329,7 @@ export default function AinosLandingPage() {
                 const trimmed = email.trim();
                 router.push(trimmed ? `/auth/register?email=${encodeURIComponent(trimmed)}` : '/auth/register');
               }}
-              className="flex items-center border gap-2 border-neutral-200 h-13 max-w-[440px] w-full rounded-full overflow-hidden mt-6 mx-auto md:mx-0 bg-white shadow-sm focus-within:border-purple-300 focus-within:ring-4 focus-within:ring-purple-100/60 transition-all"
+              className="flex items-center border gap-2 border-neutral-200 h-13 max-w-[440px] w-full rounded-full overflow-hidden mt-6 bg-white shadow-sm focus-within:border-purple-300 focus-within:ring-4 focus-within:ring-purple-100/60 transition-all"
             >
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your work email" className="w-full h-full pl-6 outline-none text-sm bg-transparent text-neutral-600" />
               <button type="submit" className="bg-[#5b21b6] hover:bg-[#4c1d95] active:scale-95 w-44 h-10 rounded-full text-sm text-white font-semibold flex items-center justify-center mr-1.5 transition-all shrink-0 shadow-md shadow-purple-900/20 cursor-pointer">
@@ -342,20 +342,20 @@ export default function AinosLandingPage() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.5 }}
-              className="mt-8 mx-auto md:mx-0"
+              className="mt-8 w-full"
             >
-              {/* Mobile: stacked cards */}
-              <div className="flex md:hidden flex-col gap-3">
+              {/* Mobile: stacked cards - full width */}
+              <div className="flex md:hidden flex-col gap-3 w-full">
                 {[
                   { icon: Shield, title: 'Secure & Reliable', desc: 'Your data, our priority' },
                   { icon: Zap, title: 'Quick Setup', desc: 'Get started in minutes' },
                   { icon: Headphones, title: 'Dedicated Support', desc: 'We\'re here to help' },
                 ].map((item) => (
-                  <div key={item.title} className="flex items-center gap-3 p-3 rounded-xl bg-purple-50/60 border border-purple-100">
+                  <div key={item.title} className="flex items-center gap-3 p-3.5 rounded-xl bg-purple-50/60 border border-purple-100 w-full">
                     <div className="w-10 h-10 rounded-xl bg-white ring-1 ring-purple-100 flex items-center justify-center flex-shrink-0 shadow-sm">
                       <item.icon className="w-[18px] h-[18px] text-[#5b21b6]" />
                     </div>
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-semibold text-gray-900 leading-tight">{item.title}</p>
                       <p className="text-xs text-gray-500 leading-tight mt-0.5">{item.desc}</p>
                     </div>
