@@ -245,24 +245,43 @@ export default function AinosLandingPage() {
             </button>
           </div>
         </div>
-
-        {/* Mobile menu */}
-        {menuOpen && (
-          <div className="md:hidden fixed inset-0 top-[60px] bg-white/98 backdrop-blur-xl z-40 flex flex-col items-center justify-center gap-8">
-            <button aria-label="close menu" className="absolute top-4 right-4 p-2 text-gray-700" onClick={() => setMenuOpen(false)}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
-            </button>
-            <a href="#how" className="text-lg font-medium text-gray-900" onClick={(e) => { handleNavClick(e, '#how'); setMenuOpen(false); }}>How it works</a>
-            <a href="#modules" className="text-lg font-medium text-gray-900" onClick={(e) => { handleNavClick(e, '#modules'); setMenuOpen(false); }}>Modules</a>
-            <a href="#workflow" className="text-lg font-medium text-gray-900" onClick={(e) => { handleNavClick(e, '#workflow'); setMenuOpen(false); }}>Why AINOS</a>
-            <a href="#about" className="text-lg font-medium text-gray-900" onClick={(e) => { handleNavClick(e, '#about'); setMenuOpen(false); }}>About</a>
-            <div className="flex flex-col items-center gap-4 mt-4">
-              <Link href="/auth/register" className="px-8 py-3 bg-[#5b21b6] hover:bg-[#4c1d95] active:scale-95 rounded-full text-white text-base font-semibold transition-all shadow-lg shadow-purple-900/25">Get Started</Link>
-              <Link href="/auth/signin" className="text-base font-medium text-gray-600 hover:text-gray-900 transition-colors">Sign In</Link>
-            </div>
-          </div>
-        )}
       </nav>
+
+      {/* Mobile drawer overlay */}
+      {menuOpen && (
+        <div className="md:hidden fixed inset-0 z-[60]" onClick={() => setMenuOpen(false)}>
+          <div className="absolute inset-0 bg-black/40" />
+        </div>
+      )}
+
+      {/* Mobile side drawer */}
+      <div className={`md:hidden fixed top-0 right-0 h-full w-[280px] bg-white z-[70] shadow-2xl transform transition-transform duration-300 ease-in-out ${menuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="flex flex-col h-full">
+          {/* Drawer header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <Image src="/ainos-wordmark.png" alt="AINOS" width={80} height={28} className="h-6 w-auto object-contain" />
+            <button aria-label="close menu" className="p-2 text-gray-500 hover:text-gray-900" onClick={() => setMenuOpen(false)}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            </button>
+          </div>
+
+          {/* Drawer links */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <nav className="flex flex-col gap-1">
+              <a href="#how" className="px-4 py-3 text-base font-medium text-gray-900 hover:bg-purple-50 rounded-lg transition-colors" onClick={(e) => { handleNavClick(e, '#how'); setMenuOpen(false); }}>How it works</a>
+              <a href="#modules" className="px-4 py-3 text-base font-medium text-gray-900 hover:bg-purple-50 rounded-lg transition-colors" onClick={(e) => { handleNavClick(e, '#modules'); setMenuOpen(false); }}>Modules</a>
+              <a href="#workflow" className="px-4 py-3 text-base font-medium text-gray-900 hover:bg-purple-50 rounded-lg transition-colors" onClick={(e) => { handleNavClick(e, '#workflow'); setMenuOpen(false); }}>Why AINOS</a>
+              <a href="#about" className="px-4 py-3 text-base font-medium text-gray-900 hover:bg-purple-50 rounded-lg transition-colors" onClick={(e) => { handleNavClick(e, '#about'); setMenuOpen(false); }}>About</a>
+            </nav>
+          </div>
+
+          {/* Drawer footer CTAs */}
+          <div className="px-6 py-6 border-t border-gray-100 space-y-3">
+            <Link href="/auth/register" className="block w-full px-6 py-3 bg-[#5b21b6] hover:bg-[#4c1d95] active:scale-95 rounded-full text-white text-base font-semibold text-center transition-all shadow-lg shadow-purple-900/25" onClick={() => setMenuOpen(false)}>Get Started</Link>
+            <Link href="/auth/signin" className="block w-full px-6 py-3 text-base font-medium text-gray-700 hover:text-gray-900 text-center transition-colors" onClick={() => setMenuOpen(false)}>Sign In</Link>
+          </div>
+        </div>
+      </div>
 
       {/* ─── HERO SECTION ────────────────────────────────────────── */}
       <section className="relative w-full overflow-hidden pt-14 md:pt-16 pb-12 px-4">
