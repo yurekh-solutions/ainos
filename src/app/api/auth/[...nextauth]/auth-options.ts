@@ -57,13 +57,23 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!existingUser) {
+            // Create a Company for the new Google user
+            const company = await prisma.company.create({
+              data: {
+                name: `${user.name || user.email}'s Company`,
+                createdBy: user.email!,
+                subscriptionStatus: 'inactive',
+              },
+            });
+
             await prisma.user.create({
               data: {
                 email: user.email!,
                 name: user.name || user.email!,
                 googleId: user.id,
                 image: user.image,
-                role: 'user',
+                role: 'owner',
+                companyId: company.id,
               },
             });
           }
