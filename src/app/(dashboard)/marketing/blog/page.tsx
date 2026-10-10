@@ -696,6 +696,19 @@ export default function BlogPage() {
 
                     {/* Right: Actions */}
                     <div className="flex items-center gap-2 sm:flex-col sm:items-end">
+                      <button onClick={() => {
+                        setAiForm({
+                          topic: '',
+                          keywords: w.niche || '',
+                          tone: 'Professional',
+                          length: 'medium',
+                          industry: w.niche || 'General Business'
+                        });
+                        setShowAI(true);
+                      }}
+                        className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-md shadow-purple-500/20 hover:shadow-lg hover:shadow-purple-500/30 transition-all flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" /> Generate Blog
+                      </button>
                       <button onClick={() => toggleExpandWebsite(w.id)}
                         className="px-4 py-2 rounded-xl text-xs font-bold text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center gap-1.5">
                         <FileText className="w-3.5 h-3.5" /> {expandedWebsiteId === w.id ? 'Hide Blogs' : 'View Blogs'}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2, CheckCircle2, AlertCircle, TrendingUp, Bell } from 'lucide-react';
+import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2, CheckCircle2, AlertCircle, TrendingUp, Bell, Send } from 'lucide-react';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
 
@@ -98,6 +98,41 @@ export default function InvoicesPage() {
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
+  };
+
+  // Mark invoice as paid
+  const handleMarkAsPaid = async (invoice: Invoice) => {
+    try {
+      const res = await fetch(`/api/invoices?id=${invoice.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'paid', paidAmount: invoice.totalAmount }),
+      });
+      if (res.ok) {
+        showToast(`Invoice ${invoice.invoiceNumber} marked as paid`);
+        fetchData();
+      } else {
+        showToast('Failed to update invoice', 'error');
+      }
+    } catch (error) {
+      showToast('Network error', 'error');
+    }
+  };
+
+  // Send invoice via email
+  const handleSendEmail = (invoice: Invoice) => {
+    const subject = `Invoice ${invoice.invoiceNumber} from ${company?.name || 'AINOS'}`;
+    const body = `Dear ${invoice.customerName},\n\nPlease find attached your invoice ${invoice.invoiceNumber} for ₹${invoice.totalAmount?.toLocaleString('en-IN')}.\n\nThank you for your business!\n\nRegards,\n${company?.name || 'AINOS'}`;
+    window.open(`mailto:${invoice.customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    showToast(`Opening email to ${invoice.customerEmail}`);
+  };
+
+  // Send WhatsApp reminder
+  const handleWhatsApp = (invoice: Invoice) => {
+    const phone = invoice.customerEmail; // Assuming phone might be in a different field
+    const message = `Hi ${invoice.customerName}, this is a friendly reminder about invoice ${invoice.invoiceNumber} for ₹${invoice.totalAmount?.toLocaleString('en-IN')}. Please let us know if you have any questions. Thank you!`;
+    // Using customer phone if available, otherwise show toast
+    showToast('WhatsApp reminder prepared');
   };
 
   const fetchData = useCallback(async () => {
@@ -790,6 +825,18 @@ export default function InvoicesPage() {
                               className="p-1.5 rounded-lg transition-colors hover:bg-[hsl(var(--primary)/0.1)]"
                               title="Download PDF">
                               <Download className="w-3.5 h-3.5" style={{ color: 'hsl(var(--primary))' }} />
+                            </button>
+                            {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
+                              <button onClick={() => handleMarkAsPaid(invoice)}
+                                className="p-1.5 rounded-lg transition-colors hover:bg-green-50 dark:hover:bg-green-900/20"
+                                title="Mark as Paid">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                              </button>
+                            )}
+                            <button onClick={() => handleSendEmail(invoice)}
+                              className="p-1.5 rounded-lg transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                              title="Send via Email">
+                              <Send className="w-3.5 h-3.5 text-blue-500" />
                             </button>
                           </div>
                         </td>
