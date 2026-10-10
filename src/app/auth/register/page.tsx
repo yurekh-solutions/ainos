@@ -9,7 +9,7 @@ import {
   Phone, MapPin, Mail, Lock, User, Briefcase,
   Zap, BarChart3, Users, ShieldCheck, LogIn, Globe
 } from 'lucide-react';
-import { useState, type ChangeEvent, type ElementType } from 'react';
+import { useState, useEffect, type ChangeEvent, type ElementType } from 'react';
 import Link from 'next/link';
 
 const GoogleIcon = () => (
@@ -176,6 +176,12 @@ export default function RegisterPage() {
   const [userPhone, setUserPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Prefill email when arriving from the landing page hero (?email=...)
+  useEffect(() => {
+    const emailParam = new URLSearchParams(window.location.search).get('email');
+    if (emailParam) setUserEmail(emailParam);
+  }, []);
 
   const [companyName, setCompanyName] = useState('');
   const [companyType, setCompanyType] = useState('');
