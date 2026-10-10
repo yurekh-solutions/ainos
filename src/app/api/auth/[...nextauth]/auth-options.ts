@@ -108,17 +108,35 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = (user as { role?: string }).role;
         token.companyId = (user as { companyId?: string }).companyId;
+        // For Google OAuth users, fetch companyId from DB if not in user object
+        if (!token.companyId && user.email) {
+          try {
+            const dbUser = await prisma.user.findUnique({
+              where: { email: user.email },
+              select: { companyId: true },
+            });
+            if (dbUser) {
+              token.companyId = dbUser.companyId;
+            }
+          } catch (error) {
+            console.error('JWT companyId fetch error:', error);
+          }
+        }
       }
       return token;
     },
     async redirect({ url, baseUrl }) {
+      // After sign-in, always redirect to dashboard, not landing page
+      if (url === '/' || url === baseUrl || url === `${baseUrl}/`) {
+        return `${baseUrl}/invoices`;
+      }
       if (url.startsWith('/')) {
         return `${baseUrl}${url}`;
       }
       if (url.startsWith(baseUrl)) {
         return url;
       }
-      return `${baseUrl}/`;
+      return `${baseUrl}/invoices`;
     },
   },
   pages: {
