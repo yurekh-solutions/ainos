@@ -57,6 +57,7 @@ import {
   Hash,
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { isAdmin } from '@/lib/admin';
 
 interface MenuItem {
   icon: React.ElementType;
@@ -186,6 +187,44 @@ const visibleMainItems = mainItems.filter((item) => item.href === '/dashboard');
 const visibleSections = sections.filter((section) =>
   section.title === 'Marketing' || section.title === 'Finance'
 );
+
+// Admin link - only visible to admin users
+function AdminLink({ collapsed, pathname }: { collapsed: boolean; pathname: string }) {
+  const { data: session } = useSession();
+  const isUserAdmin = isAdmin(session?.user?.email);
+  
+  if (!isUserAdmin) return null;
+  
+  const isActive = pathname === '/admin/onboarding' || pathname.startsWith('/admin/onboarding/');
+  
+  return (
+    <Link
+      href="/admin/onboarding"
+      className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group mt-2 ${
+        isActive
+          ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400 font-medium'
+          : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'
+      }`}
+    >
+      {isActive && (
+        <motion.span
+          layoutId="activeBarAdmin"
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-purple-600"
+        />
+      )}
+      <ShieldCheck className="w-5 h-5 flex-shrink-0" style={{ color: isActive ? '#7c3aed' : '#6b7280' }} />
+      {!collapsed && (
+        <motion.span
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-sm whitespace-nowrap font-medium"
+        >
+          Admin Panel
+        </motion.span>
+      )}
+    </Link>
+  );
+}
 
 function SectionGroup({
   section,
@@ -463,6 +502,7 @@ export function Sidebar() {
           })}
 
           <div className="pt-3 space-y-1">
+            <AdminLink collapsed={collapsed} pathname={pathname} />
             {visibleSections.map((section) => (
               <SectionGroup
                 key={section.title}
