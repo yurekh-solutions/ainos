@@ -29,16 +29,25 @@ model Company {
   createdBy          String              @map("created_by")
   createdAt          DateTime            @default(now()) @map("created_at")
   updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  // ONBOARDING STATUS TRACKING
+  onboardingStatus   String              @default("pending") @map("onboarding_status") // pending, docs_submitted, under_review, approved, rejected, suspended
+  onboardingSubmittedAt DateTime?        @map("onboarding_submitted_at")
+  onboardingRejectionReason String?      @map("onboarding_rejection_reason")
+  onboardingReviewedAt DateTime?         @map("onboarding_reviewed_at")
+  onboardingReviewedBy String?           @map("onboarding_reviewed_by")
+  totalDocsUploaded  Int                 @default(0) @map("total_docs_uploaded")
+  totalDocsApproved  Int                 @default(0) @map("total_docs_approved")
   
-  // TOOL ACCESS FLAGS (scalable - add more tools as needed)
-  autoBlog           Boolean             @default(false) @map("auto_blog")
-  invoiceGen         Boolean             @default(false) @map("invoice_gen")
-  crmAccess          Boolean             @default(false) @map("crm_access")
-  inventoryMgmt      Boolean             @default(false) @map("inventory_mgmt")
-  hrPayroll          Boolean             @default(false) @map("hr_payroll")
-  emailMarketing     Boolean             @default(false) @map("email_marketing")
-  aiAssistant        Boolean             @default(false) @map("ai_assistant")
-  websiteGen         Boolean             @default(false) @map("website_gen")
+  // TOOL ACCESS LEVELS (0=locked, 1=basic, 2=subscribed, 3=premium)
+  autoBlog           Int                 @default(0) @map("auto_blog_level")
+  invoiceGen         Int                 @default(0) @map("invoice_gen_level")
+  crmAccess          Int                 @default(0) @map("crm_access_level")
+  inventoryMgmt      Int                 @default(0) @map("inventory_mgmt_level")
+  hrPayroll          Int                 @default(0) @map("hr_payroll_level")
+  emailMarketing     Int                 @default(0) @map("email_marketing_level")
+  aiAssistant        Int                 @default(0) @map("ai_assistant_level")
+  websiteGen         Int                 @default(0) @map("website_gen_level")
   
   // SUBSCRIPTION STATUS
   subscriptionStatus String              @default("inactive") @map("subscription_status")
@@ -96,6 +105,7 @@ model Company {
   recurringInvoices  RecurringInvoice[]
   bankAccounts       BankAccount[]
   bankTransactions   BankTransaction[]
+  onboardingAudits   OnboardingAudit[]
 
   @@map("companies")
 }
@@ -107,6 +117,7 @@ model User {
   googleId  String?  @unique @map("google_id")
   image     String?
   role      String   @default("user")
+  isAdmin   Boolean  @default(false) @map("is_admin")
   companyId String?  @map("company_id")
   phone     String?
   address   String?
@@ -593,20 +604,35 @@ model CalendarEvent {
 }
 
 model Document {
-  id         String   @id @default(uuid())
-  name       String
-  type       String?
-  url        String?
-  size       Int?
-  category   String?
-  tags       Json?
-  uploadedBy String?  @map("uploaded_by")
-  companyId  String?  @map("company_id")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-  company    Company? @relation(fields: [companyId], references: [id])
+  id              String    @id @default(uuid())
+  name            String
+  type            String?
+  url             String?
+  size            Int?
+  category        String?
+  tags            Json?
+  uploadedBy      String?   @map("uploaded_by")
+  companyId       String?   @map("company_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  company         Company?  @relation(fields: [companyId], references: [id])
+
+  // CLOUDINARY FIELDS
+  cloudinaryPublicId   String?  @map("cloudinary_public_id")
+  cloudinaryUrl        String?  @map("cloudinary_url")
+  cloudinaryThumbnail  String?  @map("cloudinary_thumbnail")
+  resourceType         String?  @map("resource_type") // image, raw, video
+  format               String?  // pdf, png, jpg, docx
+
+  // VERIFICATION WORKFLOW
+  verificationStatus   String?  @default("pending") @map("verification_status") // pending, approved, rejected, resubmit
+  verifiedBy           String?  @map("verified_by")
+  verifiedAt           DateTime? @map("verified_at")
+  rejectionReason      String?  @map("rejection_reason")
+  reviewerNote         String?  @map("reviewer_note")
 
   @@index([companyId])
+  @@index([verificationStatus])
   @@map("documents")
 }
 
@@ -627,27 +653,29 @@ model Notification {
 }
 
 model Subscription {
-  id               String    @id @default(uuid())
-  plan             String?
-  planName         String?   @map("plan_name")
-  status           String    @default("pending")
-  startDate        DateTime? @map("start_date")
-  endDate          DateTime? @map("end_date")
-  amount           Float?
-  currency         String    @default("INR")
-  billingCycle     String?   @map("billing_cycle")
-  paymentMethod    String?   @map("payment_method")
-  paymentId        String?   @map("payment_id")
-  companyId        String?   @map("company_id")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
-  apps             Json?
-  toolsIncluded    Json?     @map("tools_included")
-  currentPeriodEnd DateTime? @map("current_period_end")
-  partnerCode      String?   @map("partner_code")
-  trialEndsAt      DateTime? @map("trial_ends_at")
-  userId           String?   @map("user_id")
-  company          Company?  @relation(fields: [companyId], references: [id])
+  id                  String    @id @default(uuid())
+  plan                String?
+  planName            String?   @map("plan_name")
+  status              String    @default("pending")
+  startDate           DateTime? @map("start_date")
+  endDate             DateTime? @map("end_date")
+  amount              Float?
+  currency            String    @default("INR")
+  billingCycle        String?   @map("billing_cycle")
+  paymentMethod       String?   @map("payment_method")
+  paymentId           String?   @map("payment_id")
+  companyId           String?   @map("company_id")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  apps                Json?
+  toolsIncluded       Json?     @map("tools_included")
+  currentPeriodEnd    DateTime? @map("current_period_end")
+  partnerCode         String?   @map("partner_code")
+  trialEndsAt         DateTime? @map("trial_ends_at")
+  userId              String?   @map("user_id")
+  monthlyCreditGrant  Int       @default(0) @map("monthly_credit_grant")
+  creditsRefreshedAt  DateTime? @map("credits_refreshed_at")
+  company             Company?  @relation(fields: [companyId], references: [id])
 
   @@index([companyId])
   @@index([status])
@@ -1282,4 +1310,25 @@ model BankTransaction {
   @@index([companyId])
   @@index([date])
   @@map("bank_transactions")
+}
+
+// ═══════════════════════════════════════════
+// ONBOARDING AUDIT LOG
+// ═══════════════════════════════════════════
+
+model OnboardingAudit {
+  id          String   @id @default(uuid())
+  companyId   String   @map("company_id")
+  action      String   // docs_uploaded, docs_submitted, review_started, approved, rejected, resubmit_requested, suspended
+  performedBy String?  @map("performed_by") // admin userId or 'system'
+  performedByName String? @map("performed_by_name")
+  notes       String?
+  metadata    Json?    // extra context: which docs, rejection reasons, etc.
+  createdAt   DateTime @default(now()) @map("created_at")
+  company     Company  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("onboarding_audits")
 }
