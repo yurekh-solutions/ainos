@@ -107,6 +107,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = (user as { role?: string }).role;
+        token.companyId = (user as { companyId?: string }).companyId;
       }
       return token;
     },

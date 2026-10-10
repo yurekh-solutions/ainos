@@ -47,12 +47,12 @@ export default function SignInPage() {
     setMode('google');
 
     try {
-      await signIn('google', { callbackUrl: '/' });
+      await signIn('google', { callbackUrl: '/invoices' });
     } catch {
       setStatus('Retrying...');
       await new Promise(r => setTimeout(r, 3000));
       try {
-        await signIn('google', { callbackUrl: '/' });
+        await signIn('google', { callbackUrl: '/invoices' });
       } catch {
         setError('Sign-in failed. Please try again.');
         setLoading(false);
@@ -88,7 +88,7 @@ export default function SignInPage() {
       }
 
       if (result?.ok) {
-        window.location.href = '/';
+        window.location.href = '/invoices';
         return;
       }
 

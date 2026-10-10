@@ -85,7 +85,7 @@ export async function middleware(request: NextRequest) {
           },
         });
 
-        if (!company || !(company as Record<string, boolean>)[toolName]) {
+        if (!company || !(company as Record<string, number>)[toolName]) {
           // Redirect to billing page with required tool info
           const billingUrl = new URL('/billing', request.url);
           billingUrl.searchParams.set('required_tool', toolName);
@@ -103,13 +103,25 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
+    '/invoices/:path*',
+    '/customers/:path*',
+    '/products/:path*',
+    '/projects/:path*',
+    '/reports/:path*',
+    '/services/:path*',
+    '/settings/:path*',
+    '/support/:path*',
+    '/tools/:path*',
+    '/company/:path*',
+    '/calendar/:path*',
+    '/billing/:path*',
+    '/automations/:path*',
+    '/ai/:path*',
     '/marketing/:path*',
     '/finance/:path*',
     '/crm/:path*',
     '/inventory/:path*',
     '/hr/:path*',
-    '/ai-assistant/:path*',
-    '/website-builder/:path*',
+    '/onboarding/:path*',
   ],
 };
