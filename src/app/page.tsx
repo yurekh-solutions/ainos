@@ -293,7 +293,7 @@ export default function AinosLandingPage() {
         <div className="relative w-full md:px-12 lg:px-20 xl:px-28 mx-auto flex flex-col-reverse md:flex-row items-center justify-between gap-8 py-10 md:py-14">
           {/* Left */}
           <div className="flex flex-col items-center md:items-start max-w-xl w-full">
-            <Link href="https://yurekh.com/" className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-full p-1 pr-4 text-sm hover:bg-purple-100 transition-colors">
+            <Link href="/auth/register" className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-full p-1 pr-4 text-sm hover:bg-purple-100 transition-colors">
               <span className="bg-[#5b21b6] text-white text-xs px-3 py-1 rounded-full font-semibold">YUREKH</span>
               <span className="flex items-center gap-2 text-purple-700">
                 <span className="text-sm font-medium">Introducing AINOS OS</span>
