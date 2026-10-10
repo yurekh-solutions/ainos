@@ -128,7 +128,7 @@ export const authOptions: NextAuthOptions = {
     async redirect({ url, baseUrl }) {
       // After sign-in, always redirect to dashboard, not landing page
       if (url === '/' || url === baseUrl || url === `${baseUrl}/`) {
-        return `${baseUrl}/invoices`;
+        return `${baseUrl}/dashboard`;
       }
       if (url.startsWith('/')) {
         return `${baseUrl}${url}`;
@@ -136,7 +136,7 @@ export const authOptions: NextAuthOptions = {
       if (url.startsWith(baseUrl)) {
         return url;
       }
-      return `${baseUrl}/invoices`;
+      return `${baseUrl}/dashboard`;
     },
   },
   pages: {
