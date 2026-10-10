@@ -71,7 +71,7 @@ interface MenuSection {
 }
 
 const mainItems: MenuItem[] = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
+  { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
   { icon: FileText, label: 'Invoices', href: '/invoices' },
   { icon: Users, label: 'Customers', href: '/customers' },
   { icon: Package, label: 'Products', href: '/products' },
@@ -182,7 +182,7 @@ const sections: MenuSection[] = [
 
 // Focused mode: Dashboard + Marketing + Accounts (Finance) only.
 // Other sections (CRM, HR, Inventory, Projects, Support, Compliance, AI) are hidden.
-const visibleMainItems = mainItems.filter((item) => item.href === '/');
+const visibleMainItems = mainItems.filter((item) => item.href === '/dashboard');
 const visibleSections = sections.filter((section) =>
   section.title === 'Marketing' || section.title === 'Finance'
 );
