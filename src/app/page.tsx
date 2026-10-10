@@ -342,23 +342,44 @@ export default function AinosLandingPage() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.5 }}
-              className="flex flex-wrap items-center gap-x-7 gap-y-4 mt-8 mx-auto md:mx-0"
+              className="mt-8 mx-auto md:mx-0"
             >
-              {[
-                { icon: Shield, title: 'Secure & Reliable', desc: 'Your data, our priority' },
-                { icon: Zap, title: 'Quick Setup', desc: 'Get started in minutes' },
-                { icon: Headphones, title: 'Dedicated Support', desc: 'We\'re here to help' },
-              ].map((item) => (
-                <div key={item.title} className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-purple-50 ring-1 ring-purple-100 flex items-center justify-center flex-shrink-0">
-                    <item.icon className="w-[18px] h-[18px] text-[#5b21b6]" />
+              {/* Mobile: stacked cards */}
+              <div className="flex md:hidden flex-col gap-3">
+                {[
+                  { icon: Shield, title: 'Secure & Reliable', desc: 'Your data, our priority' },
+                  { icon: Zap, title: 'Quick Setup', desc: 'Get started in minutes' },
+                  { icon: Headphones, title: 'Dedicated Support', desc: 'We\'re here to help' },
+                ].map((item) => (
+                  <div key={item.title} className="flex items-center gap-3 p-3 rounded-xl bg-purple-50/60 border border-purple-100">
+                    <div className="w-10 h-10 rounded-xl bg-white ring-1 ring-purple-100 flex items-center justify-center flex-shrink-0 shadow-sm">
+                      <item.icon className="w-[18px] h-[18px] text-[#5b21b6]" />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-semibold text-gray-900 leading-tight">{item.title}</p>
+                      <p className="text-xs text-gray-500 leading-tight mt-0.5">{item.desc}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-gray-900 leading-tight">{item.title}</p>
-                    <p className="text-xs text-gray-500 leading-tight mt-0.5">{item.desc}</p>
+                ))}
+              </div>
+              {/* Desktop: inline row */}
+              <div className="hidden md:flex flex-wrap items-center gap-x-7 gap-y-4">
+                {[
+                  { icon: Shield, title: 'Secure & Reliable', desc: 'Your data, our priority' },
+                  { icon: Zap, title: 'Quick Setup', desc: 'Get started in minutes' },
+                  { icon: Headphones, title: 'Dedicated Support', desc: 'We\'re here to help' },
+                ].map((item) => (
+                  <div key={item.title} className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-purple-50 ring-1 ring-purple-100 flex items-center justify-center flex-shrink-0">
+                      <item.icon className="w-[18px] h-[18px] text-[#5b21b6]" />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-semibold text-gray-900 leading-tight">{item.title}</p>
+                      <p className="text-xs text-gray-500 leading-tight mt-0.5">{item.desc}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </motion.div>
           </div>
 
