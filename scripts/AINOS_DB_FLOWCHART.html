@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AINOS DB Flow</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0a0f;color:#e0e0e0;padding:30px 20px}
+.mx{max-width:1100px;margin:0 auto}
+h1{text-align:center;font-size:2rem;margin-bottom:6px;color:#1BE1D3}
+.sub{text-align:center;color:#888;margin-bottom:30px}
+.sec{background:#111118;border:1px solid #222;border-radius:12px;padding:22px;margin-bottom:24px}
+.sec h2{color:#1BE1D3;margin-bottom:14px;font-size:1.2rem}
+.b{background:#1BE1D3;color:#000;padding:2px 8px;border-radius:16px;font-size:.65rem;font-weight:700;margin-right:8px}
+.fl{display:flex;flex-direction:column;align-items:center}
+.s{background:#1a1a24;border:2px solid #333;border-radius:8px;padding:10px 16px;min-width:200px;text-align:center;max-width:380px;margin:4px 0}
+.s.u{border-color:#6366f1}.s.a{border-color:#f59e0b}.s.d{border-color:#1BE1D3}.s.g{border-color:#22c55e}.s.e{border-color:#ef4444}
+.t{font-weight:700;font-size:.82rem}.dt{font-size:.7rem;color:#999;margin-top:3px}.tb{font-size:.66rem;color:#1BE1D3;margin-top:3px;font-family:monospace}
+.ar{width:2px;height:20px;background:#444;margin:2px 0;position:relative}.ar::after{content:'▼';position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);color:#444;font-size:9px}
+.r{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.l{display:inline-block;padding:1px 6px;border-radius:3px;font-size:.6rem;font-weight:700}
+.l0{background:rgba(239,68,68,.2);color:#ef4444}.l1{background:rgba(245,158,11,.2);color:#f59e0b}.l2{background:rgba(99,102,241,.2);color:#818cf8}.l3{background:rgba(34,197,94,.2);color:#22c55e}
+.lg{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin:12px 0 24px;font-size:.72rem}
+.li{display:flex;align-items:center;gap:5px}
+.lc{width:12px;height:12px;border-radius:3px;border:2px solid}
+.gd{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:14px}
+.tb2{background:#1a1a24;border:1px solid #333;border-radius:7px;overflow:hidden}
+.th{background:#1BE1D3;color:#000;padding:5px 10px;font-weight:700;font-size:.75rem}
+.tbd{padding:6px 10px}
+.f{display:flex;justify-content:space-between;padding:2px 0;font-size:.68rem;border-bottom:1px solid #1e1e1e}
+.f:last-child{border-bottom:none}
+.fn{color:#ddd}.ft{color:#888;font-family:monospace;font-size:.64rem}.fk{color:#f59e0b;font-size:.6rem}
+</style>
+</head>
+<body>
+<div class="mx">
+<h1>AINOS — Database Flow Charts</h1>
+<p class="sub">Onboarding → Subscription → Credits → Tool Levels → Cancel</p>
+
+<div class="lg">
+<div class="li"><div class="lc" style="border-color:#6366f1"></div>User</div>
+<div class="li"><div class="lc" style="border-color:#f59e0b"></div>API</div>
+<div class="li"><div class="lc" style="border-color:#1BE1D3"></div>Database</div>
+<div class="li"><div class="lc" style="border-color:#22c55e"></div>Success</div>
+<div class="li"><div class="lc" style="border-color:#ef4444"></div>Error</div>
+</div>
+
+<!-- FLOW 1 -->
+<div class="sec">
+<h2><span class="b">1</span> User Onboarding</h2>
+<div class="fl">
+<div class="s u"><div class="t">User visits /auth/register</div><div class="dt">3-step company-first form</div></div>
+<div class="ar"></div>
+<div class="s u"><div class="t">Step 1: Account</div><div class="dt">Name, Email, Phone, Password</div></div>
+<div class="ar"></div>
+<div class="s u"><div class="t">Step 2: Company</div><div class="dt">Name, Type, Email, Address, Country, GST</div></div>
+<div class="ar"></div>
+<div class="s u"><div class="t">Step 3: Documents & Submit</div></div>
+<div class="ar"></div>
+<div class="s a"><div class="t">POST /api/auth/register-company</div><div class="dt">Validate + check duplicate email</div></div>
+<div class="ar"></div>
+<div class="r">
+<div class="s d"><div class="t">INSERT Company</div><div class="tb">id: uuid | name: "Sharma Enterprises"<br>autoBlog: <span class="l l0">0</span> invoiceGen: <span class="l l0">0</span> crm: <span class="l l0">0</span><br>... all tools = 0 (locked)<br>subscriptionStatus: "inactive"</div></div>
+<div class="s d"><div class="t">INSERT User</div><div class="tb">email: "sharma@gmail.com" (UNIQUE)<br>companyId: "comp_xyz"<br>role: "owner"</div></div>
+</div>
+<div class="ar"></div>
+<div class="r">
+<div class="s d"><div class="t">INSERT CreditBalance</div><div class="tb">companyId: "comp_xyz"<br>balance: 200 (welcome!)</div></div>
+<div class="s d"><div class="t">INSERT CreditTransaction</div><div class="tb">type: "credit" | +200<br>desc: "Welcome bonus"</div></div>
+</div>
+<div class="ar"></div>
+<div class="s g"><div class="t">Done! All tools Level 0 | Credits: 200</div></div>
+</div>
+</div>
+
+<!-- FLOW 2 -->
+<div class="sec">
+<h2><span class="b">2</span> Trial Start (Level 0 → 1)</h2>
+<div class="fl">
+<div class="s u"><div class="t">First login after signup</div></div>
+<div class="ar"></div>
+<div class="s a"><div class="t">startTrial() → billing.ts</div></div>
+<div class="ar"></div>
+<div class="s d"><div class="t">INSERT Subscription</div><div class="tb">plan: "one" | status: "trialing"<br>trialEndsAt: +14 days | monthlyCreditGrant: 200</div></div>
+<div class="ar"></div>
+<div class="s d"><div class="t">UPDATE Company</div><div class="tb">autoBlog: <span class="l l0">0</span> → <span class="l l1">1</span> | aiAssistant: <span class="l l0">0</span> → <span class="l l1">1</span><br>websiteGen: <span class="l l0">0</span> → <span class="l l1">1</span> | emailMarketing: <span class="l l0">0</span> → <span class="l l1">1</span><br>Non-AI tools stay <span class="l l0">0</span></div></div>
+<div class="ar"></div>
+<div class="s g"><div class="t">Trial Active! 4 tools at Level 1 (3 uses/month) | 14 days</div></div>
+</div>
+</div>
+
+<!-- FLOW 3 -->
+<div class="sec">
+<h2><span class="b">3</span> Tool Use at Level 1 (3/month, 0 credits)</h2>
+<div class="fl">
+<div class="s u"><div class="t">Clicks "Generate Logo"</div></div>
+<div class="ar"></div>
+<div class="s a"><div class="t">POST /api/ai-tools { tool: "logo" }</div></div>
+<div class="ar"></div>
+<div class="s a"><div class="t">requireToolAccess('autoBlog')</div><div class="dt">Company.autoBlog = 1 → Level 1</div></div>
+<div class="ar"></div>
+<div class="s d"><div class="t">COUNT ToolRun this month</div><div class="tb">WHERE tool='logo' AND companyId='comp_xyz'<br>AND createdAt >= month_start</div></div>
+<div class="ar"></div>
+<div class="s d"><div class="t">Result: 1 < 3 → ALLOWED</div></div>
+<div class="ar"></div>
+<div class="s a"><div class="t">Execute runLogo() → AI generates image</div></div>
+<div class="ar"></div>
+<div class="s d"><div class="t">INSERT ToolRun</div><div class="tb">tool: "logo" | output: {logo: "https://..."}</div></div>
+<div class="ar"></div>
+<div class="s g"><div class="t">Logo done! Credits: 0 deducted (Level 1) | Usage: 2/3</div></div>
+</div>
+</div>
+
+<!-- FLOW 4 -->
+<div class="sec">
+<h2><span class="b">4</span> Level 1 Limit Hit (3/3)</h2>
+<div class="fl">
+<div class="s u"><div class="t">4th logo attempt this month</div></div>
+<div class="ar"></div>
+<div class="s d"><div class="t">COUNT ToolRun → 3</div><div class="tb">3 >= 3 → DENIED</div></div>
+<div class="ar"></div>
+<div class="s e"><div class="t">402: "3/3 done. Upgrade for unlimited."</div></div>
+</div>
+</div>
+
+<!-- FLOW 5 -->
+<div class="sec">
+<h2><span class="b">5</span> Subscribe AINOS One (Level 1 → 3)</h2>
+<div class="fl">
+<div class="s u"><div class="t">/billing → "AINOS One" Rs.3,999</div></div>
+<div class="ar"></div>
+<div class="s a"><div class="t">POST /api/billing/activate-tools</div><div class="dt">{ plan: "one", paymentId: "pay_xyz" }</div></div>
+<div class="ar"></div>
+<div class="s a"><div class="t">Verify Razorpay payment → OK</div></div>
+<div class="ar"></div>
+<div class="s d"><div class="t">UPDATE Company — upgradeToolsOnSubscribe("one")</div><div class="tb">ALL 8 tools → <span class="l l3">3</span> (Premium!)<br>subscriptionStatus: "active"</div></div>
+<div class="ar"></div>
+<div class="s d"><div class="t">INSERT Subscription</div><div class="tb">plan: "one" | status: "active"<br>monthlyCreditGrant: 5000 | periodEnd: +30 days</div></div>
+<div class="ar"></div>
+<div class="r">
+<div class="s d"><div class="t">UPDATE CreditBalance</div><div class="tb">200 + 5000 = 5200</div></div>
+<div class="s d"><div class="t">INSERT CreditTransaction</div><div class="tb">type: "credit" | +5000<br>desc: "Monthly grant: AINOS One"</div></div>
+</div>
+<div class="ar"></div>
+<div class="s g"><div class="t">AINOS One Active! All Level 3 | Credits: 5200</div></div>
+</div>
+</div>
+
+<!-- FLOW 6 -->
+<div class="sec">
+<h2><span class="b">6</span> Level 3 Tool Use (Unlimited, 0 credits)</h2>
+<div class="fl">
+<div class="s u"><div class="t">Runs logo (100th time!)</div></div>
+<div class="ar"></div>
+<div class="s d"><div class="t">Company.autoBlog = 3</div><div class="tb">Level 3 → skip usage check, skip credit check</div></div>
+<div class="ar"></div>
+<div class="s a"><div class="t">Execute runLogo() → done</div></div>
+<div class="ar"></div>
+<div class="s d"><div class="t">INSERT ToolRun (no credit deduction)</div></div>
+<div class="ar"></div>
+<div class="s g"><div class="t">Logo done! Credits: 0 deducted (Level 3 = premium) | Unlimited!</div></div>
+</div>
+</div>
+
+<!-- FLOW 7 -->
+<div class="sec">
+<h2><span class="b">7</span> Level 2 + Credit Deduction</h2>
+<div class="fl">
+<div class="s u"><div class="t">Growth plan user runs logo</div><div class="dt">autoBlog = 2 (Level 2)</div></div>
+<div class="ar"></div>
+<div class="s d"><div class="t">Tool.creditCost = 5</div><div class="tb">CreditBalance = 120</div></div>
+<div class="ar"></div>
+<div class="s a"><div class="t">120 >= 5? → YES</div></div>
+<div class="ar"></div>
+<div class="s a"><div class="t">Execute runLogo()</div></div>
+<div class="ar"></div>
+<div class="r">
+<div class="s d"><div class="t">UPDATE CreditBalance</div><div class="tb">120 → 115</div></div>
+<div class="s d"><div class="t">INSERT CreditTransaction</div><div class="tb">type: "debit" | -5 | after: 115</div></div>
+<div class="s d"><div class="t">INSERT ToolRun</div></div>
+</div>
+<div class="ar"></div>
+<div class="s g"><div class="t">Logo done! Credits: 5 deducted | Balance: 115</div></div>
+</div>
+</div>
+
+<!-- FLOW 8 -->
+<div class="sec">
+<h2><span class="b">8</span> Buy Credit Pack (Insufficient → Top-up)</h2>
+<div class="fl">
+<div class="s e"><div class="t">Balance: 3 | Logo cost: 5 → DENIED</div></div>
+<div class="ar"></div>
+<div class="s u"><div class="t">/billing/credits → "Pro Pack" 1000 credits Rs.499</div></div>
+<div class="ar"></div>
+<div class="s a"><div class="t">POST /api/billing/checkout → Razorpay order</div></div>
+<div class="ar"></div>
+<div class="s u"><div class="t">User pays Rs.499 on Razorpay</div></div>
+<div class="ar"></div>
+<div class="s a"><div class="t">POST /api/webhooks/razorpay</div><div class="dt">event: "payment.captured" | receipt → companyId</div></div>
+<div class="ar"></div>
+<div class="r">
+<div class="s d"><div class="t">UPDATE CreditBalance</div><div class="tb">3 + 1000 = 1003</div></div>
+<div class="s d"><div class="t">INSERT CreditTransaction</div><div class="tb">type: "credit" | +1000 | after: 1003</div></div>
+</div>
+<div class="ar"></div>
+<div class="s g"><div class="t">Credits added! Balance: 1003</div></div>
+</div>
+</div>
+
+<!-- FLOW 9 -->
+<div class="sec">
+<h2><span class="b">9</span> Cancel Subscription (Level 3 → 1/0)</h2>
+<div class="fl">
+<div class="s u"><div class="t">"Cancel Subscription"</div></div>
+<div class="ar"></div>
+<div class="s a"><div class="t">POST /api/billing/cancel</div></div>
+<div class="ar"></div>
+<div class="s d"><div class="t">UPDATE Subscription → status: "cancelled"</div></div>
+<div class="ar"></div>
+<div class="s d"><div class="t">UPDATE Company — downgradeToolsOnCancel()</div><div class="tb">AI tools: <span class="l l3">3</span> → <span class="l l1">1</span> (autoBlog, aiAssistant, website, email)<br>Non-AI: <span class="l l3">3</span> → <span class="l l0">0</span> (invoice, crm, inventory, hr)<br>subscriptionStatus: "inactive"</div></div>
+<div class="ar"></div>
+<div class="s d"><div class="t">CreditBalance → NO CHANGE</div><div class="tb">balance: 1003 (SAFE! Credits never expire)</div></div>
+<div class="ar"></div>
+<div class="s g"><div class="t">Cancelled. AI: Level 1 | Non-AI: Level 0 | Credits: 1003 (safe)</div></div>
+</div>
+</div>
+
+<!-- FLOW 10 -->
+<div class="sec">
+<h2><span class="b">10</span> Trial Expire (Level 1 → 0)</h2>
+<div class="fl">
+<div class="s a"><div class="t">Cron Job (daily 12:05 AM)</div><div class="dt">checkExpiredSubscriptions()</div></div>
+<div class="ar"></div>
+<div class="s d"><div class="t">Find: status='trialing' AND trialEndsAt < NOW()</div></div>
+<div class="ar"></div>
+<div class="s d"><div class="t">UPDATE Company</div><div class="tb">AI tools: <span class="l l1">1</span> → <span class="l l0">0</span> (all locked)<br>subscriptionStatus: "expired"</div></div>
+<div class="ar"></div>
+<div class="s e"><div class="t">All tools locked! Credits: 200 (still safe)</div></div>
+</div>
+</div>
+
+<!-- SCHEMA -->
+<div class="sec">
+<h2><span class="b">SCHEMA</span> Database Tables</h2>
+<div class="gd">
+<div class="tb2"><div class="th">User</div><div class="tbd">
+<div class="f"><span class="fn">id</span><span class="ft">UUID</span><span class="fk">PK</span></div>
+<div class="f"><span class="fn">email</span><span class="ft">String</span><span class="fk">UNIQUE</span></div>
+<div class="f"><span class="fn">companyId</span><span class="ft">UUID?</span><span class="fk">FK</span></div>
+<div class="f"><span class="fn">role</span><span class="ft">String</span></div>
+</div></div>
+<div class="tb2"><div class="th">Company</div><div class="tbd">
+<div class="f"><span class="fn">id</span><span class="ft">UUID</span><span class="fk">PK</span></div>
+<div class="f"><span class="fn">autoBlog..websiteGen</span><span class="ft">Int(0-3)</span><span class="fk">LEVELS</span></div>
+<div class="f"><span class="fn">subscriptionStatus</span><span class="ft">String</span></div>
+</div></div>
+<div class="tb2"><div class="th">CreditBalance</div><div class="tbd">
+<div class="f"><span class="fn">companyId</span><span class="ft">UUID</span><span class="fk">PK</span></div>
+<div class="f"><span class="fn">balance</span><span class="ft">Int</span></div>
+</div></div>
+<div class="tb2"><div class="th">CreditTransaction</div><div class="tbd">
+<div class="f"><span class="fn">id</span><span class="ft">UUID</span><span class="fk">PK</span></div>
+<div class="f"><span class="fn">companyId</span><span class="ft">UUID</span><span class="fk">FK</span></div>
+<div class="f"><span class="fn">type</span><span class="ft">String</span></div>
+<div class="f"><span class="fn">amount</span><span class="ft">Int</span></div>
+<div class="f"><span class="fn">balanceAfter</span><span class="ft">Int</span></div>
+</div></div>
+<div class="tb2"><div class="th">Subscription</div><div class="tbd">
+<div class="f"><span class="fn">id</span><span class="ft">UUID</span><span class="fk">PK</span></div>
+<div class="f"><span class="fn">companyId</span><span class="ft">UUID?</span><span class="fk">FK</span></div>
+<div class="f"><span class="fn">plan</span><span class="ft">String?</span></div>
+<div class="f"><span class="fn">status</span><span class="ft">String</span></div>
+<div class="f"><span class="fn">monthlyCreditGrant</span><span class="ft">Int</span></div>
+<div class="f"><span class="fn">trialEndsAt</span><span class="ft">DateTime?</span></div>
+</div></div>
+<div class="tb2"><div class="th">Tool</div><div class="tbd">
+<div class="f"><span class="fn">slug</span><span class="ft">String</span><span class="fk">UNIQUE</span></div>
+<div class="f"><span class="fn">name</span><span class="ft">String</span></div>
+<div class="f"><span class="fn">creditCost</span><span class="ft">Int</span></div>
+</div></div>
+<div class="tb2"><div class="th">ToolRun</div><div class="tbd">
+<div class="f"><span class="fn">id</span><span class="ft">UUID</span><span class="fk">PK</span></div>
+<div class="f"><span class="fn">tool</span><span class="ft">String</span></div>
+<div class="f"><span class="fn">companyId</span><span class="ft">UUID?</span><span class="fk">FK</span></div>
+<div class="f"><span class="fn">createdAt</span><span class="ft">DateTime</span></div>
+</div></div>
+<div class="tb2"><div class="th">ToolActivation</div><div class="tbd">
+<div class="f"><span class="fn">companyId</span><span class="ft">UUID</span><span class="fk">FK</span></div>
+<div class="f"><span class="fn">toolName</span><span class="ft">String</span></div>
+<div class="f"><span class="fn">activated</span><span class="ft">Boolean</span></div>
+</div></div>
+</div>
+</div>
+
+<!-- LEVELS -->
+<div class="sec">
+<h2><span class="b">LEVELS</span> Access Level System</h2>
+<div class="gd">
+<div class="s" style="border-color:#ef4444"><div class="t"><span class="l l0">0</span> Locked</div><div class="dt">No access. "Subscribe to unlock"</div></div>
+<div class="s" style="border-color:#f59e0b"><div class="t"><span class="l l1">1</span> Basic</div><div class="dt">3 uses/month. 0 credits.</div></div>
+<div class="s" style="border-color:#818cf8"><div class="t"><span class="l l2">2</span> Subscribed</div><div class="dt">Unlimited. Credits deduct.</div></div>
+<div class="s" style="border-color:#22c55e"><div class="t"><span class="l l3">3</span> Premium</div><div class="dt">Unlimited. 0 credits.</div></div>
+</div>
+</div>
+
+</div>
+</body>
+</html>

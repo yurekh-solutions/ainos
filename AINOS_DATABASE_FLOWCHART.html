@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AINOS — Complete Database Flow Charts</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            background: #0a0a0f; 
+            color: #e0e0e0; 
+            padding: 40px 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { 
+            text-align: center; 
+            font-size: 2.5rem; 
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #1BE1D3, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle { text-align: center; color: #888; margin-bottom: 50px; font-size: 1.1rem; }
+        
+        .flow-section {
+            background: #111118;
+            border: 1px solid #222;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 40px;
+        }
+        .flow-section h2 {
+            color: #1BE1D3;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .flow-section h2 .badge {
+            background: #1BE1D3;
+            color: #000;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+        }
+        
+        .flow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+        .flow-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .step {
+            background: #1a1a24;
+            border: 2px solid #333;
+            border-radius: 12px;
+            padding: 15px 20px;
+            min-width: 200px;
+            text-align: center;
+            position: relative;
+        }
+        .step.user { border-color: #6366f1; background: #6366f110; }
+        .step.api { border-color: #f59e0b; background: #f59e0b10; }
+        .step.db { border-color: #1BE1D3; background: #1BE1D310; }
+        .step.decision { border-color: #ef4444; background: #ef444410; border-radius: 0; transform: rotate(0deg); clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); padding: 30px; }
+        .step.result { border-color: #22c55e; background: #22c55e10; }
+        .step.error { border-color: #ef4444; background: #ef444410; }
+        
+        .step-title { font-weight: bold; font-size: 0.9rem; margin-bottom: 5px; }
+        .step-detail { font-size: 0.75rem; color: #999; }
+        .step-table { font-size: 0.7rem; color: #1BE1D3; margin-top: 5px; font-family: monospace; }
+        
+        .arrow {
+            width: 2px;
+            height: 30px;
+            background: #444;
+            position: relative;
+        }
+        .arrow::after {
+            content: '▼';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #444;
+            font-size: 12px;
+        }
+        .arrow-h {
+            width: 30px;
+            height: 2px;
+            background: #444;
+            position: relative;
+        }
+        .arrow-h::after {
+            content: '▶';
+            position: absolute;
+            right: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #444;
+            font-size: 12px;
+        }
+        
+        .db-diagram {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .db-table {
+            background: #1a1a24;
+            border: 1px solid #333;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .db-table-header {
+            background: #1BE1D3;
+            color: #000;
+            padding: 8px 15px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        .db-table-body { padding: 10px 15px; }
+        .db-field {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 0.8rem;
+            border-bottom: 1px solid #222;
+        }
+        .db-field:last-child { border-bottom: none; }
+        .db-field .name { color: #e0e0e0; }
+        .db-field .type { color: #888; font-family: monospace; font-size: 0.75rem; }
+        .db-field .key { color: #f59e0b; font-size: 0.7rem; }
+        
+        .legend {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+            justify-content: center;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+        }
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            border: 2px solid;
+        }
+        
+        .level-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        .level-0 { background: #ef444430; color: #ef4444; }
+        .level-1 { background: #f59e0b30; color: #f59e0b; }
+        .level-2 { background: #6366f130; color: #6366f1; }
+        .level-3 { background: #22c55e30; color: #22c55e; }
+        
+        .branch {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+            margin-top: 10px;
+        }
+        .branch-label {
+            font-size: 0.75rem;
+            color: #888;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗄️ AINOS — Complete Database Flow Charts</h1>
+        <p class="subtitle">Onboarding → Subscription → Credits → Tool Access → Cancel</p>
+        
+        <div class="legend">
+            <div class="legend-item"><div class="legend-color" style="border-color: #6366f1; background: #6366f110;"></div> User Action</div>
+            <div class="legend-item"><div class="legend-color" style="border-color: #f59e0b; background: #f59e0b10;"></div> API Route</div>
+            <div class="legend-item"><div class="legend-color" style="border-color: #1BE1D3; background: #1BE1D310;"></div> Database</div>
+            <div class="legend-item"><div class="legend-color" style="border-color: #22c55e; background: #22c55e10;"></div> Success</div>
+            <div class="legend-item"><div class="legend-color" style="border-color: #ef4444; background: #ef444410;"></div> Error/Denied</div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- FLOW 1: USER ONBOARDING -->
+        <!-- ═══════════════════════════════════════════ -->
+        <div class="flow-section">
+            <h2><span class="badge">FLOW 1</span> User Onboarding (Signup → Company → Credits)</h2>
+            <div class="flow">
+                <div class="step user">
+                    <div class="step-title">👤 User Visits AINOS</div>
+                    <div class="step-detail">/auth/register page</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step user">
+                    <div class="step-title">📝 Fills Registration Form</div>
+                    <div class="step-detail">Name, Email, Password</div>
+                    <div class="step-detail">Company Name, Type, GST</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step api">
+                    <div class="step-title">🔌 POST /api/auth/register-company</div>
+                    <div class="step-detail">Validates input, checks duplicate email</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="flow-row">
+                    <div class="step db">
+                        <div class="step-title">📊 INSERT Company</div>
+                        <div class="step-table">id: uuid()<br>name: "Sharma Enterprises"<br>autoBlog: 0 (Level 0)<br>invoiceGen: 0<br>...all tools = 0</div>
+                    </div>
+                    <div class="step db">
+                        <div class="step-title">📊 INSERT User</div>
+                        <div class="step-table">id: uuid()<br>email: "sharma@gmail.com"<br>companyId: "comp_xyz"<br>role: "owner"</div>
+                    </div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="flow-row">
+                    <div class="step db">
+                        <div class="step-title">📊 INSERT CreditBalance</div>
+                        <div class="step-table">companyId: "comp_xyz"<br>balance: 200 ← Welcome credits!</div>
+                    </div>
+                    <div class="step db">
+                        <div class="step-title">📊 INSERT CreditTransaction</div>
+                        <div class="step-table">type: "credit"<br>amount: +200<br>desc: "Welcome bonus"</div>
+                    </div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step result">
+                    <div class="step-title">✅ User Created</div>
+                    <div class="step-detail">Login → Dashboard</div>
+                    <div class="step-detail">All tools Level 0 (locked)</div>
+                    <div class="step-detail">Credits: 200</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- FLOW 2: TRIAL ACTIVATION -->
+        <!-- ═══════════════════════════════════════════ -->
+        <div class="flow-section">
+            <h2><span class="badge">FLOW 2</span> Trial Activation (Level 0 → Level 1)</h2>
+            <div class="flow">
+                <div class="step user">
+                    <div class="step-title">👤 User Logs In</div>
+                    <div class="step-detail">First time after signup</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step api">
+                    <div class="step-title">🔌 POST /api/auth/start-trial</div>
+                    <div class="step-detail">Auto-triggered on first login</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step db">
+                    <div class="step-title">📊 UPDATE Company</div>
+                    <div class="step-table">autoBlog: 0 → <span class="level-badge level-1">1</span><br>aiAssistant: 0 → <span class="level-badge level-1">1</span><br>websiteGen: 0 → <span class="level-badge level-1">1</span><br>emailMarketing: 0 → <span class="level-badge level-1">1</span><br>subscriptionStatus: "trial"</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step db">
+                    <div class="step-title">📊 INSERT Subscription</div>
+                    <div class="step-table">plan: "one"<br>status: "trialing"<br>trialEndsAt: +14 days<br>monthlyCreditGrant: 200</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step result">
+                    <div class="step-title">✅ Trial Active (14 Days)</div>
+                    <div class="step-detail">4 tools at Level 1 (3 uses/month each)</div>
+                    <div class="step-detail">Credits: 200 (unchanged)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- FLOW 3: TOOL USAGE (LEVEL 1) -->
+        <!-- ═══════════════════════════════════════════ -->
+        <div class="flow-section">
+            <h2><span class="badge">FLOW 3</span> Tool Usage at Level 1 (Basic — 3 uses/month)</h2>
+            <div class="flow">
+                <div class="step user">
+                    <div class="step-title">👤 Clicks "Generate Logo"</div>
+                    <div class="step-detail">Dashboard → Services → Logo</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step api">
+                    <div class="step-title">🔌 POST /api/ai-tools</div>
+                    <div class="step-detail">{ tool: "logo", inputs: {...} }</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step api">
+                    <div class="step-title">🔍 requireToolAccess('autoBlog')</div>
+                    <div class="step-detail">Check Company.autoBlog level</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step db">
+                    <div class="step-title">📊 SELECT Company.autoBlog</div>
+                    <div class="step-table">→ Returns: 1 (Level 1)</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step api">
+                    <div class="step-title">🔍 Check Monthly Usage</div>
+                    <div class="step-detail">COUNT ToolRun WHERE tool='logo' AND month=current</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step db">
+                    <div class="step-title">📊 SELECT COUNT ToolRun</div>
+                    <div class="step-table">→ Returns: 1 (already used 1 this month)</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step decision">
+                    <div class="step-title">1 < 3?</div>
+                    <div class="step-detail">YES → Continue</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="flow-row">
+                    <div class="step db">
+                        <div class="step-title">📊 INSERT ToolRun</div>
+                        <div class="step-table">tool: "logo"<br>companyId: "comp_xyz"<br>output: {logo: "https://..."}</div>
+                    </div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step result">
+                    <div class="step-title">✅ Logo Generated</div>
+                    <div class="step-detail">Credits: NO DEDUCTION (Level 1 = 0 credits)</div>
+                    <div class="step-detail">Usage: 2/3</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- FLOW 4: SUBSCRIPTION PURCHASE -->
+        <!-- ═══════════════════════════════════════════ -->
+        <div class="flow-section">
+            <h2><span class="badge">FLOW 4</span> Subscription Purchase (Level 1 → Level 2/3)</h2>
+            <div class="flow">
+                <div class="step user">
+                    <div class="step-title">👤 Clicks "Upgrade to AINOS One"</div>
+                    <div class="step-detail">/billing page → Select plan</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step api">
+                    <div class="step-title">🔌 POST /api/billing/activate-tools</div>
+                    <div class="step-detail">{ plan: "one", paymentId: "pay_xyz" }</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step api">
+                    <div class="step-title">🔍 Verify Razorpay Payment</div>
+                    <div class="step-detail">payment.status = "captured"</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step db">
+                    <div class="step-title">📊 UPDATE Company (upgradeToolsOnSubscribe)</div>
+                    <div class="step-table">autoBlog: 1 → <span class="level-badge level-3">3</span><br>invoiceGen: 0 → <span class="level-badge level-3">3</span><br>crmAccess: 0 → <span class="level-badge level-3">3</span><br>...ALL tools → <span class="level-badge level-3">3</span><br>subscriptionStatus: "active"</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step db">
+                    <div class="step-title">📊 INSERT Subscription</div>
+                    <div class="step-table">plan: "one"<br>status: "active"<br>monthlyCreditGrant: 5000<br>currentPeriodEnd: +30 days</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="flow-row">
+                    <div class="step db">
+                        <div class="step-title">📊 UPDATE CreditBalance</div>
+                        <div class="step-table">balance: 200 + 5000 = 5200</div>
+                    </div>
+                    <div class="step db">
+                        <div class="step-title">📊 INSERT CreditTransaction</div>
+                        <div class="step-table">type: "credit"<br>amount: +5000<br>desc: "Monthly grant: AINOS One"</div>
+                    </div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step result">
+                    <div class="step-title">✅ AINOS One Active</div>
+                    <div class="step-detail">All tools Level 3 (unlimited, 0 credits)</div>
+                    <div class="step-detail">Credits: 5200</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- FLOW 5: TOOL USAGE (LEVEL 3) -->
+        <!-- ═══════════════════════════════════════════ -->
+        <div class="flow-section">
+            <h2><span class="badge">FLOW 5</span> Tool Usage at Level 3 (Premium — Unlimited, 0 Credits)</h2>
+            <div class="flow">
+                <div class="step user">
+                    <div class="step-title">👤 Clicks "Generate Logo"</div>
+                    <div class="step-detail">Dashboard → Services → Logo</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step api">
+                    <div class="step-title">🔌 POST /api/ai-tools</div>
+                    <div class="step-detail">{ tool: "logo", inputs: {...} }</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step api">
+                    <div class="step-title">🔍 requireToolAccess('autoBlog')</div>
+                    <div class="step-detail">Check Company.autoBlog level</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step db">
+                    <div class="step-title">📊 SELECT Company.autoBlog</div>
+                    <div class="step-table">→ Returns: 3 (Level 3)</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step api">
+                    <div class="step-title">✅ Level 3 = Premium</div>
+                    <div class="step-detail">No usage check needed</div>
+                    <div class="step-detail">creditsRequired: 0</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step api">
+                    <div class="step-title">🤖 Execute AI Tool</div>
+                    <div class="step-detail">runLogo(inputs) → Pollinations/Gemini</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step db">
+                    <div class="step-title">📊 INSERT ToolRun</div>
+                    <div class="step-table">tool: "logo"<br>companyId: "comp_xyz"</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step result">
+                    <div class="step-title">✅ Logo Generated</div>
+                    <div class="step-detail">Credits: NO DEDUCTION (Level 3 = 0 credits)</div>
+                    <div class="step-detail">Usage: Unlimited!</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- FLOW 6: CREDIT PURCHASE -->
+        <!-- ═══════════════════════════════════════════ -->
+        <div class="flow-section">
+            <h2><span class="badge">FLOW 6</span> Credit Pack Purchase (Top-up)</h2>
+            <div class="flow">
+                <div class="step user">
+                    <div class="step-title">👤 Low Credits → Buy Pack</div>
+                    <div class="step-detail">/billing/credits → "Pro Pack" (1000 credits, ₹499)</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step api">
+                    <div class="step-title">🔌 POST /api/billing/checkout</div>
+                    <div class="step-detail">{ creditPackId: 1000 }</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step api">
+                    <div class="step-title">🔌 Razorpay API → createOrder</div>
+                    <div class="step-detail">amount: ₹499, receipt: "credits_comp_xyz_123"</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step user">
+                    <div class="step-title">💳 User Pays on Razorpay</div>
+                    <div class="step-detail">Card/UPI → ₹499</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step api">
+                    <div class="step-title">🔌 POST /api/webhooks/razorpay</div>
+                    <div class="step-detail">event: "payment.captured"</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step api">
+                    <div class="step-title">🔍 Verify Webhook Signature</div>
+                    <div class="step-detail">HMAC SHA256 check</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step api">
+                    <div class="step-title">🔍 Extract companyId from receipt</div>
+                    <div class="step-detail">"credits_comp_xyz_123" → "comp_xyz"</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="flow-row">
+                    <div class="step db">
+                        <div class="step-title">📊 UPDATE CreditBalance</div>
+                        <div class="step-table">balance: 50 + 1000 = 1050</div>
+                    </div>
+                    <div class="step db">
+                        <div class="step-title">📊 INSERT CreditTransaction</div>
+                        <div class="step-table">type: "credit"<br>amount: +1000<br>desc: "Payment: pay_razorpay_xyz"</div>
+                    </div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step result">
+                    <div class="step-title">✅ Credits Added</div>
+                    <div class="step-detail">Balance: 1050</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- FLOW 7: SUBSCRIPTION CANCEL -->
+        <!-- ═══════════════════════════════════════════ -->
+        <div class="flow-section">
+            <h2><span class="badge">FLOW 7</span> Subscription Cancel (Level 3 → Level 1/0)</h2>
+            <div class="flow">
+                <div class="step user">
+                    <div class="step-title">👤 Clicks "Cancel Subscription"</div>
+                    <div class="step-detail">/billing → Cancel</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step api">
+                    <div class="step-title">🔌 POST /api/billing/cancel</div>
+                    <div class="step-detail">companyId from session</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step db">
+                    <div class="step-title">📊 UPDATE Subscription</div>
+                    <div class="step-table">status: "active" → "cancelled"</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step db">
+                    <div class="step-title">📊 UPDATE Company (downgradeToolsOnCancel)</div>
+                    <div class="step-table">autoBlog: 3 → <span class="level-badge level-1">1</span> (AI → basic)<br>aiAssistant: 3 → <span class="level-badge level-1">1</span><br>websiteGen: 3 → <span class="level-badge level-1">1</span><br>invoiceGen: 3 → <span class="level-badge level-0">0</span> (non-AI → locked)<br>crmAccess: 3 → <span class="level-badge level-0">0</span><br>subscriptionStatus: "inactive"</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step db">
+                    <div class="step-title">📊 CreditBalance — NO CHANGE</div>
+                    <div class="step-table">balance: 1050 (safe!)</div>
+                </div>
+                <div class="arrow"></div>
+                
+                <div class="step result">
+                    <div class="step-title">✅ Subscription Cancelled</div>
+                    <div class="step-detail">AI tools: Level 1 (3 uses/month)</div>
+                    <div class="step-detail">Non-AI tools: Level 0 (locked)</div>
+                    <div class="step-detail">Credits: 1050 (safe, never expire)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- DATABASE SCHEMA DIAGRAM -->
+        <!-- ═══════════════════════════════════════════ -->
+        <div class="flow-section">
+            <h2><span class="badge">SCHEMA</span> Database Tables & Relationships</h2>
+            
+            <div class="db-diagram">
+                <div class="db-table">
+                    <div class="db-table-header">👤 User</div>
+                    <div class="db-table-body">
+                        <div class="db-field"><span class="name">id</span><span class="type">UUID</span><span class="key">PK</span></div>
+                        <div class="db-field"><span class="name">email</span><span class="type">String</span><span class="key">UNIQUE</span></div>
+                        <div class="db-field"><span class="name">name</span><span class="type">String</span></div>
+                        <div class="db-field"><span class="name">password</span><span class="type">String</span></div>
+                        <div class="db-field"><span class="name">companyId</span><span class="type">UUID</span><span class="key">FK → Company</span></div>
+                        <div class="db-field"><span class="name">role</span><span class="type">String</span></div>
+                    </div>
+                </div>
+                
+                <div class="db-table">
+                    <div class="db-table-header">🏢 Company</div>
+                    <div class="db-table-body">
+                        <div class="db-field"><span class="name">id</span><span class="type">UUID</span><span class="key">PK</span></div>
+                        <div class="db-field"><span class="name">name</span><span class="type">String</span></div>
+                        <div class="db-field"><span class="name">autoBlog</span><span class="type">Int (0-3)</span><span class="key">LEVEL</span></div>
+                        <div class="db-field"><span class="name">invoiceGen</span><span class="type">Int (0-3)</span><span class="key">LEVEL</span></div>
+                        <div class="db-field"><span class="name">crmAccess</span><span class="type">Int (0-3)</span><span class="key">LEVEL</span></div>
+                        <div class="db-field"><span class="name">...6 more tools</span><span class="type">Int (0-3)</span></div>
+                        <div class="db-field"><span class="name">subscriptionStatus</span><span class="type">String</span></div>
+                    </div>
+                </div>
+                
+                <div class="db-table">
+                    <div class="db-table-header">💳 CreditBalance</div>
+                    <div class="db-table-body">
+                        <div class="db-field"><span class="name">companyId</span><span class="type">UUID</span><span class="key">PK</span></div>
+                        <div class="db-field"><span class="name">balance</span><span class="type">Int</span></div>
+                        <div class="db-field"><span class="name">updatedAt</span><span class="type">DateTime</span></div>
+                    </div>
+                </div>
+                
+                <div class="db-table">
+                    <div class="db-table-header">📊 CreditTransaction</div>
+                    <div class="db-table-body">
+                        <div class="db-field"><span class="name">id</span><span class="type">UUID</span><span class="key">PK</span></div>
+                        <div class="db-field"><span class="name">companyId</span><span class="type">UUID</span><span class="key">FK</span></div>
+                        <div class="db-field"><span class="name">type</span><span class="type">String</span></div>
+                        <div class="db-field"><span class="name">amount</span><span class="type">Int</span></div>
+                        <div class="db-field"><span class="name">balanceAfter</span><span class="type">Int</span></div>
+                        <div class="db-field"><span class="name">description</span><span class="type">String</span></div>
+                    </div>
+                </div>
+                
+                <div class="db-table">
+                    <div class="db-table-header">📋 Subscription</div>
+                    <div class="db-table-body">
+                        <div class="db-field"><span class="name">id</span><span class="type">UUID</span><span class="key">PK</span></div>
+                        <div class="db-field"><span class="name">companyId</span><span class="type">UUID</span><span class="key">FK</span></div>
+                        <div class="db-field"><span class="name">plan</span><span class="type">String</span></div>
+                        <div class="db-field"><span class="name">status</span><span class="type">String</span></div>
+                        <div class="db-field"><span class="name">monthlyCreditGrant</span><span class="type">Int</span></div>
+                        <div class="db-field"><span class="name">trialEndsAt</span><span class="type">DateTime</span></div>
+                        <div class="db-field"><span class="name">currentPeriodEnd</span><span class="type">DateTime</span></div>
+                    </div>
+                </div>
+                
+                <div class="db-table">
+                    <div class="db-table-header">🔧 Tool (Catalog)</div>
+                    <div class="db-table-body">
+                        <div class="db-field"><span class="name">id</span><span class="type">UUID</span><span class="key">PK</span></div>
+                        <div class="db-field"><span class="name">slug</span><span class="type">String</span><span class="key">UNIQUE</span></div>
+                        <div class="db-field"><span class="name">name</span><span class="type">String</span></div>
+                        <div class="db-field"><span class="name">creditCost</span><span class="type">Int</span></div>
+                        <div class="db-field"><span class="name">category</span><span class="type">String</span></div>
+                        <div class="db-field"><span class="name">isActive</span><span class="type">Boolean</span></div>
+                    </div>
+                </div>
+                
+                <div class="db-table">
+                    <div class="db-table-header">🚀 ToolRun</div>
+                    <div class="db-table-body">
+                        <div class="db-field"><span class="name">id</span><span class="type">UUID</span><span class="key">PK</span></div>
+                        <div class="db-field"><span class="name">tool</span><span class="type">String</span></div>
+                        <div class="db-field"><span class="name">companyId</span><span class="type">UUID</span><span class="key">FK</span></div>
+                        <div class="db-field"><span class="name">userId</span><span class="type">String</span></div>
+                        <div class="db-field"><span class="name">inputs</span><span class="type">JSON</span></div>
+                        <div class="db-field"><span class="name">output</span><span class="type">JSON</span></div>
+                        <div class="db-field"><span class="name">createdAt</span><span class="type">DateTime</span></div>
+                    </div>
+                </div>
+                
+                <div class="db-table">
+                    <div class="db-table-header">📝 ToolActivation (Audit)</div>
+                    <div class="db-table-body">
+                        <div class="db-field"><span class="name">id</span><span class="type">UUID</span><span class="key">PK</span></div>
+                        <div class="db-field"><span class="name">companyId</span><span class="type">UUID</span><span class="key">FK</span></div>
+                        <div class="db-field"><span class="name">toolName</span><span class="type">String</span></div>
+                        <div class="db-field"><span class="name">activated</span><span class="type">Boolean</span></div>
+                        <div class="db-field"><span class="name">activatedAt</span><span class="type">DateTime</span></div>
+                        <div class="db-field"><span class="name">reason</span><span class="type">String</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- LEVEL SYSTEM EXPLANATION -->
+        <!-- ═══════════════════════════════════════════ -->
+        <div class="flow-section">
+            <h2><span class="badge">LEVELS</span> Integer Access Level System</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
+                <div class="step" style="border-color: #ef4444;">
+                    <div class="step-title"><span class="level-badge level-0">LEVEL 0</span> Locked</div>
+                    <div class="step-detail" style="margin-top: 10px;">Tool hidden/locked</div>
+                    <div class="step-detail">"Subscribe to unlock"</div>
+                    <div class="step-detail">No access at all</div>
+                </div>
+                <div class="step" style="border-color: #f59e0b;">
+                    <div class="step-title"><span class="level-badge level-1">LEVEL 1</span> Basic</div>
+                    <div class="step-detail" style="margin-top: 10px;">3 uses per month</div>
+                    <div class="step-detail">0 credits deducted</div>
+                    <div class="step-detail">"Upgrade for unlimited"</div>
+                </div>
+                <div class="step" style="border-color: #6366f1;">
+                    <div class="step-title"><span class="level-badge level-2">LEVEL 2</span> Subscribed</div>
+                    <div class="step-detail" style="margin-top: 10px;">Unlimited uses</div>
+                    <div class="step-detail">Credits deducted per use</div>
+                    <div class="step-detail">Full features</div>
+                </div>
+                <div class="step" style="border-color: #22c55e;">
+                    <div class="step-title"><span class="level-badge level-3">LEVEL 3</span> Premium</div>
+                    <div class="step-detail" style="margin-top: 10px;">Unlimited uses</div>
+                    <div class="step-detail">0 credits deducted</div>
+                    <div class="step-detail">Priority support</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

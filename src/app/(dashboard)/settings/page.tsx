@@ -35,7 +35,7 @@ const Toggle = ({ enabled, onChange }: { enabled: boolean; onChange: () => void 
 
 export default function SettingsPage() {
   const { data: session } = useSession();
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { theme, resolvedTheme } = useTheme();
   const [saved, setSaved] = useState(false);
   const [activeSection, setActiveSection] = useState('profile');
   const [settings, setSettings] = useState({
@@ -55,20 +55,9 @@ export default function SettingsPage() {
 
   const sections = [
     { id: 'profile', icon: User, label: 'Profile' },
-    { id: 'appearance', icon: Palette, label: 'Appearance' },
     { id: 'notifications', icon: Bell, label: 'Notifications' },
     { id: 'regional', icon: Globe, label: 'Regional' },
     { id: 'security', icon: Shield, label: 'Security' },
-  ];
-
-  const themeOptions = [
-    { 
-      value: 'dark', 
-      label: 'Dark', 
-      icon: Moon, 
-      desc: 'Deep dark with purple accent',
-      preview: 'linear-gradient(145deg, #1a1a2e 0%, #16162a 100%)',
-    },
   ];
 
   return (
@@ -191,105 +180,6 @@ export default function SettingsPage() {
                       </span>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Appearance Section */}
-            {activeSection === 'appearance' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="glass-card p-6 rounded-2xl"
-              >
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(252 60% 55% / 0.15)' }}>
-                    <Palette className="w-5 h-5" style={{ color: 'hsl(var(--primary))' }} />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Appearance</h2>
-                    <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                      Currently using <span className="font-medium" style={{ color: 'hsl(var(--primary))' }}>Dark mode</span>
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {themeOptions.map((option) => {
-                    const Icon = option.icon;
-                    const isSelected = theme === option.value;
-                    
-                    return (
-                      <button
-                        key={option.value}
-                        onClick={() => setTheme('dark')}
-                        className="relative p-5 rounded-2xl transition-all duration-300 text-left group overflow-hidden"
-                        style={{
-                          background: isSelected 
-                            ? 'linear-gradient(180deg, hsl(230 18% 14% / 0.95) 0%, hsl(230 18% 10% / 0.9) 100%)' 
-                            : 'linear-gradient(180deg, hsl(230 18% 12% / 0.6) 0%, hsl(230 18% 8% / 0.5) 100%)',
-                          border: isSelected 
-                            ? '2px solid hsl(252 60% 55% / 0.5)' 
-                            : '2px solid hsl(252 60% 55% / 0.15)',
-                          boxShadow: isSelected 
-                            ? '0 10px 40px -10px hsl(252 60% 55% / 0.2)' 
-                            : 'none',
-                        }}
-                      >
-                        {/* Preview Window */}
-                        <div 
-                          className="w-full h-32 rounded-xl mb-4 relative overflow-hidden"
-                          style={{ background: option.preview }}
-                        >
-                          <div className="absolute top-3 left-3 flex gap-1.5">
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ background: 'hsl(252 60% 55% / 0.3)' }} />
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ background: 'hsl(230 12% 25% / 0.3)' }} />
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ background: 'hsl(152 70% 45% / 0.3)' }} />
-                          </div>
-                          <div className="absolute bottom-4 left-4 right-4 space-y-2">
-                            <div className="h-2 rounded-full w-3/4 bg-current opacity-10" />
-                            <div className="h-2 rounded-full w-1/2 bg-current opacity-10" />
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div 
-                              className="w-11 h-11 rounded-xl flex items-center justify-center"
-                              style={{ 
-                                background: isSelected 
-                                  ? 'linear-gradient(135deg, hsl(252 60% 55%) 0%, hsl(252 65% 65%) 100%)'
-                                  : 'hsl(252 60% 55% / 0.1)'
-                              }}
-                            >
-                              <Icon 
-                                className="w-5 h-5" 
-                                style={{ color: isSelected ? 'white' : 'hsl(var(--primary))' }} 
-                              />
-                            </div>
-                            <div>
-                              <p className="font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
-                                {option.label}
-                              </p>
-                              <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                                {option.desc}
-                              </p>
-                            </div>
-                          </div>
-
-                          {isSelected && (
-                            <motion.div
-                              layoutId="themeCheck"
-                              className="w-7 h-7 rounded-full flex items-center justify-center"
-                              style={{ background: 'linear-gradient(135deg, hsl(252 60% 55%) 0%, hsl(252 65% 65%) 100%)' }}
-                            >
-                              <CheckCircle2 className="w-4 h-4 text-white" />
-                            </motion.div>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
                 </div>
               </motion.div>
             )}

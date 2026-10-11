@@ -8,8 +8,7 @@ const path = require('path');
   });
 
   const files = [
-    { html: 'AINOS_FLOWCHART.html', pdf: 'AINOS_FLOWCHART.pdf' },
-    { html: 'AINOS_WORKFLOW.html', pdf: 'AINOS_WORKFLOW.pdf' },
+    { html: 'scripts/AINOS_DB_FLOWCHART.html', pdf: 'AINOS_DB_FLOWCHART.pdf' },
   ];
 
   for (const f of files) {

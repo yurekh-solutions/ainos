@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AINOS - Business Suite",
-  description: "Simple and powerful billing platform for businesses of all sizes",
+  title: "AINOS Business Suite — CRM, Finance, HR, Marketing & AI in One Platform",
+  description: "Unified business platform with GST invoicing, CRM, HR & payroll, inventory, AI-powered marketing and Tally integration. Built for Indian businesses.",
   other: {
     'rss-feed': '/api/blog-rss',
   },

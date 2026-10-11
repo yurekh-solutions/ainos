@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AINOS — Database Flow Charts</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0a0f;color:#e0e0e0;padding:30px 20px}
+.container{max-width:1200px;margin:0 auto}
+h1{text-align:center;font-size:2.2rem;margin-bottom:8px;background:linear-gradient(135deg,#1BE1D3,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sub{text-align:center;color:#888;margin-bottom:40px;font-size:1rem}
+.section{background:#111118;border:1px solid #222;border-radius:14px;padding:25px;margin-bottom:30px}
+.section h2{color:#1BE1D3;margin-bottom:18px;font-size:1.3rem;display:flex;align-items:center;gap:10px}
+.badge{background:#1BE1D3;color:#000;padding:2px 10px;border-radius:20px;font-size:.7rem;font-weight:700}
+.flow{display:flex;flex-direction:column;align-items:center;gap:0}
+.step{background:#1a1a24;border:2px solid #333;border-radius:10px;padding:12px 18px;min-width:220px;text-align:center;max-width:400px}
+.step.user{border-color:#6366f1;background:rgba(99,102,241,.06)}
+.step.api{border-color:#f59e0b;background:rgba(245,158,11,.06)}
+.step.db{border-color:#1BE1D3;background:rgba(27,225,211,.06)}
+.step.ok{border-color:#22c55e;background:rgba(34,197,94,.06)}
+.step.err{border-color:#ef4444;background:rgba(239,68,68,.06)}
+.step-title{font-weight:700;font-size:.85rem;margin-bottom:4px}
+.step-detail{font-size:.72rem;color:#999;line-height:1.4}
+.step-tbl{font-size:.68rem;color:#1BE1D3;margin-top:4px;font-family:monospace;line-height:1.5}
+.arrow{width:2px;height:24px;background:#444;position:relative}
+.arrow::after{content:'▼';position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);color:#444;font-size:10px}
+.row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+.lb{display:inline-block;padding:1px 7px;border-radius:4px;font-size:.65rem;font-weight:700}
+.l0{background:rgba(239,68,68,.2);color:#ef4444}
+.l1{background:rgba(245,158,11,.2);color:#f59e0b}
+.l2{background:rgba(99,102,241,.2);color:#818cf8}
+.l3{background:rgba(34,197,94,.2);color:#22c55e}
+.legend{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin:16px 0 30px}
+.legend-i{display:flex;align-items:center;gap:6px;font-size:.75rem}
+.legend-c{width:14px;height:14px;border-radius:3px;border:2px solid}
+.grid-db{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:16px}
+.tbl{background:#1a1a24;border:1px solid #333;border-radius:8px;overflow:hidden}
+.tbl-h{background:#1BE1D3;color:#000;padding:6px 12px;font-weight:700;font-size:.8rem}
+.tbl-b{padding:8px 12px}
+.fld{display:flex;justify-content:space-between;padding:3px 0;font-size:.72rem;border-bottom:1px solid #1e1e1e}
+.fld:last-child{border-bottom:none}
+.fld .n{color:#ddd}
+.fld .t{color:#888;font-family:monospace;font-size:.68rem}
+.fld .k{color:#f59e0b;font-size:.65rem}
+.lvl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:16px}
+.lvl-card{background:#1a1a24;border-radius:10px;padding:14px;text-align:center}
+.lvl-card h3{font-size:.9rem;margin-bottom:8px}
+.lvl-card p{font-size:.72rem;color:#999;line-height:1.5}
+.branch-yes{color:#22c55e;font-size:.7rem}
+.branch-no{color:#ef4444;font-size:.7rem}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>AINOS — Complete Database Flow Charts</h1>
+<p class="sub">Onboarding → Subscription → Credits → Tool Levels → Cancel — Full Data Flow</p>
+
+<div class="legend">
+<div class="legend-i"><div class="legend-c" style="border-color:#6366f1;background:rgba(99,102,241,.1)"></div>User Action</div>
+<div class="legend-i"><div class="legend-c" style="border-color:#f59e0b;background:rgba(245,158,11,.1)"></div>API / Logic</div>
+<div class="legend-i"><div class="legend-c" style="border-color:#1BE1D3;background:rgba(27,225,211,.1)"></div>Database</div>
+<div class="legend-i"><div class="legend-c" style="border-color:#22c55e;background:rgba(34,197,94,.1)"></div>Success</div>
+<div class="legend-i"><div class="legend-c" style="border-color:#ef4444;background:rgba(239,68,68,.1)"></div>Error / Denied</div>
+</div>
+
+<!-- ════════════ FLOW 1: ONBOARDING ════════════ -->
+<div class="section">
+<h2><span class="badge">FLOW 1</span> User Onboarding — Signup → Company → Welcome Credits</h2>
+<div class="flow">
+
+<div class="step user"><div class="step-title">User Visits /auth/register</div><div class="step-detail">3-step company-first registration</div></div>
+<div class="arrow"></div>
+
+<div class="step user"><div class="step-title">Step 1: Account Details</div><div class="step-detail">Full Name, Email, Phone, Password</div></div>
+<div class="arrow"></div>
+
+<div class="step user"><div class="step-title">Step 2: Company Details</div><div class="step-detail">Company Name, Type (LLP/Pvt Ltd/Proprietorship), Email, Phone, Address, Country, GST (optional)</div></div>
+<div class="arrow"></div>
+
+<div class="step user"><div class="step-title">Step 3: Documents & Review</div><div class="step-detail">Upload documents per company type, review summary, submit</div></div>
+<div class="arrow"></div>
+
+<div class="step api"><div class="step-title">POST /api/auth/register-company</div><div class="step-detail">Validates input, checks duplicate email</div></div>
+<div class="arrow"></div>
+
+<div class="row">
+<div class="step db"><div class="step-title">INSERT Company</div><div class="step-tbl">id: uuid()<br>name: "Sharma Enterprises"<br>companyType: "Proprietorship"<br>country: "India"<br>autoBlog: <span class="lb l0">0</span><br>invoiceGen: <span class="lb l0">0</span><br>crmAccess: <span class="lb l0">0</span><br>... all tools = 0 (locked)<br>subscriptionStatus: "inactive"</div></div>
+<div class="step db"><div class="step-title">INSERT User</div><div class="step-tbl">id: uuid()<br>email: "sharma@gmail.com" (UNIQUE)<br>name: "Sharma Ji"<br>password: bcrypt_hash<br>companyId: "comp_xyz"<br>role: "owner"</div></div>
+</div>
+<div class="arrow"></div>
+
+<div class="row">
+<div class="step db"><div class="step-title">INSERT CreditBalance</div><div class="step-tbl">companyId: "comp_xyz" (PK)<br>balance: 200 ← Welcome credits!</div></div>
+<div class="step db"><div class="step-title">INSERT CreditTransaction</div><div class="step-tbl">type: "credit"<br>amount: +200<br>balanceAfter: 200<br>desc: "Welcome bonus"</div></div>
+</div>
+<div class="arrow"></div>
+
+<div class="step ok"><div class="step-title">User Created Successfully</div><div class="step-detail">All tools Level 0 (locked) | Credits: 200 | Needs trial or subscription to use tools</div></div>
+</div>
+</div>
+
+<!-- ════════════ FLOW 2: TRIAL START ════════════ -->
+<div class="section">
+<h2><span class="badge">FLOW 2</span> Trial Activation — Level 0 → Level 1 (14 Days)</h2>
+<div class="flow">
+
+<div class="step user"><div class="step-title">User Logs In (First Time)</div><div class="step-detail">Redirected to dashboard</div></div>
+<div class="arrow"></div>
+
+<div class="step api"><div class="step-title">startTrial() called</div><div class="step-detail">billing.ts → checks no existing subscription</div></div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">INSERT Subscription</div><div class="step-tbl">companyId: "comp_xyz"<br>userId: "user_abc"<br>plan: "one"<br>status: "trialing"<br>trialEndsAt: 2026-10-21 (+14 days)<br>monthlyCreditGrant: 200</div></div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">UPDATE Company — Tools to Level 1</div><div class="step-tbl">autoBlog: 0 → <span class="lb l1">1</span> (3 uses/month)<br>aiAssistant: 0 → <span class="lb l1">1</span><br>websiteGen: 0 → <span class="lb l1">1</span><br>emailMarketing: 0 → <span class="lb l1">1</span><br>invoiceGen: stays <span class="lb l0">0</span> (non-AI)<br>crmAccess: stays <span class="lb l0">0</span><br>subscriptionStatus: "trial"</div></div>
+<div class="arrow"></div>
+
+<div class="step ok"><div class="step-title">Trial Active — 14 Days</div><div class="step-detail">4 AI tools at Level 1 (3 uses/month, 0 credits) | Non-AI tools still locked | Credits: 200 (unchanged)</div></div>
+</div>
+</div>
+
+<!-- ════════════ FLOW 3: LEVEL 1 TOOL USE ════════════ -->
+<div class="section">
+<h2><span class="badge">FLOW 3</span> Tool Usage at Level 1 — Basic (3 uses/month, 0 credits)</h2>
+<div class="flow">
+
+<div class="step user"><div class="step-title">User Clicks "Generate Logo"</div><div class="step-detail">Dashboard → Services → Logo Generator</div></div>
+<div class="arrow"></div>
+
+<div class="step api"><div class="step-title">POST /api/ai-tools</div><div class="step-tbl">{ tool: "logo", inputs: { businessName: "Sharma Ji" } }</div></div>
+<div class="arrow"></div>
+
+<div class="step api"><div class="step-title">requireToolAccess('autoBlog')</div><div class="step-detail">tool-guard.ts → reads Company.autoBlog</div></div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">SELECT Company.autoBlog</div><div class="step-tbl">→ Returns: 1 (Level 1 = Basic)</div></div>
+<div class="arrow"></div>
+
+<div class="step api"><div class="step-title">Check Monthly Usage Count</div><div class="step-tbl">SELECT COUNT(*) FROM ToolRun<br>WHERE tool = 'logo'<br>AND companyId = 'comp_xyz'<br>AND createdAt >= '2026-10-01' (month start)</div></div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">Result: used = 1</div><div class="step-tbl">1 < 3 → ALLOWED</div></div>
+<div class="arrow"></div>
+
+<div class="step api"><div class="step-title">Execute AI Tool</div><div class="step-detail">runLogo() → Pollinations.ai generates image</div></div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">INSERT ToolRun</div><div class="step-tbl">tool: "logo" | companyId: "comp_xyz"<br>userId: "user_abc" | output: {logo: "https://..."}<br>aiUsed: true | status: "completed"</div></div>
+<div class="arrow"></div>
+
+<div class="step ok"><div class="step-title">Logo Generated!</div><div class="step-detail">Credits deducted: 0 (Level 1 = no credit cost) | Usage now: 2/3 | CreditBalance: 200 (unchanged)</div></div>
+</div>
+</div>
+
+<!-- ════════════ FLOW 4: LEVEL 1 LIMIT HIT ════════════ -->
+<div class="section">
+<h2><span class="badge">FLOW 4</span> Level 1 Limit Hit — 3/3 Uses Done</h2>
+<div class="flow">
+
+<div class="step user"><div class="step-title">User Clicks "Generate Logo" (4th time)</div><div class="step-detail">Usage already 3/3 this month</div></div>
+<div class="arrow"></div>
+
+<div class="step api"><div class="step-title">requireToolAccess('autoBlog')</div><div class="step-detail">Level = 1 → Check monthly count</div></div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">COUNT ToolRun → 3</div><div class="step-tbl">3 >= 3 → DENIED</div></div>
+<div class="arrow"></div>
+
+<div class="step err"><div class="step-title">402 Error</div><div class="step-detail">"3/3 uses done. Upgrade to Level 2 for unlimited access." | upgrade: true | buyLink: "/billing"</div></div>
+</div>
+</div>
+
+<!-- ════════════ FLOW 5: SUBSCRIPTION PURCHASE ════════════ -->
+<div class="section">
+<h2><span class="badge">FLOW 5</span> Subscription Purchase — Level 1 → Level 2/3</h2>
+<div class="flow">
+
+<div class="step user"><div class="step-title">User Goes to /billing</div><div class="step-detail">Selects "AINOS One" — Rs.3,999/month</div></div>
+<div class="arrow"></div>
+
+<div class="step api"><div class="step-title">POST /api/billing/activate-tools</div><div class="step-tbl">{ plan: "one", paymentId: "pay_razorpay_xyz" }</div></div>
+<div class="arrow"></div>
+
+<div class="step api"><div class="step-title">Verify Razorpay Payment</div><div class="step-detail">HMAC signature check → payment.status = "captured"</div></div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">UPDATE Company — upgradeToolsOnSubscribe("one")</div><div class="step-tbl">autoBlog: <span class="lb l1">1</span> → <span class="lb l3">3</span> (Premium!)<br>invoiceGen: <span class="lb l0">0</span> → <span class="lb l3">3</span><br>crmAccess: <span class="lb l0">0</span> → <span class="lb l3">3</span><br>inventoryMgmt: <span class="lb l0">0</span> → <span class="lb l3">3</span><br>hrPayroll: <span class="lb l0">0</span> → <span class="lb l3">3</span><br>emailMarketing: <span class="lb l1">1</span> → <span class="lb l3">3</span><br>aiAssistant: <span class="lb l1">1</span> → <span class="lb l3">3</span><br>websiteGen: <span class="lb l1">1</span> → <span class="lb l3">3</span><br>subscriptionStatus: "active"</div></div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">INSERT Subscription</div><div class="step-tbl">plan: "one" | status: "active"<br>monthlyCreditGrant: 5000<br>creditsRefreshedAt: now<br>currentPeriodEnd: +30 days<br>amount: 3999 | paymentId: "pay_xyz"</div></div>
+<div class="arrow"></div>
+
+<div class="row">
+<div class="step db"><div class="step-title">UPDATE CreditBalance</div><div class="step-tbl">200 + 5000 = 5200</div></div>
+<div class="step db"><div class="step-title">INSERT CreditTransaction</div><div class="step-tbl">type: "credit" | amount: +5000<br>balanceAfter: 5200<br>desc: "Monthly grant: AINOS One"</div></div>
+</div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">INSERT ToolActivation (Audit)</div><div class="step-tbl">FOR EACH tool: toolName, activated: true<br>activatedBy: "user_abc"<br>reason: "subscription_started_one"</div></div>
+<div class="arrow"></div>
+
+<div class="step ok"><div class="step-title">AINOS One Active!</div><div class="step-detail">All 8 tools at Level 3 (unlimited, 0 credits) | Credits: 5200 | Valid for 30 days</div></div>
+</div>
+</div>
+
+<!-- ════════════ FLOW 6: LEVEL 3 TOOL USE ════════════ -->
+<div class="section">
+<h2><span class="badge">FLOW 6</span> Tool Usage at Level 3 — Premium (Unlimited, 0 Credits)</h2>
+<div class="flow">
+
+<div class="step user"><div class="step-title">User Clicks "Generate Logo"</div><div class="step-detail">100th time this month — no problem!</div></div>
+<div class="arrow"></div>
+
+<div class="step api"><div class="step-title">requireToolAccess('autoBlog')</div><div class="step-detail">Company.autoBlog = 3</div></div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">SELECT Company.autoBlog → 3</div><div class="step-tbl">Level 3 = Premium → SKIP usage check, SKIP credit check</div></div>
+<div class="arrow"></div>
+
+<div class="step api"><div class="step-title">Execute AI Tool</div><div class="step-detail">runLogo() → image generated</div></div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">INSERT ToolRun</div><div class="step-tbl">tool: "logo" | companyId: "comp_xyz"</div></div>
+<div class="arrow"></div>
+
+<div class="step ok"><div class="step-title">Logo Generated!</div><div class="step-detail">Credits deducted: 0 (Level 3 = premium, no fuel needed) | Usage: 100+ (no limit) | CreditBalance: 5200 (unchanged)</div></div>
+</div>
+</div>
+
+<!-- ════════════ FLOW 7: LEVEL 2 + CREDIT DEDUCTION ════════════ -->
+<div class="section">
+<h2><span class="badge">FLOW 7</span> Tool Usage at Level 2 — Subscribed (Unlimited, Credits Deduct)</h2>
+<div class="flow">
+
+<div class="step user"><div class="step-title">Growth Plan User Runs Logo</div><div class="step-detail">autoBlog = 2 (Level 2)</div></div>
+<div class="arrow"></div>
+
+<div class="step api"><div class="step-title">requireToolAccess('autoBlog') → Level 2</div><div class="step-detail">Get creditCost from Tool table</div></div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">SELECT Tool WHERE slug='logo'</div><div class="step-tbl">creditCost: 5</div></div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">SELECT CreditBalance</div><div class="step-tbl">balance: 120</div></div>
+<div class="arrow"></div>
+
+<div class="step api"><div class="step-title">120 >= 5? → YES</div><div class="step-detail">Sufficient credits</div></div>
+<div class="arrow"></div>
+
+<div class="step api"><div class="step-title">Execute AI Tool → runLogo()</div></div>
+<div class="arrow"></div>
+
+<div class="row">
+<div class="step db"><div class="step-title">UPDATE CreditBalance</div><div class="step-tbl">120 - 5 = 115</div></div>
+<div class="step db"><div class="step-title">INSERT CreditTransaction</div><div class="step-tbl">type: "debit" | amount: -5<br>balanceAfter: 115<br>desc: "Logo Generator"</div></div>
+<div class="step db"><div class="step-title">INSERT ToolRun</div><div class="step-tbl">tool: "logo"<br>companyId: "comp_xyz"</div></div>
+</div>
+<div class="arrow"></div>
+
+<div class="step ok"><div class="step-title">Logo Generated!</div><div class="step-detail">Credits deducted: 5 | Balance: 115 | Usage: unlimited at Level 2</div></div>
+</div>
+</div>
+
+<!-- ════════════ FLOW 8: INSUFFICIENT CREDITS ════════════ -->
+<div class="section">
+<h2><span class="badge">FLOW 8</span> Insufficient Credits — Buy Pack</h2>
+<div class="flow">
+
+<div class="step user"><div class="step-title">User Runs Logo (Balance: 3)</div><div class="step-detail">Credit cost: 5, but only 3 left</div></div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">CreditBalance: 3</div><div class="step-tbl">3 < 5 → INSUFFICIENT</div></div>
+<div class="arrow"></div>
+
+<div class="step err"><div class="step-title">402 Error</div><div class="step-detail">"Insufficient credits. Buy credit pack." | required: 5 | balance: 3 | buyLink: "/billing/credits"</div></div>
+<div class="arrow"></div>
+
+<div class="step user"><div class="step-title">User Goes to /billing/credits</div><div class="step-detail">Selects "Pro Pack" — 1000 credits, Rs.499</div></div>
+<div class="arrow"></div>
+
+<div class="step api"><div class="step-title">POST /api/billing/checkout</div><div class="step-tbl">{ creditPackId: 1000 }</div></div>
+<div class="arrow"></div>
+
+<div class="step api"><div class="step-title">Razorpay createOrder(Rs.499)</div><div class="step-tbl">receipt: "credits_comp_xyz_123456"</div></div>
+<div class="arrow"></div>
+
+<div class="step user"><div class="step-title">User Pays Rs.499 on Razorpay</div><div class="step-detail">Card / UPI / Net Banking</div></div>
+<div class="arrow"></div>
+
+<div class="step api"><div class="step-title">POST /api/webhooks/razorpay</div><div class="step-tbl">event: "payment.captured"<br>receipt: "credits_comp_xyz_123456"<br>amount: 49900 paise = Rs.499</div></div>
+<div class="arrow"></div>
+
+<div class="step api"><div class="step-title">Extract companyId from receipt</div><div class="step-tbl">"credits_comp_xyz_123456" → "comp_xyz"</div></div>
+<div class="arrow"></div>
+
+<div class="row">
+<div class="step db"><div class="step-title">UPDATE CreditBalance</div><div class="step-tbl">3 + 1000 = 1003</div></div>
+<div class="step db"><div class="step-title">INSERT CreditTransaction</div><div class="step-tbl">type: "credit" | amount: +1000<br>balanceAfter: 1003<br>desc: "Payment: pay_razorpay_xyz"</div></div>
+</div>
+<div class="arrow"></div>
+
+<div class="step ok"><div class="step-title">Credits Added!</div><div class="step-detail">Balance: 1003 | Now user can run tools again</div></div>
+</div>
+</div>
+
+<!-- ════════════ FLOW 9: CANCEL ════════════ -->
+<div class="section">
+<h2><span class="badge">FLOW 9</span> Subscription Cancel — Level 3 → Level 1/0</h2>
+<div class="flow">
+
+<div class="step user"><div class="step-title">User Clicks "Cancel Subscription"</div><div class="step-detail">/billing → Cancel button</div></div>
+<div class="arrow"></div>
+
+<div class="step api"><div class="step-title">POST /api/billing/cancel</div><div class="step-detail">companyId from session</div></div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">UPDATE Subscription</div><div class="step-tbl">status: "active" → "cancelled"</div></div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">UPDATE Company — downgradeToolsOnCancel()</div><div class="step-tbl">autoBlog: <span class="lb l3">3</span> → <span class="lb l1">1</span> (AI tool → basic)<br>aiAssistant: <span class="lb l3">3</span> → <span class="lb l1">1</span><br>websiteGen: <span class="lb l3">3</span> → <span class="lb l1">1</span><br>emailMarketing: <span class="lb l3">3</span> → <span class="lb l1">1</span><br>invoiceGen: <span class="lb l3">3</span> → <span class="lb l0">0</span> (non-AI → locked)<br>crmAccess: <span class="lb l3">3</span> → <span class="lb l0">0</span><br>inventoryMgmt: <span class="lb l3">3</span> → <span class="lb l0">0</span><br>hrPayroll: <span class="lb l3">3</span> → <span class="lb l0">0</span><br>subscriptionStatus: "inactive"</div></div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">CreditBalance — NO CHANGE</div><div class="step-tbl">balance: 1003 (SAFE! Credits never expire)</div></div>
+<div class="arrow"></div>
+
+<div class="step ok"><div class="step-title">Subscription Cancelled</div><div class="step-detail">AI tools: Level 1 (3 uses/month, 0 credits) | Non-AI tools: Level 0 (locked) | Credits: 1003 (safe, use anytime)</div></div>
+</div>
+</div>
+
+<!-- ════════════ FLOW 10: TRIAL EXPIRE ════════════ -->
+<div class="section">
+<h2><span class="badge">FLOW 10</span> Trial Expire — Level 1 → Level 0</h2>
+<div class="flow">
+
+<div class="step api"><div class="step-title">Cron Job (Daily 12:05 AM)</div><div class="step-detail">checkExpiredSubscriptions()</div></div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">SELECT Subscriptions WHERE status='trialing' AND trialEndsAt < NOW()</div><div class="step-tbl">Found: comp_xyz (trial ended yesterday)</div></div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">UPDATE Company</div><div class="step-tbl">autoBlog: <span class="lb l1">1</span> → <span class="lb l0">0</span><br>aiAssistant: <span class="lb l1">1</span> → <span class="lb l0">0</span><br>websiteGen: <span class="lb l1">1</span> → <span class="lb l0">0</span><br>emailMarketing: <span class="lb l1">1</span> → <span class="lb l0">0</span><br>subscriptionStatus: "expired"</div></div>
+<div class="arrow"></div>
+
+<div class="step db"><div class="step-title">UPDATE Subscription</div><div class="step-tbl">status: "trialing" → "expired"</div></div>
+<div class="arrow"></div>
+
+<div class="step err"><div class="step-title">All Tools Locked</div><div class="step-detail">Every tool at Level 0 | User sees "Subscribe to unlock" on all pages | Credits: 200 (still safe)</div></div>
+</div>
+</div>
+
+<!-- ════════════ DB SCHEMA ════════════ -->
+<div class="section">
+<h2><span class="badge">SCHEMA</span> Database Tables & Relationships</h2>
+<div class="grid-db">
+
+<div class="tbl"><div class="tbl-h">User</div><div class="tbl-b">
+<div class="fld"><span class="n">id</span><span class="t">UUID</span><span class="k">PK</span></div>
+<div class="fld"><span class="n">email</span><span class="t">String</span><span class="k">UNIQUE</span></div>
+<div class="fld"><span class="n">name</span><span class="t">String</span></div>
+<div class="fld"><span class="n">password</span><span class="t">String?</span></div>
+<div class="fld"><span class="n">companyId</span><span class="t">UUID?</span><span class="k">FK</span></div>
+<div class="fld"><span class="n">role</span><span class="t">String</span></div>
+</div></div>
+
+<div class="tbl"><div class="tbl-h">Company (Tenant)</div><div class="tbl-b">
+<div class="fld"><span class="n">id</span><span class="t">UUID</span><span class="k">PK</span></div>
+<div class="fld"><span class="n">name</span><span class="t">String</span></div>
+<div class="fld"><span class="n">autoBlog</span><span class="t">Int (0-3)</span><span class="k">LEVEL</span></div>
+<div class="fld"><span class="n">invoiceGen</span><span class="t">Int (0-3)</span><span class="k">LEVEL</span></div>
+<div class="fld"><span class="n">crmAccess</span><span class="t">Int (0-3)</span><span class="k">LEVEL</span></div>
+<div class="fld"><span class="n">inventoryMgmt</span><span class="t">Int (0-3)</span><span class="k">LEVEL</span></div>
+<div class="fld"><span class="n">hrPayroll</span><span class="t">Int (0-3)</span><span class="k">LEVEL</span></div>
+<div class="fld"><span class="n">emailMarketing</span><span class="t">Int (0-3)</span><span class="k">LEVEL</span></div>
+<div class="fld"><span class="n">aiAssistant</span><span class="t">Int (0-3)</span><span class="k">LEVEL</span></div>
+<div class="fld"><span class="n">websiteGen</span><span class="t">Int (0-3)</span><span class="k">LEVEL</span></div>
+<div class="fld"><span class="n">subscriptionStatus</span><span class="t">String</span></div>
+<div class="fld"><span class="n">subscriptionEndsAt</span><span class="t">DateTime?</span></div>
+</div></div>
+
+<div class="tbl"><div class="tbl-h">CreditBalance (Wallet)</div><div class="tbl-b">
+<div class="fld"><span class="n">companyId</span><span class="t">UUID</span><span class="k">PK (1 per company)</span></div>
+<div class="fld"><span class="n">balance</span><span class="t">Int</span><span class="k">DEFAULT 100</span></div>
+<div class="fld"><span class="n">updatedAt</span><span class="t">DateTime</span></div>
+</div></div>
+
+<div class="tbl"><div class="tbl-h">CreditTransaction (Ledger)</div><div class="tbl-b">
+<div class="fld"><span class="n">id</span><span class="t">UUID</span><span class="k">PK</span></div>
+<div class="fld"><span class="n">companyId</span><span class="t">UUID</span><span class="k">FK + INDEX</span></div>
+<div class="fld"><span class="n">type</span><span class="t">String</span><span class="k">debit|credit</span></div>
+<div class="fld"><span class="n">amount</span><span class="t">Int</span></div>
+<div class="fld"><span class="n">balanceAfter</span><span class="t">Int</span></div>
+<div class="fld"><span class="n">description</span><span class="t">String?</span></div>
+<div class="fld"><span class="n">createdAt</span><span class="t">DateTime</span><span class="k">INDEX</span></div>
+</div></div>
+
+<div class="tbl"><div class="tbl-h">Subscription</div><div class="tbl-b">
+<div class="fld"><span class="n">id</span><span class="t">UUID</span><span class="k">PK</span></div>
+<div class="fld"><span class="n">companyId</span><span class="t">UUID?</span><span class="k">FK + INDEX</span></div>
+<div class="fld"><span class="n">userId</span><span class="t">String?</span></div>
+<div class="fld"><span class="n">plan</span><span class="t">String?</span></div>
+<div class="fld"><span class="n">status</span><span class="t">String</span><span class="k">INDEX</span></div>
+<div class="fld"><span class="n">monthlyCreditGrant</span><span class="t">Int</span></div>
+<div class="fld"><span class="n">creditsRefreshedAt</span><span class="t">DateTime?</span></div>
+<div class="fld"><span class="n">trialEndsAt</span><span class="t">DateTime?</span></div>
+<div class="fld"><span class="n">currentPeriodEnd</span><span class="t">DateTime?</span></div>
+<div class="fld"><span class="n">amount</span><span class="t">Float?</span></div>
+<div class="fld"><span class="n">paymentId</span><span class="t">String?</span></div>
+</div></div>
+
+<div class="tbl"><div class="tbl-h">Tool (Platform Catalog)</div><div class="tbl-b">
+<div class="fld"><span class="n">id</span><span class="t">UUID</span><span class="k">PK</span></div>
+<div class="fld"><span class="n">slug</span><span class="t">String</span><span class="k">UNIQUE</span></div>
+<div class="fld"><span class="n">name</span><span class="t">String</span></div>
+<div class="fld"><span class="n">creditCost</span><span class="t">Int</span><span class="k">DEFAULT 1</span></div>
+<div class="fld"><span class="n">category</span><span class="t">String?</span><span class="k">INDEX</span></div>
+<div class="fld"><span class="n">isActive</span><span class="t">Boolean</span></div>
+</div></div>
+
+<div class="tbl"><div class="tbl-h">ToolRun (Execution Log)</div><div class="tbl-b">
+<div class="fld"><span class="n">id</span><span class="t">UUID</span><span class="k">PK</span></div>
+<div class="fld"><span class="n">tool</span><span class="t">String</span></div>
+<div class="fld"><span class="n">companyId</span><span class="t">UUID?</span><span class="k">FK + INDEX</span></div>
+<div class="fld"><span class="n">userId</span><span class="t">String?</span></div>
+<div class="fld"><span class="n">inputs</span><span class="t">JSON?</span></div>
+<div class="fld"><span class="n">output</span><span class="t">JSON?</span></div>
+<div class="fld"><span class="n">createdAt</span><span class="t">DateTime</span><span class="k">INDEX</span></div>
+</div></div>
+
+<div class="tbl"><div class="tbl-h">ToolActivation (Audit)</div><div class="tbl-b">
+<div class="fld"><span class="n">id</span><span class="t">UUID</span><span class="k">PK</span></div>
+<div class="fld"><span class="n">companyId</span><span class="t">UUID</span><span class="k">FK + INDEX</span></div>
+<div class="fld"><span class="n">toolName</span><span class="t">String</span><span class="k">INDEX</span></div>
+<div class="fld"><span class="n">activated</span><span class="t">Boolean</span></div>
+<div class="fld"><span class="n">activatedBy</span><span class="t">String?</span></div>
+<div class="fld"><span class="n">activatedAt</span><span class="t">DateTime</span></div>
+<div class="fld"><span class="n">reason</span><span class="t">String?</span></div>
+</div></div>
+
+</div>
+</div>
+
+<!-- ════════════ LEVEL SYSTEM ════════════ -->
+<div class="section">
+<h2><span class="badge">LEVELS</span> Integer Access Level System — Explained</h2>
+<div class="lvl-grid">
+<div class="lvl-card" style="border:2px solid #ef4444">
+<h3><span class="lb l0">LEVEL 0</span> — Locked</h3>
+<p>Tool hidden or shows lock icon<br>"Subscribe to unlock"<br>No access at all<br><br><strong>Example:</strong> New user before trial<br>autoBlog = 0</p>
+</div>
+<div class="lvl-card" style="border:2px solid #f59e0b">
+<h3><span class="lb l1">LEVEL 1</span> — Basic</h3>
+<p>3 uses per month<br>0 credits deducted<br>"Upgrade for unlimited"<br><br><strong>Example:</strong> Trial user<br>autoBlog = 1</p>
+</div>
+<div class="lvl-card" style="border:2px solid #818cf8">
+<h3><span class="lb l2">LEVEL 2</span> — Subscribed</h3>
+<p>Unlimited uses<br>Credits deducted per run<br>Full features<br><br><strong>Example:</strong> Growth plan<br>autoBlog = 2</p>
+</div>
+<div class="lvl-card" style="border:2px solid #22c55e">
+<h3><span class="lb l3">LEVEL 3</span> — Premium</h3>
+<p>Unlimited uses<br>0 credits deducted<br>Priority support<br><br><strong>Example:</strong> AINOS One<br>autoBlog = 3</p>
+</div>
+</div>
+</div>
+
+<!-- ════════════ CANCEL/EXPIRE RULES ════════════ -->
+<div class="section">
+<h2><span class="badge">RULES</span> Cancel & Expiry Rules</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:16px">
+<div class="step"><div class="step-title">Subscription Cancel</div><div class="step-detail" style="margin-top:8px">
+<strong>AI tools:</strong> Level 3/2 → Level 1 (3 uses/month)<br>
+<strong>Non-AI tools:</strong> Level 3/2 → Level 0 (locked)<br>
+<strong>Credits:</strong> NEVER change (safe in wallet)<br>
+<strong>CreditBalance:</strong> Untouched<br>
+<strong>ToolRuns:</strong> History preserved
+</div></div>
+<div class="step"><div class="step-title">Trial Expire (14 days)</div><div class="step-detail" style="margin-top:8px">
+<strong>AI tools:</strong> Level 1 → Level 0 (locked)<br>
+<strong>Non-AI tools:</strong> Already Level 0<br>
+<strong>Credits:</strong> NEVER change (safe)<br>
+<strong>Subscription:</strong> status → "expired"<br>
+<strong>Cron job:</strong> Runs daily at 12:05 AM
+</div></div>
+<div class="step"><div class="step-title">Credits Never Expire</div><div class="step-detail" style="margin-top:8px">
+<strong>Purchased credits:</strong> No expiry, ever<br>
+<strong>Monthly grant:</strong> Added on top (carry forward)<br>
+<strong>On cancel:</strong> Balance stays as-is<br>
+<strong>On re-subscribe:</strong> Old + new credits combine<br>
+<strong>Example:</strong> 1003 (old) + 5000 (new) = 6003
+</div></div>
+<div class="step"><div class="step-title">One Email = One User</div><div class="step-detail" style="margin-top:8px">
+<strong>email @unique:</strong> Ek email = ek account<br>
+<strong>User.companyId:</strong> One user = one company<br>
+<strong>Same login:</strong> Same data on all devices<br>
+<strong>Team (future):</strong> Multiple users, one company<br>
+<strong>Subscription:</strong> On company, not user
+</div></div>
+</div>
+</div>
+
+</div>
+</body>
+</html>
