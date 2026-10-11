@@ -65,7 +65,7 @@ export async function requireToolAccess(toolName: ToolName): Promise<ToolAccessR
     };
   }
 
-  const level = company[toolName] as unknown as number;
+  const level = (company as Record<string, unknown>)[toolName] as number;
 
   // Level 0: Locked
   if (level === ACCESS_LEVELS.LOCKED) {

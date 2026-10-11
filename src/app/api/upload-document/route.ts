@@ -22,24 +22,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate file size (max 1MB)
-    if (file.size > 1024 * 1024) {
+    // Validate file size (max 10MB for Cloudinary)
+    if (file.size > 10 * 1024 * 1024) {
       return NextResponse.json(
-        { error: 'File size must be less than 1MB' },
+        { error: 'File size must be less than 10MB' },
         { status: 400 }
       );
     }
 
-    // Validate file type (PDF only)
-    if (file.type !== 'application/pdf') {
+    // Validate file type
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+    if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Only PDF files are allowed' },
+        { error: 'Invalid file type. Only PDF, JPG, PNG, WebP, and DOC files are allowed.' },
         { status: 400 }
       );
     }
 
-    // Determine Cloudinary resource type (PDF = raw)
-    const resourceType = 'raw';
+    // Determine Cloudinary resource type
+    const isImage = file.type.startsWith('image/');
+    const resourceType = isImage ? 'image' : 'raw';
 
     // Convert file to buffer
     const bytes = await file.arrayBuffer();

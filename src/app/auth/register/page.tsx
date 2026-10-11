@@ -4,12 +4,12 @@ import { signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileText, Sparkles, ArrowRight, ArrowLeft,
-  Check, Loader2, AlertCircle, Clock,
+  Check, Loader2, AlertCircle,
   Eye, EyeOff, Building2, FolderCheck, Upload,
   Phone, MapPin, Mail, Lock, User, Briefcase,
   Zap, BarChart3, Users, ShieldCheck, LogIn, Globe
 } from 'lucide-react';
-import { useState, useEffect, type ChangeEvent, type ElementType } from 'react';
+import { useState, type ChangeEvent, type ElementType } from 'react';
 import Link from 'next/link';
 
 const GoogleIcon = () => (
@@ -36,50 +36,50 @@ const COUNTRIES = [
   'South Africa', 'Nigeria', 'Indonesia', 'Mexico', 'Other'
 ];
 
-const DOCUMENT_REQUIREMENTS: Record<string, { name: string; mandatory: boolean }[]> = {
+const DOCUMENT_REQUIREMENTS: Record<string, { name: string; optional?: boolean }[]> = {
   proprietorship: [
-    { name: 'PAN Card', mandatory: true },
-    { name: 'Aadhaar Card', mandatory: true },
-    { name: 'Address Proof (Utility Bill / Rent Agreement)', mandatory: false },
-    { name: 'Business Registration Certificate', mandatory: false },
+    { name: 'PAN Card' },
+    { name: 'Aadhaar Card' },
+    { name: 'Address Proof (Utility Bill / Rent Agreement)' },
+    { name: 'Business Registration Certificate', optional: true },
   ],
   partnership: [
-    { name: 'Partnership Deed', mandatory: true },
-    { name: 'PAN Card of Firm', mandatory: true },
-    { name: 'PAN Card of All Partners', mandatory: false },
-    { name: 'Address Proof of Firm', mandatory: false },
+    { name: 'Partnership Deed' },
+    { name: 'PAN Card of Firm' },
+    { name: 'PAN Card of All Partners' },
+    { name: 'Address Proof of Firm' },
   ],
   llp: [
-    { name: 'Certificate of Incorporation', mandatory: true },
-    { name: 'LLP Agreement', mandatory: true },
-    { name: 'PAN Card of LLP', mandatory: false },
-    { name: 'Address Proof of Registered Office', mandatory: false },
-    { name: 'Director ID Proof (All Partners)', mandatory: false },
+    { name: 'Certificate of Incorporation' },
+    { name: 'LLP Agreement' },
+    { name: 'PAN Card of LLP' },
+    { name: 'Address Proof of Registered Office' },
+    { name: 'Director ID Proof (All Partners)', optional: true },
   ],
   pvt_ltd: [
-    { name: 'Certificate of Incorporation', mandatory: true },
-    { name: 'MOA (Memorandum of Association)', mandatory: true },
-    { name: 'AOA (Articles of Association)', mandatory: false },
-    { name: 'PAN Card of Company', mandatory: false },
-    { name: 'Director ID Proof (All Directors)', mandatory: false },
-    { name: 'Registered Office Address Proof', mandatory: false },
+    { name: 'Certificate of Incorporation' },
+    { name: 'MOA (Memorandum of Association)' },
+    { name: 'AOA (Articles of Association)' },
+    { name: 'PAN Card of Company' },
+    { name: 'Director ID Proof (All Directors)' },
+    { name: 'Registered Office Address Proof' },
   ],
   public_ltd: [
-    { name: 'Certificate of Incorporation', mandatory: true },
-    { name: 'MOA (Memorandum of Association)', mandatory: true },
-    { name: 'AOA (Articles of Association)', mandatory: false },
-    { name: 'PAN Card of Company', mandatory: false },
-    { name: 'Director ID Proof (All Directors)', mandatory: false },
-    { name: 'Share Capital Details', mandatory: false },
-    { name: 'Registered Office Address Proof', mandatory: false },
+    { name: 'Certificate of Incorporation' },
+    { name: 'MOA (Memorandum of Association)' },
+    { name: 'AOA (Articles of Association)' },
+    { name: 'PAN Card of Company' },
+    { name: 'Director ID Proof (All Directors)' },
+    { name: 'Share Capital Details' },
+    { name: 'Registered Office Address Proof' },
   ],
   opc: [
-    { name: 'Certificate of Incorporation', mandatory: true },
-    { name: 'MOA (Memorandum of Association)', mandatory: true },
-    { name: 'AOA (Articles of Association)', mandatory: false },
-    { name: 'PAN Card of Company', mandatory: false },
-    { name: 'Nominee Details & Consent', mandatory: false },
-    { name: 'Director ID Proof', mandatory: false },
+    { name: 'Certificate of Incorporation' },
+    { name: 'MOA (Memorandum of Association)' },
+    { name: 'AOA (Articles of Association)' },
+    { name: 'PAN Card of Company' },
+    { name: 'Nominee Details & Consent' },
+    { name: 'Director ID Proof' },
   ],
 };
 
@@ -177,12 +177,6 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Prefill email when arriving from the landing page hero (?email=...)
-  useEffect(() => {
-    const emailParam = new URLSearchParams(window.location.search).get('email');
-    if (emailParam) setUserEmail(emailParam);
-  }, []);
-
   const [companyName, setCompanyName] = useState('');
   const [companyType, setCompanyType] = useState('');
   const [companyEmail, setCompanyEmail] = useState('');
@@ -191,25 +185,14 @@ export default function RegisterPage() {
   const [country, setCountry] = useState('India');
   const [gstNumber, setGstNumber] = useState('');
 
-  const [documents, setDocuments] = useState<Record<string, { filename: string; fileUrl: string; uploading: boolean; error?: string }>>({});
+  const [documents, setDocuments] = useState<Record<string, { filename: string; fileUrl: string }>>({});
+  const [uploading, setUploading] = useState<Record<string, boolean>>({});
   
   const handleFile = async (doc: string, f: File | null) => {
     if (!f) return;
     
-    // Validate PDF only
-    if (f.type !== 'application/pdf') {
-      setDocuments(p => ({ ...p, [doc]: { filename: f.name, fileUrl: '', uploading: false, error: 'Only PDF files allowed' } }));
-      return;
-    }
-    
-    // Validate 1MB limit
-    if (f.size > 1024 * 1024) {
-      setDocuments(p => ({ ...p, [doc]: { filename: f.name, fileUrl: '', uploading: false, error: 'File must be under 1MB' } }));
-      return;
-    }
-    
-    // Store temporarily - will upload after company is created
-    setDocuments(p => ({ ...p, [doc]: { filename: f.name, fileUrl: '', uploading: false } }));
+    // For now, store temporarily - will upload after company is created
+    setDocuments(p => ({ ...p, [doc]: { filename: f.name, fileUrl: '' } }));
   };
 
   const goNext = () => {
@@ -228,15 +211,6 @@ export default function RegisterPage() {
 
   const submit = async () => {
     setError(null);
-    
-    // Validate mandatory documents
-    const mandatoryDocs = docs.filter(d => d.mandatory);
-    const uploadedMandatory = mandatoryDocs.filter(d => documents[d.name]?.fileUrl);
-    if (uploadedMandatory.length < mandatoryDocs.length) {
-      setError(`Please upload all mandatory documents: ${mandatoryDocs.map(d => d.name).join(', ')}`);
-      return;
-    }
-    
     setLoading(true);
     try {
       // Step 1: Create company first
@@ -255,17 +229,15 @@ export default function RegisterPage() {
       
       const companyId = data.company.id;
       
-      // Step 2: Upload documents
-      const uploadResults: Array<{ docName: string; filename: string; fileUrl: string }> = [];
+      // Step 2: Upload documents if any
+      const uploadedDocs: Record<string, { filename: string; fileUrl: string }> = {};
       for (const [docName, docData] of Object.entries(documents)) {
         if (docData.filename) {
+          // Find the original file from the input
           const fileInput = document.querySelector(`input[data-doc-name="${docName}"]`) as HTMLInputElement;
           const file = fileInput?.files?.[0];
           
           if (file) {
-            // Mark as uploading
-            setDocuments(p => ({ ...p, [docName]: { ...p[docName], uploading: true } }));
-            
             const formData = new FormData();
             formData.append('file', file);
             formData.append('docType', docName);
@@ -278,21 +250,14 @@ export default function RegisterPage() {
             
             if (uploadRes.ok) {
               const uploadData = await uploadRes.json();
-              uploadResults.push({
-                docName,
+              uploadedDocs[docName] = {
                 filename: docData.filename,
-                fileUrl: uploadData.document?.url || uploadData.fileUrl,
-              });
-              setDocuments(p => ({ ...p, [docName]: { ...p[docName], fileUrl: uploadData.document?.url || uploadData.fileUrl, uploading: false } }));
-            } else {
-              const errData = await uploadRes.json();
-              setDocuments(p => ({ ...p, [docName]: { ...p[docName], uploading: false, error: errData.error || 'Upload failed' } }));
+                fileUrl: uploadData.fileUrl,
+              };
             }
           }
         }
       }
-      
-      const uploadedDocs = uploadResults.reduce((acc, r) => ({ ...acc, [r.docName]: { filename: r.filename, fileUrl: r.fileUrl } }), {});
       
       // Step 3: Update company with uploaded documents
       if (Object.keys(uploadedDocs).length > 0) {
@@ -303,8 +268,11 @@ export default function RegisterPage() {
         });
       }
       
-      // Show pending popup (don't auto-redirect)
       setSuccess(true);
+      setTimeout(async () => {
+        const r = await signIn('credentials', { email: userEmail, password, redirect: false });
+        window.location.href = r?.ok ? '/' : '/auth/signin';
+      }, 1500);
     } catch { setError('Registration failed. Please try again.'); setLoading(false); }
   };
 
@@ -415,20 +383,11 @@ export default function RegisterPage() {
               <div className="px-6 sm:px-8 py-6">
                 {success ? (
                   <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-12">
-                    <div className="w-16 h-16 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center mx-auto mb-5">
-                      <Clock className="w-8 h-8 text-amber-600" />
+                    <div className="w-16 h-16 rounded-full bg-green-50 border border-green-100 flex items-center justify-center mx-auto mb-5">
+                      <Check className="w-8 h-8 text-green-600" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-1.5">Submitted for Admin Approval</h3>
-                    <p className="text-sm text-gray-500 mb-6 max-w-xs mx-auto">
-                      Your documents are being reviewed. You'll receive an email notification once approved.
-                    </p>
-                    <Link
-                      href="/auth/signin"
-                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
-                      style={{ background: '#4c1d95' }}
-                    >
-                      Go to Sign In <ArrowRight className="w-4 h-4" />
-                    </Link>
+                    <h3 className="text-xl font-bold text-gray-900 mb-1.5">Company Registered!</h3>
+                    <p className="text-sm text-gray-500">Setting up your workspace...</p>
                   </motion.div>
                 ) : (
                   <>
@@ -621,7 +580,7 @@ export default function RegisterPage() {
                                         <FileText className="w-4 h-4 flex-shrink-0" style={{ color: '#4c1d95' }} />
                                         <div className="min-w-0">
                                           <p className="text-[13px] font-medium text-gray-800 truncate">{d.name}</p>
-                                          {d.mandatory ? <p className="text-[11px] text-red-500 font-medium">Required</p> : <p className="text-[11px] text-gray-400">Optional</p>}
+                                          {d.optional && <p className="text-[11px] text-gray-400">Optional</p>}
                                         </div>
                                       </div>
                                       <label className="flex-shrink-0 ml-2 cursor-pointer">

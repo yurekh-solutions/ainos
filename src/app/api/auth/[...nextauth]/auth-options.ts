@@ -61,11 +61,14 @@ export const authOptions: NextAuthOptions = {
             const company = await prisma.company.create({
               data: {
                 name: `${user.name || user.email}'s Company`,
+                email: user.email!,
+                companyType: 'Private Limited',
+                onboardingStatus: 'approved',
                 createdBy: user.email!,
-                subscriptionStatus: 'inactive',
               },
             });
 
+            // Create User with companyId
             await prisma.user.create({
               data: {
                 email: user.email!,
@@ -75,6 +78,22 @@ export const authOptions: NextAuthOptions = {
                 role: 'owner',
                 companyId: company.id,
               },
+            });
+          } else if (!existingUser.companyId) {
+            // Existing user without companyId - create one
+            const company = await prisma.company.create({
+              data: {
+                name: `${existingUser.name || existingUser.email}'s Company`,
+                email: existingUser.email!,
+                companyType: 'Private Limited',
+                onboardingStatus: 'approved',
+                createdBy: existingUser.email!,
+              },
+            });
+
+            await prisma.user.update({
+              where: { id: existingUser.id },
+              data: { companyId: company.id, role: 'owner' },
             });
           }
 
@@ -108,35 +127,31 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = (user as { role?: string }).role;
         token.companyId = (user as { companyId?: string }).companyId;
-        // For Google OAuth users, fetch companyId from DB if not in user object
-        if (!token.companyId && user.email) {
-          try {
-            const dbUser = await prisma.user.findUnique({
-              where: { email: user.email },
-              select: { companyId: true },
-            });
-            if (dbUser) {
-              token.companyId = dbUser.companyId;
-            }
-          } catch (error) {
-            console.error('JWT companyId fetch error:', error);
+      }
+      // If no user object (subsequent requests), fetch companyId from DB
+      if (!token.companyId && token.email) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: token.email },
+            select: { companyId: true },
+          });
+          if (dbUser?.companyId) {
+            token.companyId = dbUser.companyId;
           }
+        } catch (error) {
+          console.error('JWT companyId fetch error:', error);
         }
       }
       return token;
     },
     async redirect({ url, baseUrl }) {
-      // After sign-in, always redirect to dashboard, not landing page
-      if (url === '/' || url === baseUrl || url === `${baseUrl}/`) {
-        return `${baseUrl}/dashboard`;
-      }
       if (url.startsWith('/')) {
         return `${baseUrl}${url}`;
       }
       if (url.startsWith(baseUrl)) {
         return url;
       }
-      return `${baseUrl}/dashboard`;
+      return `${baseUrl}/`;
     },
   },
   pages: {
