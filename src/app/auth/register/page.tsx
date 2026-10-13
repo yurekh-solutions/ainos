@@ -7,7 +7,7 @@ import {
   Check, Loader2, AlertCircle,
   Eye, EyeOff, Building2, FolderCheck, Upload,
   Phone, MapPin, Mail, Lock, User, Briefcase,
-  Zap, BarChart3, Users, ShieldCheck, LogIn, Globe
+  Zap, BarChart3, Users, ShieldCheck, LogIn, Globe, UserPlus
 } from 'lucide-react';
 import { useState, type ChangeEvent, type ElementType } from 'react';
 import Link from 'next/link';
@@ -316,7 +316,7 @@ export default function RegisterPage() {
             >
               <div className="flex items-start gap-4">
                 <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#4c1d95' }}>
-                  <Sparkles className="w-5 h-5 text-white" />
+                  <UserPlus className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-base font-bold text-gray-900 mb-1">New Business?</h3>
