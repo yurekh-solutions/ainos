@@ -82,7 +82,11 @@ export default function SignInPage() {
       });
 
       if (result?.error) {
-        setError('Invalid email or password');
+        if (result.error === 'PENDING_APPROVAL') {
+          setError('Your account is pending admin approval. Please wait for verification.');
+        } else {
+          setError('Invalid email or password');
+        }
         setLoading(false);
         return;
       }

@@ -33,6 +33,17 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Invalid email or password');
         }
 
+        // Check company approval status
+        if (user.companyId) {
+          const company = await prisma.company.findUnique({
+            where: { id: user.companyId },
+            select: { onboardingStatus: true },
+          });
+          if (company?.onboardingStatus !== 'approved') {
+            throw new Error('PENDING_APPROVAL');
+          }
+        }
+
         return {
           id: user.id,
           email: user.email,

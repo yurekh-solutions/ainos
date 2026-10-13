@@ -40,46 +40,46 @@ const DOCUMENT_REQUIREMENTS: Record<string, { name: string; optional?: boolean }
   proprietorship: [
     { name: 'PAN Card' },
     { name: 'Aadhaar Card' },
-    { name: 'Address Proof (Utility Bill / Rent Agreement)' },
+    { name: 'Address Proof (Utility Bill / Rent Agreement)', optional: true },
     { name: 'Business Registration Certificate', optional: true },
   ],
   partnership: [
     { name: 'Partnership Deed' },
     { name: 'PAN Card of Firm' },
-    { name: 'PAN Card of All Partners' },
-    { name: 'Address Proof of Firm' },
+    { name: 'PAN Card of All Partners', optional: true },
+    { name: 'Address Proof of Firm', optional: true },
   ],
   llp: [
     { name: 'Certificate of Incorporation' },
     { name: 'LLP Agreement' },
-    { name: 'PAN Card of LLP' },
-    { name: 'Address Proof of Registered Office' },
+    { name: 'PAN Card of LLP', optional: true },
+    { name: 'Address Proof of Registered Office', optional: true },
     { name: 'Director ID Proof (All Partners)', optional: true },
   ],
   pvt_ltd: [
     { name: 'Certificate of Incorporation' },
     { name: 'MOA (Memorandum of Association)' },
-    { name: 'AOA (Articles of Association)' },
-    { name: 'PAN Card of Company' },
-    { name: 'Director ID Proof (All Directors)' },
-    { name: 'Registered Office Address Proof' },
+    { name: 'AOA (Articles of Association)', optional: true },
+    { name: 'PAN Card of Company', optional: true },
+    { name: 'Director ID Proof (All Directors)', optional: true },
+    { name: 'Registered Office Address Proof', optional: true },
   ],
   public_ltd: [
     { name: 'Certificate of Incorporation' },
     { name: 'MOA (Memorandum of Association)' },
-    { name: 'AOA (Articles of Association)' },
-    { name: 'PAN Card of Company' },
-    { name: 'Director ID Proof (All Directors)' },
-    { name: 'Share Capital Details' },
-    { name: 'Registered Office Address Proof' },
+    { name: 'AOA (Articles of Association)', optional: true },
+    { name: 'PAN Card of Company', optional: true },
+    { name: 'Director ID Proof (All Directors)', optional: true },
+    { name: 'Share Capital Details', optional: true },
+    { name: 'Registered Office Address Proof', optional: true },
   ],
   opc: [
     { name: 'Certificate of Incorporation' },
     { name: 'MOA (Memorandum of Association)' },
-    { name: 'AOA (Articles of Association)' },
-    { name: 'PAN Card of Company' },
-    { name: 'Nominee Details & Consent' },
-    { name: 'Director ID Proof' },
+    { name: 'AOA (Articles of Association)', optional: true },
+    { name: 'PAN Card of Company', optional: true },
+    { name: 'Nominee Details & Consent', optional: true },
+    { name: 'Director ID Proof', optional: true },
   ],
 };
 
@@ -170,6 +170,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; type: 'error' | 'success' } | null>(null);
 
   const [name, setName] = useState('');
   const [userEmail, setUserEmail] = useState('');
@@ -211,6 +212,16 @@ export default function RegisterPage() {
 
   const submit = async () => {
     setError(null);
+
+    // Validate mandatory documents before submit
+    const mandatoryDocs = docs.filter(d => !d.optional);
+    const missingMandatory = mandatoryDocs.filter(d => !documents[d.name]);
+    if (missingMandatory.length > 0) {
+      setToast({ msg: `Please upload all required documents: ${missingMandatory.map(d => d.name).join(', ')}`, type: 'error' });
+      setTimeout(() => setToast(null), 4000);
+      return;
+    }
+
     setLoading(true);
     try {
       // Step 1: Create company first
@@ -229,11 +240,10 @@ export default function RegisterPage() {
       
       const companyId = data.company.id;
       
-      // Step 2: Upload documents if any
+      // Step 2: Upload documents
       const uploadedDocs: Record<string, { filename: string; fileUrl: string }> = {};
       for (const [docName, docData] of Object.entries(documents)) {
         if (docData.filename) {
-          // Find the original file from the input
           const fileInput = document.querySelector(`input[data-doc-name="${docName}"]`) as HTMLInputElement;
           const file = fileInput?.files?.[0];
           
@@ -269,10 +279,7 @@ export default function RegisterPage() {
       }
       
       setSuccess(true);
-      setTimeout(async () => {
-        const r = await signIn('credentials', { email: userEmail, password, redirect: false });
-        window.location.href = r?.ok ? '/' : '/auth/signin';
-      }, 1500);
+      setLoading(false);
     } catch { setError('Registration failed. Please try again.'); setLoading(false); }
   };
 
@@ -281,6 +288,64 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-[#f8f7fc]">
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-[90vw]"
+          >
+            <div className={`flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-lg border ${
+              toast.type === 'error'
+                ? 'bg-red-50 border-red-200 text-red-800'
+                : 'bg-green-50 border-green-200 text-green-800'
+            }`}>
+              {toast.type === 'error' ? <AlertCircle className="w-5 h-5 flex-shrink-0" /> : <Check className="w-5 h-5 flex-shrink-0" />}
+              <p className="text-sm font-medium">{toast.msg}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Success Modal — Admin Review Pending */}
+      <AnimatePresence>
+        {success && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center"
+            >
+              <div className="w-16 h-16 rounded-full mx-auto mb-5 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4c1d95, #6d28d9)' }}>
+                <FolderCheck className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Documents Submitted!</h2>
+              <p className="text-sm text-gray-500 mb-1">
+                Your documents have been sent for admin review.
+              </p>
+              <p className="text-sm text-gray-500 mb-6">
+                You will be able to login once your account is approved.
+              </p>
+              <button
+                onClick={() => window.location.href = '/auth/signin'}
+                className="w-full h-11 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all"
+                style={{ background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%)' }}
+              >
+                <LogIn className="w-4 h-4" /> Go to Sign In
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
 
@@ -370,7 +435,7 @@ export default function RegisterPage() {
               </div>
 
               {/* Top link */}
-              <div className="flex justify-end px-6 sm:px-8 pt-4">
+              <div className="flex justify-center px-6 sm:px-8 pt-4">
                 <span className="text-xs text-gray-500">
                   Already have an account?{' '}
                   <Link href="/auth/signin" className="font-semibold inline-flex items-center gap-1 hover:underline" style={{ color: '#6d28d9' }}>
