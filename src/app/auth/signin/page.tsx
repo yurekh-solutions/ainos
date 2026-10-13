@@ -38,6 +38,7 @@ export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState('');
   const [mode, setMode] = useState<'google' | 'credentials'>('google');
   const autoRetried = useRef(false);
 
@@ -45,6 +46,7 @@ export default function SignInPage() {
     setLoading(true);
     setError(null);
     setMode('google');
+    setStatus('Connecting to Google...');
 
     try {
       await signIn('google', { callbackUrl: '/dashboard' });
@@ -56,11 +58,10 @@ export default function SignInPage() {
       } catch {
         setError('Sign-in failed. Please try again.');
         setLoading(false);
+        setStatus('');
       }
     }
   };
-
-  const [status, setStatus] = useState('');
 
   const handleCredentialsSignIn = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -68,7 +68,7 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!existingUser) {
-            // Create a Company for the new Google user
+            // New Google user — create Company + User
             const company = await prisma.company.create({
               data: {
                 name: `${user.name || user.email}'s Company`,
@@ -79,7 +79,6 @@ export const authOptions: NextAuthOptions = {
               },
             });
 
-            // Create User with companyId
             await prisma.user.create({
               data: {
                 email: user.email!,
@@ -90,28 +89,34 @@ export const authOptions: NextAuthOptions = {
                 companyId: company.id,
               },
             });
-          } else if (!existingUser.companyId) {
-            // Existing user without companyId - create one
-            const company = await prisma.company.create({
-              data: {
-                name: `${existingUser.name || existingUser.email}'s Company`,
-                email: existingUser.email!,
-                companyType: 'Private Limited',
-                onboardingStatus: 'approved',
-                createdBy: existingUser.email!,
-              },
-            });
-
+          } else if (!existingUser.googleId) {
+            // Existing user (email/password) linking Google for the first time
+            const updateData: Record<string, string> = { googleId: user.id };
+            if (!existingUser.companyId) {
+              const company = await prisma.company.create({
+                data: {
+                  name: `${existingUser.name || existingUser.email}'s Company`,
+                  email: existingUser.email!,
+                  companyType: 'Private Limited',
+                  onboardingStatus: 'approved',
+                  createdBy: existingUser.email!,
+                },
+              });
+              updateData.companyId = company.id;
+              updateData.role = 'owner';
+            }
             await prisma.user.update({
               where: { id: existingUser.id },
-              data: { companyId: company.id, role: 'owner' },
+              data: updateData,
             });
           }
+          // If existingUser already has googleId — just allow login
 
           return true;
         } catch (error) {
-          console.error('SignIn error:', error);
-          return true;
+          console.error('Google SignIn DB error:', error);
+          // Return false to show error page instead of silent broken login
+          return '/auth/signin?error=OAuthCallback';
         }
       }
       return true;
