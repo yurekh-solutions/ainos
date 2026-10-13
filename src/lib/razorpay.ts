@@ -56,8 +56,9 @@ export function verifyWebhookSignature(body: string, signature: string): boolean
 }
 
 export const CREDIT_PACKS = [
-  { credits: 500, price: 299, label: 'Starter Pack' },
-  { credits: 1000, price: 499, label: 'Pro Pack', popular: true },
-  { credits: 2500, price: 999, label: 'Business Pack' },
-  { credits: 5000, price: 1799, label: 'Enterprise Pack' }
+  { credits: 100, price: 1.50, label: 'Mini Pack', currency: 'USD' },
+  { credits: 500, price: 5.00, label: 'Starter Pack', currency: 'USD' },
+  { credits: 2000, price: 15.00, label: 'Pro Pack', popular: true, currency: 'USD' },
+  { credits: 5000, price: 35.00, label: 'Business Pack', currency: 'USD' },
+  { credits: 10000, price: 60.00, label: 'Enterprise Pack', currency: 'USD' }
 ]

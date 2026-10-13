@@ -2,23 +2,46 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Target,
   Receipt,
-  UserCheck,
-  Boxes,
   Mail,
-  Headphones,
-  FolderKanban,
-  Sparkles,
+  Crown,
   CheckCircle,
   Clock,
+  Coins,
+  Zap,
+  ArrowRight,
+  Sparkles,
+  TrendingUp,
+  CreditCard,
   Copy,
   Check,
   MessageCircle,
   Landmark,
-  Crown,
-  Plus,
 } from 'lucide-react';
+
+// ─── Types ───────────────────────────────────────────────────────────
+
+interface PlanDef {
+  tier: string;
+  name: string;
+  monthlyUsd: number;
+  annualUsd: number;
+  creditsIncluded: number;
+  features: string[];
+  popular?: boolean;
+}
+
+interface ComboDef extends PlanDef {
+  modules: string[];
+}
+
+interface CreditPack {
+  credits: number;
+  price: number;
+  label: string;
+  popular?: boolean;
+  currency: string;
+}
 
 interface SubscriptionInfo {
   plan: string | null;
@@ -26,22 +49,6 @@ interface SubscriptionInfo {
   status: string;
   currentPeriodEnd?: string;
   trialEndsAt?: string;
-}
-
-interface AppInfo {
-  key: string;
-  name: string;
-  tagline: string;
-  priceInr: number;
-  features: string[];
-}
-
-interface BundleInfo {
-  key: string;
-  name: string;
-  tagline: string;
-  priceInr: number;
-  apps: string[];
 }
 
 interface PaymentInfo {
@@ -53,184 +60,182 @@ interface PaymentInfo {
   whatsapp: string;
 }
 
-interface PaymentInstructions {
-  label: string;
-  amountInr: number;
-  oneIsCheaper?: boolean;
-  payment: PaymentInfo;
-  whatsappUrl: string;
-}
+// ─── Plan Data ───────────────────────────────────────────────────────
 
-const APP_ICONS: Record<string, typeof Target> = {
-  crm: Target,
-  books: Receipt,
-  hr: UserCheck,
-  inventory: Boxes,
-  marketing: Mail,
-  desk: Headphones,
-  projects: FolderKanban,
-  ai_studio: Sparkles,
+const FINANCE_PLANS: PlanDef[] = [
+  {
+    tier: 'starter', name: 'Starter',
+    monthlyUsd: 9, annualUsd: 90,
+    creditsIncluded: 500,
+    features: ['Invoicing & Quotes', 'Expenses Tracking', 'GST Reports', 'PDF Download', 'Payment Reminders', '500 credits/mo'],
+  },
+  {
+    tier: 'professional', name: 'Professional',
+    monthlyUsd: 29, annualUsd: 290,
+    creditsIncluded: 2000,
+    popular: true,
+    features: ['Everything in Starter', 'Payment Recovery Agent', 'Bank Reconciliation', 'Tally Export', 'Multi-currency', '2,000 credits/mo', 'Priority Support'],
+  },
+  {
+    tier: 'enterprise', name: 'Enterprise',
+    monthlyUsd: 79, annualUsd: 790,
+    creditsIncluded: 10000,
+    features: ['Everything in Professional', 'Multi-branch Support', 'Custom GST Reports', 'API Access', 'Dedicated Manager', '10,000 credits/mo'],
+  },
+];
+
+const MARKETING_PLANS: PlanDef[] = [
+  {
+    tier: 'starter', name: 'Starter',
+    monthlyUsd: 12, annualUsd: 120,
+    creditsIncluded: 300,
+    features: ['AI Blog Generator', 'Email Campaigns', 'SEO Audit', 'Social Captions', 'Invitations', '300 credits/mo'],
+  },
+  {
+    tier: 'professional', name: 'Professional',
+    monthlyUsd: 39, annualUsd: 390,
+    creditsIncluded: 1500,
+    popular: true,
+    features: ['Everything in Starter', 'Competitor Analysis', 'Drip Campaigns', 'Content Repurpose', 'Lead Magnets', '1,500 credits/mo', 'Priority Support'],
+  },
+  {
+    tier: 'enterprise', name: 'Enterprise',
+    monthlyUsd: 99, annualUsd: 990,
+    creditsIncluded: 8000,
+    features: ['Everything in Professional', 'White-label Reports', 'API Access', 'Custom Integrations', 'Dedicated Manager', '8,000 credits/mo'],
+  },
+];
+
+const COMBO_PLANS: ComboDef[] = [
+  {
+    tier: 'starter', name: 'Starter Combo',
+    monthlyUsd: 17, annualUsd: 170,
+    creditsIncluded: 800,
+    modules: ['Finance Starter', 'Marketing Starter'],
+    features: ['All Finance Starter features', 'All Marketing Starter features', '800 credits/mo', 'Save $4/mo vs separate'],
+  },
+  {
+    tier: 'professional', name: 'Pro Combo',
+    monthlyUsd: 55, annualUsd: 550,
+    creditsIncluded: 3500,
+    modules: ['Finance Professional', 'Marketing Professional'],
+    popular: true,
+    features: ['All Finance Professional features', 'All Marketing Professional features', '3,500 credits/mo', 'Save $13/mo vs separate'],
+  },
+  {
+    tier: 'enterprise', name: 'Enterprise Combo',
+    monthlyUsd: 149, annualUsd: 1490,
+    creditsIncluded: 18000,
+    modules: ['Finance Enterprise', 'Marketing Enterprise'],
+    features: ['All Finance Enterprise features', 'All Marketing Enterprise features', '18,000 credits/mo', 'Save $28/mo vs separate'],
+  },
+];
+
+const TOOL_COSTS = [
+  { name: 'Create Invoice', credits: 2, cat: 'manual' },
+  { name: 'Download PDF', credits: 1, cat: 'manual' },
+  { name: 'Send Email', credits: 3, cat: 'semi' },
+  { name: 'WhatsApp Reminder', credits: 5, cat: 'semi' },
+  { name: 'GST Report', credits: 15, cat: 'semi' },
+  { name: 'Tally Export', credits: 10, cat: 'semi' },
+  { name: 'Payment Recovery', credits: 8, cat: 'semi' },
+  { name: 'AI Blog Generate', credits: 25, cat: 'ai' },
+  { name: 'AI Blog + SEO', credits: 35, cat: 'ai' },
+  { name: 'Email Campaign (100)', credits: 10, cat: 'semi' },
+  { name: 'SEO Audit', credits: 30, cat: 'ai' },
+  { name: 'Social Caption', credits: 10, cat: 'ai' },
+  { name: 'Content Repurpose', credits: 18, cat: 'ai' },
+  { name: 'Lead Magnet', credits: 20, cat: 'ai' },
+];
+
+const CAT_COLORS: Record<string, string> = {
+  manual: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/30',
+  semi: 'text-blue-500 bg-blue-500/10 border-blue-500/30',
+  ai: 'text-purple-500 bg-purple-500/10 border-purple-500/30',
 };
 
-// Legacy tiers shown as their app sets for older subscriptions
-const LEGACY_LABELS: Record<string, string> = {
-  starter: 'Starter (legacy) — CRM + Books',
-  growth: 'Growth (legacy) — CRM, Books, People, Campaigns',
-  scale: 'Scale (legacy) — all apps',
-};
+// ─── Component ───────────────────────────────────────────────────────
 
 export default function BillingPage() {
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
-  const [apps, setApps] = useState<AppInfo[]>([]);
-  const [bundle, setBundle] = useState<BundleInfo | null>(null);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [cycle, setCycle] = useState<'monthly' | 'annual'>('monthly');
   const [loading, setLoading] = useState(true);
-  const [choosing, setChoosing] = useState(false);
-  const [instructions, setInstructions] = useState<PaymentInstructions | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [showToolCosts, setShowToolCosts] = useState(false);
+  const [creditPacks, setCreditPacks] = useState<CreditPack[]>([]);
+  const [creditBalance, setCreditBalance] = useState(0);
 
   useEffect(() => {
-    fetchBilling();
+    Promise.all([
+      fetch('/api/billing').then(r => r.ok ? r.json() : Promise.resolve({})),
+      fetch('/api/billing/credits').then(r => r.ok ? r.json() : Promise.resolve({})),
+      fetch('/api/billing/checkout').then(r => r.ok ? r.json() : Promise.resolve([])),
+    ]).then(([billData, credData, packsData]) => {
+      setSubscription((billData as { subscription?: SubscriptionInfo }).subscription || null);
+      setCreditBalance((credData as { balance?: number }).balance || 0);
+      setCreditPacks(Array.isArray(packsData) ? packsData as CreditPack[] : []);
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  const fetchBilling = async () => {
-    try {
-      const res = await fetch('/api/billing');
-      if (res.ok) {
-        const data = await res.json();
-        setSubscription(data.subscription);
-        setApps(data.apps || []);
-        setBundle(data.bundle || null);
-      }
-    } catch (error) {
-      console.error('Error fetching billing:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const toggleApp = (key: string) =>
-    setSelected((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
-    );
-
-  const selectedTotal = useMemo(
-    () =>
-      selected.reduce(
-        (sum, key) => sum + (apps.find((a) => a.key === key)?.priceInr || 0),
-        0
-      ),
-    [selected, apps]
-  );
-  const oneIsCheaper = bundle ? selectedTotal >= bundle.priceInr : false;
-
-  const checkout = async (payload: { plan?: string; apps?: string[] }) => {
-    setChoosing(true);
-    try {
-      const res = await fetch('/api/billing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setInstructions(data);
-        setSelected([]);
-        fetchBilling();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        alert(data.error || 'Something went wrong');
-      }
-    } catch (error) {
-      console.error('Error choosing apps:', error);
-    } finally {
-      setChoosing(false);
-    }
-  };
-
-  const copyValue = async (field: string, value: string) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
-    } catch {
-      /* clipboard unavailable */
-    }
-  };
-
-  const formatDate = (d?: string) =>
-    d
-      ? new Date(d).toLocaleDateString('en-IN', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-        })
-      : '';
+  const getPrice = (monthly: number, annual: number) =>
+    cycle === 'annual' ? annual : monthly;
 
   const currentLabel = useMemo(() => {
     if (!subscription) return '';
     if (subscription.plan === 'one') return 'AINOS One — every app included';
-    if (subscription.plan && LEGACY_LABELS[subscription.plan])
-      return LEGACY_LABELS[subscription.plan];
-    if (subscription.apps.length) {
-      return subscription.apps
-        .map((k) => apps.find((a) => a.key === k)?.name || k)
-        .join(', ');
-    }
     return subscription.plan || '—';
-  }, [subscription, apps]);
+  }, [subscription]);
 
-  const ownedApps = useMemo(() => {
-    if (!subscription || !['active', 'trialing'].includes(subscription.status))
-      return new Set<string>();
-    if (subscription.status === 'trialing' || subscription.plan === 'one' || subscription.plan === 'scale')
-      return new Set(apps.map((a) => a.key));
-    if (subscription.plan === 'starter') return new Set(['crm', 'books']);
-    if (subscription.plan === 'growth') return new Set(['crm', 'books', 'hr', 'marketing']);
-    return new Set(subscription.apps);
-  }, [subscription, apps]);
+  const formatDate = (d?: string) =>
+    d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+
+  const copyValue = async (field: string, value: string) => {
+    try { await navigator.clipboard.writeText(value); setCopiedField(field); setTimeout(() => setCopiedField(null), 2000); } catch { /* */ }
+  };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1BE1D3]" />
-      </div>
-    );
+    return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" /></div>;
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-8 pb-32">
-      <div>
-        <h1 className="text-2xl font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
-          Apps & Billing
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-10 pb-32">
+
+      {/* ── Header ─────────────────────────────────────────── */}
+      <div className="text-center space-y-3">
+        <h1 className="text-3xl sm:text-4xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>
+          Simple, Transparent Pricing
         </h1>
-        <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
-          Subscribe to the apps you need — or get everything with AINOS One
+        <p className="text-sm sm:text-base max-w-xl mx-auto" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          Pay only for what you use. Every plan includes credits for tools and AI. 1 credit = $0.01
         </p>
+
+        {/* Monthly / Annual Toggle */}
+        <div className="inline-flex items-center gap-3 p-1 rounded-xl border" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
+          <button
+            onClick={() => setCycle('monthly')}
+            className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${cycle === 'monthly' ? 'bg-purple-600 text-white shadow' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            Monthly
+          </button>
+          <button
+            onClick={() => setCycle('annual')}
+            className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${cycle === 'annual' ? 'bg-purple-600 text-white shadow' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            Annual <span className="text-xs ml-1 opacity-80">(save 17%)</span>
+          </button>
+        </div>
       </div>
 
-      {/* Current subscription status */}
+      {/* ── Current Subscription ───────────────────────────── */}
       {subscription && (
-        <div
-          className="rounded-xl border p-5 flex flex-wrap items-center gap-4"
-          style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card))' }}
-        >
+        <div className="rounded-xl border p-5 flex flex-wrap items-center gap-4" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
           <div className="flex-1 min-w-[200px]">
-            <p className="text-xs uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>
-              Current Subscription
-            </p>
-            <p className="text-lg font-medium" style={{ color: 'hsl(var(--foreground))' }}>
-              {currentLabel}
-            </p>
+            <p className="text-xs uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>Current Subscription</p>
+            <p className="text-lg font-medium" style={{ color: 'hsl(var(--foreground))' }}>{currentLabel}</p>
           </div>
-          {subscription.status === 'pending' && (
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-500 border border-amber-500/30">
-              <Clock className="w-3.5 h-3.5" /> Awaiting payment confirmation
-            </span>
-          )}
           {subscription.status === 'trialing' && (
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-[#1BE1D3]/10 text-[#1BE1D3] border border-[#1BE1D3]/30">
-              <Clock className="w-3.5 h-3.5" /> AINOS One trial — ends {formatDate(subscription.trialEndsAt)}
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-purple-500/10 text-purple-500 border border-purple-500/30">
+              <Clock className="w-3.5 h-3.5" /> Trial ends {formatDate(subscription.trialEndsAt)}
             </span>
           )}
           {subscription.status === 'active' && (
@@ -238,254 +243,214 @@ export default function BillingPage() {
               <CheckCircle className="w-3.5 h-3.5" /> Active until {formatDate(subscription.currentPeriodEnd)}
             </span>
           )}
-          {['past_due', 'halted', 'cancelled'].includes(subscription.status) && (
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-red-500/10 text-red-500 border border-red-500/30 capitalize">
-              {subscription.status.replace('_', ' ')}
-            </span>
-          )}
         </div>
       )}
 
-      {/* Payment instructions panel */}
-      {instructions && (
-        <div className="rounded-xl border-2 border-[#1BE1D3]/50 p-6 space-y-5" style={{ background: 'hsl(var(--card))' }}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#1BE1D3]/10 flex items-center justify-center">
-              <Landmark className="w-5 h-5 text-[#1BE1D3]" />
-            </div>
-            <div>
-              <h2 className="font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
-                Complete Your Payment — {instructions.label}
-              </h2>
-              <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                Transfer <span className="text-[#1BE1D3] font-medium">₹{instructions.amountInr.toLocaleString('en-IN')}</span> to
-                the account below, then confirm on WhatsApp.
-              </p>
-            </div>
-          </div>
+      {/* ── Credit Balance ────────────────────────────────── */}
+      <div className="rounded-xl border p-5 flex items-center gap-4" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
+        <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center">
+          <Coins className="w-6 h-6 text-purple-500" />
+        </div>
+        <div className="flex-1">
+          <p className="text-xs uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>Credit Balance</p>
+          <p className="text-2xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>{creditBalance.toLocaleString()} <span className="text-sm font-normal" style={{ color: 'hsl(var(--muted-foreground))' }}>credits (${(creditBalance * 0.01).toFixed(2)} value)</span></p>
+        </div>
+      </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              { label: 'Account Name', value: instructions.payment.accountName },
-              { label: 'Account Number', value: instructions.payment.accountNumber },
-              { label: 'Bank', value: instructions.payment.bankName },
-              { label: 'IFSC Code', value: instructions.payment.ifsc },
-              ...(instructions.payment.upiId
-                ? [{ label: 'UPI ID', value: instructions.payment.upiId }]
-                : []),
-            ].map((row) => (
-              <div
-                key={row.label}
-                className="flex items-center justify-between rounded-lg border px-4 py-3"
-                style={{ borderColor: 'hsl(var(--border))' }}
-              >
-                <div>
-                  <p className="text-[11px] uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                    {row.label}
-                  </p>
-                  <p className="text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>
-                    {row.value}
-                  </p>
+      {/* ── FINANCE MODULE ────────────────────────────────── */}
+      <div>
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(76,29,149,0.1)' }}>
+            <Receipt className="w-5 h-5" style={{ color: '#4c1d95' }} />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>Finance Module</h2>
+            <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Invoicing, GST, Tally, Payment Recovery & more</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {FINANCE_PLANS.map((plan) => {
+            const price = cycle === 'annual' ? plan.annualUsd : plan.monthlyUsd;
+            const perMonth = cycle === 'annual' ? Math.round(plan.annualUsd / 12) : plan.monthlyUsd;
+            return (
+              <div key={plan.tier} className={`relative rounded-xl border p-6 flex flex-col ${plan.popular ? 'border-purple-500 ring-1 ring-purple-500/30' : ''}`} style={{ borderColor: plan.popular ? undefined : 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
+                {plan.popular && <span className="absolute -top-3 right-4 px-3 py-1 rounded-full bg-purple-600 text-white text-xs font-bold">Most Popular</span>}
+                <h3 className="text-lg font-bold" style={{ color: 'hsl(var(--foreground))' }}>{plan.name}</h3>
+                <div className="mt-3 mb-4">
+                  <span className="text-3xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>${cycle === 'annual' ? perMonth : price}</span>
+                  <span className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>/mo{cycle === 'annual' ? ` (billed $${price}/yr)` : ''}</span>
                 </div>
-                <button
-                  onClick={() => copyValue(row.label, row.value)}
-                  className="p-2 rounded-md hover:bg-[#1BE1D3]/10 transition-colors"
-                  title={`Copy ${row.label}`}
-                >
-                  {copiedField === row.label ? (
-                    <Check className="w-4 h-4 text-emerald-500" />
-                  ) : (
-                    <Copy className="w-4 h-4 text-[#1BE1D3]" />
-                  )}
+                <ul className="space-y-2 flex-1 mb-5">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                      <CheckCircle className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" /> {f}
+                    </li>
+                  ))}
+                </ul>
+                <button className="w-full py-2.5 rounded-lg text-sm font-semibold transition-colors bg-purple-600 text-white hover:bg-purple-700">
+                  Get Started
                 </button>
               </div>
-            ))}
-          </div>
-
-          <a
-            href={instructions.whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#1BE1D3] text-black text-sm font-medium hover:bg-[#1BE1D3]/90 transition-colors"
-          >
-            <MessageCircle className="w-4 h-4" /> I&apos;ve Paid — Confirm on WhatsApp
-          </a>
-          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-            Your apps are activated within a few hours of payment verification, usually much faster.
-          </p>
-        </div>
-      )}
-
-      {/* AINOS One hero */}
-      {bundle && (
-        <div
-          className="relative overflow-hidden rounded-2xl border-2 border-[#1BE1D3]/60 p-6 sm:p-8"
-          style={{ background: 'hsl(var(--card))' }}
-        >
-          <div className="flex flex-wrap items-center gap-6 justify-between">
-            <div className="space-y-3 min-w-[240px] flex-1">
-              <div className="flex items-center gap-2">
-                <Crown className="w-6 h-6 text-[#1BE1D3]" />
-                <h2 className="text-xl font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
-                  {bundle.name}
-                </h2>
-                <span className="px-2.5 py-0.5 rounded-full bg-[#1BE1D3] text-black text-[11px] font-medium">
-                  Best Value
-                </span>
-              </div>
-              <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                {bundle.tagline}
-              </p>
-              <div className="flex items-center gap-2 flex-wrap">
-                {bundle.apps.map((k) => {
-                  const Icon = APP_ICONS[k] || Sparkles;
-                  return (
-                    <span
-                      key={k}
-                      className="w-8 h-8 rounded-lg bg-[#1BE1D3]/10 flex items-center justify-center"
-                      title={apps.find((a) => a.key === k)?.name || k}
-                    >
-                      <Icon className="w-4 h-4 text-[#1BE1D3]" />
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="text-right space-y-3">
-              <div>
-                <span className="text-4xl font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
-                  ₹{bundle.priceInr.toLocaleString('en-IN')}
-                </span>
-                <span className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                  {' '}/month
-                </span>
-              </div>
-              <button
-                onClick={() => checkout({ plan: 'one' })}
-                disabled={choosing || subscription?.plan === 'one'}
-                className="px-6 py-3 rounded-lg bg-[#1BE1D3] text-black text-sm font-medium hover:bg-[#1BE1D3]/90 transition-colors disabled:opacity-60"
-              >
-                {subscription?.plan === 'one' && subscription.status === 'active'
-                  ? 'Current Plan'
-                  : choosing
-                  ? 'Preparing...'
-                  : 'Get AINOS One'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* App grid */}
-      <div>
-        <h2 className="text-lg font-semibold mb-1" style={{ color: 'hsl(var(--foreground))' }}>
-          Or pick individual apps
-        </h2>
-        <p className="text-sm mb-5" style={{ color: 'hsl(var(--muted-foreground))' }}>
-          Each app is a full product on its own. Mix and match — pay only for what you use.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {apps.map((app) => {
-            const Icon = APP_ICONS[app.key] || Sparkles;
-            const isSelected = selected.includes(app.key);
-            const isOwned = ownedApps.has(app.key) && subscription?.status === 'active';
-            return (
-              <button
-                key={app.key}
-                onClick={() => !isOwned && toggleApp(app.key)}
-                disabled={isOwned}
-                className={`relative flex flex-col text-left rounded-xl border p-5 transition-all ${
-                  isSelected ? 'border-[#1BE1D3] ring-1 ring-[#1BE1D3]/50' : 'hover:border-[#1BE1D3]/40'
-                } ${isOwned ? 'opacity-70 cursor-default' : 'cursor-pointer'}`}
-                style={{
-                  borderColor: isSelected ? undefined : 'hsl(var(--border))',
-                  background: 'hsl(var(--card))',
-                }}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="w-10 h-10 rounded-lg bg-[#1BE1D3]/10 flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-[#1BE1D3]" />
-                  </span>
-                  {isOwned ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-500">
-                      <CheckCircle className="w-3.5 h-3.5" /> Subscribed
-                    </span>
-                  ) : isSelected ? (
-                    <span className="w-6 h-6 rounded-full bg-[#1BE1D3] flex items-center justify-center">
-                      <Check className="w-4 h-4 text-black" />
-                    </span>
-                  ) : (
-                    <span
-                      className="w-6 h-6 rounded-full border flex items-center justify-center"
-                      style={{ borderColor: 'hsl(var(--border))' }}
-                    >
-                      <Plus className="w-3.5 h-3.5" style={{ color: 'hsl(var(--muted-foreground))' }} />
-                    </span>
-                  )}
-                </div>
-                <h3 className="font-semibold text-sm mb-1" style={{ color: 'hsl(var(--foreground))' }}>
-                  {app.name}
-                </h3>
-                <p className="text-xs flex-grow mb-3" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                  {app.tagline}
-                </p>
-                <p className="text-sm">
-                  <span className="font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
-                    ₹{app.priceInr.toLocaleString('en-IN')}
-                  </span>
-                  <span style={{ color: 'hsl(var(--muted-foreground))' }}> /month</span>
-                </p>
-              </button>
             );
           })}
         </div>
       </div>
 
-      <p className="text-xs text-center" style={{ color: 'hsl(var(--muted-foreground))' }}>
-        All prices in INR per company, billed monthly via direct bank transfer or UPI. Cancel anytime —
-        your apps stay active until the end of the paid period.
-      </p>
-
-      {/* Sticky selection summary */}
-      {selected.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t backdrop-blur-md"
-          style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card) / 0.95)' }}
-        >
-          <div className="max-w-6xl mx-auto px-6 py-4 flex flex-wrap items-center gap-4">
-            <div className="flex-1 min-w-[220px]">
-              <p className="text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>
-                {selected.length} app{selected.length > 1 ? 's' : ''} selected —{' '}
-                <span className="text-[#1BE1D3]">₹{selectedTotal.toLocaleString('en-IN')}/month</span>
-              </p>
-              {oneIsCheaper && bundle && (
-                <p className="text-xs text-amber-500">
-                  AINOS One gives you every app for ₹{bundle.priceInr.toLocaleString('en-IN')}/month — better deal!
-                </p>
-              )}
-            </div>
-            {oneIsCheaper && bundle && (
-              <button
-                onClick={() => checkout({ plan: 'one' })}
-                disabled={choosing}
-                className="px-5 py-2.5 rounded-lg bg-[#1BE1D3] text-black text-sm font-medium hover:bg-[#1BE1D3]/90 transition-colors disabled:opacity-60"
-              >
-                Get AINOS One Instead
-              </button>
-            )}
-            <button
-              onClick={() => checkout({ apps: selected })}
-              disabled={choosing}
-              className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-60 ${
-                oneIsCheaper
-                  ? 'border border-[#1BE1D3]/40 text-[#1BE1D3] hover:bg-[#1BE1D3]/10'
-                  : 'bg-[#1BE1D3] text-black hover:bg-[#1BE1D3]/90'
-              }`}
-            >
-              {choosing ? 'Preparing...' : 'Continue to Payment'}
-            </button>
+      {/* ── MARKETING MODULE ──────────────────────────────── */}
+      <div>
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(76,29,149,0.1)' }}>
+            <Mail className="w-5 h-5" style={{ color: '#4c1d95' }} />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>Marketing Module</h2>
+            <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>AI Blog, SEO, Email Campaigns, Social Media</p>
           </div>
         </div>
-      )}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {MARKETING_PLANS.map((plan) => {
+            const price = cycle === 'annual' ? plan.annualUsd : plan.monthlyUsd;
+            const perMonth = cycle === 'annual' ? Math.round(plan.annualUsd / 12) : plan.monthlyUsd;
+            return (
+              <div key={plan.tier} className={`relative rounded-xl border p-6 flex flex-col ${plan.popular ? 'border-purple-500 ring-1 ring-purple-500/30' : ''}`} style={{ borderColor: plan.popular ? undefined : 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
+                {plan.popular && <span className="absolute -top-3 right-4 px-3 py-1 rounded-full bg-purple-600 text-white text-xs font-bold">Most Popular</span>}
+                <h3 className="text-lg font-bold" style={{ color: 'hsl(var(--foreground))' }}>{plan.name}</h3>
+                <div className="mt-3 mb-4">
+                  <span className="text-3xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>${cycle === 'annual' ? perMonth : price}</span>
+                  <span className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>/mo{cycle === 'annual' ? ` (billed $${price}/yr)` : ''}</span>
+                </div>
+                <ul className="space-y-2 flex-1 mb-5">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                      <CheckCircle className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" /> {f}
+                    </li>
+                  ))}
+                </ul>
+                <button className="w-full py-2.5 rounded-lg text-sm font-semibold transition-colors bg-purple-600 text-white hover:bg-purple-700">
+                  Get Started
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── COMBO PLANS (Best Value) ──────────────────────── */}
+      <div className="rounded-2xl border-2 border-purple-500/40 p-6 sm:p-8" style={{ background: 'hsl(var(--card))' }}>
+        <div className="flex items-center gap-3 mb-6">
+          <Crown className="w-7 h-7 text-purple-500" />
+          <div>
+            <h2 className="text-xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>Combo Plans — Best Value</h2>
+            <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Finance + Marketing together at a discount</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {COMBO_PLANS.map((plan) => {
+            const price = cycle === 'annual' ? plan.annualUsd : plan.monthlyUsd;
+            const perMonth = cycle === 'annual' ? Math.round(plan.annualUsd / 12) : plan.monthlyUsd;
+            return (
+              <div key={plan.tier} className={`relative rounded-xl border p-6 flex flex-col ${plan.popular ? 'border-purple-500 ring-2 ring-purple-500/40 bg-purple-500/5' : ''}`} style={{ borderColor: plan.popular ? undefined : 'hsl(var(--border))', background: plan.popular ? undefined : 'hsl(var(--card))' }}>
+                {plan.popular && <span className="absolute -top-3 right-4 px-3 py-1 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold">Best Deal</span>}
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-lg font-bold" style={{ color: 'hsl(var(--foreground))' }}>{plan.name}</h3>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {plan.modules.map((m) => (
+                    <span key={m} className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/10 text-purple-500 border border-purple-500/20">{m}</span>
+                  ))}
+                </div>
+                <div className="mt-1 mb-4">
+                  <span className="text-3xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>${cycle === 'annual' ? perMonth : price}</span>
+                  <span className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>/mo{cycle === 'annual' ? ` (billed $${price}/yr)` : ''}</span>
+                </div>
+                <ul className="space-y-2 flex-1 mb-5">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                      <CheckCircle className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" /> {f}
+                    </li>
+                  ))}
+                </ul>
+                <button className={`w-full py-2.5 rounded-lg text-sm font-semibold transition-colors ${plan.popular ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:opacity-90' : 'bg-purple-600 text-white hover:bg-purple-700'}`}>
+                  Get Started
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── CREDIT TOP-UP ─────────────────────────────────── */}
+      <div>
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-500/10">
+            <Zap className="w-5 h-5 text-purple-500" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>Credit Top-Up</h2>
+            <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Buy extra credits anytime — 1 credit = $0.01</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          {creditPacks.map((pack) => (
+            <div key={pack.credits} className={`relative rounded-xl border p-4 text-center ${pack.popular ? 'border-purple-500 ring-1 ring-purple-500/30' : ''}`} style={{ borderColor: pack.popular ? undefined : 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
+              {pack.popular && <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-purple-600 text-white text-[10px] font-bold">Popular</span>}
+              <p className="text-2xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>{pack.credits.toLocaleString()}</p>
+              <p className="text-xs mb-2" style={{ color: 'hsl(var(--muted-foreground))' }}>credits</p>
+              <p className="text-lg font-bold text-purple-500">${pack.price.toFixed(2)}</p>
+              <button className="mt-2 w-full py-2 rounded-lg text-xs font-semibold border border-purple-500/30 text-purple-500 hover:bg-purple-500/10 transition-colors">
+                Buy Now
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── TOOL CREDIT COSTS TABLE ───────────────────────── */}
+      <div>
+        <button onClick={() => setShowToolCosts(!showToolCosts)} className="flex items-center gap-2 text-sm font-semibold mb-4" style={{ color: 'hsl(var(--foreground))' }}>
+          <Sparkles className="w-4 h-4 text-purple-500" />
+          Per-Tool Credit Costs
+          <ArrowRight className={`w-4 h-4 transition-transform ${showToolCosts ? 'rotate-90' : ''}`} />
+        </button>
+        {showToolCosts && (
+          <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'hsl(var(--border))' }}>
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ background: 'hsl(var(--card))' }}>
+                  <th className="text-left px-4 py-3 font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Tool</th>
+                  <th className="text-center px-4 py-3 font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Credits</th>
+                  <th className="text-center px-4 py-3 font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Type</th>
+                  <th className="text-right px-4 py-3 font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {TOOL_COSTS.map((tool) => (
+                  <tr key={tool.name} className="border-t" style={{ borderColor: 'hsl(var(--border))' }}>
+                    <td className="px-4 py-2.5" style={{ color: 'hsl(var(--foreground))' }}>{tool.name}</td>
+                    <td className="px-4 py-2.5 text-center font-mono font-bold" style={{ color: 'hsl(var(--foreground))' }}>{tool.credits}</td>
+                    <td className="px-4 py-2.5 text-center">
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${CAT_COLORS[tool.cat]}`}>
+                        {tool.cat === 'ai' ? 'AI' : tool.cat === 'semi' ? 'Auto' : 'Manual'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-right text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>${(tool.credits * 0.01).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* ── Footer ────────────────────────────────────────── */}
+      <div className="text-center space-y-2">
+        <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          All prices in USD. Credits never expire. Cancel anytime — your subscription stays active until the end of the paid period.
+        </p>
+        <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          Need a custom plan? <a href="mailto:info@ainosio.com" className="text-purple-500 font-semibold hover:underline">Contact us</a>
+        </p>
+      </div>
     </div>
   );
 }

@@ -50,7 +50,7 @@ export default function CreditsPage() {
       const data = await res.json();
       if (data.orderId) {
         // Razorpay checkout would open here
-        alert(`Order created: ${data.orderId}\nAmount: ₹${data.amount}\nCredits: ${data.credits}\n\nRazorpay integration will be enabled once API keys are configured.`);
+        alert(`Order created: ${data.orderId}\nAmount: $${data.amount}\nCredits: ${data.credits}\n\nRazorpay integration will be enabled once API keys are configured.`);
       }
     } catch (e) {
       alert('Payment integration coming soon!');
@@ -99,7 +99,7 @@ export default function CreditsPage() {
             )}
             <p className="text-gray-400 text-sm">{pack.label}</p>
             <p className="text-2xl font-bold text-white mt-1">{pack.credits.toLocaleString()} <span className="text-sm text-gray-400">credits</span></p>
-            <p className="text-purple-400 font-semibold mt-2">₹{pack.price}</p>
+            <p className="text-purple-400 font-semibold mt-2">${pack.price.toFixed(2)}</p>
             <button
               onClick={() => handleBuy(pack)}
               disabled={buying !== null}

@@ -3,6 +3,174 @@ import { prisma } from '@/lib/prisma';
 
 // ============ Types (previously from Mongoose Subscription model) ============
 
+// ============ Module Plans (USD pricing with credit system) ============
+
+export type ModuleKey = 'finance' | 'marketing';
+export type TierKey = 'starter' | 'professional' | 'enterprise';
+export type BillingCycle = 'monthly' | 'annual';
+
+export interface ModulePlan {
+  module: ModuleKey;
+  tier: TierKey;
+  name: string;
+  monthlyUsd: number;
+  annualUsd: number;   // total per year (2 months free)
+  creditsIncluded: number;
+  features: string[];
+}
+
+export interface ComboPlan {
+  tier: TierKey;
+  name: string;
+  monthlyUsd: number;
+  annualUsd: number;
+  creditsIncluded: number;
+  modules: ModuleKey[];
+  features: string[];
+}
+
+// ---- Finance Module Plans ----
+export const FINANCE_PLANS: Record<TierKey, ModulePlan> = {
+  starter: {
+    module: 'finance', tier: 'starter',
+    name: 'Finance Starter',
+    monthlyUsd: 9, annualUsd: 90,
+    creditsIncluded: 500,
+    features: ['Invoicing', 'Quotes', 'Expenses', 'GST Reports', 'PDF Download', 'Payment Reminders'],
+  },
+  professional: {
+    module: 'finance', tier: 'professional',
+    name: 'Finance Professional',
+    monthlyUsd: 29, annualUsd: 290,
+    creditsIncluded: 2000,
+    features: ['Everything in Starter', 'Payment Recovery Agent', 'Bank Reconciliation', 'Tally Export', 'Multi-currency', 'Priority Support'],
+  },
+  enterprise: {
+    module: 'finance', tier: 'enterprise',
+    name: 'Finance Enterprise',
+    monthlyUsd: 79, annualUsd: 790,
+    creditsIncluded: 10000,
+    features: ['Everything in Professional', 'Multi-branch', 'Custom GST Reports', 'API Access', 'Dedicated Account Manager'],
+  },
+};
+
+// ---- Marketing Module Plans ----
+export const MARKETING_PLANS: Record<TierKey, ModulePlan> = {
+  starter: {
+    module: 'marketing', tier: 'starter',
+    name: 'Marketing Starter',
+    monthlyUsd: 12, annualUsd: 120,
+    creditsIncluded: 300,
+    features: ['AI Blog Generator', 'Email Campaigns', 'SEO Audit', 'Social Captions', 'Invitations'],
+  },
+  professional: {
+    module: 'marketing', tier: 'professional',
+    name: 'Marketing Professional',
+    monthlyUsd: 39, annualUsd: 390,
+    creditsIncluded: 1500,
+    features: ['Everything in Starter', 'Competitor Analysis', 'Drip Campaigns', 'Content Repurpose', 'Lead Magnets', 'Priority Support'],
+  },
+  enterprise: {
+    module: 'marketing', tier: 'enterprise',
+    name: 'Marketing Enterprise',
+    monthlyUsd: 99, annualUsd: 990,
+    creditsIncluded: 8000,
+    features: ['Everything in Professional', 'White-label Reports', 'API Access', 'Custom Integrations', 'Dedicated Account Manager'],
+  },
+};
+
+// ---- Combo Plans (Finance + Marketing together) ----
+export const COMBO_PLANS: Record<TierKey, ComboPlan> = {
+  starter: {
+    tier: 'starter', name: 'Starter Combo',
+    monthlyUsd: 17, annualUsd: 170,
+    creditsIncluded: 800,
+    modules: ['finance', 'marketing'],
+    features: ['Finance Starter', 'Marketing Starter', 'Save $4/mo vs separate'],
+  },
+  professional: {
+    tier: 'professional', name: 'Pro Combo',
+    monthlyUsd: 55, annualUsd: 550,
+    creditsIncluded: 3500,
+    modules: ['finance', 'marketing'],
+    features: ['Finance Professional', 'Marketing Professional', 'Save $13/mo vs separate'],
+  },
+  enterprise: {
+    tier: 'enterprise', name: 'Enterprise Combo',
+    monthlyUsd: 149, annualUsd: 1490,
+    creditsIncluded: 18000,
+    modules: ['finance', 'marketing'],
+    features: ['Finance Enterprise', 'Marketing Enterprise', 'Save $28/mo vs separate'],
+  },
+};
+
+export const ALL_MODULE_KEYS: ModuleKey[] = ['finance', 'marketing'];
+export const ALL_TIER_KEYS: TierKey[] = ['starter', 'professional', 'enterprise'];
+
+// ============ Per-Tool Credit Costs ============
+
+export const TOOL_CREDIT_COSTS: Record<string, { credits: number; category: 'manual' | 'semi-auto' | 'ai' }> = {
+  // Finance tools
+  'create-invoice':        { credits: 2,  category: 'manual' },
+  'create-quote':         { credits: 2,  category: 'manual' },
+  'download-pdf':         { credits: 1,  category: 'manual' },
+  'send-invoice-email':   { credits: 3,  category: 'semi-auto' },
+  'whatsapp-reminder':    { credits: 5,  category: 'semi-auto' },
+  'mark-as-paid':         { credits: 1,  category: 'manual' },
+  'gst-report':           { credits: 15, category: 'semi-auto' },
+  'tally-export':         { credits: 10, category: 'semi-auto' },
+  'expense-entry':        { credits: 2,  category: 'manual' },
+  'profit-loss-report':   { credits: 10, category: 'semi-auto' },
+  'barcode-generate':     { credits: 3,  category: 'manual' },
+  'payment-recovery':     { credits: 8,  category: 'semi-auto' },
+  'bank-reconciliation':  { credits: 12, category: 'semi-auto' },
+  'recurring-invoice':    { credits: 3,  category: 'semi-auto' },
+  'purchase-order':       { credits: 2,  category: 'manual' },
+  'delivery-challan':     { credits: 2,  category: 'manual' },
+  'credit-debit-note':    { credits: 2,  category: 'manual' },
+  'journal-entry':        { credits: 3,  category: 'manual' },
+  'daybook-report':       { credits: 5,  category: 'semi-auto' },
+  // Marketing tools
+  'ai-blog-generate':     { credits: 25, category: 'ai' },
+  'ai-blog-seo':          { credits: 35, category: 'ai' },
+  'ai-blog-translate':    { credits: 15, category: 'ai' },
+  'email-campaign-send':  { credits: 10, category: 'semi-auto' },
+  'seo-site-audit':       { credits: 30, category: 'ai' },
+  'seo-keyword-research': { credits: 20, category: 'ai' },
+  'seo-competitor':       { credits: 25, category: 'ai' },
+  'social-caption':       { credits: 10, category: 'ai' },
+  'social-caption-image': { credits: 20, category: 'ai' },
+  'instagram-plan':       { credits: 15, category: 'ai' },
+  'drip-campaign':        { credits: 10, category: 'semi-auto' },
+  'invitation-send':      { credits: 8,  category: 'semi-auto' },
+  'custom-invitation':    { credits: 15, category: 'ai' },
+  'lead-magnet':          { credits: 20, category: 'ai' },
+  'newsletter-compose':   { credits: 12, category: 'ai' },
+  'content-repurpose':    { credits: 18, category: 'ai' },
+  'blog-schedule-30':     { credits: 30, category: 'ai' },
+};
+
+/** 1 credit = $0.01 (1 cent) */
+export const CREDIT_VALUE_USD = 0.01;
+
+/** Get plan by module + tier */
+export function getModulePlan(module: ModuleKey, tier: TierKey): ModulePlan {
+  if (module === 'finance') return FINANCE_PLANS[tier];
+  return MARKETING_PLANS[tier];
+}
+
+/** Get combo plan by tier */
+export function getComboPlan(tier: TierKey): ComboPlan {
+  return COMBO_PLANS[tier];
+}
+
+/** Price for a given billing cycle */
+export function planPrice(plan: ModulePlan | ComboPlan, cycle: BillingCycle): number {
+  return cycle === 'annual' ? plan.annualUsd : plan.monthlyUsd;
+}
+
+// ============ Legacy App Catalog (kept for backward compatibility) ============
+
 export type AppKey = 'crm' | 'books' | 'hr' | 'inventory' | 'marketing' | 'desk' | 'projects' | 'ai_studio';
 export type PlanKey = 'one' | 'starter' | 'growth' | 'scale';
 
