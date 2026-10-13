@@ -701,6 +701,10 @@ export default function BlogPage() {
                         <FileText className="w-3.5 h-3.5" /> {expandedWebsiteId === w.id ? 'Hide Blogs' : 'View Blogs'}
                         <ChevronDown className={`w-3 h-3 transition-transform ${expandedWebsiteId === w.id ? 'rotate-180' : ''}`} />
                       </button>
+                      <button onClick={() => { setAiForm({ topic: '', keywords: w.niche || '', tone: 'Professional', length: 'medium', industry: w.niche || 'General Business' }); setShowAI(true); }}
+                        className="px-4 py-2 rounded-xl text-xs font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center gap-1.5">
+                        <Wand2 className="w-3.5 h-3.5" /> Generate Blog
+                      </button>
                       <button onClick={() => handleSchedule30(w.id)} disabled={schedulingId === w.id}
                         className="px-4 py-2 rounded-xl text-xs font-bold text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors flex items-center gap-1.5 disabled:opacity-50">
                         {schedulingId === w.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Zap className="w-3.5 h-3.5" /> Schedule 30 More</>}

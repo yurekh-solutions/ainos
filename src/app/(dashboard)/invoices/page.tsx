@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2, CheckCircle2, AlertCircle, TrendingUp, Bell } from 'lucide-react';
+import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2, CheckCircle2, AlertCircle, TrendingUp, Bell, Mail, MessageCircle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
 
@@ -14,6 +14,7 @@ interface Invoice {
   customerAddress?: string;
   customerGst?: string;
   customerGstNumber?: string;
+  customerPhone?: string;
   totalAmount: number;
   subtotal: number;
   taxTotal: number;
@@ -498,6 +499,39 @@ export default function InvoicesPage() {
     doc.save(`${invoice.invoiceNumber}.pdf`);
   };
 
+  // Mark invoice as paid
+  const handleMarkPaid = async (invoice: Invoice) => {
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'paid' }),
+      });
+      if (res.ok) {
+        showToast(`Invoice ${invoice.invoiceNumber} marked as paid!`, 'success');
+        fetchData();
+      } else {
+        showToast('Failed to update invoice', 'error');
+      }
+    } catch {
+      showToast('Network error', 'error');
+    }
+  };
+
+  // Send invoice via email
+  const handleSendEmail = (invoice: Invoice) => {
+    const subject = `Invoice ${invoice.invoiceNumber} from ${company?.name || 'AINOS'}`;
+    const body = `Hi ${invoice.customerName},\n\nPlease find invoice ${invoice.invoiceNumber} for Rs. ${invoice.totalAmount.toLocaleString('en-IN')}.\n\nDue Date: ${invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-IN') : 'N/A'}\n\nThank you!`;
+    window.open(`mailto:${invoice.customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+  };
+
+  // Send WhatsApp reminder
+  const handleWhatsApp = (invoice: Invoice) => {
+    const phone = invoice.customerPhone || '';
+    const msg = `Hi ${invoice.customerName}, reminder: Invoice ${invoice.invoiceNumber} for Rs. ${invoice.totalAmount.toLocaleString('en-IN')} is ${invoice.status === 'overdue' ? 'overdue' : 'due'}. Please pay at your earliest convenience. Thank you!`;
+    window.open(`https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
   // Helper function to convert number to words
   const numberToWords = (num: number): string => {
     const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
@@ -786,6 +820,25 @@ export default function InvoicesPage() {
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-1">
+                            {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
+                              <button onClick={() => handleMarkPaid(invoice)}
+                                className="p-1.5 rounded-lg transition-colors hover:bg-green-50"
+                                title="Mark as Paid">
+                                <CheckCircle className="w-3.5 h-3.5 text-green-600" />
+                              </button>
+                            )}
+                            <button onClick={() => handleSendEmail(invoice)}
+                              className="p-1.5 rounded-lg transition-colors hover:bg-blue-50"
+                              title="Send via Email">
+                              <Mail className="w-3.5 h-3.5 text-blue-600" />
+                            </button>
+                            {invoice.customerPhone && invoice.status !== 'paid' && (
+                              <button onClick={() => handleWhatsApp(invoice)}
+                                className="p-1.5 rounded-lg transition-colors hover:bg-green-50"
+                                title="WhatsApp Reminder">
+                                <MessageCircle className="w-3.5 h-3.5 text-green-600" />
+                              </button>
+                            )}
                             <button onClick={() => downloadPDF(invoice)}
                               className="p-1.5 rounded-lg transition-colors hover:bg-[hsl(var(--primary)/0.1)]"
                               title="Download PDF">
