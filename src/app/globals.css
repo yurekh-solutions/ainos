@@ -134,6 +134,7 @@
 html, body, #__next {
   height: 100%;
   width: 100%;
+  overflow-x: clip;
 }
 
 body {
@@ -141,7 +142,7 @@ body {
   background-attachment: fixed;
   color: hsl(var(--foreground));
   font-family: var(--font-geist-sans), system-ui, sans-serif;
-  overflow-x: hidden;
+  overflow-x: clip;
   transition: background 0.2s ease, color 0.2s ease;
 }
 
