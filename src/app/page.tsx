@@ -498,7 +498,7 @@ export default function AinosLandingPage() {
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700 mb-4">
               <Rocket className="w-3.5 h-3.5" /> How it works
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-4 text-balance">
               Run your entire business in four steps
             </h2>
             <p className="text-base sm:text-lg text-gray-600">
@@ -874,7 +874,7 @@ export default function AinosLandingPage() {
               viewport={{ once: true }}
               className="lg:col-span-5 rounded-3xl bg-purple-50/70 ring-1 ring-purple-100 p-7 sm:p-8 flex flex-col"
             >
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Every module, ready to go</h3>
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 text-balance">Every module, ready to go</h3>
               <p className="text-sm sm:text-base text-gray-600 leading-relaxed mb-6">
                 Finance, CRM, inventory, HR, marketing and more — twelve modules, zero setup. Turn on only what your business needs today.
               </p>
@@ -892,11 +892,11 @@ export default function AinosLandingPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {MODULES.filter((m) => aboutCat === 'All' || MODULE_CATS[m.title] === aboutCat).map((m) => (
-                  <div key={m.title} className="flex items-center gap-3 rounded-2xl bg-white border border-purple-100/70 p-4">
-                    <span className="w-9 h-9 rounded-lg bg-purple-50 ring-1 ring-purple-100 flex items-center justify-center flex-shrink-0">
-                      <m.icon className="w-4 h-4 text-purple-600" />
+                  <div key={m.title} className="flex items-center gap-3 rounded-2xl bg-white border border-purple-100/70 p-3 sm:p-4">
+                    <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-purple-50 ring-1 ring-purple-100 flex items-center justify-center flex-shrink-0">
+                      <m.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600" />
                     </span>
-                    <span className="text-sm font-medium text-gray-800">{m.title}</span>
+                    <span className="text-xs sm:text-sm font-medium text-gray-800 leading-tight">{m.title}</span>
                   </div>
                 ))}
               </div>
