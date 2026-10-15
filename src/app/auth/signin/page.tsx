@@ -1,8 +1,8 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
-import { motion } from 'framer-motion';
-import { Shield, FileText, ArrowRight, Globe, Loader2, AlertCircle, Eye, EyeOff, LogIn, Zap, BarChart3, Lock, UserPlus } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Shield, FileText, ArrowRight, Globe, Loader2, AlertCircle, Eye, EyeOff, LogIn, Zap, BarChart3, Lock, UserPlus, Clock, XCircle } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -20,6 +20,10 @@ const errorMessages: Record<string, string> = {
   OAuthCallback: 'Connection timed out. Retrying automatically...',
   OAuthSignin: 'Please try signing in again.',
   Callback: 'Authentication callback failed. Please try again.',
+  GoogleNoAccount: 'No AINOS account exists for this Google email. Please register first — after your account is created and approved, Google sign-in will work.',
+  GooglePendingApproval: 'Your account is pending admin approval. Please wait for verification.',
+  GoogleRejected: 'Your application was rejected by the admin team. Reprocess your application to continue.',
+  GoogleError: 'Google sign-in failed. Please try again in a moment.',
   Default: 'An error occurred during sign-in.',
 };
 
@@ -39,6 +43,11 @@ export default function SignInPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState('');
+  const [accountPopup, setAccountPopup] = useState<'pending' | 'rejected' | null>(null);
+  // Google OAuth errors are "flash" messages: null = the sessionStorage check
+  // hasn't run yet (hide URL-derived errors until then); true = this page load
+  // is the direct result of a Google attempt in this tab.
+  const [googleAttempt, setGoogleAttempt] = useState<boolean | null>(null);
   const [mode, setMode] = useState<'google' | 'credentials'>('google');
   const autoRetried = useRef(false);
 
@@ -47,6 +56,10 @@ export default function SignInPage() {
     setError(null);
     setMode('google');
     setStatus('Connecting to Google...');
+
+    // Mark this tab as mid-Google-attempt so the OAuth error flash only
+    // renders on the immediate redirect back, not on stale ?error= URLs.
+    try { window.sessionStorage.setItem('ainos_google_attempt', '1'); } catch { /* ignore */ }
 
     try {
       await signIn('google', { callbackUrl: '/dashboard' });
@@ -84,7 +97,9 @@ export default function SignInPage() {
 
       if (result?.error) {
         if (result.error === 'PENDING_APPROVAL') {
-          setError('Your account is pending admin approval. Please wait for verification.');
+          setAccountPopup('pending');
+        } else if (result.error === 'ACCOUNT_REJECTED') {
+          setAccountPopup('rejected');
         } else {
           setError('Invalid email or password');
         }
@@ -106,6 +121,29 @@ export default function SignInPage() {
   };
 
   useEffect(() => {
+    // Read the flash flag after mount — sessionStorage is unavailable during
+    // SSR and the read must happen outside the synchronous effect body.
+    const timer = setTimeout(() => {
+      let attempted = false;
+      try {
+        attempted = window.sessionStorage.getItem('ainos_google_attempt') === '1';
+        if (attempted) window.sessionStorage.removeItem('ainos_google_attempt');
+      } catch { /* storage unavailable — treat as no attempt */ }
+
+      setGoogleAttempt(attempted);
+
+      if (!attempted) return;
+
+      if (urlError === 'GooglePendingApproval') {
+        setAccountPopup('pending');
+      } else if (urlError === 'GoogleRejected') {
+        setAccountPopup('rejected');
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [urlError]);
+
+  useEffect(() => {
     if (urlError === 'OAuthCallback' && !autoRetried.current) {
       autoRetried.current = true;
       const timer = setTimeout(() => {
@@ -116,7 +154,7 @@ export default function SignInPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlError]);
 
-  const derivedError = urlError && urlError !== 'OAuthCallback'
+  const derivedError = googleAttempt && urlError && urlError !== 'OAuthCallback' && urlError !== 'GooglePendingApproval' && urlError !== 'GoogleRejected'
     ? (errorMessages[urlError] || errorMessages.Default)
     : null;
 
@@ -366,6 +404,51 @@ export default function SignInPage() {
             Trusted by <span className="font-semibold" style={{ color: '#6d28d9' }}>10,000+</span> businesses worldwide
           </span>
         </motion.div>
+
+        {/* Account status popup — pending / rejected */}
+        <AnimatePresence>
+          {accountPopup && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+              onClick={() => setAccountPopup(null)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                onClick={e => e.stopPropagation()}
+                className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 text-center"
+              >
+                {accountPopup === 'pending' ? (
+                  <>
+                    <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center bg-amber-50 border border-amber-100">
+                      <Clock className="w-7 h-7 text-amber-500" />
+                    </div>
+                    <h2 className="text-lg font-bold text-gray-900 mb-2">Verification in Progress</h2>
+                    <p className="text-sm text-gray-500 leading-relaxed">Your company profile has been sent for admin verification. You&apos;ll be able to login once your account is approved.</p>
+                    <button onClick={() => setAccountPopup(null)} className="mt-5 w-full h-11 rounded-xl text-white text-sm font-semibold" style={{ background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%)' }}>Got it</button>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center bg-red-50 border border-red-100">
+                      <XCircle className="w-7 h-7 text-red-500" />
+                    </div>
+                    <h2 className="text-lg font-bold text-gray-900 mb-2">Application Rejected</h2>
+                    <p className="text-sm text-gray-500 leading-relaxed">Your application was rejected by the admin team. Reprocess your application to continue.</p>
+                    <a href={`mailto:info.ainosio@gmail.com?subject=${encodeURIComponent('AINOS Application Reprocess Request')}&body=${encodeURIComponent(`Email: ${email}\n\nPlease reprocess my application.\n`)}`}
+                      className="mt-5 w-full h-11 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2" style={{ background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%)' }}>
+                      Reprocess Application
+                    </a>
+                    <button onClick={() => setAccountPopup(null)} className="mt-2 w-full h-11 rounded-xl bg-white border border-gray-200 text-gray-600 text-sm font-medium">Close</button>
+                  </>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

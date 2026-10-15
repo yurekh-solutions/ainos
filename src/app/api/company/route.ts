@@ -75,19 +75,39 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const session = await getServerSession(req);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    let companyId: string | null = null;
+    let body: Record<string, unknown>;
+
+    if (session?.user?.email) {
+      const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+      companyId = user?.companyId || null;
+      body = await req.json();
+    } else {
+      // Pre-approval fallback: the register flow attaches uploadedDocs before
+      // any session exists, using the token issued at registration.
+      const uploadToken = req.headers.get('x-upload-token');
+      if (!uploadToken) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      const tokenCompany = await prisma.company.findFirst({
+        where: { uploadToken },
+        select: { id: true },
+      });
+      if (!tokenCompany) {
+        return NextResponse.json({ error: 'Invalid upload token' }, { status: 401 });
+      }
+      companyId = tokenCompany.id;
+      // Token-authenticated callers may only attach uploadedDocs — nothing else.
+      const rawBody = await req.json();
+      body = { uploadedDocs: rawBody.uploadedDocs };
     }
 
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-    if (!user?.companyId) {
+    if (!companyId) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
 
-    const body = await req.json();
-    
     const company = await prisma.company.update({
-      where: { id: user.companyId },
+      where: { id: companyId },
       data: body
     });
 

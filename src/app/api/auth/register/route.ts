@@ -26,9 +26,48 @@ export async function POST(req: NextRequest) {
     });
 
     if (existingUser) {
+      // Rows without a password were auto-created by the legacy Google flow
+      // (never registered) — let the owner claim the account via normal
+      // registration instead of dead-ending on "email already exists".
+      if (existingUser.password) {
+        return NextResponse.json(
+          { error: 'An account with this email already exists' },
+          { status: 409 }
+        );
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 12);
+
+      let companyId = existingUser.companyId;
+      if (!companyId) {
+        const company = await prisma.company.create({
+          data: {
+            name: `${name}'s Company`,
+            createdBy: email,
+          },
+        });
+        companyId = company.id;
+      }
+
+      const claimed = await prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          password: hashedPassword,
+          name: existingUser.name || name,
+          companyId,
+        },
+      });
+
       return NextResponse.json(
-        { error: 'An account with this email already exists' },
-        { status: 409 }
+        {
+          message: 'Account created successfully',
+          user: {
+            id: claimed.id,
+            name: claimed.name,
+            email: claimed.email,
+          },
+        },
+        { status: 201 }
       );
     }
 

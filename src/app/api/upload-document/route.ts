@@ -5,15 +5,28 @@ import { uploadToCloudinary } from '@/lib/cloudinary';
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(req);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const docType = formData.get('docType') as string;
     const companyId = formData.get('companyId') as string;
+
+    // Auth: a logged-in user, OR the register-scoped upload token issued by
+    // register-company (pre-approval uploads happen before any session exists).
+    const session = await getServerSession(req);
+    if (!session?.user?.email) {
+      const uploadToken = req.headers.get('x-upload-token');
+      if (!uploadToken) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      const tokenCompany = await prisma.company.findFirst({
+        where: { id: companyId, uploadToken },
+        select: { id: true },
+      });
+      if (!tokenCompany) {
+        return NextResponse.json({ error: 'Invalid upload token' }, { status: 401 });
+      }
+    }
+    const uploadedBy = session?.user?.email || 'registration-upload';
 
     if (!file || !docType || !companyId) {
       return NextResponse.json(
@@ -72,7 +85,7 @@ export async function POST(req: NextRequest) {
         url: result.url,
         size: result.bytes,
         category: docType,
-        uploadedBy: session.user.email,
+        uploadedBy,
         companyId,
         cloudinaryPublicId: result.publicId,
         cloudinaryUrl: result.url,
@@ -88,10 +101,6 @@ export async function POST(req: NextRequest) {
       where: { id: companyId },
       data: {
         totalDocsUploaded: { increment: 1 },
-        onboardingStatus: {
-          // Move to docs_submitted if still pending
-          set: undefined, // handled below
-        },
       },
     });
 
@@ -112,8 +121,8 @@ export async function POST(req: NextRequest) {
       data: {
         companyId,
         action: 'docs_uploaded',
-        performedBy: session.user.email,
-        performedByName: session.user.name || session.user.email,
+        performedBy: uploadedBy,
+        performedByName: session?.user?.name || uploadedBy,
         notes: `Uploaded ${docType}: ${file.name}`,
         metadata: {
           documentId: document.id,

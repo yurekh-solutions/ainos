@@ -3,6 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
+import { isAdmin } from '@/lib/admin';
 
 export const authOptions: NextAuthOptions = {
   secret:
@@ -39,8 +40,9 @@ export const authOptions: NextAuthOptions = {
             where: { id: user.companyId },
             select: { onboardingStatus: true },
           });
-          if (company?.onboardingStatus !== 'approved') {
-            throw new Error('PENDING_APPROVAL');
+          // Platform admins always get in — they need access to review and approve.
+          if (!isAdmin(user.email) && company?.onboardingStatus !== 'approved') {
+            throw new Error(company?.onboardingStatus === 'rejected' ? 'ACCOUNT_REJECTED' : 'PENDING_APPROVAL');
           }
         }
 
@@ -67,56 +69,64 @@ export const authOptions: NextAuthOptions = {
             where: { email: user.email! },
           });
 
+          // Google sign-in is only allowed for emails that already have a
+          // registered AINOS account — never auto-create one from Google.
           if (!existingUser) {
-            // New Google user — create Company + User
-            const company = await prisma.company.create({
-              data: {
-                name: `${user.name || user.email}'s Company`,
-                email: user.email!,
-                companyType: 'Private Limited',
-                onboardingStatus: 'approved',
-                createdBy: user.email!,
-              },
-            });
+            return '/auth/signin?error=GoogleNoAccount';
+          }
 
-            await prisma.user.create({
-              data: {
-                email: user.email!,
-                name: user.name || user.email!,
-                googleId: user.id,
-                image: user.image,
-                role: 'owner',
-                companyId: company.id,
-              },
-            });
-          } else if (!existingUser.googleId) {
-            // Existing user (email/password) linking Google for the first time
-            const updateData: Record<string, string> = { googleId: user.id };
-            if (!existingUser.companyId) {
-              const company = await prisma.company.create({
-                data: {
-                  name: `${existingUser.name || existingUser.email}'s Company`,
-                  email: existingUser.email!,
-                  companyType: 'Private Limited',
-                  onboardingStatus: 'approved',
-                  createdBy: existingUser.email!,
-                },
-              });
-              updateData.companyId = company.id;
-              updateData.role = 'owner';
-            }
+          // Password-less rows were auto-created by the legacy Google flow,
+          // never properly registered — they count as unregistered here.
+          if (!existingUser.password) {
+            return '/auth/signin?error=GoogleNoAccount';
+          }
+
+          // Link the Google identity to the registered account on first use.
+          if (!existingUser.googleId) {
             await prisma.user.update({
               where: { id: existingUser.id },
-              data: updateData,
+              data: { googleId: user.id, image: existingUser.image || user.image },
             });
           }
-          // If existingUser already has googleId — just allow login
+
+          let companyId = existingUser.companyId;
+          if (!companyId) {
+            // Registered user without a company yet — create a PENDING one.
+            // It becomes usable only after admin approval, like registrations.
+            const company = await prisma.company.create({
+              data: {
+                name: `${existingUser.name || existingUser.email}'s Company`,
+                email: existingUser.email!,
+                companyType: 'Private Limited',
+                onboardingStatus: 'pending',
+                createdBy: existingUser.email!,
+              },
+            });
+            companyId = company.id;
+            await prisma.user.update({
+              where: { id: existingUser.id },
+              data: { companyId: company.id, role: existingUser.role ?? 'owner' },
+            });
+          }
+
+          // Approval gate — platform admins always pass; everyone else needs
+          // an approved company (pending / rejected / suspended are blocked).
+          if (!isAdmin(existingUser.email)) {
+            const company = await prisma.company.findUnique({
+              where: { id: companyId },
+              select: { onboardingStatus: true },
+            });
+            if (company && company.onboardingStatus !== 'approved') {
+              return company.onboardingStatus === 'rejected'
+                ? '/auth/signin?error=GoogleRejected'
+                : '/auth/signin?error=GooglePendingApproval';
+            }
+          }
 
           return true;
         } catch (error) {
-          console.error('Google SignIn DB error:', error);
-          // Return false to show error page instead of silent broken login
-          return '/auth/signin?error=OAuthCallback';
+          console.error('SignIn error:', error);
+          return '/auth/signin?error=GoogleError';
         }
       }
       return true;

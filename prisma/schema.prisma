@@ -36,6 +36,7 @@ model Company {
   onboardingRejectionReason String?      @map("onboarding_rejection_reason")
   onboardingReviewedAt DateTime?         @map("onboarding_reviewed_at")
   onboardingReviewedBy String?           @map("onboarding_reviewed_by")
+  uploadToken        String?             @unique @map("upload_token")
   totalDocsUploaded  Int                 @default(0) @map("total_docs_uploaded")
   totalDocsApproved  Int                 @default(0) @map("total_docs_approved")
   

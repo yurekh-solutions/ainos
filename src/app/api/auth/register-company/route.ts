@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
+import crypto from 'crypto';
 
 export async function POST(req: NextRequest) {
   try {
@@ -83,6 +84,8 @@ export async function POST(req: NextRequest) {
         websiteGen: 0,
         // Subscription status
         subscriptionStatus: 'inactive',
+        // One-time token so the pre-approval document upload works without a session
+        uploadToken: crypto.randomUUID(),
       },
     });
 
@@ -114,6 +117,7 @@ export async function POST(req: NextRequest) {
           id: company.id,
           name: company.name,
           email: company.email,
+          uploadToken: company.uploadToken,
           companyType: company.companyType,
           country: company.country,
           subscriptionStatus: company.subscriptionStatus,

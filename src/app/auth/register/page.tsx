@@ -1,9 +1,8 @@
 'use client';
 
-import { signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FileText, Sparkles, ArrowRight, ArrowLeft,
+  FileText, ArrowRight, ArrowLeft,
   Check, Loader2, AlertCircle,
   Eye, EyeOff, Building2, FolderCheck, Upload,
   Phone, MapPin, Mail, Lock, User, Briefcase,
@@ -11,15 +10,6 @@ import {
 } from 'lucide-react';
 import { useState, type ChangeEvent, type ElementType } from 'react';
 import Link from 'next/link';
-
-const GoogleIcon = () => (
-  <svg viewBox="0 0 24 24" width="18" height="18">
-    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-  </svg>
-);
 
 const COMPANY_TYPES = [
   { value: 'proprietorship', label: 'Proprietorship', icon: User },
@@ -187,12 +177,28 @@ export default function RegisterPage() {
   const [gstNumber, setGstNumber] = useState('');
 
   const [documents, setDocuments] = useState<Record<string, { filename: string; fileUrl: string }>>({});
+  const [docPreviews, setDocPreviews] = useState<Record<string, string>>({});
+  const [previewDoc, setPreviewDoc] = useState<string | null>(null);
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   
   const handleFile = async (doc: string, f: File | null) => {
     if (!f) return;
-    
-    // For now, store temporarily - will upload after company is created
+
+    if (!/\.pdf$/i.test(f.name)) {
+      setToast({ msg: 'Only PDF files are allowed', type: 'error' });
+      setTimeout(() => setToast(null), 4000);
+      return;
+    }
+    if (f.size > 1024 * 1024) {
+      setToast({ msg: 'File size must be less than 1MB', type: 'error' });
+      setTimeout(() => setToast(null), 4000);
+      return;
+    }
+
+    // Store temporarily — uploaded to Cloudinary after company is created.
+    // Keep a local blob URL so the user can preview the document immediately.
+    const blobUrl = URL.createObjectURL(f);
+    setDocPreviews(p => ({ ...p, [doc]: blobUrl }));
     setDocuments(p => ({ ...p, [doc]: { filename: f.name, fileUrl: '' } }));
   };
 
@@ -239,41 +245,51 @@ export default function RegisterPage() {
       if (!res.ok) { setError(data.error || 'Registration failed'); setLoading(false); return; }
       
       const companyId = data.company.id;
-      
-      // Step 2: Upload documents
+      const uploadToken = data.uploadToken || '';
+
+      // Step 2: Upload documents (x-upload-token: pre-approval uploads have no session yet)
       const uploadedDocs: Record<string, { filename: string; fileUrl: string }> = {};
+      const failedDocs: string[] = [];
       for (const [docName, docData] of Object.entries(documents)) {
         if (docData.filename) {
           const fileInput = document.querySelector(`input[data-doc-name="${docName}"]`) as HTMLInputElement;
           const file = fileInput?.files?.[0];
-          
+
           if (file) {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('docType', docName);
             formData.append('companyId', companyId);
-            
+
             const uploadRes = await fetch('/api/upload-document', {
               method: 'POST',
+              headers: { 'x-upload-token': uploadToken },
               body: formData,
             });
-            
+
             if (uploadRes.ok) {
               const uploadData = await uploadRes.json();
               uploadedDocs[docName] = {
                 filename: docData.filename,
                 fileUrl: uploadData.fileUrl,
               };
+            } else {
+              failedDocs.push(docName);
             }
           }
         }
       }
-      
+
+      if (failedDocs.length > 0) {
+        setToast({ msg: `Failed to upload: ${failedDocs.join(', ')} — admin may ask for these again.`, type: 'error' });
+        setTimeout(() => setToast(null), 6000);
+      }
+
       // Step 3: Update company with uploaded documents
       if (Object.keys(uploadedDocs).length > 0) {
         await fetch('/api/company', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-upload-token': uploadToken },
           body: JSON.stringify({ uploadedDocs }),
         });
       }
@@ -468,22 +484,6 @@ export default function RegisterPage() {
                           </div>
 
                           <div className="space-y-4">
-                            {/* Google */}
-                            <motion.button
-                              whileTap={{ scale: 0.995 }}
-                              onClick={() => signIn('google', { callbackUrl: '/' })}
-                              disabled={loading}
-                              className="w-full h-11 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors flex items-center justify-center gap-3 text-sm font-semibold text-gray-700 border border-gray-200 disabled:opacity-60"
-                            >
-                              {loading ? <Loader2 className="w-[18px] h-[18px] animate-spin" style={{ color: '#4c1d95' }} /> : <><GoogleIcon /> Continue with Google</>}
-                            </motion.button>
-
-                            <div className="flex items-center gap-3">
-                              <div className="flex-1 h-px bg-gray-200" />
-                              <span className="text-[10px] tracking-[0.2em] text-gray-400 font-medium">OR</span>
-                              <div className="flex-1 h-px bg-gray-200" />
-                            </div>
-
                             <Field icon={User} label="Full Name" value={name} onChange={e => setName(e.target.value)} placeholder="John Doe" />
                             <Field icon={Mail} label="Email Address" type="email" value={userEmail} onChange={e => setUserEmail(e.target.value)} placeholder="john@company.com" />
                             <Field icon={Phone} label="Phone Number" type="tel" value={userPhone} onChange={e => setUserPhone(e.target.value)} placeholder="+91 98765 43210" />
@@ -561,7 +561,7 @@ export default function RegisterPage() {
                                   const Icon = ct.icon;
                                   const selected = companyType === ct.value;
                                   return (
-                                    <button key={ct.value} type="button" onClick={() => { setCompanyType(ct.value); setDocuments({}); }}
+                                    <button key={ct.value} type="button" onClick={() => { setCompanyType(ct.value); setDocuments({}); setDocPreviews({}); setPreviewDoc(null); }}
                                       className={`h-auto py-2.5 px-2 rounded-xl border text-[12px] font-medium transition-all text-center flex flex-col items-center gap-1 ${selected ? 'text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300'}`}
                                       style={selected ? { background: '#4c1d95', borderColor: '#4c1d95' } : {}}
                                     >
@@ -649,15 +649,34 @@ export default function RegisterPage() {
                                         </div>
                                       </div>
                                       <label className="flex-shrink-0 ml-2 cursor-pointer">
-                                        <input type="file" className="hidden" data-doc-name={d.name} onChange={e => handleFile(d.name, e.target.files?.[0] || null)} accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" />
+                                        <input type="file" className="hidden" data-doc-name={d.name} onChange={e => handleFile(d.name, e.target.files?.[0] || null)} accept=".pdf" />
                                         <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${uploaded ? 'bg-green-50 text-green-700 border border-green-200' : 'text-white border'}`}
                                           style={uploaded ? {} : { background: '#4c1d95', borderColor: '#4c1d95' }}>
                                           {uploaded ? <><Check className="w-3.5 h-3.5" /><span className="hidden sm:inline max-w-[80px] truncate">{documents[d.name]?.filename}</span><span className="sm:hidden">Done</span></> : <><Upload className="w-3.5 h-3.5" />Upload</>}
                                         </div>
                                       </label>
+                                      {uploaded && docPreviews[d.name] && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setPreviewDoc(previewDoc === d.name ? null : d.name)}
+                                          className={`flex-shrink-0 ml-1.5 w-8 h-8 rounded-lg border flex items-center justify-center transition-colors ${previewDoc === d.name ? 'bg-purple-50 border-purple-200 text-purple-700' : 'border-gray-200 text-gray-400 hover:text-purple-600 hover:border-purple-200'}`}
+                                          title="Preview document"
+                                        >
+                                          <Eye className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
                                     </div>
                                   );
                                 })}
+                              </div>
+                            )}
+                            {previewDoc && docPreviews[previewDoc] && (
+                              <div className="rounded-xl border border-purple-200 overflow-hidden bg-white">
+                                <div className="flex items-center justify-between px-3 py-2 border-b border-purple-100 bg-purple-50/60">
+                                  <p className="text-[11px] font-semibold text-purple-900 truncate">{previewDoc}</p>
+                                  <button type="button" onClick={() => setPreviewDoc(null)} className="text-[11px] font-medium text-purple-600 hover:text-purple-800 flex-shrink-0 ml-2">Close</button>
+                                </div>
+                                <iframe src={docPreviews[previewDoc]} title={`Preview ${previewDoc}`} className="w-full h-56 bg-white" />
                               </div>
                             )}
                             {docs.length === 0 && (
@@ -696,7 +715,7 @@ export default function RegisterPage() {
                                 style={{ background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%)' }}>
                                 {loading
                                   ? <><Loader2 className="w-4 h-4 animate-spin" /> Registering...</>
-                                  : <><Sparkles className="w-4 h-4" /> Create Company <ArrowRight className="w-4 h-4" /></>
+                                  : <><Building2 className="w-4 h-4" /> Create Company <ArrowRight className="w-4 h-4" /></>
                                 }
                               </button>
                             </div>
