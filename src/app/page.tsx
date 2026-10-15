@@ -305,7 +305,7 @@ export default function AinosLandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.6 }}
-              className="text-center md:text-left text-neutral-900 text-4xl md:text-5xl lg:text-[52px] leading-[1.15] font-bold max-w-[610px] mt-5 tracking-tight"
+              className="text-center md:text-left text-neutral-900 text-3xl sm:text-4xl md:text-5xl lg:text-[52px] leading-[1.2] font-bold max-w-[610px] mt-5 tracking-tight text-balance"
             >
               One platform to run your{' '}
               <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">entire business</span>
@@ -722,7 +722,7 @@ export default function AinosLandingPage() {
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-purple-100 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700 mb-4 shadow-sm">
               <Layers className="w-3.5 h-3.5" /> Modules
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-3">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-3 text-balance">
               One suite. Every department.
             </h2>
             <p className="text-base sm:text-lg text-gray-600">
@@ -787,7 +787,7 @@ export default function AinosLandingPage() {
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700 mb-4">
                 <TrendingUp className="w-3.5 h-3.5" /> Why AINOS
               </span>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-3">
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-3 text-balance">
                 Built around the way your business actually works
               </h2>
               <p className="text-base sm:text-lg text-gray-600">
@@ -846,7 +846,7 @@ export default function AinosLandingPage() {
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-purple-100 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700 mb-5 shadow-sm">
                 <Building2 className="w-3.5 h-3.5" /> About AINOS
               </span>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-gray-900 mb-4">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-gray-900 mb-4 text-balance">
                 Start simple.<br className="hidden sm:block" /> Scale when you&rsquo;re ready
               </h2>
               <p className="text-base sm:text-lg text-gray-600">
@@ -1157,7 +1157,7 @@ export default function AinosLandingPage() {
               <span className="inline-flex items-center gap-2 rounded-full bg-white/10 ring-1 ring-white/25 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-purple-100 mb-6">
                 <Rocket className="w-3.5 h-3.5" /> Get started today
               </span>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight text-balance">
                 Ready to transform your business?
               </h2>
               <p className="text-base sm:text-lg text-purple-100 mb-8 max-w-2xl mx-auto">
