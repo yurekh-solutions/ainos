@@ -20,7 +20,7 @@ const errorMessages: Record<string, string> = {
   OAuthCallback: 'Connection timed out. Retrying automatically...',
   OAuthSignin: 'Please try signing in again.',
   Callback: 'Authentication callback failed. Please try again.',
-  GoogleNoAccount: 'No AINOS account exists for this Google email. Please register first — after your account is created and approved, Google sign-in will work.',
+  GoogleNoAccount: 'This Google account is not linked to an AINOS profile. Please complete registration first — Google sign-in becomes available once your account is verified and approved.',
   GooglePendingApproval: 'Your account is pending admin approval. Please wait for verification.',
   GoogleRejected: 'Your application was rejected by the admin team. Reprocess your application to continue.',
   GoogleError: 'Google sign-in failed. Please try again in a moment.',
@@ -161,7 +161,7 @@ export default function SignInPage() {
   const displayError = error || derivedError;
 
   return (
-    <div className="min-h-screen bg-[#f8f7fc]">
+    <div className="min-h-screen bg-[#f8f7fc] overflow-x-hidden">
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
 

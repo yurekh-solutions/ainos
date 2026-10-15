@@ -173,6 +173,22 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Enforce tenant isolation: only allow fetching documents for the
+    // company the session user belongs to (admins may view any company).
+    const dbUser = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    if (dbUser?.companyId !== companyId) {
+      const { isAdmin } = await import('@/lib/admin');
+      if (!isAdmin(session.user.email)) {
+        return NextResponse.json(
+          { error: 'Access denied to this company\'s documents' },
+          { status: 403 }
+        );
+      }
+    }
+
     const documents = await prisma.document.findMany({
       where: { companyId },
       orderBy: { createdAt: 'desc' },

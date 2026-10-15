@@ -303,7 +303,7 @@ export default function RegisterPage() {
   const ctLabel = COMPANY_TYPES.find(c => c.value === companyType)?.label;
 
   return (
-    <div className="min-h-screen bg-[#f8f7fc]">
+    <div className="min-h-screen bg-[#f8f7fc] overflow-x-hidden">
       {/* Toast Notification */}
       <AnimatePresence>
         {toast && (
@@ -535,9 +535,9 @@ export default function RegisterPage() {
 
                             <p className="text-center text-[11px] leading-relaxed text-gray-400 pt-1">
                               By creating an account, you agree to our{' '}
-                              <a href="#" className="hover:underline" style={{ color: '#6d28d9' }}>Terms</a>
+                              <Link href="/terms" className="hover:underline" style={{ color: '#6d28d9' }}>Terms of Service</Link>
                               {' & '}
-                              <a href="#" className="hover:underline" style={{ color: '#6d28d9' }}>Privacy Policy</a>.
+                              <Link href="/privacy" className="hover:underline" style={{ color: '#6d28d9' }}>Privacy Policy</Link>.
                             </p>
                           </div>
                         </motion.div>
@@ -688,13 +688,13 @@ export default function RegisterPage() {
 
                             <div className="p-4 rounded-xl border border-gray-200 bg-gray-50">
                               <h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3" style={{ color: '#4c1d95' }}>Summary</h4>
-                              <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-[13px]">
-                                <div><span className="text-gray-500">Name:</span> <span className="ml-1.5 font-medium text-gray-900">{name}</span></div>
-                                <div><span className="text-gray-500">Email:</span> <span className="ml-1.5 font-medium text-gray-900 truncate">{userEmail}</span></div>
-                                <div><span className="text-gray-500">Company:</span> <span className="ml-1.5 font-medium text-gray-900">{companyName}</span></div>
-                                <div><span className="text-gray-500">Type:</span> <span className="ml-1.5 font-medium text-gray-900">{ctLabel || '—'}</span></div>
-                                <div><span className="text-gray-500">Country:</span> <span className="ml-1.5 font-medium text-gray-900">{country}</span></div>
-                                <div><span className="text-gray-500">GST:</span> <span className="ml-1.5 font-medium text-gray-900 font-mono">{gstNumber || '—'}</span></div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 text-[13px]">
+                                <div className="min-w-0"><span className="text-gray-500">Name:</span> <span className="ml-1.5 font-medium text-gray-900">{name}</span></div>
+                                <div className="min-w-0"><span className="text-gray-500">Email:</span> <span className="ml-1.5 font-medium text-gray-900 break-all">{userEmail}</span></div>
+                                <div className="min-w-0"><span className="text-gray-500">Company:</span> <span className="ml-1.5 font-medium text-gray-900">{companyName}</span></div>
+                                <div className="min-w-0"><span className="text-gray-500">Type:</span> <span className="ml-1.5 font-medium text-gray-900">{ctLabel || '—'}</span></div>
+                                <div className="min-w-0"><span className="text-gray-500">Country:</span> <span className="ml-1.5 font-medium text-gray-900">{country}</span></div>
+                                <div className="min-w-0"><span className="text-gray-500">GST:</span> <span className="ml-1.5 font-medium text-gray-900 font-mono">{gstNumber || '—'}</span></div>
                               </div>
                             </div>
 
