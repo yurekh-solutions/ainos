@@ -290,7 +290,7 @@ export default function AinosLandingPage() {
         <div className="absolute -top-32 -right-24 w-[440px] h-[440px] rounded-full bg-purple-200/50 blur-3xl" />
         <div className="absolute top-48 -left-28 w-[360px] h-[360px] rounded-full bg-indigo-200/40 blur-3xl" />
 
-        <div className="relative w-full md:px-12 lg:px-20 xl:px-28 mx-auto flex flex-col-reverse md:flex-row items-center justify-between gap-8 py-10 md:py-14">
+        <div className="relative w-full md:px-12 lg:px-20 xl:px-28 mx-auto flex flex-col md:flex-row items-center justify-between gap-8 py-10 md:py-14">
           {/* Left */}
           <div className="flex flex-col items-center md:items-start max-w-xl w-full">
             <Link href="/auth/register" className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-full p-1 pr-4 text-sm hover:bg-purple-100 transition-colors">
@@ -388,7 +388,7 @@ export default function AinosLandingPage() {
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2, duration: 0.7 }}
-            className="relative w-full max-w-[420px] sm:max-w-[480px] lg:max-w-[520px] flex-shrink-0 mx-auto md:mx-0"
+            className="relative w-full max-w-[280px] sm:max-w-[360px] md:max-w-[420px] lg:max-w-[520px] flex-shrink-0 mx-auto md:mx-0"
           >
             <div className="relative aspect-square w-full">
               {/* Orbital rings — perfect circles, viewBox matches container */}
@@ -406,7 +406,7 @@ export default function AinosLandingPage() {
                 transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
                 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
               >
-                <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-white shadow-2xl shadow-purple-500/20 ring-1 ring-gray-100 overflow-hidden flex items-center justify-center p-4">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-44 lg:h-44 rounded-full bg-white shadow-2xl shadow-purple-500/20 ring-1 ring-gray-100 overflow-hidden flex items-center justify-center p-2 sm:p-3 md:p-4">
                   <Image src="/ainos-wordmark.png" alt="AINOS" width={220} height={80} className="w-full h-auto object-contain" priority />
                 </div>
               </motion.div>
@@ -1068,7 +1068,7 @@ export default function AinosLandingPage() {
       </section>
 
       {/* ─ FAQ ─────────────────────────────────────────────────── */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50/60">
+      <section className="py-12 px-4 sm:px-6 lg:px-8 bg-gray-50/60">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-14">
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-purple-100 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700 mb-4 shadow-sm">
@@ -1140,7 +1140,7 @@ export default function AinosLandingPage() {
       </section>
 
       {/* ─── CTA SECTION ─────────────────────────────────────────── */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
+      <section className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -1155,7 +1155,7 @@ export default function AinosLandingPage() {
 
             <div className="relative text-center">
               <span className="inline-flex items-center gap-2 rounded-full bg-white/10 ring-1 ring-white/25 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-purple-100 mb-6">
-                <Zap className="w-3.5 h-3.5" /> Get started today
+                <Rocket className="w-3.5 h-3.5" /> Get started today
               </span>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight">
                 Ready to transform your business?
