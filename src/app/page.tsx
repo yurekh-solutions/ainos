@@ -388,7 +388,7 @@ export default function AinosLandingPage() {
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2, duration: 0.7 }}
-            className="relative w-full max-w-[280px] sm:max-w-[360px] md:max-w-[420px] lg:max-w-[520px] flex-shrink-0 mx-auto md:mx-0"
+            className="relative w-full max-w-[420px] sm:max-w-[480px] lg:max-w-[520px] flex-shrink-0 mx-auto md:mx-0"
           >
             <div className="relative aspect-square w-full">
               {/* Orbital rings — perfect circles, viewBox matches container */}
@@ -406,7 +406,7 @@ export default function AinosLandingPage() {
                 transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
                 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
               >
-                <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-44 lg:h-44 rounded-full bg-white shadow-2xl shadow-purple-500/20 ring-1 ring-gray-100 overflow-hidden flex items-center justify-center p-2 sm:p-3 md:p-4">
+                <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-white shadow-2xl shadow-purple-500/20 ring-1 ring-gray-100 overflow-hidden flex items-center justify-center p-4">
                   <Image src="/ainos-wordmark.png" alt="AINOS" width={220} height={80} className="w-full h-auto object-contain" priority />
                 </div>
               </motion.div>
