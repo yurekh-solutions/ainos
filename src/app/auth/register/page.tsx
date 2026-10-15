@@ -26,6 +26,43 @@ const COUNTRIES = [
   'South Africa', 'Nigeria', 'Indonesia', 'Mexico', 'Other'
 ];
 
+// ─── GST Auto-Detection ─────────────────────────────────────────────────
+// GST format (15 chars): [0-1] State code | [2-11] PAN | [12] Entity |
+// [13] 'Z' | [14] Check digit
+// PAN[3] (GST index 5) indicates the legal entity type.
+const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+
+const GST_STATE_CODES: Record<string, string> = {
+  '01': 'Jammu & Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab',
+  '04': 'Chandigarh', '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi',
+  '08': 'Rajasthan', '09': 'Uttar Pradesh', '10': 'Bihar', '11': 'Sikkim',
+  '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram',
+  '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal',
+  '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh',
+  '24': 'Gujarat', '26': 'DNH & Daman Diu', '27': 'Maharashtra',
+  '28': 'Andhra Pradesh', '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep',
+  '32': 'Kerala', '33': 'Tamil Nadu', '34': 'Puducherry',
+  '35': 'Andaman & Nicobar', '36': 'Telangana', '37': 'Andhra Pradesh', '38': 'Ladakh',
+};
+
+const PAN_ENTITY_MAP: Record<string, string> = {
+  P: 'proprietorship', H: 'proprietorship',
+  C: 'pvt_ltd',
+  F: 'llp',
+  A: 'partnership', T: 'partnership', B: 'partnership',
+  L: 'public_ltd', J: 'public_ltd', G: 'public_ltd',
+};
+
+function parseGst(gst: string): { stateName: string; entityType: string; entityLabel: string } | null {
+  const cleaned = gst.trim().toUpperCase();
+  if (!GST_REGEX.test(cleaned)) return null;
+  const stateName = GST_STATE_CODES[cleaned.slice(0, 2)];
+  const entityType = PAN_ENTITY_MAP[cleaned.charAt(5)];
+  if (!stateName || !entityType) return null;
+  const entityLabel = COMPANY_TYPES.find(c => c.value === entityType)?.label || entityType;
+  return { stateName, entityType, entityLabel };
+}
+
 const DOCUMENT_REQUIREMENTS: Record<string, { name: string; optional?: boolean }[]> = {
   proprietorship: [
     { name: 'PAN Card' },
@@ -175,6 +212,27 @@ export default function RegisterPage() {
   const [companyAddress, setCompanyAddress] = useState('');
   const [country, setCountry] = useState('India');
   const [gstNumber, setGstNumber] = useState('');
+  const [gstInfo, setGstInfo] = useState<{ stateName: string; entityType: string; entityLabel: string } | null>(null);
+
+  const handleGstChange = (val: string) => {
+    const cleaned = val.toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 15);
+    setGstNumber(cleaned);
+    if (cleaned.length === 15) {
+      const parsed = parseGst(cleaned);
+      if (parsed) {
+        setGstInfo(parsed);
+        setCountry('India');
+        if (parsed.entityType !== companyType) {
+          setCompanyType(parsed.entityType);
+          setDocuments({});
+          setDocPreviews({});
+          setPreviewDoc(null);
+        }
+        return;
+      }
+    }
+    setGstInfo(null);
+  };
 
   const [documents, setDocuments] = useState<Record<string, { filename: string; fileUrl: string }>>({});
   const [docPreviews, setDocPreviews] = useState<Record<string, string>>({});
@@ -554,25 +612,6 @@ export default function RegisterPage() {
                           <div className="space-y-4">
                             <Field icon={Briefcase} label="Company Name" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Acme Industries Pvt Ltd" />
 
-                            <div>
-                              <label className="block text-xs font-semibold text-gray-700 mb-2">Company Type</label>
-                              <div className="grid grid-cols-3 gap-2">
-                                {COMPANY_TYPES.map(ct => {
-                                  const Icon = ct.icon;
-                                  const selected = companyType === ct.value;
-                                  return (
-                                    <button key={ct.value} type="button" onClick={() => { setCompanyType(ct.value); setDocuments({}); setDocPreviews({}); setPreviewDoc(null); }}
-                                      className={`h-auto py-2.5 px-2 rounded-xl border text-[12px] font-medium transition-all text-center flex flex-col items-center gap-1 ${selected ? 'text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300'}`}
-                                      style={selected ? { background: '#4c1d95', borderColor: '#4c1d95' } : {}}
-                                    >
-                                      <Icon className="w-4 h-4" />
-                                      {ct.label}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-
                             <div className="grid grid-cols-2 gap-3">
                               <Field icon={Mail} label="Company Email" value={companyEmail} onChange={e => setCompanyEmail(e.target.value)} placeholder="info@acme.com" />
                               <Field icon={Phone} label="Company Phone" value={companyPhone} onChange={e => setCompanyPhone(e.target.value)} placeholder="+91 11 2345 6789" />
@@ -598,9 +637,44 @@ export default function RegisterPage() {
                                 </select>
                               </div>
                               <div>
-                                <label className="block text-xs font-semibold text-gray-700 mb-1.5">GST Number <span className="text-gray-400 font-normal">(optional)</span></label>
-                                <input type="text" value={gstNumber} onChange={e => setGstNumber(e.target.value.toUpperCase())} placeholder="22AAAAA0000A1Z5" maxLength={15}
+                                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                                  GST Number <span className="text-gray-400 font-normal">(optional)</span>
+                                </label>
+                                <input type="text" value={gstNumber} onChange={e => handleGstChange(e.target.value)} placeholder="22AAAAA0000A1Z5" maxLength={15}
                                   className={`${inputBase} px-3 font-mono`} />
+                              </div>
+                            </div>
+
+                            {gstInfo && (
+                              <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                                className="flex items-center gap-2 p-3 rounded-xl bg-green-50 border border-green-200">
+                                <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                <p className="text-[13px] text-green-700">
+                                  <span className="font-semibold">GST verified.</span>{' '}
+                                  Type: <span className="font-semibold">{gstInfo.entityLabel}</span> · State: <span className="font-semibold">{gstInfo.stateName}</span>
+                                </p>
+                              </motion.div>
+                            )}
+
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-700 mb-2">
+                                Company Type
+                                {gstInfo && <span className="ml-2 text-[10px] font-medium text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">Auto-detected from GST</span>}
+                              </label>
+                              <div className="grid grid-cols-3 gap-2">
+                                {COMPANY_TYPES.map(ct => {
+                                  const Icon = ct.icon;
+                                  const selected = companyType === ct.value;
+                                  return (
+                                    <button key={ct.value} type="button" onClick={() => { setCompanyType(ct.value); setDocuments({}); setDocPreviews({}); setPreviewDoc(null); }}
+                                      className={`h-auto py-2.5 px-2 rounded-xl border text-[12px] font-medium transition-all text-center flex flex-col items-center gap-1 ${selected ? 'text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300'}`}
+                                      style={selected ? { background: '#4c1d95', borderColor: '#4c1d95' } : {}}
+                                    >
+                                      <Icon className="w-4 h-4" />
+                                      {ct.label}
+                                    </button>
+                                  );
+                                })}
                               </div>
                             </div>
 
