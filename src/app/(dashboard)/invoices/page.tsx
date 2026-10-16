@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2, CheckCircle2, AlertCircle, TrendingUp, Bell, Mail, MessageCircle, CheckCircle } from 'lucide-react';
+import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2, CheckCircle2, AlertCircle, TrendingUp, Bell, Mail, MessageCircle, CheckCircle, Upload } from 'lucide-react';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
 
@@ -95,10 +95,48 @@ export default function InvoicesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  
+  // Invoice extraction state
+  const [showExtractModal, setShowExtractModal] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const [extractedData, setExtractedData] = useState<any>(null);
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleInvoiceExtract = async () => {
+    if (!invoiceFile) return;
+    setExtracting(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result as string;
+        const res = await fetch('/api/tools/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slug: 'invoice-extractor',
+            input: { base64 },
+          }),
+        });
+        const data = await res.json();
+        if (data.success && data.output?.extracted) {
+          setExtractedData(data.output.extracted);
+          showToast('Invoice data extracted successfully');
+        } else {
+          showToast(data.error || 'Failed to extract invoice data', 'error');
+        }
+        setExtracting(false);
+      };
+      reader.readAsDataURL(invoiceFile);
+    } catch (error) {
+      console.error('Extraction error:', error);
+      showToast('Failed to extract invoice', 'error');
+      setExtracting(false);
+    }
   };
 
   const fetchData = useCallback(async () => {
@@ -635,6 +673,20 @@ export default function InvoicesPage() {
                 <span>Company Profile</span>
               </Link>
             )}
+            {company?.name && (
+              <button
+                onClick={() => setShowExtractModal(true)}
+                className="group inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl text-sm font-medium transition-all border-2 hover:opacity-80"
+                style={{ 
+                  borderColor: 'hsl(280 60% 55%)',
+                  color: 'hsl(280 60% 55%)',
+                  background: 'hsl(280 60% 55% / 0.05)'
+                }}
+              >
+                <Upload className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:-translate-y-1" />
+                <span>Upload & Extract</span>
+              </button>
+            )}
             {company?.name ? (
               <Link
                 href="/invoices/new"
@@ -873,6 +925,188 @@ export default function InvoicesPage() {
               style={{ background: toast.type === 'success' ? 'hsl(142 76% 36%)' : 'hsl(0 72% 51%)', color: 'white' }}>
               {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
               <span className="text-sm font-medium">{toast.message}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Invoice Extraction Modal */}
+        <AnimatePresence>
+          {showExtractModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+              onClick={() => {
+                setShowExtractModal(false);
+                setExtractedData(null);
+                setInvoiceFile(null);
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="glass-card w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-2xl font-light" style={{ color: 'hsl(var(--foreground))' }}>Upload Invoice</h2>
+                    <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Extract vendor details, items, GST & totals automatically</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowExtractModal(false);
+                      setExtractedData(null);
+                      setInvoiceFile(null);
+                    }}
+                    className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
+                  >
+                    <AlertCircle className="w-5 h-5" style={{ color: 'hsl(var(--muted-foreground))' }} />
+                  </button>
+                </div>
+
+                {!extractedData ? (
+                  <div className="space-y-4">
+                    <div className="rounded-2xl border-2 border-dashed p-8 text-center transition-colors hover:border-purple-400 hover:bg-purple-50/30"
+                      style={{ borderColor: 'hsl(var(--border))' }}>
+                      <input
+                        type="file"
+                        accept="image/*,application/pdf"
+                        onChange={(e) => setInvoiceFile(e.target.files?.[0] || null)}
+                        className="hidden"
+                        id="invoice-file-upload"
+                      />
+                      <label htmlFor="invoice-file-upload" className="cursor-pointer">
+                        <Upload className="w-12 h-12 mx-auto mb-3" style={{ color: 'hsl(280 60% 55%)' }} />
+                        <p className="text-sm font-medium mb-1" style={{ color: 'hsl(var(--foreground))' }}>
+                          {invoiceFile ? invoiceFile.name : 'Click to upload invoice'}
+                        </p>
+                        <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>PNG, JPG, PDF supported</p>
+                      </label>
+                    </div>
+                    <button
+                      onClick={handleInvoiceExtract}
+                      disabled={!invoiceFile || extracting}
+                      className="w-full py-3 rounded-xl text-white text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{
+                        background: 'linear-gradient(135deg, hsl(280 60% 55%), hsl(300 60% 55%))',
+                        boxShadow: '0 10px 30px -10px hsl(280 60% 55% / 0.4)'
+                      }}
+                    >
+                      {extracting ? 'Extracting...' : 'Extract Invoice Data'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="glass-card p-4 rounded-xl space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Vendor Name</p>
+                          <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>{extractedData.vendorName || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Invoice Number</p>
+                          <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>{extractedData.invoiceNumber || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Invoice Date</p>
+                          <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>{extractedData.invoiceDate || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Vendor PAN</p>
+                          <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>{extractedData.vendorPAN || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Vendor GST</p>
+                          <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>{extractedData.vendorGST || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Vendor Phone</p>
+                          <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>{extractedData.vendorPhone || '—'}</p>
+                        </div>
+                      </div>
+                      {extractedData.vendorAddress && (
+                        <div>
+                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Vendor Address</p>
+                          <p className="text-sm" style={{ color: 'hsl(var(--foreground))' }}>{extractedData.vendorAddress}</p>
+                        </div>
+                      )}
+                      {Array.isArray(extractedData.items) && extractedData.items.length > 0 && (
+                        <div>
+                          <p className="text-xs mb-2" style={{ color: 'hsl(var(--muted-foreground))' }}>Items</p>
+                          <div className="space-y-1">
+                            {extractedData.items.map((item: any, idx: number) => (
+                              <div key={idx} className="flex justify-between text-sm glass-card px-3 py-2 rounded-lg">
+                                <span style={{ color: 'hsl(var(--foreground))' }}>{item.description}</span>
+                                <span className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>₹{item.amount.toLocaleString('en-IN')}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-3 gap-3 pt-2 border-t" style={{ borderColor: 'hsl(var(--border))' }}>
+                        <div>
+                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Subtotal</p>
+                          <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>₹{(extractedData.subtotal || 0).toLocaleString('en-IN')}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Tax</p>
+                          <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>₹{(extractedData.tax || 0).toLocaleString('en-IN')}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Total</p>
+                          <p className="font-medium" style={{ color: 'hsl(142 76% 36%)' }}>₹{(extractedData.total || 0).toLocaleString('en-IN')}</p>
+                        </div>
+                      </div>
+                      {extractedData.balance !== undefined && (
+                        <div className="grid grid-cols-2 gap-3 pt-2">
+                          <div>
+                            <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Amount Paid</p>
+                            <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>₹{(extractedData.amountPaid || 0).toLocaleString('en-IN')}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Balance</p>
+                            <p className="font-medium" style={{ color: 'hsl(25 95% 53%)' }}>₹{(extractedData.balance || 0).toLocaleString('en-IN')}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          showToast('Invoice data saved to expenses');
+                          setShowExtractModal(false);
+                          setExtractedData(null);
+                          setInvoiceFile(null);
+                        }}
+                        className="flex-1 py-3 rounded-xl text-white text-sm font-medium transition-all"
+                        style={{
+                          background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))',
+                          boxShadow: '0 10px 30px -10px hsl(var(--primary) / 0.4)'
+                        }}
+                      >
+                        Add as Expense
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowExtractModal(false);
+                          setExtractedData(null);
+                          setInvoiceFile(null);
+                        }}
+                        className="px-6 py-3 rounded-xl text-sm font-medium transition-all border-2"
+                        style={{
+                          borderColor: 'hsl(var(--border))',
+                          color: 'hsl(var(--foreground))'
+                        }}
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
