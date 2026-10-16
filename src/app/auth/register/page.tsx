@@ -767,7 +767,7 @@ export default function RegisterPage() {
                             )}
 
                             {/* Company Name - Auto-filled from GST */}
-                            <Field icon={Briefcase} label="Company Name" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Auto-filled from GST" />
+                            <Field icon={Briefcase} label="Company Name" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Yurekh Solutions Private Limited" />
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <Field icon={Mail} label="Company Email" value={companyEmail} onChange={e => setCompanyEmail(e.target.value)} placeholder="info@acme.com" />
