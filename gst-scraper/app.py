@@ -80,5 +80,7 @@ def getGSTDetails():
 
 
 if __name__ == "__main__":
+    import os
     import uvicorn
-    uvicorn.run(asgi_app, host='0.0.0.0', port=5001)
+    port = int(os.environ.get('PORT', 5001))
+    uvicorn.run(asgi_app, host='0.0.0.0', port=port)
