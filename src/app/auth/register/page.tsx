@@ -360,6 +360,10 @@ export default function RegisterPage() {
       if (!companyName || !companyType || !companyEmail || !companyPhone || !companyAddress) { setError('All required fields must be filled'); return; }
     }
     setStep(s => Math.min(s + 1, 3));
+    // Scroll to top on mobile when step changes
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const submit = async () => {
@@ -457,15 +461,15 @@ export default function RegisterPage() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-[90vw]"
+            className="fixed top-4 left-4 right-4 z-50 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:max-w-md"
           >
-            <div className={`flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-lg border ${
+            <div className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border ${
               toast.type === 'error'
                 ? 'bg-red-50 border-red-200 text-red-800'
                 : 'bg-green-50 border-green-200 text-green-800'
             }`}>
-              {toast.type === 'error' ? <AlertCircle className="w-5 h-5 flex-shrink-0" /> : <Check className="w-5 h-5 flex-shrink-0" />}
-              <p className="text-sm font-medium">{toast.msg}</p>
+              {toast.type === 'error' ? <AlertCircle className="w-4 h-4 flex-shrink-0" /> : <Check className="w-4 h-4 flex-shrink-0" />}
+              <p className="text-sm font-medium leading-snug">{toast.msg}</p>
             </div>
           </motion.div>
         )}
@@ -508,8 +512,8 @@ export default function RegisterPage() {
         )}
       </AnimatePresence>
 
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+      <div className="max-w-[1280px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 lg:py-12">
+        <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-start">
 
           {/* ===== LEFT — Branding & Info Cards (desktop only: form comes first on mobile) ===== */}
           <div className="space-y-6 hidden lg:block">
@@ -585,19 +589,19 @@ export default function RegisterPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden"
+              className="bg-white rounded-2xl sm:rounded-3xl border border-gray-100 shadow-lg overflow-hidden"
             >
               {/* Card Header */}
-              <div className="px-6 sm:px-8 pt-8 pb-6 text-center border-b border-gray-50">
-                <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%)' }}>
-                  <LogIn className="w-7 h-7 text-white" />
+              <div className="px-4 sm:px-8 pt-6 sm:pt-8 pb-4 sm:pb-6 text-center border-b border-gray-50">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl mx-auto mb-3 sm:mb-4 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%)' }}>
+                  <LogIn className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-1.5">Business Registration</h2>
-                <p className="text-sm text-gray-500">Create your account and register your company</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">Business Registration</h2>
+                <p className="text-xs sm:text-sm text-gray-500">Create your account and register your company</p>
               </div>
 
               {/* Top link */}
-              <div className="flex justify-center px-6 sm:px-8 pt-4">
+              <div className="flex justify-center px-4 sm:px-8 pt-3 sm:pt-4">
                 <span className="text-xs text-gray-500">
                   Already have an account?{' '}
                   <Link href="/auth/signin" className="font-semibold inline-flex items-center gap-1 hover:underline" style={{ color: '#6d28d9' }}>
@@ -607,7 +611,7 @@ export default function RegisterPage() {
               </div>
 
               {/* Card Body */}
-              <div className="px-6 sm:px-8 py-6">
+              <div className="px-4 sm:px-8 py-4 sm:py-6">
                 {success ? (
                   <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-12">
                     <div className="w-16 h-16 rounded-full bg-green-50 border border-green-100 flex items-center justify-center mx-auto mb-5">
@@ -692,12 +696,12 @@ export default function RegisterPage() {
                       {/* STEP 2 — Company */}
                       {step === 2 && (
                         <motion.div key="s2" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.2 }}>
-                          <div className="mb-5">
-                            <h3 className="text-lg font-bold text-gray-900">Company details</h3>
+                          <div className="mb-4">
+                            <h3 className="text-base sm:text-lg font-bold text-gray-900">Company details</h3>
                             <p className="text-xs text-gray-500 mt-0.5">Tell us about your business</p>
                           </div>
 
-                          <div className="space-y-4">
+                          <div className="space-y-3.5">
                             {/* GST Number - TOP FIELD */}
                             <div>
                               <label className="block text-xs font-semibold text-gray-700 mb-1.5">
@@ -765,7 +769,7 @@ export default function RegisterPage() {
                             {/* Company Name - Auto-filled from GST */}
                             <Field icon={Briefcase} label="Company Name" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Auto-filled from GST" />
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <Field icon={Mail} label="Company Email" value={companyEmail} onChange={e => setCompanyEmail(e.target.value)} placeholder="info@acme.com" />
                               <Field icon={Phone} label="Company Phone" value={companyPhone} onChange={e => setCompanyPhone(e.target.value)} placeholder="+91 11 2345 6789" />
                             </div>
@@ -781,7 +785,7 @@ export default function RegisterPage() {
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <div>
                                 <label className="block text-xs font-semibold text-gray-700 mb-1.5">Country</label>
                                 <select value={country} onChange={e => setCountry(e.target.value)}
@@ -819,8 +823,8 @@ export default function RegisterPage() {
                               </motion.div>
                             )}
 
-                            <div className="flex gap-3 pt-1">
-                              <button type="button" onClick={() => setStep(1)}
+                            <div className="flex gap-2.5 pt-1">
+                              <button type="button" onClick={() => { setStep(1); if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                                 className="flex-1 h-11 rounded-xl bg-white border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5">
                                 <ArrowLeft className="w-4 h-4" /> Back
                               </button>
@@ -837,12 +841,12 @@ export default function RegisterPage() {
                       {/* STEP 3 — Documents & Review */}
                       {step === 3 && (
                         <motion.div key="s3" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.2 }}>
-                          <div className="mb-5">
-                            <h3 className="text-lg font-bold text-gray-900">Documents &amp; Review</h3>
+                          <div className="mb-4">
+                            <h3 className="text-base sm:text-lg font-bold text-gray-900">Documents &amp; Review</h3>
                             <p className="text-xs text-gray-500 mt-0.5">{companyType ? `Required for ${ctLabel}` : 'Select a company type first'}</p>
                           </div>
 
-                          <div className="space-y-4">
+                          <div className="space-y-3.5">
                             {docs.length > 0 && (
                               <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
                                 {docs.map(d => {
@@ -913,8 +917,8 @@ export default function RegisterPage() {
                               </motion.div>
                             )}
 
-                            <div className="flex gap-3 pt-1">
-                              <button type="button" onClick={() => setStep(2)}
+                            <div className="flex gap-2.5 pt-1">
+                              <button type="button" onClick={() => { setStep(2); if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                                 className="flex-1 h-11 rounded-xl bg-white border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5">
                                 <ArrowLeft className="w-4 h-4" /> Back
                               </button>
@@ -949,7 +953,7 @@ export default function RegisterPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
-          className="flex items-center justify-center gap-2 mt-8"
+          className="flex items-center justify-center gap-2 mt-6 sm:mt-8"
         >
           <Globe className="w-3.5 h-3.5 text-gray-400" />
           <span className="text-xs text-gray-500">
