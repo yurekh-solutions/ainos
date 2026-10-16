@@ -8,6 +8,8 @@ interface GstCompanyData {
   registrationDate?: string;
   constitution?: string;
   natureOfBusiness?: string;
+  email?: string;
+  phone?: string;
 }
 
 // GST Number Validation & Company Details Fetcher
@@ -117,10 +119,19 @@ export async function POST(req: NextRequest) {
     const prefixes = COMPANY_PREFIXES[entityType] || COMPANY_PREFIXES['pvt_ltd'];
     const suffixes = COMPANY_SUFFIXES[entityType] || COMPANY_SUFFIXES['pvt_ltd'];
     
-    // Deterministic selection based on PAN digits
-    const prefixIdx = parseInt(pan.slice(3, 5)) % prefixes.length;
-    const suffixIdx = parseInt(pan.slice(5, 7)) % suffixes.length;
-    const industryIdx = parseInt(pan.slice(7, 9)) % INDUSTRY_WORDS.length;
+    // Helper: convert any string (with letters) to a safe number for array indexing
+    const hashIndex = (str: string, max: number): number => {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+      }
+      return Math.abs(hash) % max;
+    };
+    
+    // Deterministic selection based on PAN characters (handles letters + digits)
+    const prefixIdx = hashIndex(pan.slice(3, 5), prefixes.length);
+    const suffixIdx = hashIndex(pan.slice(5, 7), suffixes.length);
+    const industryIdx = hashIndex(pan.slice(7, 9), INDUSTRY_WORDS.length);
     
     const companyName = `${INDUSTRY_WORDS[industryIdx]} ${prefixes[prefixIdx]} ${suffixes[suffixIdx]}`;
     
@@ -144,19 +155,19 @@ export async function POST(req: NextRequest) {
     };
     
     const cityData = STATE_CITIES[stateName] || { city: 'Mumbai', areas: ['Central', 'East', 'West', 'North', 'South'], pincodes: ['400001', '400002', '400003', '400004', '400005'] };
-    const areaIdx = parseInt(pan.slice(9, 11)) % cityData.areas.length;
-    const pinIdx = parseInt(pan.slice(11, 13)) % cityData.pincodes.length;
-    const buildingNo = (parseInt(panLast4) % 999) + 1;
+    const areaIdx = hashIndex(pan.slice(9, 11), cityData.areas.length);
+    const pinIdx = hashIndex(pan.slice(11, 13), cityData.pincodes.length);
+    const buildingNo = hashIndex(panLast4, 999) + 1;
     
     const address = `${buildingNo}, ${cityData.areas[areaIdx]}, ${cityData.city}, ${stateName} - ${cityData.pincodes[pinIdx]}`;
     
     // Generate email from company name
     const emailPrefix = companyName.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8);
     const emailDomains = ['gmail.com', 'outlook.com', 'yahoo.com', 'company.com', 'business.in'];
-    const domainIdx = parseInt(pan.slice(2, 4)) % emailDomains.length;
+    const domainIdx = hashIndex(pan.slice(2, 4), emailDomains.length);
     const email = `${emailPrefix}@${emailDomains[domainIdx]}`;
     
-    // Generate phone number based on state
+    // Generate phone number - use only digits from PAN for clean output
     const STATE_PHONE_CODES: Record<string, string> = {
       'Maharashtra': '22', 'Delhi': '11', 'Karnataka': '80', 'Tamil Nadu': '44',
       'Gujarat': '79', 'Uttar Pradesh': '120', 'Telangana': '40', 'West Bengal': '33',
@@ -164,8 +175,10 @@ export async function POST(req: NextRequest) {
       'Kerala': '484', 'Bihar': '612', 'Odisha': '674',
     };
     const phoneCode = STATE_PHONE_CODES[stateName] || '22';
-    const phoneLast8 = panLast4 + pan.slice(0, 4);
-    const phone = `+91 ${phoneCode} ${phoneLast8.slice(0, 4)} ${phoneLast8.slice(4)}`;
+    // Extract only digits from PAN for phone number
+    const panDigits = pan.replace(/[^0-9]/g, '');
+    const phoneNum = (panDigits + panDigits).slice(0, 8);
+    const phone = `+91 ${phoneCode} ${phoneNum.slice(0, 4)} ${phoneNum.slice(4)}`;
     
     mockData = {
       companyName,
