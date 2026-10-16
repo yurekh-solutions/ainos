@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, Zap, Coins, Play, Loader2, CheckCircle, AlertCircle,
-  Copy, Check, Download, Plus, Trash2, FileText, Mail, Users, BarChart3, Share2, PenLine, Table2,
+  Copy, Check, Download, Plus, Trash2, FileText, Mail, Users, BarChart3, Share2, PenLine, Table2, Upload,
 } from 'lucide-react';
 
 interface Tool {
@@ -46,6 +46,24 @@ interface ToolOutput {
   recordCount?: number;
   filename?: string;
   mime?: string;
+  success?: boolean;
+  ocrText?: string;
+  extracted?: {
+    vendorName?: string;
+    vendorAddress?: string;
+    vendorPAN?: string;
+    vendorGST?: string;
+    vendorPhone?: string;
+    vendorEmail?: string;
+    invoiceNumber?: string;
+    invoiceDate?: string;
+    items?: { description: string; quantity: number; rate: number; amount: number }[];
+    subtotal?: number;
+    tax?: number;
+    total?: number;
+    amountPaid?: number;
+    balance?: number;
+  };
 }
 
 interface ToolResult {
@@ -60,6 +78,7 @@ const SLUG_ICONS: Record<string, typeof Zap> = {
   'social-media-generator': Share2,
   'lead-scoring-ai': BarChart3,
   'invoice-generator': FileText,
+  'invoice-extractor': Upload,
   'email-campaign-sender': Mail,
   'data-export': Table2,
 };
@@ -91,6 +110,9 @@ export default function ToolExecutePage() {
   // export fields
   const [dataset, setDataset] = useState('customers');
   const [format, setFormat] = useState('csv');
+  // invoice extractor fields
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+  const [invoiceBase64, setInvoiceBase64] = useState('');
 
   useEffect(() => {
     fetch(`/api/tools?slug=${slug}`)
@@ -112,6 +134,8 @@ export default function ToolExecutePage() {
             price: Number(it.price) || 0,
           })),
         };
+      case 'invoice-extractor':
+        return { base64: invoiceBase64 };
       case 'email-campaign-sender':
         return { subject, body: message };
       case 'data-export':
@@ -262,6 +286,48 @@ export default function ToolExecutePage() {
             <div className="w-full sm:w-40">
               <label className={labelCls}>GST rate %</label>
               <input type="number" min="0" max="28" value={taxRate} onChange={e => setTaxRate(e.target.value)} className={inputCls} />
+            </div>
+          </div>
+        )}
+
+        {slug === 'invoice-extractor' && (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-purple-50 border border-purple-100 px-4 py-3 text-sm text-purple-700 flex items-start gap-2">
+              <Upload className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              Upload an invoice image or PDF — we&apos;ll extract vendor details, items, GST, totals automatically using OCR + AI.
+            </div>
+            <div>
+              <label className={labelCls}>Invoice file *</label>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setInvoiceFile(file);
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      setInvoiceBase64(reader.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                  className="hidden"
+                  id="invoice-upload"
+                />
+                <label
+                  htmlFor="invoice-upload"
+                  className="flex flex-col items-center justify-center w-full h-32 px-4 transition bg-white border-2 border-gray-200 border-dashed rounded-xl cursor-pointer hover:border-purple-400 hover:bg-purple-50"
+                >
+                  <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <p className="mb-2 text-sm text-gray-500">
+                      {invoiceFile ? <span className="font-medium text-purple-600">{invoiceFile.name}</span> : 'Click to upload invoice'}
+                    </p>
+                    <p className="text-xs text-gray-400">PNG, JPG, PDF</p>
+                  </div>
+                </label>
+              </div>
             </div>
           </div>
         )}
@@ -425,6 +491,97 @@ export default function ToolExecutePage() {
                 className="mt-4 w-full py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors">
                 View in Invoices
               </button>
+            </div>
+          )}
+
+          {/* Invoice extractor */}
+          {result.success && slug === 'invoice-extractor' && out?.extracted && (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">{out.message}</p>
+              <div className="p-4 bg-gray-50 rounded-xl space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-gray-500">Vendor Name</p>
+                    <p className="font-semibold text-gray-900">{out.extracted.vendorName || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Invoice Number</p>
+                    <p className="font-semibold text-gray-900">{out.extracted.invoiceNumber || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Invoice Date</p>
+                    <p className="font-semibold text-gray-900">{out.extracted.invoiceDate || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Vendor PAN</p>
+                    <p className="font-semibold text-gray-900">{out.extracted.vendorPAN || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Vendor GST</p>
+                    <p className="font-semibold text-gray-900">{out.extracted.vendorGST || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Vendor Phone</p>
+                    <p className="font-semibold text-gray-900">{out.extracted.vendorPhone || '—'}</p>
+                  </div>
+                </div>
+                {out.extracted.vendorAddress && (
+                  <div>
+                    <p className="text-xs text-gray-500">Vendor Address</p>
+                    <p className="text-sm text-gray-700">{out.extracted.vendorAddress}</p>
+                  </div>
+                )}
+                {Array.isArray(out.extracted.items) && out.extracted.items.length > 0 && (
+                  <div>
+                    <p className="text-xs text-gray-500 mb-2">Items</p>
+                    <div className="space-y-1">
+                      {out.extracted.items.map((item, idx) => (
+                        <div key={idx} className="flex justify-between text-sm bg-white px-3 py-2 rounded-lg">
+                          <span className="text-gray-700">{item.description}</span>
+                          <span className="font-semibold text-gray-900">₹{item.amount.toLocaleString('en-IN')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="grid grid-cols-3 gap-3 pt-2 border-t border-gray-200">
+                  <div>
+                    <p className="text-xs text-gray-500">Subtotal</p>
+                    <p className="font-semibold text-gray-900">₹{(out.extracted.subtotal || 0).toLocaleString('en-IN')}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Tax</p>
+                    <p className="font-semibold text-gray-900">₹{(out.extracted.tax || 0).toLocaleString('en-IN')}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Total</p>
+                    <p className="font-semibold text-green-700">₹{(out.extracted.total || 0).toLocaleString('en-IN')}</p>
+                  </div>
+                </div>
+                {out.extracted.balance !== undefined && (
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    <div>
+                      <p className="text-xs text-gray-500">Amount Paid</p>
+                      <p className="font-semibold text-gray-900">₹{(out.extracted.amountPaid || 0).toLocaleString('en-IN')}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Balance</p>
+                      <p className="font-semibold text-orange-700">₹{(out.extracted.balance || 0).toLocaleString('en-IN')}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => router.push('/invoices')}
+                  className="flex-1 py-2.5 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 transition-colors">
+                  Add as Expense
+                </button>
+                <button onClick={() => copyText('extracted', JSON.stringify(out.extracted, null, 2))}
+                  className="px-4 py-2.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 transition-colors flex items-center gap-1.5">
+                  {copied === 'extracted' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {copied === 'extracted' ? 'Copied' : 'Copy JSON'}
+                </button>
+              </div>
             </div>
           )}
 

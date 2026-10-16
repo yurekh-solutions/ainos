@@ -319,6 +319,90 @@ const dataExport: ToolHandler = async (input, ctx) => {
   }
 }
 
+const invoiceExtractor: ToolHandler = async (input, ctx) => {
+  const fileUrl = String(input.fileUrl || '').trim()
+  const base64 = String(input.base64 || '').trim()
+
+  if (!fileUrl && !base64) {
+    throw new Error('Provide either fileUrl or base64 of the invoice image/PDF')
+  }
+
+  const ocrApiKey = process.env.OCR_SPACE_API_KEY || 'helloworld'
+  let ocrText = ''
+
+  // Step 1: OCR via OCR.space
+  try {
+    const formData = new URLSearchParams()
+    formData.append('apikey', ocrApiKey)
+    formData.append('language', 'eng')
+    formData.append('isOverlayRequired', 'false')
+    formData.append('OCREngine', '2')
+
+    if (base64) {
+      formData.append('base64Image', base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`)
+    } else {
+      formData.append('url', fileUrl)
+    }
+
+    const ocrRes = await fetch('https://api.ocr.space/parse/image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formData.toString(),
+      signal: AbortSignal.timeout(30000),
+    })
+
+    if (!ocrRes.ok) throw new Error('OCR service error (status ' + ocrRes.status + ')')
+    const ocrData = await ocrRes.json() as { ParsedResults?: { ParsedText?: string }[]; ErrorMessage?: string }
+    if (ocrData.ErrorMessage) throw new Error('OCR error: ' + ocrData.ErrorMessage)
+    ocrText = ocrData.ParsedResults?.[0]?.ParsedText || ''
+    if (!ocrText) throw new Error('No text extracted from invoice')
+  } catch (err) {
+    throw new Error('OCR failed: ' + (err instanceof Error ? err.message : String(err)))
+  }
+
+  // Step 2: Structure with AI
+  const prompt = `Extract invoice data from this OCR text as JSON. Return ONLY valid JSON, no markdown:
+{
+  "vendorName": "company name",
+  "vendorAddress": "full address",
+  "vendorPAN": "PAN number",
+  "vendorGST": "GST number",
+  "vendorPhone": "phone",
+  "vendorEmail": "email",
+  "invoiceNumber": "invoice no",
+  "invoiceDate": "DD/MM/YYYY",
+  "items": [{"description": "item", "quantity": 1, "rate": 0, "amount": 0}],
+  "subtotal": 0,
+  "tax": 0,
+  "total": 0,
+  "amountPaid": 0,
+  "balance": 0
+}
+
+OCR Text:
+${ocrText.slice(0, 3000)}`
+
+  const aiResponse = await aiText(prompt)
+
+  // Parse JSON from AI response
+  let extracted: Record<string, unknown> = {}
+  try {
+    const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      extracted = JSON.parse(jsonMatch[0])
+    }
+  } catch {
+    throw new Error('AI failed to structure invoice data')
+  }
+
+  return {
+    success: true,
+    ocrText: ocrText.slice(0, 500),
+    extracted,
+    message: 'Invoice data extracted. Review and add as expense or vendor invoice.',
+  }
+}
+
 /* ---------------- registry ---------------- */
 
 const HANDLERS: Record<string, ToolHandler> = {
@@ -326,6 +410,7 @@ const HANDLERS: Record<string, ToolHandler> = {
   'social-media-generator': socialGenerator,
   'lead-scoring-ai': leadScoring,
   'invoice-generator': invoiceGenerator,
+  'invoice-extractor': invoiceExtractor,
   'email-campaign-sender': emailCampaign,
   'data-export': dataExport,
 }

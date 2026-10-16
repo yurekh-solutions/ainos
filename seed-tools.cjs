@@ -81,6 +81,20 @@ const sampleTools = [
     `
   },
   {
+    name: 'Invoice Extractor',
+    slug: 'invoice-extractor',
+    description: 'Upload invoice images/PDFs and auto-extract vendor details, items, GST, totals using OCR + AI',
+    category: 'finance',
+    creditCost: 5,
+    isActive: true,
+    handlerCode: `
+      async function main(input) {
+        return { success: true, message: 'Invoice data extracted' };
+      }
+      return main(input);
+    `
+  },
+  {
     name: 'Social Media Post Generator',
     slug: 'social-media-generator',
     description: 'Create engaging social media posts for all platforms',
