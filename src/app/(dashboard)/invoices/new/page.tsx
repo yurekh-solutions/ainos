@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Plus, Trash2, Save, FileText, Percent, Building2, Package, ChevronDown, IndianRupee, Truck, CreditCard } from 'lucide-react';
 import Link from 'next/link';
@@ -67,6 +67,11 @@ export default function NewInvoicePage() {
   const [company, setCompany] = useState<Company | null>(null);
   const [template, setTemplate] = useState<InvoiceTemplate | null>(null);
   const [dynamicFieldValues, setDynamicFieldValues] = useState<Record<string, string>>({});
+  // Digital Signature
+  const [signatureType, setSignatureType] = useState<'upload' | 'draw' | 'none'>('none');
+  const [signatureImage, setSignatureImage] = useState('');
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
   // Customer
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
@@ -218,6 +223,9 @@ export default function NewInvoicePage() {
           dueDate: dueDate || undefined,
           status: 'draft',
           customFields: dynamicFieldValues, // Dynamic fields from template
+          signatureImage: signatureImage || null,
+          signatureType: signatureType || null,
+          signatureDate: signatureType !== 'none' ? new Date().toISOString() : null,
         }),
       });
 
@@ -227,6 +235,60 @@ export default function NewInvoicePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Canvas drawing functions
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    setIsDrawing(true);
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#000';
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setSignatureImage('');
+  };
+
+  const saveSignature = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL('image/png');
+    setSignatureImage(dataUrl);
   };
 
   const inputStyle = {
@@ -596,6 +658,108 @@ export default function NewInvoicePage() {
                   </span>
                 </div>
               </div>
+            </div>
+          </motion.div>
+
+          {/* Digital Signature */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="glass-card p-6">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--foreground))' }}>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.1)' }}>
+                <FileText className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
+              </div>
+              Digital Signature
+            </h2>
+            <div className="space-y-4">
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setSignatureType('upload')}
+                  className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${signatureType === 'upload' ? 'ring-2 ring-[hsl(var(--primary))]' : ''}`}
+                  style={{ background: signatureType === 'upload' ? 'hsl(var(--primary) / 0.1)' : 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}
+                >
+                  Upload Signature
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSignatureType('draw')}
+                  className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${signatureType === 'draw' ? 'ring-2 ring-[hsl(var(--primary))]' : ''}`}
+                  style={{ background: signatureType === 'draw' ? 'hsl(var(--primary) / 0.1)' : 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}
+                >
+                  Draw Signature
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setSignatureType('none'); setSignatureImage(''); }}
+                  className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${signatureType === 'none' ? 'ring-2 ring-[hsl(var(--primary))]' : ''}`}
+                  style={{ background: signatureType === 'none' ? 'hsl(var(--primary) / 0.1)' : 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}
+                >
+                  No Signature
+                </button>
+              </div>
+
+              {signatureType === 'upload' && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Upload Signature Image</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setSignatureImage(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
+                    style={inputStyle}
+                  />
+                  {signatureImage && (
+                    <div className="mt-2 p-3 rounded-lg border" style={{ borderColor: 'hsl(var(--border))' }}>
+                      <p className="text-xs mb-2" style={{ color: 'hsl(var(--muted-foreground))' }}>Preview:</p>
+                      <img src={signatureImage} alt="Signature" className="max-h-20" />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {signatureType === 'draw' && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Draw Your Signature</label>
+                  <div className="border-2 border-dashed rounded-xl p-4" style={{ borderColor: 'hsl(var(--border))' }}>
+                    <canvas
+                      ref={canvasRef}
+                      width={600}
+                      height={150}
+                      className="w-full bg-white rounded-lg cursor-crosshair"
+                      onMouseDown={startDrawing}
+                      onMouseMove={draw}
+                      onMouseUp={stopDrawing}
+                      onMouseLeave={stopDrawing}
+                    />
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        type="button"
+                        onClick={clearCanvas}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium"
+                        style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}
+                      >
+                        Clear
+                      </button>
+                      <button
+                        type="button"
+                        onClick={saveSignature}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-white"
+                        style={{ background: 'hsl(var(--primary))' }}
+                      >
+                        Save Signature
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
 

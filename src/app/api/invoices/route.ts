@@ -210,6 +210,12 @@ export async function POST(req: NextRequest) {
         payments,
         paidAmount,
         placeOfSupply: body.placeOfSupply || null,
+        // Digital Signature
+        signatureImage: body.signatureImage || null,
+        signatureType: body.signatureType || null,
+        signatureDate: body.signatureDate ? new Date(body.signatureDate) : null,
+        // Custom dynamic fields
+        customFields: body.customFields || null,
         // Status
         status: body.status || 'draft',
         notes: body.notes || null,

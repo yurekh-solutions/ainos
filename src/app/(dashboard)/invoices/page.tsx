@@ -631,7 +631,27 @@ export default function InvoicesPage() {
       doc.text('Seller', W - M - 30, sigY + 4);
     }
 
-    // ── FOOTER ──
+    // ── DIGITAL SIGNATURE (if present) ──
+    if (invoice.signatureImage && invoice.signatureType !== 'none') {
+      try {
+        // Add signature image on the right side
+        const sigImgX = W - M - 60;
+        const sigImgY = sigY - 25;
+        doc.addImage(invoice.signatureImage, 'PNG', sigImgX, sigImgY, 50, 20);
+        
+        // Add signature date below
+        if (invoice.signatureDate) {
+          doc.setFontSize(6);
+          doc.setTextColor(100, 100, 100);
+          doc.text(`Signed: ${new Date(invoice.signatureDate).toLocaleDateString('en-IN')}`, sigImgX, sigImgY + 23);
+        }
+      } catch (err) {
+        // Signature image failed to load, ignore
+        console.log('Signature image error:', err);
+      }
+    }
+
+    // ── FOOTER ───
     doc.setDrawColor(accentColor.r, accentColor.g, accentColor.b);
     doc.setLineWidth(0.8);
     doc.line(0, H - 10, W, H - 10);

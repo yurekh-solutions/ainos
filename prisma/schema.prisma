@@ -316,6 +316,12 @@ model Invoice {
   placeOfSupply     String?   @map("place_of_supply")
   customerState     String?   @map("customer_state")
   customerPan       String?   @map("customer_pan")
+  // Digital Signature fields
+  signatureImage    String?   @map("signature_image") // base64 or URL
+  signatureType     String?   @map("signature_type") // upload | draw | none
+  signatureDate     DateTime? @map("signature_date")
+  // Custom dynamic fields from template
+  customFields      Json?     @map("custom_fields") // {poNumber: "PO-123", validityDate: "2026-12-31", ...}
   company           Company?  @relation(fields: [companyId], references: [id])
 
   @@index([companyId])
