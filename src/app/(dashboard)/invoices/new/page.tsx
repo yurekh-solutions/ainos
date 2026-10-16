@@ -54,6 +54,7 @@ interface FormField {
 interface InvoiceTemplate {
   id: string;
   name: string;
+  isDefault?: boolean;
   formFields?: FormField[];
   tableColumns?: { label: string; key: string; width?: string }[];
 }
@@ -72,6 +73,8 @@ export default function NewInvoicePage() {
   const [signatureImage, setSignatureImage] = useState('');
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const lastPointRef = useRef<{x: number, y: number} | null>(null);
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   // Customer
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
@@ -238,41 +241,84 @@ export default function NewInvoicePage() {
   };
 
   // Canvas drawing functions
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const startDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
+    // Prevent default touch behavior
+    e.preventDefault();
+    canvas.setPointerCapture(e.pointerId);
+    
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+    
+    // Set pencil style
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#1a1a1a';
     
     ctx.beginPath();
     ctx.moveTo(x, y);
+    lastPointRef.current = { x, y };
     setIsDrawing(true);
   };
 
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const draw = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    e.preventDefault();
     
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#000';
-    ctx.lineTo(x, y);
-    ctx.stroke();
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+    
+    // Smooth quadratic curve (pencil-like)
+    const lastPoint = lastPointRef.current;
+    if (lastPoint) {
+      const midX = (lastPoint.x + x) / 2;
+      const midY = (lastPoint.y + y) / 2;
+      ctx.quadraticCurveTo(lastPoint.x, lastPoint.y, midX, midY);
+      ctx.stroke();
+    }
+    
+    lastPointRef.current = { x, y };
+    
+    // Auto-save after drawing stops (debounce)
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
   };
 
   const stopDrawing = () => {
+    if (!isDrawing) return;
     setIsDrawing(false);
+    lastPointRef.current = null;
+    
+    // Auto-save signature after 500ms
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      // Check if canvas has content
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const hasContent = imageData.data.some((val, idx) => idx % 4 === 3 && val > 0);
+      if (hasContent) {
+        const dataUrl = canvas.toDataURL('image/png');
+        setSignatureImage(dataUrl);
+      }
+    }, 500);
   };
 
   const clearCanvas = () => {
@@ -282,13 +328,7 @@ export default function NewInvoicePage() {
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     setSignatureImage('');
-  };
-
-  const saveSignature = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const dataUrl = canvas.toDataURL('image/png');
-    setSignatureImage(dataUrl);
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
   };
 
   const inputStyle = {
@@ -727,18 +767,25 @@ export default function NewInvoicePage() {
 
               {signatureType === 'draw' && (
                 <div className="space-y-2">
-                  <label className="block text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Draw Your Signature</label>
+                  <label className="block text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Draw Your Signature (Auto-saves)</label>
                   <div className="border-2 border-dashed rounded-xl p-4" style={{ borderColor: 'hsl(var(--border))' }}>
                     <canvas
                       ref={canvasRef}
-                      width={600}
-                      height={150}
-                      className="w-full bg-white rounded-lg cursor-crosshair"
-                      onMouseDown={startDrawing}
-                      onMouseMove={draw}
-                      onMouseUp={stopDrawing}
-                      onMouseLeave={stopDrawing}
+                      width={800}
+                      height={200}
+                      className="w-full bg-white rounded-lg touch-none"
+                      style={{ cursor: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'20\' height=\'20\' viewBox=\'0 0 20 20\'%3E%3Cpath d=\'M3 17l4-4m0 0l8-8m-8 8l-2-2m2 2l2 2\' stroke=\'%23333\' stroke-width=\'1.5\' fill=\'none\'/%3E%3C/svg%3E") 2 18, crosshair' }}
+                      onPointerDown={startDrawing}
+                      onPointerMove={draw}
+                      onPointerUp={stopDrawing}
+                      onPointerLeave={stopDrawing}
                     />
+                    {signatureImage && (
+                      <div className="mt-2 p-2 rounded-lg border flex items-center gap-2" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--primary) / 0.05)' }}>
+                        <span className="text-xs" style={{ color: 'hsl(var(--primary))' }}>✓ Saved</span>
+                        <img src={signatureImage} alt="Signature" className="max-h-12" />
+                      </div>
+                    )}
                     <div className="flex gap-2 mt-2">
                       <button
                         type="button"
@@ -746,15 +793,7 @@ export default function NewInvoicePage() {
                         className="px-3 py-1.5 rounded-lg text-xs font-medium"
                         style={{ background: 'hsl(var(--muted))', color: 'hsl(var(--foreground))' }}
                       >
-                        Clear
-                      </button>
-                      <button
-                        type="button"
-                        onClick={saveSignature}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-white"
-                        style={{ background: 'hsl(var(--primary))' }}
-                      >
-                        Save Signature
+                        Clear & Redraw
                       </button>
                     </div>
                   </div>
