@@ -8,7 +8,7 @@ const COLLAPSED_COUNT = 14;
 
 const tabBase = 'flex-shrink-0 whitespace-nowrap inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-semibold border transition-all duration-200';
 const tabOn = 'bg-[#800020] text-white border-[#800020] shadow-[0_6px_14px_-10px_rgba(128,0,32,1)]';
-const tabOff = 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-[#eadfc9] dark:border-gray-600 hover:border-[#800020]/45 hover:text-[#800020]';
+const tabOff = 'bg-white text-gray-600 border-[#eadfc9] hover:border-[#800020]/45 hover:text-[#800020]';
 
 const useCounts = () => useMemo(() => {
   const map: Record<string, number> = {};
@@ -126,7 +126,7 @@ const CategoryFilter = ({ activeCategory, onCategoryChange }: CategoryFilterProp
           <button
             type="button"
             onClick={() => setShowAll((s) => !s)}
-            className={`${tabBase} !px-2.5 snap-start bg-[#800020]/8 dark:bg-[#800020]/15 text-[#800020] dark:text-[#e8a0b0] border-[#800020]/20 hover:bg-[#800020]/15`}
+            className={`${tabBase} !px-2.5 snap-start bg-[#800020]/8 text-[#800020] border-[#800020]/20 hover:bg-[#800020]/15`}
           >
             {showAll ? (
               <>Less <ChevronUp className="w-3 h-3" /></>

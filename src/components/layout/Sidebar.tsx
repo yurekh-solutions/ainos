@@ -203,12 +203,12 @@ function SectionGroup({
     <div className="mb-1">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+        className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg transition-colors hover:bg-gray-100:bg-gray-800"
       >
         <SectionIcon className="w-4 h-4 flex-shrink-0" style={{ color: '#6b7280' }} />
         {!collapsed && (
           <>
-            <span className="flex-1 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">
+            <span className="flex-1 text-left text-xs font-semibold text-gray-700">
               {section.title}
             </span>
             <ChevronDown className={`w-3.5 h-3.5 text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -236,8 +236,8 @@ function SectionGroup({
                     href={item.href}
                     className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
                       isActive
-                        ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400 font-semibold'
-                        : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'
+                        ? 'bg-purple-50 text-purple-700 font-semibold'
+                        : 'text-gray-700 hover:bg-gray-50:bg-gray-800'
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: isActive ? '#7c3aed' : '#6b7280' }} />
@@ -278,20 +278,20 @@ export function Sidebar() {
     <>
       {/* Mobile Header */}
       {!mobileOpen && (
-        <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+        <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
           <div className="flex items-center justify-between p-4">
             <Link href="/dashboard" className="flex items-center gap-3">
               <img src="/ainos.jpg" alt="AINOS" className="w-8 h-8 rounded-lg object-cover" />
               <div>
-                <h1 className="text-base font-bold text-gray-900 dark:text-white">AINOS</h1>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400">Business Suite</p>
+                <h1 className="text-base font-bold text-gray-900">AINOS</h1>
+                <p className="text-[10px] text-gray-500">Business Suite</p>
               </div>
             </Link>
             <button
               onClick={() => setMobileOpen(true)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="p-2 rounded-lg hover:bg-gray-100:bg-gray-800"
             >
-              <Menu className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <Menu className="w-5 h-5 text-gray-600" />
             </button>
           </div>
         </div>
@@ -318,22 +318,22 @@ export function Sidebar() {
             animate={{ x: 0 }}
             exit={{ x: -300 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="lg:hidden fixed top-0 left-0 bottom-0 w-[280px] bg-white dark:bg-gray-900 z-[70] flex flex-col border-r border-gray-200 dark:border-gray-800"
+            className="lg:hidden fixed top-0 left-0 bottom-0 w-[280px] bg-white z-[70] flex flex-col border-r border-gray-200"
           >
             {/* Logo */}
-            <div className="p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-800">
+            <div className="p-4 flex items-center justify-between border-b border-gray-200">
               <Link href="/dashboard" className="flex items-center gap-3">
                 <img src="/ainos.jpg" alt="AINOS" className="w-9 h-9 rounded-lg object-cover" />
                 <div>
-                  <h1 className="text-lg font-bold text-gray-900 dark:text-white">AINOS</h1>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Business Suite</p>
+                  <h1 className="text-lg font-bold text-gray-900">AINOS</h1>
+                  <p className="text-xs text-gray-500">Business Suite</p>
                 </div>
               </Link>
               <button
                 onClick={() => setMobileOpen(false)}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="p-2 rounded-lg hover:bg-gray-100:bg-gray-800"
               >
-                <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <X className="w-5 h-5 text-gray-600" />
               </button>
             </div>
 
@@ -349,8 +349,8 @@ export function Sidebar() {
                     href={item.href}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                       isActive
-                        ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400 font-medium'
-                        : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'
+                        ? 'bg-purple-50 text-purple-700 font-medium'
+                        : 'text-gray-700 hover:bg-gray-50:bg-gray-800'
                     }`}
                   >
                     <Icon className="w-5 h-5 flex-shrink-0" />
@@ -372,23 +372,23 @@ export function Sidebar() {
             </nav>
 
             {/* User Profile */}
-            <div className="p-3 space-y-2 border-t border-gray-200 dark:border-gray-800">
-              <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800">
+            <div className="p-3 space-y-2 border-t border-gray-200">
+              <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50">
                 <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-white text-sm font-medium">
                   {session?.user?.name?.[0] || 'U'}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                  <p className="text-sm font-medium text-gray-900 truncate">
                     {session?.user?.name || 'User'}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  <p className="text-xs text-gray-500 truncate">
                     {session?.user?.email || ''}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg w-full hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                className="flex items-center gap-3 px-3 py-2 rounded-lg w-full hover:bg-gray-50:bg-gray-800 text-gray-700"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="text-sm">Sign Out</span>
@@ -402,15 +402,15 @@ export function Sidebar() {
       <motion.aside
         initial={false}
         animate={{ width: collapsed ? 72 : 256 }}
-        className="hidden lg:flex bg-white dark:bg-gray-900 h-screen flex-col relative z-50 border-r border-gray-200 dark:border-gray-800"
+        className="hidden lg:flex bg-white h-screen flex-col relative z-50 border-r border-gray-200"
       >
         {/* Logo */}
-        <Link href="/dashboard" className="p-4 flex items-center gap-3 border-b border-gray-200 dark:border-gray-800">
+        <Link href="/dashboard" className="p-4 flex items-center gap-3 border-b border-gray-200">
           <img src="/ainos.jpg" alt="AINOS" className="w-9 h-9 rounded-lg object-cover flex-shrink-0" />
           {!collapsed && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <h1 className="text-lg font-bold text-gray-900 dark:text-white">AINOS</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Business Suite</p>
+              <h1 className="text-lg font-bold text-gray-900">AINOS</h1>
+              <p className="text-xs text-gray-500">Business Suite</p>
             </motion.div>
           )}
         </Link>
@@ -427,8 +427,8 @@ export function Sidebar() {
                 href={item.href}
                 className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${
                   isActive
-                    ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400 font-medium'
-                    : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800'
+                    ? 'bg-purple-50 text-purple-700 font-medium'
+                    : 'text-gray-700 hover:bg-gray-50:bg-gray-800'
                 }`}
               >
                 {isActive && (
@@ -466,27 +466,27 @@ export function Sidebar() {
         {/* Collapse Button */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center shadow-sm hover:shadow-md transition-shadow"
+          className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm hover:shadow-md transition-shadow"
         >
           {collapsed ? (
-            <ChevronRight className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
+            <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
           ) : (
-            <ChevronLeft className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
+            <ChevronLeft className="w-3.5 h-3.5 text-gray-600" />
           )}
         </button>
 
         {/* User Profile */}
-        <div className="p-3 space-y-2 border-t border-gray-200 dark:border-gray-800">
-          <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800">
+        <div className="p-3 space-y-2 border-t border-gray-200">
+          <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50">
             <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
               {session?.user?.name?.[0] || 'U'}
             </div>
             {!collapsed && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                <p className="text-sm font-medium text-gray-900 truncate">
                   {session?.user?.name || 'User'}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                <p className="text-xs text-gray-500 truncate">
                   {session?.user?.email || ''}
                 </p>
               </motion.div>
@@ -496,7 +496,7 @@ export function Sidebar() {
             onClick={() => signOut({ callbackUrl: '/auth/signin' })}
             className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors w-full ${
               collapsed ? 'justify-center' : ''
-            } hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300`}
+            } hover:bg-gray-50:bg-gray-800 text-gray-700`}
           >
             <LogOut className="w-4 h-4 flex-shrink-0" />
             {!collapsed && <span className="text-sm">Sign Out</span>}

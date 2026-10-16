@@ -1,0 +1,316 @@
+🧪 AINOS Test - 25 Company Templates
+
+✓ User: soniajaiswal2222@gmail.com
+✓ Company: AINOS Test Company
+
+📋 Creating 25 templates...
+
+✗ Tech Solutions Pvt Ltd: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "Tech Solutions Pvt Ltd",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    }
+✗ MB Crusher India: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "MB Crusher India",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+    
+✗ SKY Vision Multimedia: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "SKY Vision Multimedia",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+✗ Sharma Medical Store: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "Sharma Medical Store",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+
+✗ Gupta Traders: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "Gupta Traders",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+    isD
+✗ Royal Construction Co: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "Royal Construction Co",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+✗ Fresh Foods Restaurant: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "Fresh Foods Restaurant",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    }
+✗ AutoCare Garage: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "AutoCare Garage",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+    i
+✗ EduLearn Academy: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "EduLearn Academy",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+    
+✗ Legal Associates: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "Legal Associates",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+    
+✗ Green Earth Landscaping: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "Green Earth Landscaping",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    
+✗ CloudNine Hosting: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "CloudNine Hosting",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+   
+✗ FitLife Gym: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "FitLife Gym",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+    isDef
+✗ PrintMaster Studio: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "PrintMaster Studio",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+  
+✗ TravelEase Tours: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "TravelEase Tours",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+    
+✗ Startup Hub: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "Startup Hub",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+    isDef
+✗ Quick Fix Plumbing: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "Quick Fix Plumbing",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+  
+✗ PetCare Clinic: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "PetCare Clinic",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+    is
+✗ Beauty Bliss Salon: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "Beauty Bliss Salon",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+  
+✗ CodeCraft Software: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "CodeCraft Software",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+  
+✗ HomeStyle Interiors: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "HomeStyle Interiors",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+ 
+✗ EventPro Management: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "EventPro Management",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+ 
+✗ FreshMart Grocery: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "FreshMart Grocery",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+   
+✗ SmartLearn Online: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "SmartLearn Online",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+   
+✗ GreenLeaf Organic: 
+Invalid `prisma.invoiceTemplate.create()` invocation:
+
+{
+  data: {
+    name: "GreenLeaf Organic",
+    company: {
+      connect: {
+        id: "8e4d4d3a-90a3-455b-b59a-52d221be1328"
+      }
+    },
+   
+
+✅ Test Complete!
+
+📊 Summary:
+   Total: 0/25
+   With Letterhead: 0
+   Without Letterhead: 0
+
+🎯 Next Steps:
+   1. Login: http://localhost:3000
+   2. Templates: /finance/templates
+   3. New Invoice: /invoices/new
+   4. Test signature: Upload or draw signature
+   5. Download PDF: Verify signature renders

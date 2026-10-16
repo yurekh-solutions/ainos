@@ -128,7 +128,7 @@ export default function SEODashboardPage() {
   const auditAI = (result?.aiSummary ?? null) as { summary?: string; priorities?: Array<{ title: string; why: string; how: string }> } | null;
 
   return (
-    <div className="p-4 md:p-6 h-full overflow-auto bg-gray-50 dark:bg-gray-950">
+    <div className="p-4 md:p-6 h-full overflow-auto bg-gray-50">
       <div className="max-w-[1400px] mx-auto">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
@@ -137,8 +137,8 @@ export default function SEODashboardPage() {
               <Globe className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">SEO & Content Marketing Platform</h1>
-              <p className="text-sm mt-0.5 text-gray-600 dark:text-gray-400">Site audits, keyword research, competitor analysis & AI content ideas.</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">SEO & Content Marketing Platform</h1>
+              <p className="text-sm mt-0.5 text-gray-600">Site audits, keyword research, competitor analysis & AI content ideas.</p>
             </div>
           </div>
         </motion.div>
@@ -152,7 +152,7 @@ export default function SEODashboardPage() {
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                   activeTab === tab.id
                     ? 'bg-purple-600 text-white shadow-md'
-                    : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-800 hover:border-purple-300'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:border-purple-300'
                 }`}>
                 <Icon className="w-4 h-4" /> {tab.label}
               </button>
@@ -174,7 +174,7 @@ export default function SEODashboardPage() {
                   ].map((s, i) => {
                     const Icon = s.i;
                     return (
-                      <div key={i} className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                      <div key={i} className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
                         <div className="flex items-center gap-2 mb-2">
                           <Icon className={`w-4 h-4 ${s.c}`} />
                           <p className="text-xs font-medium uppercase tracking-wider text-gray-500">{s.l}</p>
@@ -184,8 +184,8 @@ export default function SEODashboardPage() {
                     );
                   })}
                 </div>
-                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                     <Zap className="w-5 h-5 text-purple-500" /> Quick Actions
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -198,9 +198,9 @@ export default function SEODashboardPage() {
                       const Icon = a.icon;
                       return (
                         <button key={i} onClick={a.action}
-                          className="text-left p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-purple-50 dark:hover:bg-purple-900/20 border border-gray-200 dark:border-gray-800 transition-all">
+                          className="text-left p-4 rounded-xl bg-gray-50 hover:bg-purple-50:bg-purple-900/20 border border-gray-200 transition-all">
                           <Icon className="w-5 h-5 text-purple-500 mb-2" />
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white">{a.label}</p>
+                          <p className="text-sm font-semibold text-gray-900">{a.label}</p>
                           <p className="text-xs text-gray-500">{a.desc}</p>
                         </button>
                       );
@@ -212,11 +212,11 @@ export default function SEODashboardPage() {
 
             {/* SITE AUDIT */}
             {activeTab === 'audit' && (
-              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Site Audit</h3>
+              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Site Audit</h3>
                 <div className="flex gap-2 mb-6">
                   <input value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} placeholder="https://yourwebsite.com"
-                    className="flex-1 px-4 py-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white" />
+                    className="flex-1 px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900" />
                   <button onClick={runAudit} disabled={loading || !websiteUrl.trim()}
                     className="px-5 py-3 rounded-xl text-white text-sm font-semibold bg-purple-600 hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
@@ -226,24 +226,24 @@ export default function SEODashboardPage() {
                 {auditChecks && (
                   <div className="space-y-5">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                      <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800 flex flex-col items-center justify-center">
+                      <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 flex flex-col items-center justify-center">
                         <p className={`text-5xl font-extrabold ${auditScore !== null && auditScore >= 80 ? 'text-emerald-600' : auditScore !== null && auditScore >= 50 ? 'text-amber-600' : 'text-red-600'}`}>{auditScore ?? '—'}</p>
-                        <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mt-1 uppercase tracking-wider">SEO Health Score</p>
+                        <p className="text-xs font-semibold text-gray-600 mt-1 uppercase tracking-wider">SEO Health Score</p>
                         <p className="text-[11px] text-gray-500 mt-1">{String(result?.techStack ?? '')} • {String(result?.wordCount ?? 0)} words</p>
                       </div>
-                      <div className="lg:col-span-2 p-5 rounded-2xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
-                        <h4 className="text-sm font-bold text-purple-900 dark:text-purple-200 flex items-center gap-2 mb-2">
+                      <div className="lg:col-span-2 p-5 rounded-2xl bg-purple-50 border border-purple-200">
+                        <h4 className="text-sm font-bold text-purple-900 flex items-center gap-2 mb-2">
                           <Sparkles className="w-4 h-4" /> AINOS AI — What to fix first
                         </h4>
                         {auditAI ? (
                           <>
-                            <p className="text-xs text-gray-700 dark:text-gray-300 mb-3">{auditAI.summary}</p>
+                            <p className="text-xs text-gray-700 mb-3">{auditAI.summary}</p>
                             <div className="space-y-2">
                               {(auditAI.priorities ?? []).map((p, i) => (
-                                <div key={i} className="p-3 rounded-xl bg-white dark:bg-gray-900 border border-purple-100 dark:border-purple-900">
-                                  <p className="text-xs font-bold text-gray-900 dark:text-white">{i + 1}. {p.title}</p>
+                                <div key={i} className="p-3 rounded-xl bg-white border border-purple-100">
+                                  <p className="text-xs font-bold text-gray-900">{i + 1}. {p.title}</p>
                                   <p className="text-[11px] text-gray-500">Why: {p.why}</p>
-                                  <p className="text-[11px] text-purple-700 dark:text-purple-300">How: {p.how}</p>
+                                  <p className="text-[11px] text-purple-700">How: {p.how}</p>
                                 </div>
                               ))}
                             </div>
@@ -255,15 +255,15 @@ export default function SEODashboardPage() {
                     </div>
                     <div className="space-y-3">
                       {auditChecks.map((check, i) => (
-                        <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                        <div key={i} className="flex items-start gap-3 p-4 rounded-xl bg-gray-50">
                           {check.status === 'ok'
                             ? <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
                             : <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${check.status === 'error' ? 'text-red-500' : 'text-amber-500'}`} />}
                           <div>
-                            <p className="text-sm font-semibold text-gray-900 dark:text-white">{check.name}</p>
+                            <p className="text-sm font-semibold text-gray-900">{check.name}</p>
                             <p className="text-xs text-gray-500">{check.message}</p>
                             {check.status !== 'ok' && check.fix && (
-                              <p className="text-xs text-purple-700 dark:text-purple-300 mt-1"><span className="font-semibold">Fix:</span> {check.fix}</p>
+                              <p className="text-xs text-purple-700 mt-1"><span className="font-semibold">Fix:</span> {check.fix}</p>
                             )}
                           </div>
                         </div>
@@ -279,13 +279,13 @@ export default function SEODashboardPage() {
 
             {/* KEYWORDS */}
             {activeTab === 'keywords' && (
-              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Keyword Research</h3>
+              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Keyword Research</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
                   <input value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="Enter seed keyword e.g. digital marketing"
-                    className="px-4 py-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white" />
+                    className="px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900" />
                   <input value={niche} onChange={e => setNiche(e.target.value)} placeholder="Your niche e.g. SaaS, Fashion, Healthcare"
-                    className="px-4 py-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white" />
+                    className="px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900" />
                 </div>
                 <button onClick={researchKeywords} disabled={loading || !keyword.trim()}
                   className="w-full py-3 rounded-xl text-white text-sm font-semibold bg-purple-600 hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2 mb-6">
@@ -295,9 +295,9 @@ export default function SEODashboardPage() {
                 {Array.isArray(result?.keywords) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {(result.keywords as Array<{ keyword: string; difficulty: string; volume: string; intent: string; cpc?: string; trend?: string }>).map((k, i) => (
-                      <div key={i} className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
+                      <div key={i} className="p-4 rounded-xl bg-gray-50 border border-gray-100">
                         <div className="flex items-center justify-between mb-2">
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white">{k.keyword}</p>
+                          <p className="text-sm font-semibold text-gray-900">{k.keyword}</p>
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
                             k.difficulty === 'Low' ? 'bg-emerald-100 text-emerald-700' : k.difficulty === 'Medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
                           }`}>{k.difficulty}</span>
@@ -308,7 +308,7 @@ export default function SEODashboardPage() {
                           {k.cpc && <span>CPC: {k.cpc}</span>}
                           {k.trend && (
                             <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
-                              k.trend === 'trending' ? 'bg-emerald-100 text-emerald-700' : k.trend === 'seasonal' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                              k.trend === 'trending' ? 'bg-emerald-100 text-emerald-700' : k.trend === 'seasonal' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
                             }`}>{k.trend}</span>
                           )}
                         </div>
@@ -321,13 +321,13 @@ export default function SEODashboardPage() {
 
             {/* COMPETITORS */}
             {activeTab === 'competitors' && (
-              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Competitor Analysis</h3>
+              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Competitor Analysis</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
                   <input value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} placeholder="Your website URL"
-                    className="px-4 py-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white" />
+                    className="px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900" />
                   <input value={competitor} onChange={e => setCompetitor(e.target.value)} placeholder="Competitor website URL"
-                    className="px-4 py-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white" />
+                    className="px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900" />
                 </div>
                 <button onClick={analyzeCompetitor} disabled={loading || !competitor.trim() || !websiteUrl.trim()}
                   className="w-full py-3 rounded-xl text-white text-sm font-semibold bg-purple-600 hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2 mb-6">
@@ -336,8 +336,8 @@ export default function SEODashboardPage() {
                 </button>
                 {typeof result?.analysis === 'string' && (
                   <div className="space-y-4">
-                    <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{result.analysis as string}</p>
+                    <div className="p-4 rounded-xl bg-gray-50">
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{result.analysis as string}</p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {([
@@ -350,10 +350,10 @@ export default function SEODashboardPage() {
                       ] as Array<{ title: string; items: unknown; color: string }>)
                         .filter(s => Array.isArray(s.items) && (s.items as unknown[]).length > 0)
                         .map((s, i) => (
-                          <div key={i} className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
+                          <div key={i} className="p-4 rounded-xl bg-gray-50 border border-gray-100">
                             <p className={`text-xs font-bold uppercase tracking-wider mb-2 ${s.color}`}>{s.title}</p>
                             <ul className="space-y-1">
-                              {(s.items as string[]).map((item, j) => <li key={j} className="text-xs text-gray-600 dark:text-gray-400">• {item}</li>)}
+                              {(s.items as string[]).map((item, j) => <li key={j} className="text-xs text-gray-600">• {item}</li>)}
                             </ul>
                           </div>
                         ))}
@@ -365,13 +365,13 @@ export default function SEODashboardPage() {
 
             {/* CONTENT IDEAS */}
             {activeTab === 'content' && (
-              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">AI Content Ideas</h3>
+              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">AI Content Ideas</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
                   <input value={niche} onChange={e => setNiche(e.target.value)} placeholder="Your niche"
-                    className="px-4 py-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white" />
+                    className="px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900" />
                   <input value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="Target keyword (optional)"
-                    className="px-4 py-3 rounded-xl text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white" />
+                    className="px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900" />
                 </div>
                 <button onClick={generateContentIdeas} disabled={loading || !niche.trim()}
                   className="w-full py-3 rounded-xl text-white text-sm font-semibold bg-purple-600 hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2 mb-6">
@@ -381,21 +381,21 @@ export default function SEODashboardPage() {
                 {Array.isArray(result?.ideas) && (
                   <div className="grid grid-cols-1 gap-3">
                     {(result.ideas as Array<{ title: string; type: string; keywords?: string[]; outline?: string[]; searchIntent?: string; estimatedReadTime?: string }>).map((idea, i) => (
-                      <div key={i} className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
+                      <div key={i} className="p-4 rounded-xl bg-gray-50 border border-gray-100">
                         <div className="flex items-center justify-between mb-2">
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white">{idea.title}</p>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">{idea.type}</span>
+                          <p className="text-sm font-semibold text-gray-900">{idea.title}</p>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">{idea.type}</span>
                         </div>
                         <p className="text-xs text-gray-500 mb-2">{(idea.keywords ?? []).join(', ')}</p>
                         <div className="flex items-center gap-2 mb-2">
-                          {idea.searchIntent && <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">{idea.searchIntent}</span>}
-                          {idea.estimatedReadTime && <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 flex items-center gap-1"><Clock className="w-3 h-3" />{idea.estimatedReadTime}</span>}
+                          {idea.searchIntent && <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">{idea.searchIntent}</span>}
+                          {idea.estimatedReadTime && <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 flex items-center gap-1"><Clock className="w-3 h-3" />{idea.estimatedReadTime}</span>}
                         </div>
-                        <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-0.5">
+                        <ul className="text-xs text-gray-600 space-y-0.5">
                           {(idea.outline ?? []).map((o, j) => <li key={j}>• {o}</li>)}
                         </ul>
                         <button onClick={() => copyText(`${idea.title}\n\nTarget keywords: ${(idea.keywords ?? []).join(', ')}\n\nOutline:\n${(idea.outline ?? []).map(o => `- ${o}`).join('\n')}`)}
-                          className="mt-2 flex items-center gap-1 text-[11px] font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700">
+                          className="mt-2 flex items-center gap-1 text-[11px] font-medium text-purple-600 hover:text-purple-700">
                           <Copy className="w-3 h-3" /> Copy idea brief
                         </button>
                       </div>

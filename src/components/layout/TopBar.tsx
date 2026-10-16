@@ -27,7 +27,7 @@ export function TopBar() {
     .slice(0, 2);
 
   return (
-    <div className="fixed top-0 right-0 left-0 z-30 h-16 flex items-center justify-end gap-3 px-4 sm:px-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50">
+    <div className="fixed top-0 right-0 left-0 z-30 h-16 flex items-center justify-end gap-3 px-4 sm:px-6 bg-white/80 backdrop-blur-xl border-b border-gray-200/50">
       {/* Notifications */}
       <NotificationsBell />
 
@@ -54,16 +54,16 @@ export function TopBar() {
               }}
             >
               {/* User Info */}
-              <div className="p-4 border-b border-gray-200/50 dark:border-gray-700/50">
+              <div className="p-4 border-b border-gray-200/50">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white text-sm font-bold">
                     {initials}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                    <p className="text-sm font-semibold text-gray-900 truncate">
                       {session?.user?.name || 'User'}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    <p className="text-xs text-gray-500 truncate">
                       {session?.user?.email || ''}
                     </p>
                   </div>
@@ -74,22 +74,22 @@ export function TopBar() {
               <div className="p-2 space-y-1">
                 <button
                   onClick={() => { setProfileOpen(false); }}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100:bg-gray-800 transition-colors"
                 >
                   <User className="w-4 h-4" />
                   My Profile
                 </button>
                 <button
                   onClick={() => { setProfileOpen(false); }}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100:bg-gray-800 transition-colors"
                 >
                   <Settings className="w-4 h-4" />
                   Settings
                 </button>
-                <div className="border-t border-gray-200/50 dark:border-gray-700/50 my-1" />
+                <div className="border-t border-gray-200/50 my-1" />
                 <button
                   onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50:bg-red-900/20 transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
                   Sign Out

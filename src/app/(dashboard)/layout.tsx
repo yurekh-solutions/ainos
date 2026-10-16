@@ -24,7 +24,7 @@ export default async function DashboardLayout({
   return (
     <AuthProvider>
       <SessionKeepAlive />
-      <div className="flex h-screen bg-gray-50 dark:bg-gray-950">
+      <div className="flex h-screen bg-gray-50">
         <Sidebar />
         <TopBar />
         <main className="flex-1 overflow-auto pt-20">

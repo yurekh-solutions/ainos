@@ -27,7 +27,7 @@ const SORTS = [
 const PAGE_SIZE = 24;
 
 const TOOL_BASE = 'inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[11px] font-semibold border transition-all whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-[#800020]/20';
-const TOOL_OFF = 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-[#eadfc9] dark:border-gray-600 hover:border-[#800020]/45 hover:text-[#800020]';
+const TOOL_OFF = 'bg-white text-gray-600 border-[#eadfc9] hover:border-[#800020]/45 hover:text-[#800020]';
 const TOOL_ON = 'bg-[#800020] text-white border-[#800020] shadow-[0_8px_18px_-12px_rgba(128,0,32,1)]';
 const TOOL_ON_ROSE = 'bg-[#e0486b] text-white border-[#e0486b] shadow-[0_8px_18px_-12px_rgba(224,72,107,1)]';
 
@@ -115,42 +115,42 @@ export default function InvitationsPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7 }}
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#800020]/10 text-[#800020] dark:text-[#e8a0b0] text-xs md:text-sm font-medium mb-6 border border-[#800020]/20">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#800020]/10 text-[#800020] text-xs md:text-sm font-medium mb-6 border border-[#800020]/20">
                 <Sparkles className="w-4 h-4" />
                 <span>{totalTemplates}+ Premium Templates · Video + Audio</span>
               </div>
 
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#800020] dark:text-[#e8a0b0] leading-[1.1] mb-5">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#800020] leading-[1.1] mb-5">
                 Beautiful invites for
-                <span className="block text-[#B8860B] dark:text-[#d4a84b]">every celebration</span>
+                <span className="block text-[#B8860B]">every celebration</span>
               </h1>
 
-              <p className="text-base md:text-lg text-gray-600 dark:text-gray-300 mb-3 max-w-xl leading-relaxed">
+              <p className="text-base md:text-lg text-gray-600 mb-3 max-w-xl leading-relaxed">
                 Weddings, festivals, birthdays, baby showers and more. Customize in minutes, download instantly.
               </p>
 
-              <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 max-w-lg">
+              <p className="text-gray-500 text-sm mb-6 max-w-lg">
                 Apno ko bulane ka naya tareeka. Hindi, English, Marathi — WhatsApp ready invites with Indian music.
               </p>
 
               {/* Pricing Cards */}
               <div className="flex flex-col sm:flex-row gap-3 mb-6">
-                <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-[#e8dcc4] dark:border-gray-700 shadow-sm">
-                  <div className="w-10 h-10 rounded-full bg-[#800020]/10 flex items-center justify-center text-[#800020] dark:text-[#e8a0b0]">
+                <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white border border-[#e8dcc4] shadow-sm">
+                  <div className="w-10 h-10 rounded-full bg-[#800020]/10 flex items-center justify-center text-[#800020]">
                     <span className="font-bold text-sm">₹49</span>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Clean Image</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">PNG + PDF without watermark</p>
+                    <p className="text-sm font-semibold text-gray-800">Clean Image</p>
+                    <p className="text-xs text-gray-500">PNG + PDF without watermark</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-[#e8dcc4] dark:border-gray-700 shadow-sm">
+                <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white border border-[#e8dcc4] shadow-sm">
                   <div className="w-10 h-10 rounded-full bg-[#B8860B]/15 flex items-center justify-center text-[#B8860B]">
                     <Video className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">₹99 Image + Video</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Both files with Indian music</p>
+                    <p className="text-sm font-semibold text-gray-800">₹99 Image + Video</p>
+                    <p className="text-xs text-gray-500">Both files with Indian music</p>
                   </div>
                 </div>
               </div>
@@ -171,16 +171,16 @@ export default function InvitationsPage() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="hidden lg:flex justify-center items-center relative h-[400px]"
             >
-              <div className="absolute left-2 top-10 w-[200px] h-[320px] rounded-3xl overflow-hidden shadow-2xl transform -rotate-6 border-4 border-white dark:border-gray-700">
+              <div className="absolute left-2 top-10 w-[200px] h-[320px] rounded-3xl overflow-hidden shadow-2xl transform -rotate-6 border-4 border-white">
                 <img src="/templates/wedding-04.png" alt="" className="w-full h-full object-cover" />
               </div>
-              <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[230px] h-[370px] rounded-3xl overflow-hidden shadow-2xl border-4 border-white dark:border-gray-700 z-10">
+              <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[230px] h-[370px] rounded-3xl overflow-hidden shadow-2xl border-4 border-white z-10">
                 <img src="/templates/ganpati-05.png" alt="" className="w-full h-full object-cover" />
                 <div className="absolute top-4 right-4 backdrop-blur-md bg-[#800020]/90 text-white text-xs px-3 py-1.5 rounded-full font-semibold flex items-center gap-1 shadow-lg border border-white/20">
                   <Video className="w-3.5 h-3.5" /> + Video
                 </div>
               </div>
-              <div className="absolute right-2 top-14 w-[200px] h-[320px] rounded-3xl overflow-hidden shadow-2xl transform rotate-6 border-4 border-white dark:border-gray-700">
+              <div className="absolute right-2 top-14 w-[200px] h-[320px] rounded-3xl overflow-hidden shadow-2xl transform rotate-6 border-4 border-white">
                 <img src="/templates/diwali-02.png" alt="" className="w-full h-full object-cover" />
               </div>
             </motion.div>
@@ -191,34 +191,34 @@ export default function InvitationsPage() {
       {/* Stats Bar */}
       <section className="pb-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10 py-4 px-6 rounded-2xl bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-[#e8dcc4] dark:border-gray-700">
+          <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10 py-4 px-6 rounded-2xl bg-white/60 backdrop-blur-sm border border-[#e8dcc4]">
             <div className="text-center">
-              <p className="text-2xl md:text-3xl font-bold text-[#800020] dark:text-[#e8a0b0]">{totalTemplates}+</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Templates</p>
+              <p className="text-2xl md:text-3xl font-bold text-[#800020]">{totalTemplates}+</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wider">Templates</p>
             </div>
-            <div className="w-px h-10 bg-[#e8dcc4] dark:bg-gray-600 hidden sm:block" />
+            <div className="w-px h-10 bg-[#e8dcc4] hidden sm:block" />
             <div className="text-center">
-              <p className="text-2xl md:text-3xl font-bold text-[#800020] dark:text-[#e8a0b0]">{videoTemplates}+</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">With Video</p>
+              <p className="text-2xl md:text-3xl font-bold text-[#800020]">{videoTemplates}+</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wider">With Video</p>
             </div>
-            <div className="w-px h-10 bg-[#e8dcc4] dark:bg-gray-600 hidden sm:block" />
+            <div className="w-px h-10 bg-[#e8dcc4] hidden sm:block" />
             <div className="text-center">
-              <p className="text-2xl md:text-3xl font-bold text-[#800020] dark:text-[#e8a0b0]">3</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Languages</p>
+              <p className="text-2xl md:text-3xl font-bold text-[#800020]">3</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wider">Languages</p>
             </div>
-            <div className="w-px h-10 bg-[#e8dcc4] dark:bg-gray-600 hidden sm:block" />
+            <div className="w-px h-10 bg-[#e8dcc4] hidden sm:block" />
             <div className="text-center">
-              <p className="text-2xl md:text-3xl font-bold text-[#800020] dark:text-[#e8a0b0]">{CATEGORIES.length - 1}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Occasions</p>
+              <p className="text-2xl md:text-3xl font-bold text-[#800020]">{CATEGORIES.length - 1}</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wider">Occasions</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Filters Section — scrolls with the page (no longer sticky) */}
-      <section className="border-b border-[#f0e3cd] dark:border-gray-700 py-1.5 bg-white dark:bg-gray-900">
+      <section className="border-b border-[#f0e3cd] py-1.5 bg-white">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
-          <div className="rounded-lg bg-white dark:bg-gray-800 border border-[#eadfc9] dark:border-gray-600 shadow-sm p-1">
+          <div className="rounded-lg bg-white border border-[#eadfc9] shadow-sm p-1">
             <div className="flex flex-wrap items-center gap-1.5">
               <div className="relative order-1 basis-full sm:basis-auto sm:flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
@@ -227,7 +227,7 @@ export default function InvitationsPage() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search designs — ganpati, mandala, haldi, royal blue…"
-                  className="w-full h-8 pl-8 pr-8 rounded-full bg-[#fdfaf5] dark:bg-gray-700 border border-[#eadfc9] dark:border-gray-600 text-xs text-gray-700 dark:text-gray-200 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#800020]/20 focus:border-[#800020]/40 focus:bg-white transition-colors"
+                  className="w-full h-8 pl-8 pr-8 rounded-full bg-[#fdfaf5] border border-[#eadfc9] text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#800020]/20 focus:border-[#800020]/40 focus:bg-white transition-colors"
                   aria-label="Search templates"
                 />
                 {query && (
@@ -286,7 +286,7 @@ export default function InvitationsPage() {
                 <button
                   type="button"
                   onClick={() => { setActiveCategory('all'); setShowVideoOnly(false); setLanguage('all'); setQuery(''); setShowPicksOnly(false); setSort('featured'); }}
-                  className={`${TOOL_BASE} bg-white dark:bg-gray-800 text-[#800020] border-[#800020]/25 hover:bg-[#800020]/8`}
+                  className={`${TOOL_BASE} bg-white text-[#800020] border-[#800020]/25 hover:bg-[#800020]/8`}
                 >
                   <X className="w-3.5 h-3.5" /> Reset
                 </button>
@@ -304,14 +304,14 @@ export default function InvitationsPage() {
       <section id="templates" className="py-6 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-4 gap-3">
-            <h2 className="text-xl md:text-2xl font-bold text-[#800020] dark:text-[#e8a0b0]">
+            <h2 className="text-xl md:text-2xl font-bold text-[#800020]">
               {showPicksOnly
                 ? 'My picked designs'
                 : activeCategory === 'all'
                   ? 'All Templates'
                   : getGroup(activeCategory)?.allLabel || CATEGORIES.find(c => c.id === activeCategory)?.label || 'Templates'}
             </h2>
-            <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+            <span className="text-sm text-gray-500 whitespace-nowrap">
               {filteredTemplates.length} design{filteredTemplates.length === 1 ? '' : 's'}
               {filteredTemplates.length > PAGE_SIZE ? ` · page ${safePage} of ${totalPages}` : ''}
             </span>
@@ -337,7 +337,7 @@ export default function InvitationsPage() {
                   type="button"
                   disabled={safePage <= 1}
                   onClick={() => goToPage(safePage - 1)}
-                  className="inline-flex items-center gap-1 h-9 px-3 rounded-full text-xs font-semibold border transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-[#eadfc9] dark:border-gray-600 hover:border-[#800020]/45 hover:text-[#800020]"
+                  className="inline-flex items-center gap-1 h-9 px-3 rounded-full text-xs font-semibold border transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-white text-gray-600 border-[#eadfc9] hover:border-[#800020]/45 hover:text-[#800020]"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" /> Prev
                 </button>
@@ -361,7 +361,7 @@ export default function InvitationsPage() {
                         className={`w-9 h-9 rounded-full text-xs font-semibold border transition-all ${
                           p === safePage
                             ? 'bg-[#800020] text-white border-[#800020] shadow-[0_8px_18px_-12px_rgba(128,0,32,1)]'
-                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-[#eadfc9] dark:border-gray-600 hover:border-[#800020]/45 hover:text-[#800020]'
+                            : 'bg-white text-gray-600 border-[#eadfc9] hover:border-[#800020]/45 hover:text-[#800020]'
                         }`}
                       >
                         {p}
@@ -374,7 +374,7 @@ export default function InvitationsPage() {
                   type="button"
                   disabled={safePage >= totalPages}
                   onClick={() => goToPage(safePage + 1)}
-                  className="inline-flex items-center gap-1 h-9 px-3 rounded-full text-xs font-semibold border transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-[#eadfc9] dark:border-gray-600 hover:border-[#800020]/45 hover:text-[#800020]"
+                  className="inline-flex items-center gap-1 h-9 px-3 rounded-full text-xs font-semibold border transition-all disabled:opacity-30 disabled:cursor-not-allowed bg-white text-gray-600 border-[#eadfc9] hover:border-[#800020]/45 hover:text-[#800020]"
                 >
                   Next <ChevronRight className="w-3.5 h-3.5" />
                 </button>

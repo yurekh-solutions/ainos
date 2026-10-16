@@ -121,15 +121,15 @@ export default function BlogIntegrationGuide() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50/30 dark:from-gray-950 dark:to-purple-950/20">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-purple-50/30">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-            <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          <button onClick={() => router.back()} className="p-2 rounded-xl hover:bg-gray-100:bg-gray-800 transition-colors">
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
           <div>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">Blog Integration Guide</h1>
+            <h1 className="text-lg font-bold text-gray-900">Blog Integration Guide</h1>
             <p className="text-xs text-gray-500">Set up AINOS blogs on your website in 4 steps</p>
           </div>
         </div>
@@ -153,9 +153,9 @@ export default function BlogIntegrationGuide() {
         </div>
 
         {/* What You Need */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-          <div className="p-5 sm:p-6 border-b border-gray-100 dark:border-gray-800">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+          <div className="p-5 sm:p-6 border-b border-gray-100">
+            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-amber-500" /> Before You Start
             </h2>
           </div>
@@ -167,11 +167,11 @@ export default function BlogIntegrationGuide() {
                 { need: 'An active AINOS account', detail: 'You\u2019re already logged in — you\u2019re good to go!' },
                 { need: '5 minutes of time', detail: 'That\u2019s all it takes to set up everything' },
               ].map((item) => (
-                <div key={item.need} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                <div key={item.need} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50">
                   <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{item.need}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{item.detail}</p>
+                    <p className="text-sm font-semibold text-gray-900">{item.need}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{item.detail}</p>
                   </div>
                 </div>
               ))}
@@ -183,15 +183,15 @@ export default function BlogIntegrationGuide() {
         {STEPS.map((step) => {
           const Icon = step.icon;
           return (
-            <div key={step.id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+            <div key={step.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
               {/* Step Header */}
-              <div className="p-5 sm:p-6 border-b border-gray-100 dark:border-gray-800">
+              <div className="p-5 sm:p-6 border-b border-gray-100">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-purple-500/20">
                     <span className="text-white font-bold text-lg">{step.num}</span>
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">{step.title}</h2>
+                    <h2 className="text-lg font-bold text-gray-900">{step.title}</h2>
                     <p className="text-xs text-gray-500 mt-0.5">Step {step.num} of 4</p>
                   </div>
                 </div>
@@ -199,7 +199,7 @@ export default function BlogIntegrationGuide() {
 
               {/* Step Content */}
               <div className="p-5 sm:p-6">
-                <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line leading-relaxed">{step.content}</p>
+                <p className="text-sm text-gray-600 whitespace-pre-line leading-relaxed">{step.content}</p>
 
                 {/* Code Block */}
                 {step.code && (
@@ -221,20 +221,20 @@ export default function BlogIntegrationGuide() {
                   <div className="mt-5 space-y-2">
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Platform-specific instructions:</p>
                     {step.platforms.map((platform) => (
-                      <div key={platform.name} className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                      <div key={platform.name} className="border border-gray-200 rounded-xl overflow-hidden">
                         <button
                           onClick={() => setOpenPlatform(openPlatform === platform.name ? null : platform.name)}
-                          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50:bg-gray-800/50 transition-colors"
                         >
-                          <span className="text-sm font-semibold text-gray-900 dark:text-white">{platform.name}</span>
+                          <span className="text-sm font-semibold text-gray-900">{platform.name}</span>
                           {openPlatform === platform.name ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
                         </button>
                         {openPlatform === platform.name && (
-                          <div className="px-4 pb-4 border-t border-gray-100 dark:border-gray-800">
+                          <div className="px-4 pb-4 border-t border-gray-100">
                             <ol className="mt-3 space-y-2">
                               {platform.steps.map((s, i) => (
-                                <li key={i} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
-                                  <span className="w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
+                                <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                                  <span className="w-5 h-5 rounded-full bg-purple-100 text-purple-600 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
                                   {s}
                                 </li>
                               ))}
@@ -251,9 +251,9 @@ export default function BlogIntegrationGuide() {
         })}
 
         {/* Customization Table */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-          <div className="p-5 sm:p-6 border-b border-gray-100 dark:border-gray-800">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+          <div className="p-5 sm:p-6 border-b border-gray-100">
+            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
               <Code className="w-5 h-5 text-purple-600" /> Embed Code Options
             </h2>
             <p className="text-xs text-gray-500 mt-1">Customize the blog widget with these data attributes</p>
@@ -261,7 +261,7 @@ export default function BlogIntegrationGuide() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 dark:border-gray-800">
+                <tr className="border-b border-gray-100">
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Attribute</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Default</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Description</th>
@@ -269,14 +269,14 @@ export default function BlogIntegrationGuide() {
               </thead>
               <tbody>
                 {CUSTOMIZATION.map((item) => (
-                  <tr key={item.attr} className="border-b border-gray-50 dark:border-gray-800/50 last:border-0">
+                  <tr key={item.attr} className="border-b border-gray-50 last:border-0">
                     <td className="px-5 py-3">
-                      <code className="px-2 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded text-xs font-mono">{item.attr}</code>
+                      <code className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-mono">{item.attr}</code>
                     </td>
                     <td className="px-5 py-3">
                       <code className="text-gray-500 text-xs font-mono">{item.default}</code>
                     </td>
-                    <td className="px-5 py-3 text-gray-600 dark:text-gray-300 text-xs">{item.desc}</td>
+                    <td className="px-5 py-3 text-gray-600 text-xs">{item.desc}</td>
                   </tr>
                 ))}
               </tbody>
@@ -285,9 +285,9 @@ export default function BlogIntegrationGuide() {
         </div>
 
         {/* Example */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-          <div className="p-5 sm:p-6 border-b border-gray-100 dark:border-gray-800">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Example: Fully Customized</h2>
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+          <div className="p-5 sm:p-6 border-b border-gray-100">
+            <h2 className="text-lg font-bold text-gray-900">Example: Fully Customized</h2>
           </div>
           <div className="p-5 sm:p-6">
             <div className="bg-gray-900 rounded-xl p-4 overflow-x-auto">
@@ -307,15 +307,15 @@ export default function BlogIntegrationGuide() {
             </div>
             <p className="text-xs text-gray-500 mt-3">
               <AlertCircle className="w-3.5 h-3.5 inline mr-1" />
-              Replace <code className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">https://yourbusiness.com</code> with your actual website URL.
+              Replace <code className="px-1 py-0.5 bg-gray-100 rounded">https://yourbusiness.com</code> with your actual website URL.
             </p>
           </div>
         </div>
 
         {/* FAQ */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-          <div className="p-5 sm:p-6 border-b border-gray-100 dark:border-gray-800">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Quick FAQ</h2>
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+          <div className="p-5 sm:p-6 border-b border-gray-100">
+            <h2 className="text-lg font-bold text-gray-900">Quick FAQ</h2>
           </div>
           <div className="p-5 sm:p-6 space-y-4">
             {[
@@ -328,15 +328,15 @@ export default function BlogIntegrationGuide() {
               { q: 'Can I use this on multiple websites?', a: 'Each AINOS account supports one website. To switch, disconnect the current one and connect a new one.' },
             ].map((faq, i) => (
               <div key={i}>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">{faq.q}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{faq.a}</p>
+                <p className="text-sm font-semibold text-gray-900">{faq.q}</p>
+                <p className="text-xs text-gray-500 mt-1 leading-relaxed">{faq.a}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Need Help CTA */}
-        <div className="bg-gradient-to-br from-gray-900 to-gray-800 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 text-center shadow-lg">
+        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-center shadow-lg">
           <h3 className="text-lg font-bold text-white mb-2">Need Help Setting Up?</h3>
           <p className="text-sm text-gray-400 mb-4">Our team is here to help you get AINOS blogs running on your website.</p>
           <div className="flex items-center justify-center gap-3">

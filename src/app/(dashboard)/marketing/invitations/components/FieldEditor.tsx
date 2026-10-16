@@ -84,7 +84,7 @@ const FieldEditor = ({ label, value, onChange, maxLength = 60, config = {} }: Fi
   return (
     <div className="mb-5">
       <div className="flex items-center justify-between mb-1.5">
-        <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+        <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
           {label}
         </label>
         <span className="text-[10px] text-gray-400 tabular-nums">
@@ -93,9 +93,9 @@ const FieldEditor = ({ label, value, onChange, maxLength = 60, config = {} }: Fi
       </div>
       <div className="relative flex items-start gap-2">
         <textarea
-          className="flex-1 w-full px-3.5 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 resize-none shadow-sm
+          className="flex-1 w-full px-3.5 py-3 rounded-xl border border-gray-200 bg-white resize-none shadow-sm
                      focus:outline-none focus:ring-2 focus:ring-[#800020]/10 focus:border-[#800020]/40 transition-all
-                     placeholder-gray-300 text-gray-800 dark:text-gray-200"
+                     placeholder-gray-300 text-gray-800"
           style={{ fontFamily: `'${currentFont}', 'Tiro Devanagari Hindi', serif`, fontSize: `${displaySize}px` }}
           rows={maxLength > 100 ? 3 : 2}
           maxLength={maxLength}
@@ -111,7 +111,7 @@ const FieldEditor = ({ label, value, onChange, maxLength = 60, config = {} }: Fi
                        transition-all shadow-sm ${
                          showFonts
                            ? 'border-[#800020] bg-[#800020]/5 text-[#800020]'
-                           : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-[#800020] hover:border-[#800020]/30 hover:bg-gray-50'
+                           : 'border-gray-200 bg-white text-[#800020] hover:border-[#800020]/30 hover:bg-gray-50'
                        }`}
             title="Font & size"
             aria-expanded={showFonts}
@@ -121,12 +121,12 @@ const FieldEditor = ({ label, value, onChange, maxLength = 60, config = {} }: Fi
           </button>
 
           {showFonts && (
-            <div className="absolute top-full right-0 mt-2 w-64 sm:w-72 max-h-[22rem] overflow-hidden bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-600 z-50 flex flex-col">
+            <div className="absolute top-full right-0 mt-2 w-64 sm:w-72 max-h-[22rem] overflow-hidden bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 flex flex-col">
               {/* Header: size + search */}
-              <div className="sticky top-0 bg-gray-50/95 dark:bg-gray-700/95 backdrop-blur px-4 py-3 border-b border-gray-100 dark:border-gray-600 space-y-3">
+              <div className="sticky top-0 bg-gray-50/95 backdrop-blur px-4 py-3 border-b border-gray-100 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">Size</span>
-                  <div className="flex items-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 p-0.5 shadow-sm">
+                  <span className="text-xs font-semibold text-gray-700">Size</span>
+                  <div className="flex items-center bg-white rounded-lg border border-gray-200 p-0.5 shadow-sm">
                     {SIZE_STEPS.map((s, i) => (
                       <button
                         key={s.key}
@@ -136,7 +136,7 @@ const FieldEditor = ({ label, value, onChange, maxLength = 60, config = {} }: Fi
                         className={`w-7 h-6 text-[11px] font-bold rounded-md transition-all ${
                           sizeStep === i
                             ? 'bg-[#800020] text-white shadow-sm'
-                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            : 'text-gray-600 hover:bg-gray-100:bg-gray-700'
                         }`}
                       >
                         {s.key}
@@ -149,7 +149,7 @@ const FieldEditor = ({ label, value, onChange, maxLength = 60, config = {} }: Fi
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search font…"
-                  className="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#800020]/10 focus:border-[#800020]/40"
+                  className="w-full px-3 py-1.5 text-xs rounded-lg border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#800020]/10 focus:border-[#800020]/40"
                 />
               </div>
 
@@ -169,8 +169,8 @@ const FieldEditor = ({ label, value, onChange, maxLength = 60, config = {} }: Fi
                       }}
                       className={`w-full flex items-center justify-between text-left px-3 py-2 text-sm rounded-lg transition-colors ${
                         selected
-                          ? 'bg-[#800020]/5 text-[#800020] dark:text-[#e8a0b0]'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          ? 'bg-[#800020]/5 text-[#800020]'
+                          : 'text-gray-700 hover:bg-gray-50:bg-gray-700'
                       }`}
                       style={{ fontFamily: `'${font}', 'Tiro Devanagari Hindi', serif` }}
                     >

@@ -35,7 +35,7 @@ export default function RecurringInvoicesPage() {
               <p className="font-semibold text-sm mb-1" style={{ color: 'hsl(var(--foreground))' }}>{inv.customerName || 'No customer'}</p>
               <p className="text-xs mb-3" style={{ color: 'hsl(var(--muted-foreground))' }}>Next run: {new Date(inv.nextRunDate).toLocaleDateString('en-IN')}</p>
               <div className="flex items-center gap-2">
-                <button className="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" style={{ color: 'hsl(var(--foreground))' }}>
+                <button className="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 hover:bg-gray-200:bg-gray-700 transition-colors" style={{ color: 'hsl(var(--foreground))' }}>
                   {inv.status === 'active' ? <><Pause className="w-3 h-3 inline mr-1" />Pause</> : <><Play className="w-3 h-3 inline mr-1" />Resume</>}
                 </button>
               </div>

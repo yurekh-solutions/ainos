@@ -44,7 +44,7 @@ const TemplateCard = memo(({ template, index = 0, favourite = false, onToggleFav
     >
       <Link href={targetUrl} className="block" style={{ textDecoration: 'none' }}>
         {/* Preview Image */}
-        <div className="relative aspect-[3/4] overflow-hidden bg-gray-100 dark:bg-gray-800">
+        <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
           {template.previewImage ? (
             <img
               src={template.previewImage}
@@ -78,13 +78,13 @@ const TemplateCard = memo(({ template, index = 0, favourite = false, onToggleFav
         </div>
 
         {/* Card Info */}
-        <div className="p-3 bg-white/85 dark:bg-gray-800/85 rounded-b-2xl border border-t-0 border-[#e8dcc4] dark:border-gray-700">
+        <div className="p-3 bg-white/85 rounded-b-2xl border border-t-0 border-[#e8dcc4]">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-sm truncate leading-tight group-hover:text-[#800020] transition-colors">
+              <h3 className="font-semibold text-gray-800 text-sm truncate leading-tight group-hover:text-[#800020] transition-colors">
                 {template.name}
               </h3>
-              <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 uppercase tracking-wider font-medium truncate">
+              <p className="text-[10px] text-gray-500 mt-0.5 uppercase tracking-wider font-medium truncate">
                 {(template.category || '').replace(/-/g, ' ')}
               </p>
             </div>

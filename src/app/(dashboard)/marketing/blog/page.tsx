@@ -76,17 +76,17 @@ function renderMarkdown(md: string): string {
     // Links
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-purple-600 underline">$1</a>')
     // Headings (H4 first to avoid conflicts)
-    .replace(/^#### (.*$)/gm, '<h4 class="text-base font-bold mt-5 mb-2 text-gray-900 dark:text-white">$1</h4>')
-    .replace(/^### (.*$)/gm, '<h3 class="text-lg font-bold mt-6 mb-2 text-gray-900 dark:text-white">$1</h3>')
-    .replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold mt-8 mb-3 text-gray-900 dark:text-white">$1</h2>')
-    .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold mt-8 mb-4 text-gray-900 dark:text-white">$1</h1>')
+    .replace(/^#### (.*$)/gm, '<h4 class="text-base font-bold mt-5 mb-2 text-gray-900">$1</h4>')
+    .replace(/^### (.*$)/gm, '<h3 class="text-lg font-bold mt-6 mb-2 text-gray-900">$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold mt-8 mb-3 text-gray-900">$1</h2>')
+    .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold mt-8 mb-4 text-gray-900">$1</h1>')
     // Bold & italic
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     // Lists
-    .replace(/^- (.*$)/gm, '<li class="ml-4 mb-1 text-gray-700 dark:text-gray-300">• $1</li>')
+    .replace(/^- (.*$)/gm, '<li class="ml-4 mb-1 text-gray-700">• $1</li>')
     // Paragraphs
-    .replace(/^(?!<)(.*$)/gm, '<p class="mb-3 text-gray-700 dark:text-gray-300 leading-relaxed">$1</p>')
+    .replace(/^(?!<)(.*$)/gm, '<p class="mb-3 text-gray-700 leading-relaxed">$1</p>')
     .replace(/<p class="mb-3.*?><\/p>/g, '');
 }
 
@@ -419,24 +419,24 @@ export default function BlogPage() {
   };
 
   return (
-    <div className="h-full overflow-auto bg-gray-50 dark:bg-gray-950">
+    <div className="h-full overflow-auto bg-gray-50">
       {/* ═══════════ TOP ACTION BAR ═══════════ */}
-      <div className="flex items-center justify-between px-6 py-3 md:px-10 bg-white dark:bg-gray-900 border-b border-gray-200/80 dark:border-gray-800">
+      <div className="flex items-center justify-between px-6 py-3 md:px-10 bg-white border-b border-gray-200/80">
         <div className="flex items-center gap-2.5">
           <img src="/ainos.jpg" alt="AINOS" className="w-4 h-4 rounded-full object-cover" />
-          <span className="text-sm font-bold text-slate-900 dark:text-white">Blogs & Content</span>
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 uppercase tracking-wider">AUTOPILOT</span>
+          <span className="text-sm font-bold text-slate-900">Blogs & Content</span>
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 uppercase tracking-wider">AUTOPILOT</span>
           {isAdminUser && (
-            <div className="ml-3 flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 border border-gray-200 dark:border-gray-700">
+            <div className="ml-3 flex items-center bg-gray-100 rounded-lg p-0.5 border border-gray-200">
               <button onClick={() => setPlatformMode(false)}
                 className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all ${
-                  !platformMode ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  !platformMode ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900:text-white'
                 }`}>
                 My Blogs
               </button>
               <button onClick={() => setPlatformMode(true)}
                 className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1 ${
-                  platformMode ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  platformMode ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900:text-white'
                 }`}>
                 <Globe className="w-3 h-3" /> Platform
               </button>
@@ -461,7 +461,7 @@ export default function BlogPage() {
       </div>
 
       {/* ═══════════ HERO BANNER ═══════════ */}
-      <div className="relative bg-gradient-to-br from-[#1a1040] via-[#2d1b69] to-[#3b1f8e] dark:from-[#0f0a2e] dark:via-[#1a1040] dark:to-[#2d1b69] overflow-hidden">
+      <div className="relative bg-gradient-to-br from-[#1a1040] via-[#2d1b69] to-[#3b1f8e] overflow-hidden">
         {/* Wave decoration */}
         <div className="absolute bottom-0 left-0 right-0 h-20">
           <svg viewBox="0 0 1440 80" fill="none" className="absolute bottom-0 w-full h-full">
@@ -538,15 +538,15 @@ export default function BlogPage() {
           ].map((s, i) => (
             <motion.div key={s.label}
               initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 + i * 0.08 }}
-              className="bg-white dark:bg-gray-900 rounded-2xl p-5 border border-gray-200/80 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow"
+              className="bg-white rounded-2xl p-5 border border-gray-200/80 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="flex items-center gap-3">
                 <div className={`w-11 h-11 rounded-full ${s.iconBg} flex items-center justify-center flex-shrink-0`}>
                   <s.icon className={`w-5 h-5 ${s.iconColor}`} />
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{s.label}</p>
-                  <p className="text-2xl font-extrabold text-slate-900 dark:text-white leading-tight">{s.value}</p>
+                  <p className="text-xs font-medium text-slate-500">{s.label}</p>
+                  <p className="text-2xl font-extrabold text-slate-900 leading-tight">{s.value}</p>
                   <p className={`text-[11px] font-medium ${s.subColor}`}>{s.sub}</p>
                 </div>
               </div>
@@ -557,51 +557,51 @@ export default function BlogPage() {
 
       {/* ═══════════ HOW IT WORKS ═══════════ */}
       <div className="px-4 py-4 sm:px-6 sm:py-6 md:px-10 max-w-[1400px] mx-auto">
-        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/10 dark:to-indigo-900/10 rounded-2xl border border-purple-100 dark:border-purple-800/30 p-5 sm:p-6">
+        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl border border-purple-100 p-5 sm:p-6">
           <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
               <BookOpen className="w-5 h-5 text-purple-600" />
             </div>
             <div className="flex-1">
-              <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3">How Blog Automation Works</h3>
+              <h3 className="text-sm font-bold text-gray-900 mb-3">How Blog Automation Works</h3>
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div className="flex items-start gap-2">
                   <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
                   <div>
-                    <p className="text-xs font-semibold text-gray-900 dark:text-white">Connect Website</p>
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400">Add your website URL. AINOS analyzes niche & brand voice.</p>
+                    <p className="text-xs font-semibold text-gray-900">Connect Website</p>
+                    <p className="text-[11px] text-gray-500">Add your website URL. AINOS analyzes niche & brand voice.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
                   <div>
-                    <p className="text-xs font-semibold text-gray-900 dark:text-white">Paste Embed Code</p>
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400">Add 2-line script to your site. AINOS auto-detects integration.</p>
+                    <p className="text-xs font-semibold text-gray-900">Paste Embed Code</p>
+                    <p className="text-[11px] text-gray-500">Add 2-line script to your site. AINOS auto-detects integration.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
                   <div>
-                    <p className="text-xs font-semibold text-gray-900 dark:text-white">Daily New Blogs</p>
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400">AI generates 1 fresh SEO blog every day. Each gets its own page URL.</p>
+                    <p className="text-xs font-semibold text-gray-900">Daily New Blogs</p>
+                    <p className="text-[11px] text-gray-500">AI generates 1 fresh SEO blog every day. Each gets its own page URL.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">4</span>
                   <div>
-                    <p className="text-xs font-semibold text-gray-900 dark:text-white">Auto Cleanup (7 Days)</p>
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400">Blogs older than 7 days auto-remove. Always fresh content.</p>
+                    <p className="text-xs font-semibold text-gray-900">Auto Cleanup (7 Days)</p>
+                    <p className="text-[11px] text-gray-500">Blogs older than 7 days auto-remove. Always fresh content.</p>
                   </div>
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-purple-100 dark:border-purple-800/30 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex flex-wrap items-center gap-4 text-[11px] text-gray-500 dark:text-gray-400">
-                  <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-green-500" /> Individual blog pages (<code className="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-[10px]">blog/slug</code>)</span>
+              <div className="mt-3 pt-3 border-t border-purple-100 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-4 text-[11px] text-gray-500">
+                  <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-green-500" /> Individual blog pages (<code className="px-1 py-0.5 bg-gray-100 rounded text-[10px]">blog/slug</code>)</span>
                   <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-green-500" /> Replaces existing blog sections</span>
                   <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-green-500" /> SEO-optimized with JSON-LD</span>
                   <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-green-500" /> Zero maintenance required</span>
                 </div>
-                <a href="/marketing/blog/guide" className="flex items-center gap-1 text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors flex-shrink-0">
+                <a href="/marketing/blog/guide" className="flex items-center gap-1 text-[11px] font-semibold text-purple-600 hover:text-purple-800:text-purple-300 transition-colors flex-shrink-0">
                   Read Full Integration Guide <ArrowRight className="w-3.5 h-3.5" />
                 </a>
               </div>
@@ -613,7 +613,7 @@ export default function BlogPage() {
       {/* ═══════════ CONNECTED WEBSITES ═══════════ */}
       <div className="px-4 py-6 sm:px-6 sm:py-8 md:px-10 max-w-[1400px] mx-auto">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
             <Globe className="w-5 h-5 text-purple-600" /> Connected Websites
           </h2>
           <button onClick={() => setShowConnect(true)}
@@ -628,11 +628,11 @@ export default function BlogPage() {
             <p className="text-sm text-gray-500">Loading websites...</p>
           </div>
         ) : websites.length === 0 ? (
-          <div className="text-center py-16 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800">
-            <div className="w-16 h-16 rounded-2xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center mx-auto mb-4">
+          <div className="text-center py-16 bg-white rounded-2xl border border-gray-200">
+            <div className="w-16 h-16 rounded-2xl bg-purple-50 flex items-center justify-center mx-auto mb-4">
               <Globe className="w-8 h-8 text-purple-400" />
             </div>
-            <p className="text-lg font-semibold text-gray-900 dark:text-white mb-1">No websites connected</p>
+            <p className="text-lg font-semibold text-gray-900 mb-1">No websites connected</p>
             <p className="text-sm text-gray-500 mb-6">Connect your website to start auto-generating blogs</p>
             <button onClick={() => setShowConnect(true)}
               className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 transition-colors inline-flex items-center gap-2">
@@ -644,42 +644,42 @@ export default function BlogPage() {
             {websites.map((w, i) => (
               <motion.div key={w.id}
                 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-                className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="p-5 sm:p-6">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     {/* Left: Website info */}
                     <div className="flex items-start gap-4">
-                      <div className="w-14 h-14 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center flex-shrink-0 border border-purple-100 dark:border-purple-800">
+                      <div className="w-14 h-14 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0 border border-purple-100">
                         <Globe className="w-6 h-6 text-purple-500" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-bold text-gray-900 dark:text-white text-sm sm:text-base">{w.name || w.url}</h3>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                          <h3 className="font-bold text-gray-900 text-sm sm:text-base">{w.name || w.url}</h3>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Connected
                           </span>
                           {w.widgetIntegrated ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 flex items-center gap-1">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 flex items-center gap-1">
                               <CheckCircle className="w-3 h-3" /> Widget Live
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 flex items-center gap-1">
                               <AlertCircle className="w-3 h-3" /> Widget Not Integrated
                             </span>
                           )}
                           {platformMode && w.company?.name && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">{w.company.name}</span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700">{w.company.name}</span>
                           )}
                         </div>
                         <a href={w.url} target="_blank" rel="noopener noreferrer"
-                          className="text-xs text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 mt-0.5">
+                          className="text-xs text-purple-600 hover:underline flex items-center gap-1 mt-0.5">
                           {w.url} <ExternalLink className="w-3 h-3" />
                         </a>
                         {w.niche && <p className="text-[11px] text-gray-400 mt-1">Niche: {w.niche}</p>}
                         {/* Mini stats */}
                         <div className="flex items-center gap-4 mt-2">
                           <div className="text-center">
-                            <p className="text-lg font-bold text-gray-900 dark:text-white">{w.totalBlogs}</p>
+                            <p className="text-lg font-bold text-gray-900">{w.totalBlogs}</p>
                             <p className="text-[10px] text-gray-400">Blogs Generated</p>
                           </div>
                           <div className="text-center">
@@ -697,21 +697,21 @@ export default function BlogPage() {
                     {/* Right: Actions */}
                     <div className="flex items-center gap-2 sm:flex-col sm:items-end">
                       <button onClick={() => toggleExpandWebsite(w.id)}
-                        className="px-4 py-2 rounded-xl text-xs font-bold text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center gap-1.5">
+                        className="px-4 py-2 rounded-xl text-xs font-bold text-blue-700 border border-blue-200 hover:bg-blue-50:bg-blue-900/20 transition-colors flex items-center gap-1.5">
                         <FileText className="w-3.5 h-3.5" /> {expandedWebsiteId === w.id ? 'Hide Blogs' : 'View Blogs'}
                         <ChevronDown className={`w-3 h-3 transition-transform ${expandedWebsiteId === w.id ? 'rotate-180' : ''}`} />
                       </button>
                       <button onClick={() => { setAiForm({ topic: '', keywords: w.niche || '', tone: 'Professional', length: 'medium', industry: w.niche || 'General Business' }); setShowAI(true); }}
-                        className="px-4 py-2 rounded-xl text-xs font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center gap-1.5">
+                        className="px-4 py-2 rounded-xl text-xs font-bold text-emerald-700 border border-emerald-200 hover:bg-emerald-50:bg-emerald-900/20 transition-colors flex items-center gap-1.5">
                         <Wand2 className="w-3.5 h-3.5" /> Generate Blog
                       </button>
                       <button onClick={() => handleSchedule30(w.id)} disabled={schedulingId === w.id}
-                        className="px-4 py-2 rounded-xl text-xs font-bold text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors flex items-center gap-1.5 disabled:opacity-50">
+                        className="px-4 py-2 rounded-xl text-xs font-bold text-purple-700 border border-purple-200 hover:bg-purple-50:bg-purple-900/20 transition-colors flex items-center gap-1.5 disabled:opacity-50">
                         {schedulingId === w.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Zap className="w-3.5 h-3.5" /> Schedule 30 More</>}
                         <ArrowRight className="w-3 h-3" />
                       </button>
                       <button onClick={() => handleDisconnectWebsite(w.id)} disabled={disconnectingId === w.id}
-                        className="px-4 py-2 rounded-xl text-xs font-bold text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-1.5 disabled:opacity-50">
+                        className="px-4 py-2 rounded-xl text-xs font-bold text-red-600 border border-red-200 hover:bg-red-50:bg-red-900/20 transition-colors flex items-center gap-1.5 disabled:opacity-50">
                         {disconnectingId === w.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Trash2 className="w-3.5 h-3.5" /> Disconnect</>}
                       </button>
                     </div>
@@ -726,22 +726,22 @@ export default function BlogPage() {
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.3 }}
-                      className="overflow-hidden border-t border-gray-200 dark:border-gray-800"
+                      className="overflow-hidden border-t border-gray-200"
                     >
                       <div className="p-5 sm:p-6">
                         <div className="flex items-center justify-between mb-4">
-                          <h4 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                          <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
                             <FileText className="w-4 h-4 text-purple-600" /> Blogs for {w.name || w.url}
                           </h4>
                           <span className="text-xs text-gray-500">{(websiteBlogs[w.id] || []).length} blogs</span>
                         </div>
 
                         {!w.widgetIntegrated && (
-                          <div className="mb-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 flex items-start gap-3">
+                          <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
                             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                             <div>
-                              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Widget Not Integrated</p>
-                              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                              <p className="text-sm font-semibold text-amber-800">Widget Not Integrated</p>
+                              <p className="text-xs text-amber-700 mt-0.5">
                                 Blog generation is paused. Paste the embed code on your website first — AINOS will auto-detect the integration and start generating blogs.
                               </p>
                             </div>
@@ -754,7 +754,7 @@ export default function BlogPage() {
                             <p className="text-xs text-gray-500">Loading blogs...</p>
                           </div>
                         ) : (websiteBlogs[w.id] || []).length === 0 ? (
-                          <div className="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                          <div className="text-center py-8 bg-gray-50 rounded-xl">
                             <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                             <p className="text-sm text-gray-500">No blogs yet. Click Schedule 30 More to generate blogs.</p>
                           </div>
@@ -765,7 +765,7 @@ export default function BlogPage() {
                                 initial={{ opacity: 0, y: 8 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 onClick={() => setShowReader(post)}
-                                className="bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden group cursor-pointer hover:shadow-lg hover:border-purple-300 dark:hover:border-purple-700 transition-all"
+                                className="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden group cursor-pointer hover:shadow-lg hover:border-purple-300:border-purple-700 transition-all"
                               >
                                 {/* Featured Image — always show image or gradient placeholder */}
                                 <div className="h-32 overflow-hidden bg-gradient-to-br from-purple-600 via-indigo-600 to-indigo-800">
@@ -782,36 +782,36 @@ export default function BlogPage() {
                                   {/* Status */}
                                   <div className="flex items-center justify-between mb-2">
                                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide ${
-                                      post.status === 'published' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                                      post.status === 'draft' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                                      'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
+                                      post.status === 'published' ? 'bg-emerald-100 text-emerald-700' :
+                                      post.status === 'draft' ? 'bg-amber-100 text-amber-700' :
+                                      'bg-violet-100 text-violet-700'
                                     }`}>{post.status}</span>
                                     {post.category && (
-                                      <span className="text-[10px] font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-1.5 py-0.5 rounded">
+                                      <span className="text-[10px] font-medium text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">
                                         {post.category}
                                       </span>
                                     )}
                                   </div>
                                   {/* Title */}
-                                  <h5 className="font-semibold text-sm text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                                  <h5 className="font-semibold text-sm text-gray-900 mb-2 line-clamp-2 group-hover:text-purple-600:text-purple-400 transition-colors">
                                     {post.title}
                                   </h5>
                                   {/* Excerpt */}
                                   {post.excerpt && (
-                                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">{post.excerpt}</p>
+                                    <p className="text-xs text-gray-500 line-clamp-2 mb-3">{post.excerpt}</p>
                                   )}
                                   {/* Tags */}
                                   {post.tags && Array.isArray(post.tags) && post.tags.length > 0 && (
                                     <div className="flex flex-wrap gap-1 mb-3">
                                       {post.tags.slice(0, 3).map((tag, j) => (
-                                        <span key={j} className="px-1.5 py-0.5 rounded text-[9px] bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 font-medium">
+                                        <span key={j} className="px-1.5 py-0.5 rounded text-[9px] bg-purple-50 text-purple-600 font-medium">
                                           #{tag}
                                         </span>
                                       ))}
                                     </div>
                                   )}
                                   {/* Meta + Actions */}
-                                  <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                                  <div className="flex items-center justify-between pt-2 border-t border-gray-200">
                                     <div className="flex items-center gap-2 text-[10px] text-gray-400">
                                       {post.publishedAt && (
                                         <span className="flex items-center gap-1">
@@ -823,23 +823,23 @@ export default function BlogPage() {
                                       {post.status === 'published' && (
                                         <a href={`/blog/${post.slug}/`} target="_blank" rel="noopener noreferrer"
                                           onClick={(e) => e.stopPropagation()}
-                                          className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View Public Post">
+                                          className="p-1.5 rounded-lg hover:bg-blue-50:bg-blue-900/20" title="View Public Post">
                                           <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
                                         </a>
                                       )}
                                       {post.status === 'draft' && (
                                         <button onClick={(e) => { e.stopPropagation(); handleUpdateStatus(post.id, 'published'); }}
-                                          className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20" title="Publish">
+                                          className="p-1.5 rounded-lg hover:bg-emerald-50:bg-emerald-900/20" title="Publish">
                                           <Send className="w-3.5 h-3.5 text-emerald-500" />
                                         </button>
                                       )}
                                       <button onClick={(e) => { e.stopPropagation(); handleRegenerate(post.id); }}
                                         disabled={regenerating === post.id}
-                                        className="p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20" title="Regenerate with AI">
+                                        className="p-1.5 rounded-lg hover:bg-purple-50:bg-purple-900/20" title="Regenerate with AI">
                                         <RefreshCw className={`w-3.5 h-3.5 text-purple-500 ${regenerating === post.id ? 'animate-spin' : ''}`} />
                                       </button>
                                       <button onClick={(e) => { e.stopPropagation(); handleDelete(post.id); }}
-                                        className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete">
+                                        className="p-1.5 rounded-lg hover:bg-red-50:bg-red-900/20" title="Delete">
                                         <Trash2 className="w-3.5 h-3.5 text-red-400" />
                                       </button>
                                     </div>
@@ -867,21 +867,21 @@ export default function BlogPage() {
             onClick={() => !generating && setShowAI(false)}>
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
               onClick={e => e.stopPropagation()}
-              className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-3xl border border-gray-200 dark:border-gray-800 shadow-2xl max-h-[90vh] overflow-auto">
+              className="bg-white rounded-2xl w-full max-w-3xl border border-gray-200 shadow-2xl max-h-[90vh] overflow-auto">
               {/* Modal Header */}
-              <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-6 z-10">
+              <div className="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
                       <Wand2 className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-gray-900 dark:text-white">AI Blog Agent</h2>
+                      <h2 className="text-lg font-bold text-gray-900">AI Blog Agent</h2>
                       <p className="text-xs text-gray-500">Research, write & publish SEO-optimized content</p>
                     </div>
                   </div>
                   <button onClick={() => setShowAI(false)} disabled={generating}
-                    className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-50">
+                    className="p-2 rounded-xl hover:bg-gray-100:bg-gray-800 transition-colors disabled:opacity-50">
                     <X className="w-5 h-5 text-gray-500" />
                   </button>
                 </div>
@@ -891,36 +891,36 @@ export default function BlogPage() {
                 {!generated ? (
                   <div className="space-y-5">
                     <div>
-                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Blog Topic *</label>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Blog Topic *</label>
                       <input value={aiForm.topic} onChange={e => setAiForm({ ...aiForm, topic: e.target.value })}
                         placeholder="e.g., How AI is Transforming Small Business Operations in 2025"
-                        className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                        className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">SEO Keywords</label>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">SEO Keywords</label>
                       <input value={aiForm.keywords} onChange={e => setAiForm({ ...aiForm, keywords: e.target.value })}
                         placeholder="e.g., AI for business, small business automation, business tools"
-                        className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                        className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Tone</label>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">Tone</label>
                         <select value={aiForm.tone} onChange={e => setAiForm({ ...aiForm, tone: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500">
+                          className="w-full px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500">
                           {tones.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Length</label>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">Length</label>
                         <select value={aiForm.length} onChange={e => setAiForm({ ...aiForm, length: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500">
+                          className="w-full px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500">
                           {lengths.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Industry</label>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">Industry</label>
                         <select value={aiForm.industry} onChange={e => setAiForm({ ...aiForm, industry: e.target.value })}
-                          className="w-full px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500">
+                          className="w-full px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500">
                           {industries.map(ind => <option key={ind} value={ind}>{ind}</option>)}
                         </select>
                       </div>
@@ -942,12 +942,12 @@ export default function BlogPage() {
 
                     {generating && (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                        className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/10 dark:to-indigo-900/10 rounded-xl p-5 border border-purple-100 dark:border-purple-900/30">
+                        className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-5 border border-purple-100">
                         <div className="flex items-center gap-2 mb-3">
                           <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
-                          <p className="text-sm font-semibold text-purple-700 dark:text-purple-300">AI Blog Agent is working...</p>
+                          <p className="text-sm font-semibold text-purple-700">AI Blog Agent is working...</p>
                         </div>
-                        <div className="space-y-1.5 text-xs text-purple-600/70 dark:text-purple-400/70">
+                        <div className="space-y-1.5 text-xs text-purple-600/70">
                           <p>• Researching topic & analyzing keywords...</p>
                           <p>• Writing SEO-optimized content with headings...</p>
                           <p>• Generating featured image...</p>
@@ -959,27 +959,27 @@ export default function BlogPage() {
                 ) : (
                   <div className="space-y-5">
                     {/* Success banner */}
-                    <div className="bg-emerald-50 dark:bg-emerald-900/10 rounded-xl p-4 border border-emerald-100 dark:border-emerald-900/30">
+                    <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
                       <div className="flex items-center gap-2 mb-1">
-                        <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                        <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Blog post generated successfully!</p>
+                        <CheckCircle className="w-4 h-4 text-emerald-600" />
+                        <p className="text-sm font-semibold text-emerald-700">Blog post generated successfully!</p>
                       </div>
-                      <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70">Review and edit below, then publish or save as draft</p>
+                      <p className="text-xs text-emerald-600/70">Review and edit below, then publish or save as draft</p>
                     </div>
 
                     {/* SEO Score */}
                     {generated.seoScore && (
-                      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="bg-white rounded-xl p-4 border border-gray-200">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
                             <TrendingUp className="w-4 h-4 text-purple-600" />
-                            <span className="text-sm font-semibold text-gray-900 dark:text-white">SEO / AEO Score</span>
+                            <span className="text-sm font-semibold text-gray-900">SEO / AEO Score</span>
                           </div>
                           <span className={`text-2xl font-bold ${
                             generated.seoScore >= 80 ? 'text-emerald-600' : generated.seoScore >= 60 ? 'text-amber-600' : 'text-red-600'
                           }`}>{generated.seoScore}/100</span>
                         </div>
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-3">
+                        <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
                           <div className={`h-2 rounded-full transition-all ${
                             generated.seoScore >= 80 ? 'bg-emerald-500' : generated.seoScore >= 60 ? 'bg-amber-500' : 'bg-red-500'
                           }`} style={{ width: `${generated.seoScore}%` }} />
@@ -999,8 +999,8 @@ export default function BlogPage() {
                     {/* Featured Image Preview */}
                     {generated.featuredImage && (
                       <div>
-                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Featured Image</label>
-                        <div className="relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">Featured Image</label>
+                        <div className="relative rounded-xl overflow-hidden border border-gray-200">
                           <img src={generated.featuredImage} alt="Generated" className="w-full aspect-[16/9] object-cover"
                             onError={(e) => { (e.target as HTMLImageElement).src = ''; (e.target as HTMLImageElement).style.display = 'none'; }} />
                         </div>
@@ -1008,38 +1008,38 @@ export default function BlogPage() {
                     )}
 
                     <div>
-                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Title</label>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Title</label>
                       <input value={generated.title} onChange={e => setGenerated({ ...generated, title: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Slug</label>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">Slug</label>
                         <input value={generated.slug} onChange={e => setGenerated({ ...generated, slug: e.target.value })}
-                          className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                          className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-500 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Category</label>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1.5">Category</label>
                         <input value={generated.category || ''} onChange={e => setGenerated({ ...generated, category: e.target.value })}
-                          className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                          className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Meta Description (SEO)</label>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Meta Description (SEO)</label>
                       <textarea value={generated.excerpt} onChange={e => setGenerated({ ...generated, excerpt: e.target.value })} rows={2}
-                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 resize-none" />
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 resize-none" />
                       <p className="text-[10px] text-gray-400 mt-1">{generated.excerpt.length}/160 characters</p>
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Content (Markdown)</label>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Content (Markdown)</label>
                       <textarea value={generated.content} onChange={e => setGenerated({ ...generated, content: e.target.value })} rows={10}
-                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 resize-y" />
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 resize-y" />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Tags</label>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">Tags</label>
                       <div className="flex flex-wrap gap-2 mb-2">
                         {generated.tags.map((tag, i) => (
-                          <span key={i} className="px-2.5 py-1 rounded-full text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                          <span key={i} className="px-2.5 py-1 rounded-full text-xs bg-purple-50 text-purple-600 flex items-center gap-1">
                             #{tag}
                             <button onClick={() => setGenerated({ ...generated, tags: generated.tags.filter((_, j) => j !== i) })}
                               className="hover:text-red-500"><X className="w-3 h-3" /></button>
@@ -1052,22 +1052,22 @@ export default function BlogPage() {
                           setGenerated({ ...generated, tags: [...generated.tags, (e.target as HTMLInputElement).value.trim()] });
                           (e.target as HTMLInputElement).value = '';
                         }
-                      }} className="w-full px-4 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                      }} className="w-full px-4 py-2 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
                     </div>
 
                     {/* Schedule Date */}
                     <div>
-                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                      <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                         <CalendarRange className="w-3.5 h-3.5 inline mr-1" /> Schedule Publish (optional)
                       </label>
                       <input type="datetime-local" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                        className="w-full px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
                       <p className="text-[10px] text-gray-400 mt-1">Leave empty to publish now or save as draft</p>
                     </div>
 
-                    <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">
+                    <div className="flex gap-3 pt-4 border-t border-gray-200">
                       <button onClick={handleSaveDraft}
-                        className="flex-1 py-3 rounded-xl text-sm font-semibold border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                        className="flex-1 py-3 rounded-xl text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50:bg-gray-800 transition-colors">
                         Save Draft
                       </button>
                       {scheduleDate ? (
@@ -1098,7 +1098,7 @@ export default function BlogPage() {
             onClick={() => setShowReader(null)}>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
               onClick={e => e.stopPropagation()}
-              className="bg-white dark:bg-gray-900 w-full max-w-4xl my-8 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-2xl overflow-hidden mx-4">
+              className="bg-white w-full max-w-4xl my-8 rounded-2xl border border-gray-200 shadow-2xl overflow-hidden mx-4">
             {/* Article Content */}
             <div className="p-8">
               {/* Title & Meta */}
@@ -1106,7 +1106,7 @@ export default function BlogPage() {
                 {/* Status + Category Badges */}
                 <div className="flex items-center gap-2 mb-4">
                   {showReader.category && (
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">
                       {showReader.category}
                     </span>
                   )}
@@ -1114,7 +1114,7 @@ export default function BlogPage() {
                     showReader.status === 'published' ? 'bg-emerald-500' : 'bg-amber-500'
                   }`}>{showReader.status}</span>
                 </div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">{showReader.title}</h1>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">{showReader.title}</h1>
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
                   {showReader.publishedAt && (
                     <span className="flex items-center gap-1.5">
@@ -1136,39 +1136,39 @@ export default function BlogPage() {
 
               {/* Excerpt */}
               {showReader.excerpt && (
-                <div className="mb-8 p-4 bg-purple-50 dark:bg-purple-900/10 rounded-xl border-l-4 border-purple-500">
-                  <p className="text-sm text-purple-800 dark:text-purple-200 italic leading-relaxed">{showReader.excerpt}</p>
+                <div className="mb-8 p-4 bg-purple-50 rounded-xl border-l-4 border-purple-500">
+                  <p className="text-sm text-purple-800 italic leading-relaxed">{showReader.excerpt}</p>
                 </div>
               )}
 
               {/* Featured image (published + queued previews both show real photos) */}
               {showReader.featuredImage && (
-                <div className="mb-8 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800">
+                <div className="mb-8 rounded-2xl overflow-hidden border border-gray-200">
                   <img src={showReader.featuredImage} alt={showReader.title} className="w-full h-64 md:h-80 object-cover" />
                 </div>
               )}
 
               {/* Body */}
               {(showReader.isSchedule || !showReader.content) ? (
-                <div className="rounded-2xl border-2 border-dashed border-purple-300 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/10 p-8 md:p-10 text-center">
+                <div className="rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50/50 p-8 md:p-10 text-center">
                   <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
                     <CalendarRange className="w-7 h-7 text-white" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Your article is being prepared</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto leading-relaxed">
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Your article is being prepared</h3>
+                  <p className="text-sm text-gray-500 max-w-md mx-auto leading-relaxed">
                     The full 3000-word blog with headings, FAQs and a premium featured image will appear here automatically within minutes — no action needed.
                   </p>
                 </div>
               ) : (
-                <div className="prose dark:prose-invert max-w-none"
+                <div className="prose max-w-none"
                   dangerouslySetInnerHTML={{ __html: renderMarkdown(showReader.content || '') }} />
               )}
 
               {/* Tags */}
               {showReader.tags && Array.isArray(showReader.tags) && (
-                <div className="flex flex-wrap gap-2 mt-8 pt-6 border-t border-gray-200 dark:border-gray-800">
+                <div className="flex flex-wrap gap-2 mt-8 pt-6 border-t border-gray-200">
                   {showReader.tags.map((tag, i) => (
-                    <span key={i} className="px-3 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-medium">
+                    <span key={i} className="px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-600 font-medium">
                       #{tag}
                     </span>
                   ))}
@@ -1176,9 +1176,9 @@ export default function BlogPage() {
               )}
 
               {/* Actions */}
-              <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200 dark:border-gray-800">
+              <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
                 <button onClick={() => setShowReader(null)}
-                  className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+                  className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700:text-gray-300 transition-colors">
                   <ArrowLeft className="w-4 h-4" /> Back to articles
                 </button>
                 <div className="flex items-center gap-2">
@@ -1191,12 +1191,12 @@ export default function BlogPage() {
                   {!showReader.isSchedule && (
                     <button onClick={() => handleRegenerate(showReader.id)}
                       disabled={regenerating === showReader.id}
-                      className="px-4 py-2 rounded-xl text-sm font-semibold text-purple-600 border border-purple-200 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors flex items-center gap-2">
+                      className="px-4 py-2 rounded-xl text-sm font-semibold text-purple-600 border border-purple-200 hover:bg-purple-50:bg-purple-900/20 transition-colors flex items-center gap-2">
                       <RefreshCw className={`w-3.5 h-3.5 ${regenerating === showReader.id ? 'animate-spin' : ''}`} /> Regenerate
                     </button>
                   )}
                   <button onClick={() => { handleDelete(showReader.id); setShowReader(null); }}
-                    className="px-4 py-2 rounded-xl text-sm font-semibold text-red-600 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2">
+                    className="px-4 py-2 rounded-xl text-sm font-semibold text-red-600 border border-red-200 hover:bg-red-50:bg-red-900/20 transition-colors flex items-center gap-2">
                     <Trash2 className="w-3.5 h-3.5" /> Delete
                   </button>
                 </div>
@@ -1214,20 +1214,20 @@ export default function BlogPage() {
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-2 sm:p-4 pt-16 sm:pt-4"
             onClick={() => setShowEmbed(false)}>
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-y-auto border border-gray-200 dark:border-gray-800"
+              className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-y-auto border border-gray-200"
               onClick={e => e.stopPropagation()}>
-              <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-800">
+              <div className="p-4 sm:p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
                       <Globe className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-gray-900 dark:text-white">Publish to Your Website</h2>
+                      <h2 className="text-lg font-bold text-gray-900">Publish to Your Website</h2>
                       <p className="text-xs text-gray-500">Works on WordPress, Shopify, React, HTML, Wix & more</p>
                     </div>
                   </div>
-                  <button onClick={() => setShowEmbed(false)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                  <button onClick={() => setShowEmbed(false)} className="p-2 rounded-lg hover:bg-gray-100:bg-gray-800 transition-colors">
                     <X className="w-5 h-5 text-gray-500" />
                   </button>
                 </div>
@@ -1235,37 +1235,37 @@ export default function BlogPage() {
 
               <div className="p-4 sm:p-6 space-y-6">
                 {/* HOW IT WORKS - 3 Steps */}
-                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl p-5 border border-emerald-200 dark:border-emerald-800">
-                  <h3 className="font-bold text-sm text-emerald-900 dark:text-emerald-200 mb-4 flex items-center gap-2">
+                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-5 border border-emerald-200">
+                  <h3 className="font-bold text-sm text-emerald-900 mb-4 flex items-center gap-2">
                     <Zap className="w-4 h-4" /> 3 Simple Steps — Done in 30 Seconds!
                   </h3>
                   <div className="grid grid-cols-3 gap-3">
                     <div className="text-center">
                       <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-2 text-lg font-bold">1</div>
-                      <p className="text-xs font-semibold text-emerald-900 dark:text-emerald-200">Copy Code</p>
-                      <p className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-1">Click the copy button</p>
+                      <p className="text-xs font-semibold text-emerald-900">Copy Code</p>
+                      <p className="text-[10px] text-emerald-700 mt-1">Click the copy button</p>
                     </div>
                     <div className="text-center">
                       <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-2 text-lg font-bold">2</div>
-                      <p className="text-xs font-semibold text-emerald-900 dark:text-emerald-200">Paste in Website</p>
-                      <p className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-1">Any page, any platform</p>
+                      <p className="text-xs font-semibold text-emerald-900">Paste in Website</p>
+                      <p className="text-[10px] text-emerald-700 mt-1">Any page, any platform</p>
                     </div>
                     <div className="text-center">
                       <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-2 text-lg font-bold">3</div>
-                      <p className="text-xs font-semibold text-emerald-900 dark:text-emerald-200">Blogs Go Live!</p>
-                      <p className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-1">Auto-updates daily</p>
+                      <p className="text-xs font-semibold text-emerald-900">Blogs Go Live!</p>
+                      <p className="text-[10px] text-emerald-700 mt-1">Auto-updates daily</p>
                     </div>
                   </div>
                 </div>
 
                 {/* MAIN: Copy & Paste Code — Highlighted */}
-                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-5 border-2 border-purple-300 dark:border-purple-700">
+                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-5 border-2 border-purple-300">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center">
                       <Code className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm text-gray-900 dark:text-white">Copy This Code & Paste in Your Website</h3>
+                      <h3 className="font-bold text-sm text-gray-900">Copy This Code & Paste in Your Website</h3>
                       <p className="text-[10px] text-gray-500">Works on WordPress, Shopify, Wix, Squarespace, HTML — ANY platform!</p>
                     </div>
                   </div>
@@ -1275,7 +1275,7 @@ export default function BlogPage() {
                       <span className="text-gray-500 font-medium">Layout:</span>
                       {(['grid', 'list'] as const).map(s => (
                         <button key={s} onClick={() => setEmbedStyle(s)}
-                          className={`px-2.5 py-1 rounded-lg font-semibold capitalize transition-colors ${embedStyle === s ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+                          className={`px-2.5 py-1 rounded-lg font-semibold capitalize transition-colors ${embedStyle === s ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200:bg-gray-700'}`}>
                           {s}
                         </button>
                       ))}
@@ -1284,7 +1284,7 @@ export default function BlogPage() {
                       <span className="text-gray-500 font-medium">Show:</span>
                       {[3, 6, 9].map(n => (
                         <button key={n} onClick={() => setEmbedLimit(n)}
-                          className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${embedLimit === n ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+                          className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${embedLimit === n ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200:bg-gray-700'}`}>
                           {n}
                         </button>
                       ))}
@@ -1292,12 +1292,12 @@ export default function BlogPage() {
                     <div className="flex items-center gap-1.5">
                       <span className="text-gray-500 font-medium">Color:</span>
                       <button onClick={() => setEmbedColor('')}
-                        className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${!embedColor ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+                        className={`px-2.5 py-1 rounded-lg font-semibold transition-colors ${!embedColor ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200:bg-gray-700'}`}>
                         Auto
                       </button>
                       {['#7c3aed', '#2563eb', '#059669', '#ea580c', '#d46f48'].map(c => (
                         <button key={c} onClick={() => setEmbedColor(c)} title={c}
-                          className={`w-6 h-6 rounded-full border-2 transition-transform ${embedColor === c ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'}`}
+                          className={`w-6 h-6 rounded-full border-2 transition-transform ${embedColor === c ? 'border-gray-900 scale-110' : 'border-transparent'}`}
                           style={{ background: c }} />
                       ))}
                     </div>
@@ -1318,48 +1318,48 @@ export default function BlogPage() {
 
                 {/* Platform picker — simple steps for non-developers */}
                 <div>
-                  <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200 mb-1">Which website builder do you use?</h4>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3">
+                  <h4 className="font-semibold text-sm text-gray-800 mb-1">Which website builder do you use?</h4>
+                  <p className="text-[11px] text-gray-500 mb-3">
                     Pick your platform and follow the 3 easy steps. Even if you paste in the wrong spot, the widget automatically finds its own place on your page.
                   </p>
                   <div className="flex flex-wrap gap-2 mb-3">
                     {Object.keys(platformSteps).map(p => (
                       <button key={p} onClick={() => setEmbedPlatform(p)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${embedPlatform === p ? 'bg-purple-600 text-white border-purple-600' : 'border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-purple-400'}`}>
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${embedPlatform === p ? 'bg-purple-600 text-white border-purple-600' : 'border-gray-300 text-gray-600 hover:border-purple-400'}`}>
                         {p}
                       </button>
                     ))}
                   </div>
-                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
-                    <ol className="text-xs text-blue-900 dark:text-blue-200 space-y-2 list-decimal list-inside font-medium">
+                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                    <ol className="text-xs text-blue-900 space-y-2 list-decimal list-inside font-medium">
                       {platformSteps[embedPlatform].map((s, i) => <li key={i}>{s}</li>)}
                     </ol>
                   </div>
                 </div>
 
                 {/* Auto Theme Matching — Highlight */}
-                <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
-                  <h4 className="font-bold text-xs text-amber-900 dark:text-amber-200 mb-2 flex items-center gap-2">
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200">
+                  <h4 className="font-bold text-xs text-amber-900 mb-2 flex items-center gap-2">
                     <Palette className="w-3.5 h-3.5" /> Auto Theme Matching — Blogs Match Your Website Colors!
                   </h4>
-                  <p className="text-[10px] text-amber-800 dark:text-amber-300 mb-3">
+                  <p className="text-[10px] text-amber-800 mb-3">
                     Widget automatically detects your website{"'"}s primary color and adjusts blog card colors to match perfectly. No manual setup needed!
                   </p>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-white dark:bg-gray-900 rounded-lg p-2 border border-amber-200 dark:border-amber-700">
-                      <code className="text-amber-700 dark:text-amber-400 text-[10px]">{'data-color="#ff6b35"'}</code>
+                    <div className="bg-white rounded-lg p-2 border border-amber-200">
+                      <code className="text-amber-700 text-[10px]">{'data-color="#ff6b35"'}</code>
                       <p className="text-gray-500 mt-1 text-[10px]">Force specific color</p>
                     </div>
-                    <div className="bg-white dark:bg-gray-900 rounded-lg p-2 border border-amber-200 dark:border-amber-700">
-                      <code className="text-amber-700 dark:text-amber-400 text-[10px]">{'data-theme="dark"'}</code>
+                    <div className="bg-white rounded-lg p-2 border border-amber-200">
+                      <code className="text-amber-700 text-[10px]">{'data-theme="dark"'}</code>
                       <p className="text-gray-500 mt-1 text-[10px]">Force dark mode</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Auto design matching */}
-                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-                  <h4 className="font-semibold text-xs text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                  <h4 className="font-semibold text-xs text-gray-700 mb-1 flex items-center gap-2">
                     <Shield className="w-3.5 h-3.5" /> Matches Your Website Automatically
                   </h4>
                   <p className="text-[11px] text-gray-500 leading-relaxed">
@@ -1368,13 +1368,13 @@ export default function BlogPage() {
                 </div>
 
                 {/* Advanced Options */}
-                <details className="bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
-                  <summary className="p-4 cursor-pointer font-semibold text-xs text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                <details className="bg-gray-50 rounded-xl border border-gray-200">
+                  <summary className="p-4 cursor-pointer font-semibold text-xs text-gray-700 flex items-center gap-2">
                     <Zap className="w-3.5 h-3.5" /> Advanced Options (For Developers)
                   </summary>
                   <div className="px-4 pb-4 space-y-4">
                     <div>
-                      <h4 className="font-semibold text-xs text-gray-700 dark:text-gray-300 mb-2">REST API</h4>
+                      <h4 className="font-semibold text-xs text-gray-700 mb-2">REST API</h4>
                       <div className="relative">
                         <pre className="bg-gray-900 text-green-400 rounded-lg p-3 text-[10px] overflow-x-auto font-mono">
 {`fetch('${baseUrl}/api/blog-embed?limit=10')
@@ -1388,7 +1388,7 @@ export default function BlogPage() {
                       </div>
                     </div>
                     <div>
-                      <h4 className="font-semibold text-xs text-gray-700 dark:text-gray-300 mb-2">RSS Feed</h4>
+                      <h4 className="font-semibold text-xs text-gray-700 mb-2">RSS Feed</h4>
                       <div className="relative">
                         <pre className="bg-gray-900 text-green-400 rounded-lg p-3 text-[10px] overflow-x-auto font-mono">
 {`${baseUrl}/api/blog-rss`}
@@ -1400,7 +1400,7 @@ export default function BlogPage() {
                       </div>
                     </div>
                     <div>
-                      <h4 className="font-semibold text-xs text-gray-700 dark:text-gray-300 mb-2">XML Sitemap</h4>
+                      <h4 className="font-semibold text-xs text-gray-700 mb-2">XML Sitemap</h4>
                       <div className="relative">
                         <pre className="bg-gray-900 text-green-400 rounded-lg p-3 text-[10px] overflow-x-auto font-mono">
 {`${baseUrl}/api/blog-sitemap`}
@@ -1415,18 +1415,18 @@ export default function BlogPage() {
                 </details>
 
                 {/* SEO Benefits */}
-                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
-                  <h3 className="font-bold text-xs text-purple-900 dark:text-purple-200 mb-2 flex items-center gap-2">
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200">
+                  <h3 className="font-bold text-xs text-purple-900 mb-2 flex items-center gap-2">
                     <TrendingUp className="w-4 h-4" /> What You Get — Zero Effort!
                   </h3>
                   <div className="grid grid-cols-2 gap-1.5">
-                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700 dark:text-purple-300"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Google Rich Snippets (Schema.org)</div>
-                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700 dark:text-purple-300"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Social Media Sharing Cards</div>
-                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700 dark:text-purple-300"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Auto Keywords & Hashtags</div>
-                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700 dark:text-purple-300"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Mobile Responsive Design</div>
-                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700 dark:text-purple-300"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Daily Auto-Updated Content</div>
-                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700 dark:text-purple-300"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Traffic Back to Your Website</div>
-                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700 dark:text-purple-300"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Auto Theme Color Matching</div>
+                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Google Rich Snippets (Schema.org)</div>
+                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Social Media Sharing Cards</div>
+                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Auto Keywords & Hashtags</div>
+                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Mobile Responsive Design</div>
+                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Daily Auto-Updated Content</div>
+                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Traffic Back to Your Website</div>
+                    <div className="flex items-start gap-1.5 text-[10px] text-purple-700"><Check className="w-3 h-3 mt-0.5 flex-shrink-0 text-purple-500" /> Auto Theme Color Matching</div>
                   </div>
                 </div>
               </div>
@@ -1443,21 +1443,21 @@ export default function BlogPage() {
             onClick={() => { setShowConnect(false); setConnectError(''); }}>
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
               onClick={e => e.stopPropagation()}
-              className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg border border-gray-200 dark:border-gray-800 shadow-2xl">
+              className="bg-white rounded-2xl w-full max-w-lg border border-gray-200 shadow-2xl">
               {/* Header */}
-              <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+              <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
                       <Link2 className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-gray-900 dark:text-white">Connect Your Website</h2>
+                      <h2 className="text-lg font-bold text-gray-900">Connect Your Website</h2>
                       <p className="text-xs text-gray-500">AI will analyze your site & auto-generate blogs</p>
                     </div>
                   </div>
                   <button onClick={() => { setShowConnect(false); setConnectError(''); }}
-                    className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    className="p-2 rounded-xl hover:bg-gray-100:bg-gray-800 transition-colors">
                     <X className="w-5 h-5 text-gray-500" />
                   </button>
                 </div>
@@ -1465,27 +1465,27 @@ export default function BlogPage() {
 
               <div className="p-6 space-y-5">
                 {connectError && (
-                  <div className="bg-red-50 dark:bg-red-900/10 rounded-xl p-3 border border-red-200 dark:border-red-900/30 flex items-start gap-2">
+                  <div className="bg-red-50 rounded-xl p-3 border border-red-200 flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-red-700 dark:text-red-400">{connectError}</p>
+                    <p className="text-xs text-red-700">{connectError}</p>
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Your Website URL</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">Your Website URL</label>
                   <input value={connectUrl} onChange={e => setConnectUrl(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleConnectWebsite()}
                     placeholder="https://yourwebsite.com"
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
                   <p className="text-[10px] text-gray-400 mt-1">We&apos;ll scrape your site, detect your niche &amp; tech stack</p>
                 </div>
 
-                <div className="bg-purple-50 dark:bg-purple-900/10 rounded-xl p-4 border border-purple-200 dark:border-purple-900/30">
+                <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
                   <div className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 mb-1">What happens next?</p>
-                      <ul className="text-[10px] text-purple-600/80 dark:text-purple-400/80 space-y-1">
+                      <p className="text-xs font-semibold text-purple-700 mb-1">What happens next?</p>
+                      <ul className="text-[10px] text-purple-600/80 space-y-1">
                         <li>1. AI analyzes your website (niche, brand voice, competitors)</li>
                         <li>2. 30 SEO blog topics are auto-generated for the month</li>
                         <li>3. Blogs are written & published automatically every day</li>

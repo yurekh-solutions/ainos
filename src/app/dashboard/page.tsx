@@ -75,7 +75,7 @@ function ToolCard({ tool, delay }: { tool: Tool; delay: number }) {
         <motion.div whileHover={{ scale: 1.1, rotate: 5 }} className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tool.gradient} flex items-center justify-center shadow-lg`}>
           <Icon className="w-6 h-6 text-white" />
         </motion.div>
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Active
         </span>
       </div>
@@ -228,7 +228,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-950">
+    <div className="bg-gray-50">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 pb-8 sm:pb-12">
 
         {/* Greeting Header */}
@@ -419,7 +419,7 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="relative mb-6 sm:mb-8 p-5 sm:p-8 rounded-3xl overflow-hidden bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 dark:from-indigo-950 dark:via-blue-950 dark:to-cyan-900"
+          className="relative mb-6 sm:mb-8 p-5 sm:p-8 rounded-3xl overflow-hidden bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600"
         >
           <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-white/10 blur-2xl" />
           <div className="absolute -bottom-24 right-24 w-48 h-48 rounded-full bg-cyan-400/20 blur-2xl" />
