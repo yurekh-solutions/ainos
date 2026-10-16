@@ -258,31 +258,44 @@ export default function RegisterPage() {
     if (gst.length !== 15) return;
     setFetchingGst(true);
     setGstError('');
-    try {
-      const res = await fetch('/api/gst-lookup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'getCaptcha', gstNumber: gst }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success) {
-          setCaptchaSessionId(data.sessionId);
-          setCaptchaImage(data.captchaImage);
-          setShowCaptcha(true);
-        } else {
-          setGstError(data.error || 'Failed to load captcha');
+
+    // Auto-retry up to 3 times so cold-start on the scraper never breaks the flow
+    const MAX_ATTEMPTS = 3;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const res = await fetch('/api/gst-lookup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'getCaptcha', gstNumber: gst }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            setCaptchaSessionId(data.sessionId);
+            setCaptchaImage(data.captchaImage);
+            setShowCaptcha(true);
+            return; // success — exit retry loop
+          }
+          if (attempt === MAX_ATTEMPTS) {
+            setGstError(data.error || 'Failed to load captcha');
+            return;
+          }
+        } else if (attempt === MAX_ATTEMPTS) {
+          const data = await res.json().catch(() => ({ error: 'Failed to connect to GST service' }));
+          setGstError(data.error || 'Failed to connect to GST service');
+          return;
         }
-      } else {
-        const data = await res.json();
-        setGstError(data.error || 'Failed to connect to GST service');
+      } catch (err) {
+        if (attempt === MAX_ATTEMPTS) {
+          setGstError('Could not reach GST service. Please try again in a moment.');
+          console.error('Captcha fetch failed:', err);
+          return;
+        }
       }
-    } catch (err) {
-      setGstError('Failed to connect to GST service. Make sure Flask server is running.');
-      console.error('Captcha fetch failed:', err);
-    } finally {
-      setFetchingGst(false);
+      // Wait before next attempt (scraper may be waking up from cold start)
+      await new Promise(r => setTimeout(r, attempt * 4000));
     }
+    setFetchingGst(false);
   };
 
   const verifyGstWithCaptcha = async () => {
@@ -716,7 +729,7 @@ export default function RegisterPage() {
                                 className="flex items-center gap-2 p-3 rounded-xl bg-blue-50 border border-blue-200">
                                 <Loader2 className="w-4 h-4 text-blue-600 animate-spin flex-shrink-0" />
                                 <p className="text-[13px] text-blue-700">
-                                  <span className="font-semibold">Loading GST captcha...</span>
+                                  <span className="font-semibold">Connecting to GSTN portal…</span> This may take a few seconds.
                                 </p>
                               </motion.div>
                             )}

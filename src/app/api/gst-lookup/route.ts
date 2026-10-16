@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
       try {
         const res = await fetch(`${FLASK_URL}/api/v1/getCaptcha`, {
-          signal: AbortSignal.timeout(10000),
+          signal: AbortSignal.timeout(60000),
         });
         if (!res.ok) {
           return NextResponse.json({ error: 'Failed to fetch captcha from GSTN portal' }, { status: 502 });
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
             GSTIN: gstNumber.toUpperCase().trim(),
             captcha: captchaText.trim(),
           }),
-          signal: AbortSignal.timeout(15000),
+          signal: AbortSignal.timeout(30000),
         });
 
         if (!res.ok) {
