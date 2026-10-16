@@ -19,6 +19,17 @@ type ToolHandler = (input: Record<string, unknown>, ctx: ToolContext) => Promise
 
 /* ---------------- shared helpers ---------------- */
 
+async function fetchImageAsBase64(url: string): Promise<string> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
+    if (!res.ok) return ''
+    const buffer = await res.arrayBuffer()
+    return 'data:image/png;base64,' + Buffer.from(buffer).toString('base64')
+  } catch {
+    return ''
+  }
+}
+
 async function aiText(prompt: string): Promise<string> {
   const res = await fetch('https://text.pollinations.ai/' + encodeURIComponent(prompt), {
     signal: AbortSignal.timeout(60000),
@@ -327,37 +338,90 @@ const invoiceExtractor: ToolHandler = async (input, ctx) => {
     throw new Error('Provide either fileUrl or base64 of the invoice image/PDF')
   }
 
-  const ocrApiKey = process.env.OCR_SPACE_API_KEY || 'helloworld'
-  let ocrText = ''
+  let extractedText = ''
+  let extractionMethod = 'unknown'
 
-  // Step 1: OCR via OCR.space
+  // ── MULTI-ENGINE EXTRACTION SYSTEM ──
+  // Try multiple methods in order of reliability
+  
+  // METHOD 1: Gemini AI Vision (reads images directly, no OCR needed)
   try {
-    const formData = new URLSearchParams()
-    formData.append('apikey', ocrApiKey)
-    formData.append('language', 'eng')
-    formData.append('isOverlayRequired', 'false')
-    formData.append('OCREngine', '2')
-
-    if (base64) {
-      formData.append('base64Image', base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`)
-    } else {
-      formData.append('url', fileUrl)
+    const geminiKeys = (process.env.GEMINI_API_KEYS || '').split(',').filter(k => k.trim())
+    if (geminiKeys.length > 0) {
+      const apiKey = geminiKeys[Math.floor(Math.random() * geminiKeys.length)]
+      const imageData = base64 || (fileUrl ? await fetchImageAsBase64(fileUrl) : '')
+      
+      if (imageData) {
+        const visionRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { text: 'Extract all text from this invoice image. Return ONLY the raw text, no analysis.' },
+                  { inline_data: { mime_type: 'image/png', data: imageData.replace(/^data:image\/\w+;base64,/, '') } }
+                ]
+              }]
+            }),
+            signal: AbortSignal.timeout(30000),
+          }
+        )
+        
+        if (visionRes.ok) {
+          const visionData = await visionRes.json()
+          extractedText = visionData.candidates?.[0]?.content?.parts?.[0]?.text || ''
+          if (extractedText) {
+            extractionMethod = 'gemini-vision'
+          }
+        }
+      }
     }
-
-    const ocrRes = await fetch('https://api.ocr.space/parse/image', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formData.toString(),
-      signal: AbortSignal.timeout(30000),
-    })
-
-    if (!ocrRes.ok) throw new Error('OCR service error (status ' + ocrRes.status + ')')
-    const ocrData = await ocrRes.json() as { ParsedResults?: { ParsedText?: string }[]; ErrorMessage?: string }
-    if (ocrData.ErrorMessage) throw new Error('OCR error: ' + ocrData.ErrorMessage)
-    ocrText = ocrData.ParsedResults?.[0]?.ParsedText || ''
-    if (!ocrText) throw new Error('No text extracted from invoice')
   } catch (err) {
-    throw new Error('OCR failed: ' + (err instanceof Error ? err.message : String(err)))
+    // Gemini failed, continue to next method
+    console.log('Gemini Vision failed, trying OCR:', err instanceof Error ? err.message : String(err))
+  }
+
+  // METHOD 2: OCR.space (fallback if Gemini fails)
+  if (!extractedText) {
+    try {
+      const ocrApiKey = process.env.OCR_SPACE_API_KEY || 'helloworld'
+      const formData = new URLSearchParams()
+      formData.append('apikey', ocrApiKey)
+      formData.append('language', 'eng')
+      formData.append('isOverlayRequired', 'false')
+      formData.append('OCREngine', '2')
+
+      if (base64) {
+        formData.append('base64Image', base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`)
+      } else {
+        formData.append('url', fileUrl)
+      }
+
+      const ocrRes = await fetch('https://api.ocr.space/parse/image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData.toString(),
+        signal: AbortSignal.timeout(30000),
+      })
+
+      if (ocrRes.ok) {
+        const ocrData = await ocrRes.json() as { ParsedResults?: { ParsedText?: string }[]; ErrorMessage?: string }
+        if (ocrData.ErrorMessage) throw new Error('OCR error: ' + ocrData.ErrorMessage)
+        extractedText = ocrData.ParsedResults?.[0]?.ParsedText || ''
+        if (extractedText) {
+          extractionMethod = 'ocr-space'
+        }
+      }
+    } catch (err) {
+      console.log('OCR.space failed:', err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  // If both methods failed
+  if (!extractedText) {
+    throw new Error('All extraction methods failed. Please try a clearer image or PDF.')
   }
 
   // Step 2: Structure with AI — extract TEMPLATE DESIGN (not invoice data)
@@ -392,7 +456,7 @@ Return this JSON structure:
 }
 
 OCR Text:
-${ocrText.slice(0, 3000)}`
+${extractedText.slice(0, 3000)}`
 
   const aiResponse = await aiText(prompt)
 
@@ -409,9 +473,10 @@ ${ocrText.slice(0, 3000)}`
 
   return {
     success: true,
-    ocrText: ocrText.slice(0, 500),
+    extractedText: extractedText.slice(0, 500),
+    extractionMethod,
     extracted,
-    message: 'Template design analyzed. Review and save as your invoice template.',
+    message: `Template design analyzed using ${extractionMethod}. Review and save as your invoice template.`,
   }
 }
 
