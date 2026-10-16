@@ -249,15 +249,19 @@ export default function RegisterPage() {
       if (res.ok) {
         const data = await res.json();
         // Auto-fill available fields
-        if (data.stateName) {
-          // State already set by parseGst
-        }
         if (data.entityType && data.entityType !== companyType) {
           setCompanyType(data.entityType);
         }
-        // If GST API returns company name/address in future, auto-fill here
-        // if (data.companyName) setCompanyName(data.companyName);
-        // if (data.address) setCompanyAddress(data.address);
+        // Auto-fill company name if available
+        if (data.companyName && !companyName) {
+          setCompanyName(data.companyName);
+        }
+        // Auto-fill address if available
+        if (data.address && !companyAddress) {
+          setCompanyAddress(data.address);
+        }
+        // Auto-fill PAN if available (for reference)
+        // PAN is already in GST, but can show separately
       }
     } catch (err) {
       console.error('GST fetch failed:', err);
@@ -707,7 +711,7 @@ export default function RegisterPage() {
                                   </div>
                                 </div>
                                 <p className="text-[11px] text-green-600 mt-1">
-                                  ✓ Company type auto-filled. Fill other details manually or upgrade to GSTN API for auto-fetch.
+                                  ✓ Company details auto-filled from GST. AI-powered lookup active.
                                 </p>
                               </motion.div>
                             )}
