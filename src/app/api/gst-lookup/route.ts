@@ -107,18 +107,22 @@ export async function POST(req: NextRequest) {
           });
           if (apiRes.ok) {
             const result = await apiRes.json();
-            if (result?.data || result?.success) {
-              const data = result.data || result;
+            if (result?.data && result?.success) {
+              const data = result.data;
+              const addrDetails = data.address_details;
+              const fullAddress = addrDetails
+                ? `${addrDetails.building_number || ''}, ${addrDetails.street || ''}, ${addrDetails.locality || ''}, ${data.city || ''} - ${addrDetails.pincode || data.pincode || ''}`.replace(/,\s*,/g, ',').trim()
+                : data.address || null;
               apiData = {
-                companyName: data.lgnm || data.nm || data.companyName || null,
-                tradeName: data.tradeNam || data.tradeName || null,
-                address: data.pradr?.addr || data.address || null,
-                legalName: data.lgnm || data.legalName || null,
-                registrationDate: data.rgdt || data.registrationDate || null,
-                constitution: data.ctj || data.constitution || null,
-                natureOfBusiness: data.nba || data.natureOfBusiness || null,
+                companyName: data.legal_name || data.companyName || null,
+                tradeName: data.trade_name || data.tradeName || null,
+                address: fullAddress,
+                legalName: data.legal_name || null,
+                registrationDate: data.registration_date || null,
+                constitution: data.business_constitution || null,
+                natureOfBusiness: data.nature_of_business || null,
                 email: data.email || null,
-                phone: data.phno || data.phone || null,
+                phone: data.phone || null,
               };
             }
           }
