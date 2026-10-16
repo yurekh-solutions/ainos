@@ -37,6 +37,12 @@ interface Template {
   accentWidth: string;
   borderRadius: string;
   tableColumns: TableColumn[];
+  headerLayout: string;
+  showDocInfoTable: boolean;
+  paymentTermsLayout: string;
+  termsNumbering: string;
+  showValidityDate: boolean;
+  signatureStyle: string;
 }
 
 const defaultTemplate: Template = {
@@ -69,6 +75,12 @@ const defaultTemplate: Template = {
     { label: 'GST', key: 'gst', width: '10%' },
     { label: 'Total', key: 'total', width: '14%' },
   ],
+  headerLayout: 'stacked',
+  showDocInfoTable: false,
+  paymentTermsLayout: 'text',
+  termsNumbering: 'numbered',
+  showValidityDate: false,
+  signatureStyle: 'simple',
 };
 
 const PRESETS: Record<string, Partial<Template>> = {
@@ -607,6 +619,123 @@ export default function TemplateDesignerPage() {
                 >
                   <Plus size={13} className="inline mr-1" /> Add Column
                 </button>
+              </div>
+            )}
+          </div>
+
+          {/* Professional Layout */}
+          <div className="glass-card rounded-xl overflow-hidden">
+            <button onClick={() => toggleSection('professional')} className="w-full flex items-center justify-between p-4">
+              <span className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
+                <FileText size={16} /> Professional Layout
+              </span>
+              {expandedSection === 'professional' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+            {expandedSection === 'professional' && (
+              <div className="px-4 pb-4 space-y-4">
+                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  MB Crusher-level professional invoice features
+                </p>
+                
+                {/* Header Layout */}
+                <div>
+                  <label className="text-xs mb-2 block font-medium" style={{ color: 'var(--foreground)' }}>Header Layout</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['stacked', 'side-by-side'].map(l => (
+                      <button
+                        key={l}
+                        onClick={() => update('headerLayout', l)}
+                        className="py-2 rounded-lg text-xs border transition-all capitalize"
+                        style={{
+                          borderColor: template.headerLayout === l ? template.primaryColor : 'var(--border)',
+                          background: template.headerLayout === l ? `${template.primaryColor}15` : 'transparent',
+                          color: 'var(--foreground)',
+                          fontWeight: template.headerLayout === l ? 600 : 400,
+                        }}
+                      >
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Toggles */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" checked={template.showDocInfoTable} onChange={e => update('showDocInfoTable', e.target.checked)} />
+                    <span className="text-sm" style={{ color: 'var(--foreground)' }}>Show Document Info Table (Page No, P.O. No, etc.)</span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" checked={template.showValidityDate} onChange={e => update('showValidityDate', e.target.checked)} />
+                    <span className="text-sm" style={{ color: 'var(--foreground)' }}>Show Validity Date</span>
+                  </label>
+                </div>
+
+                {/* Payment Terms Layout */}
+                <div>
+                  <label className="text-xs mb-2 block font-medium" style={{ color: 'var(--foreground)' }}>Payment Terms Display</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['text', 'table'].map(l => (
+                      <button
+                        key={l}
+                        onClick={() => update('paymentTermsLayout', l)}
+                        className="py-2 rounded-lg text-xs border transition-all capitalize"
+                        style={{
+                          borderColor: template.paymentTermsLayout === l ? template.primaryColor : 'var(--border)',
+                          background: template.paymentTermsLayout === l ? `${template.primaryColor}15` : 'transparent',
+                          color: 'var(--foreground)',
+                          fontWeight: template.paymentTermsLayout === l ? 600 : 400,
+                        }}
+                      >
+                        {l === 'text' ? 'Plain Text' : 'Table Format'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Terms Numbering */}
+                <div>
+                  <label className="text-xs mb-2 block font-medium" style={{ color: 'var(--foreground)' }}>Terms Numbering</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['numbered', 'bullets', 'plain'].map(l => (
+                      <button
+                        key={l}
+                        onClick={() => update('termsNumbering', l)}
+                        className="py-2 rounded-lg text-xs border transition-all capitalize"
+                        style={{
+                          borderColor: template.termsNumbering === l ? template.primaryColor : 'var(--border)',
+                          background: template.termsNumbering === l ? `${template.primaryColor}15` : 'transparent',
+                          color: 'var(--foreground)',
+                          fontWeight: template.termsNumbering === l ? 600 : 400,
+                        }}
+                      >
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Signature Style */}
+                <div>
+                  <label className="text-xs mb-2 block font-medium" style={{ color: 'var(--foreground)' }}>Signature Block Style</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['simple', 'detailed'].map(l => (
+                      <button
+                        key={l}
+                        onClick={() => update('signatureStyle', l)}
+                        className="py-2 rounded-lg text-xs border transition-all capitalize"
+                        style={{
+                          borderColor: template.signatureStyle === l ? template.primaryColor : 'var(--border)',
+                          background: template.signatureStyle === l ? `${template.primaryColor}15` : 'transparent',
+                          color: 'var(--foreground)',
+                          fontWeight: template.signatureStyle === l ? 600 : 400,
+                        }}
+                      >
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </div>

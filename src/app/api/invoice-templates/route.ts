@@ -66,6 +66,12 @@ export async function POST(req: NextRequest) {
         accentWidth: body.accentWidth || 'thin',
         borderRadius: body.borderRadius || 'medium',
         tableColumns: body.tableColumns || undefined,
+        headerLayout: body.headerLayout || 'stacked',
+        showDocInfoTable: body.showDocInfoTable ?? false,
+        paymentTermsLayout: body.paymentTermsLayout || 'text',
+        termsNumbering: body.termsNumbering || 'numbered',
+        showValidityDate: body.showValidityDate ?? false,
+        signatureStyle: body.signatureStyle || 'simple',
         companyId: session.user.companyId,
       },
     });
@@ -124,6 +130,12 @@ export async function PUT(req: NextRequest) {
         accentWidth: data.accentWidth,
         borderRadius: data.borderRadius,
         tableColumns: data.tableColumns,
+        headerLayout: data.headerLayout,
+        showDocInfoTable: data.showDocInfoTable,
+        paymentTermsLayout: data.paymentTermsLayout,
+        termsNumbering: data.termsNumbering,
+        showValidityDate: data.showValidityDate,
+        signatureStyle: data.signatureStyle,
       },
     });
 

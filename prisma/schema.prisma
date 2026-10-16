@@ -1108,6 +1108,13 @@ model InvoiceTemplate {
   borderRadius    String   @default("medium") @map("border_radius")
   // Custom Table Columns (JSON array of column definitions)
   tableColumns    Json?    @map("table_columns") // [{"label":"Sr.No","key":"serial","width":"60px"},...]
+  // Professional Invoice Features
+  headerLayout    String   @default("stacked") @map("header_layout") // stacked | side-by-side
+  showDocInfoTable Boolean @default(false) @map("show_doc_info_table") // Page No, P.O. No, etc.
+  paymentTermsLayout String @default("text") @map("payment_terms_layout") // text | table
+  termsNumbering  String   @default("numbered") @map("terms_numbering") // numbered | bullets | plain
+  showValidityDate Boolean @default(false) @map("show_validity_date")
+  signatureStyle  String   @default("simple") @map("signature_style") // simple | detailed
   // Tenant
   companyId       String?  @map("company_id")
   createdAt       DateTime @default(now()) @map("created_at")
