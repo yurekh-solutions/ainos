@@ -157,14 +157,14 @@ function Field({ icon: Icon, label, type = 'text', value, onChange, placeholder,
 function Steps({ step }: { step: number }) {
   const items = ['Account', 'Company', 'Verify'];
   return (
-    <div className="flex items-start justify-center w-full mb-6">
+    <div className="flex items-start justify-center w-full mb-6 overflow-hidden">
       {items.map((label, i) => {
         const n = i + 1;
         const active = step === n;
         const done = step > n;
         return (
           <div key={n} className="flex items-start">
-            <div className="flex flex-col items-center w-[72px]">
+            <div className="flex flex-col items-center w-[56px] sm:w-[72px]">
               <div
                 className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300 ${
                   active
@@ -177,11 +177,11 @@ function Steps({ step }: { step: number }) {
               >
                 {done ? <Check className="w-3.5 h-3.5" /> : n}
               </div>
-              <span className={`mt-1.5 text-[11px] font-medium ${active || done ? 'text-gray-900' : 'text-gray-400'}`}>{label}</span>
+              <span className={`mt-1.5 text-[10px] sm:text-[11px] font-medium ${active || done ? 'text-gray-900' : 'text-gray-400'}`}>{label}</span>
               <span className={`mt-1 h-0.5 w-6 rounded-full ${active ? 'bg-[#4c1d95]' : 'bg-transparent'}`} />
             </div>
             {i < items.length - 1 && (
-              <div className={`h-px w-10 mt-[16px] mx-1 transition-colors duration-300 ${step > n ? 'bg-[#4c1d95]' : 'bg-gray-200'}`} />
+              <div className={`h-px w-6 sm:w-10 mt-[16px] mx-1 sm:mx-1 transition-colors duration-300 ${step > n ? 'bg-[#4c1d95]' : 'bg-gray-200'}`} />
             )}
           </div>
         );
