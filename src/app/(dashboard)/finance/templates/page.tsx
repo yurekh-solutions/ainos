@@ -13,6 +13,15 @@ interface TableColumn {
   width: string;
 }
 
+interface FormField {
+  label: string;
+  key: string;
+  type: 'text' | 'date' | 'select' | 'number';
+  required: boolean;
+  placeholder?: string;
+  options?: string[];
+}
+
 interface Template {
   id?: string;
   name: string;
@@ -37,6 +46,7 @@ interface Template {
   accentWidth: string;
   borderRadius: string;
   tableColumns: TableColumn[];
+  formFields: FormField[];
   headerLayout: string;
   showDocInfoTable: boolean;
   paymentTermsLayout: string;
@@ -75,6 +85,7 @@ const defaultTemplate: Template = {
     { label: 'GST', key: 'gst', width: '10%' },
     { label: 'Total', key: 'total', width: '14%' },
   ],
+  formFields: [],
   headerLayout: 'stacked',
   showDocInfoTable: false,
   paymentTermsLayout: 'text',
@@ -291,6 +302,45 @@ export default function TemplateDesignerPage() {
       if (newIdx < 0 || newIdx >= cols.length) return prev;
       [cols[idx], cols[newIdx]] = [cols[newIdx], cols[idx]];
       return { ...prev, tableColumns: cols };
+    });
+    setSaved(false);
+  };
+
+  // Form field management
+  const addFormField = () => {
+    const newField: FormField = {
+      label: 'New Field',
+      key: `field_${Date.now()}`,
+      type: 'text',
+      required: false,
+      placeholder: '',
+      options: [],
+    };
+    setTemplate(prev => ({ ...prev, formFields: [...(prev.formFields || []), newField] }));
+    setSaved(false);
+  };
+
+  const removeFormField = (idx: number) => {
+    setTemplate(prev => ({ ...prev, formFields: (prev.formFields || []).filter((_, i) => i !== idx) }));
+    setSaved(false);
+  };
+
+  const updateFormField = (idx: number, field: keyof FormField, value: string | boolean | string[]) => {
+    setTemplate(prev => {
+      const fields = [...(prev.formFields || [])];
+      fields[idx] = { ...fields[idx], [field]: value };
+      return { ...prev, formFields: fields };
+    });
+    setSaved(false);
+  };
+
+  const moveFormField = (idx: number, dir: -1 | 1) => {
+    setTemplate(prev => {
+      const fields = [...(prev.formFields || [])];
+      const newIdx = idx + dir;
+      if (newIdx < 0 || newIdx >= fields.length) return prev;
+      [fields[idx], fields[newIdx]] = [fields[newIdx], fields[idx]];
+      return { ...prev, formFields: fields };
     });
     setSaved(false);
   };
@@ -618,6 +668,114 @@ export default function TemplateDesignerPage() {
                   style={{ borderColor: template.primaryColor, color: template.primaryColor, background: `${template.primaryColor}05` }}
                 >
                   <Plus size={13} className="inline mr-1" /> Add Column
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Custom Fields */}
+          <div className="glass-card rounded-xl overflow-hidden">
+            <button onClick={() => toggleSection('customFields')} className="w-full flex items-center justify-between p-4">
+              <span className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
+                <FileText size={16} /> Custom Fields
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${template.primaryColor}15`, color: template.primaryColor }}>
+                  {template.formFields?.length || 0} fields
+                </span>
+                {expandedSection === 'customFields' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </div>
+            </button>
+            {expandedSection === 'customFields' && (
+              <div className="px-4 pb-4 space-y-3">
+                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  Add custom input fields for invoice creation — PO Number, Validity Date, Payment Terms, etc.
+                </p>
+                {(template.formFields || []).map((field, idx) => (
+                  <div key={idx} className="p-3 rounded-lg border space-y-2" style={{ borderColor: 'var(--border)' }}>
+                    <div className="flex items-center gap-2">
+                      <div className="flex flex-col gap-0.5">
+                        <button onClick={() => moveFormField(idx, -1)} disabled={idx === 0} className="text-xs opacity-50 hover:opacity-100 disabled:opacity-20">▲</button>
+                        <button onClick={() => moveFormField(idx, 1)} disabled={idx === (template.formFields?.length || 1) - 1} className="text-xs opacity-50 hover:opacity-100 disabled:opacity-20">▼</button>
+                      </div>
+                      <input
+                        value={field.label}
+                        onChange={e => updateFormField(idx, 'label', e.target.value)}
+                        className="flex-1 px-2 py-1 rounded text-xs border bg-transparent"
+                        style={{ color: 'var(--foreground)' }}
+                        placeholder="Field label"
+                      />
+                      <button onClick={() => removeFormField(idx)} className="p-1 rounded hover:bg-red-500/10">
+                        <Trash2 size={13} className="text-red-400" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 pl-8">
+                      <div>
+                        <label className="block text-xs mb-1" style={{ color: 'var(--muted-foreground)' }}>Type</label>
+                        <select
+                          value={field.type}
+                          onChange={e => updateFormField(idx, 'type', e.target.value)}
+                          className="w-full px-2 py-1 rounded text-xs border bg-transparent"
+                          style={{ color: 'var(--foreground)' }}
+                        >
+                          <option value="text">Text</option>
+                          <option value="number">Number</option>
+                          <option value="date">Date</option>
+                          <option value="select">Select</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs mb-1" style={{ color: 'var(--muted-foreground)' }}>Key</label>
+                        <input
+                          value={field.key}
+                          onChange={e => updateFormField(idx, 'key', e.target.value)}
+                          className="w-full px-2 py-1 rounded text-xs font-mono border bg-transparent"
+                          style={{ color: 'var(--muted-foreground)' }}
+                          placeholder="fieldKey"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs mb-1" style={{ color: 'var(--muted-foreground)' }}>Placeholder</label>
+                        <input
+                          value={field.placeholder || ''}
+                          onChange={e => updateFormField(idx, 'placeholder', e.target.value)}
+                          className="w-full px-2 py-1 rounded text-xs border bg-transparent"
+                          style={{ color: 'var(--foreground)' }}
+                          placeholder="Optional"
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <label className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: 'var(--foreground)' }}>
+                          <input
+                            type="checkbox"
+                            checked={field.required}
+                            onChange={e => updateFormField(idx, 'required', e.target.checked)}
+                            className="rounded"
+                          />
+                          Required
+                        </label>
+                      </div>
+                      {field.type === 'select' && (
+                        <div className="col-span-2">
+                          <label className="block text-xs mb-1" style={{ color: 'var(--muted-foreground)' }}>Options (comma-separated)</label>
+                          <input
+                            value={(field.options || []).join(', ')}
+                            onChange={e => updateFormField(idx, 'options', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+                            className="w-full px-2 py-1 rounded text-xs border bg-transparent"
+                            style={{ color: 'var(--foreground)' }}
+                            placeholder="Option 1, Option 2, Option 3"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <button
+                  onClick={addFormField}
+                  className="w-full py-2 rounded-lg text-xs font-medium border-2 border-dashed transition-all hover:scale-[1.01]"
+                  style={{ borderColor: template.primaryColor, color: template.primaryColor, background: `${template.primaryColor}05` }}
+                >
+                  <Plus size={13} className="inline mr-1" /> Add Custom Field
                 </button>
               </div>
             )}
