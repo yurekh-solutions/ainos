@@ -435,6 +435,7 @@ Extract:
 - terms/conditions text
 - signature block text
 - table columns present
+- form fields needed (identify ALL input fields from the invoice: PO Number, Validity Date, Payment Terms, Document Type, Reference Number, etc.)
 
 Return this JSON structure:
 {
@@ -452,7 +453,13 @@ Return this JSON structure:
   "termsText": "1. Payment by cheque\n2. Not responsible...",
   "signatureText": "For COMPANY\n(Owner Name)",
   "hasLogo": false,
-  "sections": ["header", "address", "consignee", "invoice-meta", "items-table", "totals", "terms", "signature"]
+  "sections": ["header", "address", "consignee", "invoice-meta", "items-table", "totals", "terms", "signature"],
+  "formFields": [
+    {"label": "PO Number", "key": "poNumber", "type": "text", "required": false, "placeholder": "Purchase Order Number"},
+    {"label": "Validity Date", "key": "validityDate", "type": "date", "required": false},
+    {"label": "Payment Terms", "key": "paymentTerms", "type": "select", "required": false, "options": ["Net 30", "Net 60", "Due on Receipt"]},
+    {"label": "Document Type", "key": "documentType", "type": "select", "required": false, "options": ["Invoice", "Proforma Invoice", "Quotation"]}
+  ]
 }
 
 OCR Text:

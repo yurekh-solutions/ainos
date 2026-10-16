@@ -42,6 +42,22 @@ interface Company {
   logoUrl?: string;
 }
 
+interface FormField {
+  label: string;
+  key: string;
+  type: 'text' | 'date' | 'select' | 'number';
+  required?: boolean;
+  placeholder?: string;
+  options?: string[];
+}
+
+interface InvoiceTemplate {
+  id: string;
+  name: string;
+  formFields?: FormField[];
+  tableColumns?: { label: string; key: string; width?: string }[];
+}
+
 const GST_RATES = [0, 5, 12, 18, 28];
 
 export default function NewInvoicePage() {
@@ -49,6 +65,8 @@ export default function NewInvoicePage() {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
+  const [template, setTemplate] = useState<InvoiceTemplate | null>(null);
+  const [dynamicFieldValues, setDynamicFieldValues] = useState<Record<string, string>>({});
   // Customer
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
@@ -73,14 +91,30 @@ export default function NewInvoicePage() {
 
   const fetchData = async () => {
     try {
-      const [productsRes, companyRes] = await Promise.all([
+      const [productsRes, companyRes, templatesRes] = await Promise.all([
         fetch('/api/products'),
         fetch('/api/company'),
+        fetch('/api/invoice-templates'),
       ]);
       if (productsRes.ok) setProducts(await productsRes.json());
       if (companyRes.ok) {
         const c = await companyRes.json();
         setCompany(c);
+      }
+      if (templatesRes.ok) {
+        const templates = await templatesRes.json();
+        const defaultTemplate = templates.find((t: InvoiceTemplate) => t.isDefault) || templates[0];
+        if (defaultTemplate) {
+          setTemplate(defaultTemplate);
+          // Initialize dynamic field values with empty strings
+          if (defaultTemplate.formFields) {
+            const initialValues: Record<string, string> = {};
+            (defaultTemplate.formFields as FormField[]).forEach(field => {
+              initialValues[field.key] = '';
+            });
+            setDynamicFieldValues(initialValues);
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -183,6 +217,7 @@ export default function NewInvoicePage() {
           discountType, paymentMethod, notes,
           dueDate: dueDate || undefined,
           status: 'draft',
+          customFields: dynamicFieldValues, // Dynamic fields from template
         }),
       });
 
@@ -332,6 +367,51 @@ export default function NewInvoicePage() {
               </div>
             </div>
           </motion.div>
+
+          {/* Dynamic Custom Fields from Template */}
+          {template?.formFields && (template.formFields as FormField[]).length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.075 }} className="glass-card p-6">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--foreground))' }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.1)' }}>
+                  <FileText className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
+                </div>
+                Custom Fields
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(template.formFields as FormField[]).map((field) => (
+                  <div key={field.key}>
+                    <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                      {field.label} {field.required && <span style={{ color: 'hsl(var(--destructive))' }}>*</span>}
+                    </label>
+                    {field.type === 'select' ? (
+                      <select
+                        value={dynamicFieldValues[field.key] || ''}
+                        onChange={e => setDynamicFieldValues(prev => ({ ...prev, [field.key]: e.target.value }))}
+                        className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
+                        style={inputStyle}
+                        required={field.required}
+                      >
+                        <option value="">Select...</option>
+                        {field.options?.map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type={field.type}
+                        value={dynamicFieldValues[field.key] || ''}
+                        onChange={e => setDynamicFieldValues(prev => ({ ...prev, [field.key]: e.target.value }))}
+                        className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
+                        style={inputStyle}
+                        placeholder={field.placeholder || `Enter ${field.label}`}
+                        required={field.required}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
           {/* Items */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card p-6">
