@@ -563,7 +563,7 @@ export default function InvoicesPage() {
       doc.setTextColor(80, 80, 80);
       doc.setFont(fontFamily, 'normal');
       const termsText = template?.terms || 'Payment due within 30 days.';
-      const termsNumbering = template?.termsNumbering || 'numbered';
+      const termsNumbering = 'numbered'; // Default numbering style
       
       // Split terms by newlines or numbers
       const termsArray = termsText.split(/\n|\d+\)[\s]*/).filter(t => t.trim());
