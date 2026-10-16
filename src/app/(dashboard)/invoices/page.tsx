@@ -563,10 +563,36 @@ export default function InvoicesPage() {
       doc.setTextColor(80, 80, 80);
       doc.setFont(fontFamily, 'normal');
       const termsText = template?.terms || 'Payment due within 30 days.';
-      const termsLines = doc.splitTextToSize(termsText, contentW - 5);
-      termsLines.forEach((line: string) => {
-        if (y < H - 30) { doc.text(line, M, y); y += 3.5; }
-      });
+      const termsNumbering = template?.termsNumbering || 'numbered';
+      
+      // Split terms by newlines or numbers
+      const termsArray = termsText.split(/\n|\d+\)[\s]*/).filter(t => t.trim());
+      
+      if (termsNumbering === 'numbered') {
+        // Numbered format: 1), 2), 3)...
+        termsArray.forEach((term, idx) => {
+          const line = `${idx + 1}) ${term.trim()}`;
+          const lines = doc.splitTextToSize(line, contentW - 5);
+          lines.forEach((l: string) => {
+            if (y < H - 40) { doc.text(l, M, y); y += 3.5; }
+          });
+        });
+      } else if (termsNumbering === 'bullets') {
+        // Bullet format
+        termsArray.forEach((term) => {
+          const line = `• ${term.trim()}`;
+          const lines = doc.splitTextToSize(line, contentW - 5);
+          lines.forEach((l: string) => {
+            if (y < H - 40) { doc.text(l, M, y); y += 3.5; }
+          });
+        });
+      } else {
+        // Plain format
+        const termsLines = doc.splitTextToSize(termsText, contentW - 5);
+        termsLines.forEach((line: string) => {
+          if (y < H - 40) { doc.text(line, M, y); y += 3.5; }
+        });
+      }
       y += 4;
     }
 
@@ -575,21 +601,34 @@ export default function InvoicesPage() {
     doc.setLineWidth(0.3);
 
     const sigY = H - 35;
-    // Buyer signature (left)
-    doc.line(M, sigY, M + 50, sigY);
-    doc.setFontSize(7);
-    doc.setTextColor(100, 100, 100);
-    doc.text('Place & Date', M, sigY + 4);
-    doc.text('Stamp & signature of the Buyer', M, sigY + 8);
+    const signatureStyle = template?.signatureStyle || 'simple';
+    
+    if (signatureStyle === 'detailed') {
+      // Detailed style: Place & Date + Buyer signature + Seller signature with company name
+      // Buyer signature (left)
+      doc.line(M, sigY, M + 50, sigY);
+      doc.setFontSize(7);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Place & Date', M, sigY + 4);
+      doc.text('Stamp & signature of the Buyer', M, sigY + 8);
 
-    // Seller signature (right)
-    doc.line(W - M - 50, sigY, W - M, sigY);
-    doc.text('Seller\'s signature', W - M - 50, sigY + 4);
-    if (company?.name) {
-      doc.setFont(fontFamily, 'bold');
-      doc.setTextColor(50, 50, 50);
-      doc.text(company.name, W - M - 50, sigY + 8);
-      doc.setFont(fontFamily, 'normal');
+      // Seller signature (right)
+      doc.line(W - M - 50, sigY, W - M, sigY);
+      doc.text('Seller\'s signature', W - M - 50, sigY + 4);
+      if (company?.name) {
+        doc.setFont(fontFamily, 'bold');
+        doc.setTextColor(50, 50, 50);
+        doc.text(company.name, W - M - 50, sigY + 8);
+        doc.setFont(fontFamily, 'normal');
+      }
+    } else {
+      // Simple style: Just signature lines
+      doc.line(M, sigY, M + 50, sigY);
+      doc.line(W - M - 50, sigY, W - M, sigY);
+      doc.setFontSize(7);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Buyer', M + 20, sigY + 4);
+      doc.text('Seller', W - M - 30, sigY + 4);
     }
 
     // ── FOOTER ──
