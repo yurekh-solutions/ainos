@@ -18,9 +18,20 @@ jobs:
           response=$(curl -s -o /dev/null -w "%{http_code}" https://ainos-ywu0.onrender.com/api/ping)
           echo "Response status: $response"
           if [ "$response" = "200" ]; then
-            echo "✅ Server is alive"
+            echo "✅ AINOS server is alive"
           else
-            echo "⚠️ Server returned $response"
+            echo "⚠️ AINOS server returned $response"
+          fi
+
+      - name: Ping GST Scraper service
+        run: |
+          echo "Pinging GST Scraper to prevent cold start..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://ainos-gst-scraper.onrender.com/api/v1/getCaptcha)
+          echo "Response status: $response"
+          if [ "$response" = "200" ]; then
+            echo "✅ GST Scraper is alive"
+          else
+            echo "⚠️ GST Scraper returned $response"
           fi
 
   auto-publish-blogs:
