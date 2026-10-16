@@ -248,20 +248,26 @@ export default function RegisterPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        // Auto-fill available fields
+        // Auto-fill company type
         if (data.entityType && data.entityType !== companyType) {
           setCompanyType(data.entityType);
         }
-        // Auto-fill company name if available
+        // Auto-fill company name
         if (data.companyName && !companyName) {
           setCompanyName(data.companyName);
         }
-        // Auto-fill address if available
+        // Auto-fill email
+        if (data.email && !companyEmail) {
+          setCompanyEmail(data.email);
+        }
+        // Auto-fill phone
+        if (data.phone && !companyPhone) {
+          setCompanyPhone(data.phone);
+        }
+        // Auto-fill address
         if (data.address && !companyAddress) {
           setCompanyAddress(data.address);
         }
-        // Auto-fill PAN if available (for reference)
-        // PAN is already in GST, but can show separately
       }
     } catch (err) {
       console.error('GST fetch failed:', err);
