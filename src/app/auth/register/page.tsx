@@ -512,7 +512,7 @@ export default function RegisterPage() {
         )}
       </AnimatePresence>
 
-      <div className="max-w-[1280px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 lg:py-12">
+      <div className="max-w-[1280px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 lg:py-12 pb-12 sm:pb-16">
         <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-start">
 
           {/* ===== LEFT — Branding & Info Cards (desktop only: form comes first on mobile) ===== */}
@@ -589,7 +589,7 @@ export default function RegisterPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white rounded-2xl sm:rounded-3xl border border-gray-100 shadow-lg overflow-hidden max-w-full"
+              className="bg-white rounded-2xl sm:rounded-3xl border border-gray-100 shadow-lg overflow-hidden max-w-full mb-6 sm:mb-0"
             >
               {/* Card Header */}
               <div className="px-4 sm:px-8 pt-6 sm:pt-8 pb-4 sm:pb-6 text-center border-b border-gray-50">
@@ -611,7 +611,7 @@ export default function RegisterPage() {
               </div>
 
               {/* Card Body */}
-              <div className="px-4 sm:px-8 py-4 sm:py-6 pb-24 sm:pb-6 overflow-x-hidden">
+              <div className="px-4 sm:px-8 py-4 sm:py-6 pb-36 sm:pb-6 overflow-x-hidden">
                 {success ? (
                   <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-12">
                     <div className="w-16 h-16 rounded-full bg-green-50 border border-green-100 flex items-center justify-center mx-auto mb-5">
@@ -917,7 +917,7 @@ export default function RegisterPage() {
                               </motion.div>
                             )}
 
-                            <div className="flex gap-2.5 pt-1 mb-4 sm:mb-0">
+                            <div className="flex gap-2.5 pt-1 pb-4 sm:pb-0 mb-4 sm:mb-0">
                               <button type="button" onClick={() => { setStep(2); if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                                 className="flex-1 h-11 rounded-xl bg-white border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5">
                                 <ArrowLeft className="w-4 h-4" /> Back
