@@ -64,56 +64,6 @@
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.06);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.06), 0 4px 6px -4px rgb(0 0 0 / 0.06);
   }
-
-  .dark {
-    /* Dark Theme - Deep Gray + Purple Accent */
-    --background: 220 20% 8%;
-    --foreground: 220 15% 95%;
-
-    --card: 220 18% 11%;
-    --card-foreground: 220 15% 95%;
-
-    --popover: 220 18% 9%;
-    --popover-foreground: 220 15% 95%;
-
-    --primary: 252 60% 55%;
-    --primary-foreground: 220 15% 98%;
-    --primary-glow: 252 65% 65%;
-
-    --secondary: 220 15% 14%;
-    --secondary-foreground: 220 15% 95%;
-
-    --muted: 220 12% 16%;
-    --muted-foreground: 220 10% 50%;
-
-    --accent: 252 55% 50%;
-    --accent-foreground: 220 15% 98%;
-
-    --destructive: 0 62% 50%;
-    --destructive-foreground: 220 15% 98%;
-
-    --border: 220 12% 18%;
-    --input: 220 12% 18%;
-    --ring: 252 60% 55%;
-
-    /* Legacy compatibility */
-    --background-secondary: 220 15% 9%;
-    --foreground-muted: 220 10% 50%;
-    --card-bg: 220 18% 11%;
-    --card-border: 220 12% 18%;
-    --card-hover: 220 15% 14%;
-    --input-bg: 220 12% 12%;
-    --input-border: 220 12% 20%;
-    --sidebar-bg: 220 20% 6%;
-    --sidebar-border: 220 12% 16%;
-    --primary-hover: 252 65% 60%;
-    --primary-light: 252 60% 55% / 0.15;
-    --success: 152 70% 45%;
-    --warning: 35 80% 50%;
-    --error: 0 62% 50%;
-    --info: 200 80% 55%;
-    --page-gradient: linear-gradient(180deg, hsl(220 20% 6%) 0%, hsl(220 18% 9%) 100%);
-  }
 }
 
 @theme inline {
@@ -165,22 +115,11 @@ body {
   border-color: hsl(var(--primary) / 0.2);
 }
 
-.dark .glass-card {
-  background: hsl(var(--card));
-  border-color: hsl(var(--border));
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3);
-}
-
 .glass-card-subtle {
   background: hsl(var(--secondary));
   border: 1px solid hsl(var(--border) / 0.5);
   border-radius: var(--radius);
   transition: all 0.2s ease;
-}
-
-.dark .glass-card-subtle {
-  background: hsl(var(--muted));
-  border-color: hsl(var(--border) / 0.3);
 }
 
 /* ============================================
@@ -214,21 +153,6 @@ body {
   color: hsl(var(--muted-foreground));
 }
 
-.dark .glass-input {
-  background: hsl(var(--input-bg));
-  border-color: hsl(var(--input-border) / 0.5);
-  color: hsl(var(--foreground));
-}
-
-.dark .glass-input:focus {
-  border-color: hsl(var(--primary) / 0.5);
-  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.15);
-}
-
-.dark .glass-input::placeholder {
-  color: hsl(var(--muted-foreground));
-}
-
 /* ============================================
    Buttons
    ============================================ */
@@ -257,16 +181,6 @@ body {
 
 .btn-secondary:hover {
   background: hsl(var(--muted));
-}
-
-.dark .btn-secondary {
-  background: hsl(var(--muted));
-  border: 1px solid hsl(var(--border) / 0.4);
-}
-
-.dark .btn-secondary:hover {
-  background: hsl(var(--card-hover));
-  border-color: hsl(var(--primary) / 0.25);
 }
 
 /* ============================================
@@ -303,14 +217,6 @@ body {
   background: hsl(var(--muted-foreground) / 0.5);
 }
 
-.dark ::-webkit-scrollbar-thumb {
-  background: hsl(220 10% 25% / 0.5);
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: hsl(220 10% 35% / 0.6);
-}
-
 /* ============================================
    Status Colors
    ============================================ */
@@ -339,30 +245,6 @@ body {
   color: hsl(200 80% 45%);
 }
 
-.dark .status-success {
-  background: hsl(142 50% 45% / 0.15);
-  border: 1px solid hsl(142 50% 45% / 0.3);
-  color: hsl(142 60% 55%);
-}
-
-.dark .status-warning {
-  background: hsl(35 70% 55% / 0.15);
-  border: 1px solid hsl(35 70% 55% / 0.3);
-  color: hsl(35 80% 60%);
-}
-
-.dark .status-error {
-  background: hsl(0 60% 55% / 0.15);
-  border: 1px solid hsl(0 60% 55% / 0.3);
-  color: hsl(0 70% 65%);
-}
-
-.dark .status-info {
-  background: hsl(200 60% 55% / 0.15);
-  border: 1px solid hsl(200 60% 55% / 0.3);
-  color: hsl(200 70% 65%);
-}
-
 /* ============================================
    Form Elements
    ============================================ */
@@ -381,22 +263,6 @@ select:focus {
 }
 
 select option {
-  background-color: hsl(var(--card-bg));
-  color: hsl(var(--foreground));
-}
-
-.dark select {
-  background-color: hsl(var(--input-bg));
-  border-color: hsl(var(--input-border) / 0.5);
-  color: hsl(var(--foreground));
-}
-
-.dark select:focus {
-  border-color: hsl(var(--primary) / 0.5);
-  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.15);
-}
-
-.dark select option {
   background-color: hsl(var(--card-bg));
   color: hsl(var(--foreground));
 }

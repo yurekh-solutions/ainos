@@ -1,8 +1,8 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useSyncExternalStore, ReactNode } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
 
-type Theme = 'light' | 'dark';
+type Theme = 'light';
 
 interface ThemeContextType {
   theme: Theme;
@@ -11,57 +11,23 @@ interface ThemeContextType {
   toggleTheme: () => void;
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-function getStoredTheme(): Theme {
-  if (typeof window === 'undefined') return 'light';
-  const stored = localStorage.getItem('ainos-theme');
-  if (stored === 'light' || stored === 'dark') return stored;
-  return 'light'; // Light theme by default
-}
-
-let currentTheme: Theme = getStoredTheme();
-const listeners = new Set<() => void>();
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
-
-function getSnapshot() {
-  return currentTheme;
-}
-
-function setThemeExternal(theme: Theme) {
-  currentTheme = theme;
-  localStorage.setItem('ainos-theme', theme);
-  if (typeof window !== 'undefined') {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }
-  listeners.forEach(l => l());
-}
+const ThemeContext = createContext<ThemeContextType>({
+  theme: 'light',
+  resolvedTheme: 'light',
+  setTheme: () => {},
+  toggleTheme: () => {},
+});
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const theme = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
-
-  const setTheme = (newTheme: Theme) => {
-    setThemeExternal(newTheme);
+  // Always light theme - dark theme removed
+  const theme: Theme = 'light';
+  
+  const setTheme = (_newTheme: Theme) => {
+    // No-op: dark theme removed, always light
   };
 
   const toggleTheme = () => {
-    setThemeExternal(currentTheme === 'dark' ? 'light' : 'dark');
+    // No-op: dark theme removed, always light
   };
 
   return (
@@ -72,9 +38,5 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 }
 
 export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
+  return useContext(ThemeContext);
 }
