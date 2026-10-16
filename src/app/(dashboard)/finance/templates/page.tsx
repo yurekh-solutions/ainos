@@ -144,17 +144,6 @@ const PRESETS: Record<string, Partial<Template>> = {
     primaryColor: '#0284C7', secondaryColor: '#7DD3FC', backgroundColor: '#F0F9FF',
     textColor: '#082F49', layout: 'standard', fontSize: 'medium', borderRadius: 'large',
   },
-  'SKY VISION': {
-    primaryColor: '#228B22', secondaryColor: '#2E8B57', backgroundColor: '#FFFFFF',
-    textColor: '#1a1a1a', layout: 'standard', fontSize: 'medium', borderRadius: 'none',
-    tableColumns: [
-      { label: 'Sr. No.', key: 'serial', width: '10%' },
-      { label: 'Description', key: 'name', width: '45%' },
-      { label: 'Days/No.', key: 'qty', width: '12%' },
-      { label: 'Rate Per Day', key: 'rate', width: '16%' },
-      { label: 'Amount', key: 'total', width: '17%' },
-    ],
-  },
 };
 
 // Individual color swatches for quick color picking
