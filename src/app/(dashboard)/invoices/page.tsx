@@ -684,7 +684,7 @@ export default function InvoicesPage() {
                 }}
               >
                 <Upload className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:-translate-y-1" />
-                <span>Upload & Extract</span>
+                <span>Upload Template</span>
               </button>
             )}
             {company?.name ? (
@@ -957,8 +957,8 @@ export default function InvoicesPage() {
                       <Upload className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900">Upload Invoice</h2>
-                      <p className="text-xs text-gray-500 mt-0.5">Extract vendor details, items, GST & totals automatically</p>
+                      <h2 className="text-lg font-semibold text-gray-900">Upload Invoice Template</h2>
+                      <p className="text-xs text-gray-500 mt-0.5">Upload your company's invoice template — we'll replicate it for all your invoices</p>
                     </div>
                   </div>
                   <button
@@ -990,22 +990,10 @@ export default function InvoicesPage() {
                             <Upload className="w-8 h-8" style={{ color: '#4c1d95' }} />
                           </div>
                           <p className="text-sm font-semibold text-gray-900 mb-1">
-                            {invoiceFile ? invoiceFile.name : 'Click to upload invoice'}
+                            {invoiceFile ? invoiceFile.name : 'Click to upload your invoice template'}
                           </p>
-                          <p className="text-xs text-gray-500">PNG, JPG, PDF supported</p>
+                          <p className="text-xs text-gray-500">Upload your existing invoice design (PDF, PNG, JPG)</p>
                         </label>
-                      </div>
-                      
-                      {/* Sample Download */}
-                      <div className="text-center">
-                        <a
-                          href="/SKY_VISION_Invoice_156.pdf"
-                          download
-                          className="inline-flex items-center gap-1.5 text-xs font-medium text-purple-600 hover:text-purple-700 transition-colors"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          Download Sample Invoice (PDF)
-                        </a>
                       </div>
                       
                       {/* Extract Button */}
@@ -1026,7 +1014,7 @@ export default function InvoicesPage() {
                         ) : (
                           <>
                             <Zap className="w-4 h-4" />
-                            <span>Extract Invoice Data</span>
+                            <span>Extract Template Design</span>
                           </>
                         )}
                       </button>
@@ -1038,27 +1026,27 @@ export default function InvoicesPage() {
                         {/* Vendor Info Grid */}
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <p className="text-xs font-medium text-gray-500 mb-1">Vendor Name</p>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Template Name</p>
                             <p className="text-sm font-semibold text-gray-900">{extractedData.vendorName || '—'}</p>
                           </div>
                           <div>
-                            <p className="text-xs font-medium text-gray-500 mb-1">Invoice Number</p>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Layout Style</p>
                             <p className="text-sm font-semibold text-gray-900">{extractedData.invoiceNumber || '—'}</p>
                           </div>
                           <div>
-                            <p className="text-xs font-medium text-gray-500 mb-1">Invoice Date</p>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Color Scheme</p>
                             <p className="text-sm font-semibold text-gray-900">{extractedData.invoiceDate || '—'}</p>
                           </div>
                           <div>
-                            <p className="text-xs font-medium text-gray-500 mb-1">Vendor PAN</p>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Font Style</p>
                             <p className="text-sm font-semibold text-gray-900">{extractedData.vendorPAN || '—'}</p>
                           </div>
                           <div>
-                            <p className="text-xs font-medium text-gray-500 mb-1">Vendor GST</p>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Logo Position</p>
                             <p className="text-sm font-semibold text-gray-900">{extractedData.vendorGST || '—'}</p>
                           </div>
                           <div>
-                            <p className="text-xs font-medium text-gray-500 mb-1">Vendor Phone</p>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Sections</p>
                             <p className="text-sm font-semibold text-gray-900">{extractedData.vendorPhone || '—'}</p>
                           </div>
                         </div>
@@ -1118,7 +1106,7 @@ export default function InvoicesPage() {
                       <div className="flex gap-3">
                         <button
                           onClick={() => {
-                            showToast('Invoice data saved to expenses');
+                            showToast('Template saved successfully');
                             setShowExtractModal(false);
                             setExtractedData(null);
                             setInvoiceFile(null);
@@ -1130,7 +1118,7 @@ export default function InvoicesPage() {
                           }}
                         >
                           <Check className="w-4 h-4" />
-                          <span>Add as Expense</span>
+                          <span>Save as Template</span>
                         </button>
                         <button
                           onClick={() => {
