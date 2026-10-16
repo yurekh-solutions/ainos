@@ -61,41 +61,71 @@ export async function POST(req: NextRequest) {
     const stateName = STATE_CODES[stateCode] || 'Unknown';
     const entityType = PAN_ENTITY[pan.charAt(3)] || 'proprietorship';
 
-    // Step 2: Try gstinapi.in (free GST verification API)
+    // Step 2: Try real GST APIs (appyflow.in has 50 free requests)
     let apiData: GstCompanyData | null = null;
     
+    // Attempt 1: Appyflow.in (50 free requests, no monthly charges)
     try {
-      const gstinApiKey = process.env.GSTINAPI_KEY;
-      if (gstinApiKey) {
-        const apiRes = await fetch(`https://gstinapi.in/v1/gstin/${gst}`, {
-          headers: { 'x-api-key': gstinApiKey },
+      const appyflowKey = process.env.APPYFLOW_KEY;
+      if (appyflowKey) {
+        const apiRes = await fetch(`https://appyflow.in/api/verifyGST?gstNo=${gst}&key_secret=${appyflowKey}`, {
           signal: AbortSignal.timeout(8000),
         });
         if (apiRes.ok) {
           const result = await apiRes.json();
-          // Parse gstinapi.in response format
-          if (result?.data || result?.success) {
-            const data = result.data || result;
+          if (result?.taxpayerInfo && !result?.error) {
+            const info = result.taxpayerInfo;
+            const addr = info.pradr?.addr;
             apiData = {
-              companyName: data.lgnm || data.nm || data.companyName || null,
-              tradeName: data.tradeNam || data.tradeName || null,
-              address: data.pradr?.addr || data.address || null,
-              legalName: data.lgnm || data.legalName || null,
-              registrationDate: data.rgdt || data.registrationDate || null,
-              constitution: data.ctj || data.constitution || null,
-              natureOfBusiness: data.nba || data.natureOfBusiness || null,
-              email: data.email || null,
-              phone: data.phno || data.phone || null,
+              companyName: info.lgnm || null,
+              tradeName: info.tradeNam || null,
+              address: addr ? `${addr.bno || ''} ${addr.st || ''}, ${addr.loc || ''}, ${addr.city || addr.dst || ''}, ${addr.stcd || ''} - ${addr.pncd || ''}`.replace(/,\s*,/g, ',').trim() : null,
+              legalName: info.lgnm || null,
+              registrationDate: info.rgdt || null,
+              constitution: info.ctb || info.ctj || null,
+              natureOfBusiness: Array.isArray(info.nba) ? info.nba.join(', ') : (info.nba || null),
+              email: null, // Appyflow doesn't return email
+              phone: null, // Appyflow doesn't return phone
             };
           }
         } else {
-          console.log('gstinapi.in returned:', apiRes.status);
+          console.log('appyflow.in returned:', apiRes.status);
         }
-      } else {
-        console.log('GSTINAPI_KEY not configured');
       }
     } catch (err) {
-      console.log('gstinapi.in failed, using mock data');
+      console.log('appyflow.in failed');
+    }
+    
+    // Attempt 2: gstinapi.in (if appyflow didn't work)
+    if (!apiData) {
+      try {
+        const gstinApiKey = process.env.GSTINAPI_KEY;
+        if (gstinApiKey) {
+          const apiRes = await fetch(`https://gstinapi.in/v1/gstin/${gst}`, {
+            headers: { 'x-api-key': gstinApiKey },
+            signal: AbortSignal.timeout(8000),
+          });
+          if (apiRes.ok) {
+            const result = await apiRes.json();
+            if (result?.data || result?.success) {
+              const data = result.data || result;
+              apiData = {
+                companyName: data.lgnm || data.nm || data.companyName || null,
+                tradeName: data.tradeNam || data.tradeName || null,
+                address: data.pradr?.addr || data.address || null,
+                legalName: data.lgnm || data.legalName || null,
+                registrationDate: data.rgdt || data.registrationDate || null,
+                constitution: data.ctj || data.constitution || null,
+                natureOfBusiness: data.nba || data.natureOfBusiness || null,
+                email: data.email || null,
+                phone: data.phno || data.phone || null,
+              };
+            }
+          }
+        }
+      } catch (err) {
+        console.log('gstinapi.in failed');
+      }
     }
 
     // Step 3: Generate realistic mock data from GST (deterministic, no AI needed)
