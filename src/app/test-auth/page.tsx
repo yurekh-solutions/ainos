@@ -25,7 +25,7 @@ export default function TestAuthPage() {
 
   const testGoogleLogin = async () => {
     setResult('Redirecting to Google...');
-    await signIn('google', { callbackUrl: '/' });
+    await signIn('google', { callbackUrl: '/dashboard' });
   };
 
   const testRegister = async () => {
