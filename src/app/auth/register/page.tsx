@@ -790,26 +790,26 @@ export default function RegisterPage() {
                                 </select>
                               </div>
                               <div>
-                                <label className="block text-xs font-semibold text-gray-700 mb-2">
+                                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                                   Company Type
                                   {gstInfo && <span className="ml-2 text-[10px] font-medium text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">Auto-detected</span>}
                                 </label>
                               </div>
-                              <div className="grid grid-cols-3 gap-2">
-                                {COMPANY_TYPES.map(ct => {
-                                  const Icon = ct.icon;
-                                  const selected = companyType === ct.value;
-                                  return (
-                                    <button key={ct.value} type="button" onClick={() => { setCompanyType(ct.value); setDocuments({}); setDocPreviews({}); setPreviewDoc(null); }}
-                                      className={`h-auto py-2.5 px-2 rounded-xl border text-[12px] font-medium transition-all text-center flex flex-col items-center gap-1 ${selected ? 'text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300'}`}
-                                      style={selected ? { background: '#4c1d95', borderColor: '#4c1d95' } : {}}
-                                    >
-                                      <Icon className="w-4 h-4" />
-                                      {ct.label}
-                                    </button>
-                                  );
-                                })}
-                              </div>
+                            </div>
+                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                              {COMPANY_TYPES.map(ct => {
+                                const Icon = ct.icon;
+                                const selected = companyType === ct.value;
+                                return (
+                                  <button key={ct.value} type="button" onClick={() => { setCompanyType(ct.value); setDocuments({}); setDocPreviews({}); setPreviewDoc(null); }}
+                                    className={`h-auto py-2.5 px-1.5 rounded-xl border text-[11px] font-medium transition-all text-center flex flex-col items-center gap-1 leading-tight ${selected ? 'text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300'}`}
+                                    style={selected ? { background: '#4c1d95', borderColor: '#4c1d95' } : {}}
+                                  >
+                                    <Icon className="w-4 h-4 flex-shrink-0" />
+                                    <span className="break-words w-full">{ct.label}</span>
+                                  </button>
+                                );
+                              })}
                             </div>
 
                             {error && (
