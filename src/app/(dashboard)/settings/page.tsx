@@ -222,7 +222,7 @@ export default function SettingsPage() {
                     return (
                       <button
                         key={option.value}
-                        onClick={() => setTheme('dark')}
+                        onClick={() => setTheme(option.value as 'light')}
                         className="relative p-5 rounded-2xl transition-all duration-300 text-left group overflow-hidden"
                         style={{
                           background: isSelected 
