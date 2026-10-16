@@ -601,55 +601,14 @@ export default function InvoicesPage() {
     doc.setLineWidth(0.3);
 
     const sigY = H - 35;
-    const signatureStyle = 'simple'; // Default signature style
     
-    if (signatureStyle === 'detailed') {
-      // Detailed style: Place & Date + Buyer signature + Seller signature with company name
-      // Buyer signature (left)
-      doc.line(M, sigY, M + 50, sigY);
-      doc.setFontSize(7);
-      doc.setTextColor(100, 100, 100);
-      doc.text('Place & Date', M, sigY + 4);
-      doc.text('Stamp & signature of the Buyer', M, sigY + 8);
-
-      // Seller signature (right)
-      doc.line(W - M - 50, sigY, W - M, sigY);
-      doc.text('Seller\'s signature', W - M - 50, sigY + 4);
-      if (company?.name) {
-        doc.setFont(fontFamily, 'bold');
-        doc.setTextColor(50, 50, 50);
-        doc.text(company.name, W - M - 50, sigY + 8);
-        doc.setFont(fontFamily, 'normal');
-      }
-    } else {
-      // Simple style: Just signature lines
-      doc.line(M, sigY, M + 50, sigY);
-      doc.line(W - M - 50, sigY, W - M, sigY);
-      doc.setFontSize(7);
-      doc.setTextColor(100, 100, 100);
-      doc.text('Buyer', M + 20, sigY + 4);
-      doc.text('Seller', W - M - 30, sigY + 4);
-    }
-
-    // ── DIGITAL SIGNATURE (if present) ──
-    if (invoice.signatureImage && invoice.signatureType !== 'none') {
-      try {
-        // Add signature image on the right side
-        const sigImgX = W - M - 60;
-        const sigImgY = sigY - 25;
-        doc.addImage(invoice.signatureImage, 'PNG', sigImgX, sigImgY, 50, 20);
-        
-        // Add signature date below
-        if (invoice.signatureDate) {
-          doc.setFontSize(6);
-          doc.setTextColor(100, 100, 100);
-          doc.text(`Signed: ${new Date(invoice.signatureDate).toLocaleDateString('en-IN')}`, sigImgX, sigImgY + 23);
-        }
-      } catch (err) {
-        // Signature image failed to load, ignore
-        console.log('Signature image error:', err);
-      }
-    }
+    // Simple signature style: Just signature lines
+    doc.line(M, sigY, M + 50, sigY);
+    doc.line(W - M - 50, sigY, W - M, sigY);
+    doc.setFontSize(7);
+    doc.setTextColor(100, 100, 100);
+    doc.text('Buyer', M + 20, sigY + 4);
+    doc.text('Seller', W - M - 30, sigY + 4);
 
     // ── FOOTER ───
     doc.setDrawColor(accentColor.r, accentColor.g, accentColor.b);
