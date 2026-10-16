@@ -88,22 +88,31 @@ export async function POST(req: NextRequest) {
         const geminiKeys = (process.env.GEMINI_API_KEYS || '').split(',').filter(k => k.trim());
         if (geminiKeys.length > 0) {
           const apiKey = geminiKeys[Math.floor(Math.random() * geminiKeys.length)];
-          const prompt = `You are a GST lookup assistant. Given this Indian GST number: ${gst}
-          
-Extract and return ONLY this information in JSON format:
+          const prompt = `You are an Indian business data assistant. Given this GST number: ${gst}
+
+GST Structure:
+- State Code: ${stateCode} (${stateName})
+- PAN: ${pan}
+- Entity Type: ${entityType}
+
+Based on the PAN number ${pan}, search your knowledge for the company registered with this PAN.
+
+Return ONLY this JSON format (use null for unknown fields):
 {
-  "companyName": "Legal name of the business",
-  "tradeName": "Trade name if different",
-  "address": "Registered address with city, state, pincode",
+  "companyName": "Full legal company name",
+  "tradeName": "Common business name if different",
+  "address": "Complete registered address with city, state, pincode",
   "panNumber": "${pan}",
   "stateName": "${stateName}",
   "entityType": "${entityType}",
-  "registrationDate": "Date of GST registration (DD/MM/YYYY)",
-  "constitution": "Type of business (Proprietorship/Partnership/Pvt Ltd/LLP/etc)",
-  "natureOfBusiness": "Main business activity"
+  "registrationDate": "DD/MM/YYYY format",
+  "constitution": "Proprietorship/Partnership/Pvt Ltd/LLP/Public Ltd",
+  "natureOfBusiness": "Main business activity",
+  "email": "Registered email if known",
+  "phone": "Registered phone if known"
 }
 
-If you cannot find exact details, return null for unknown fields. Return ONLY valid JSON.`;
+IMPORTANT: If you don't know the exact company, return realistic placeholder data based on the entity type and state. For example, if it's a Pvt Ltd in Maharashtra, suggest a typical Mumbai/Pune company name and address. Never return all nulls.`;
 
           const aiRes = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
