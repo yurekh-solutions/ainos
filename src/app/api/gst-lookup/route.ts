@@ -95,7 +95,17 @@ export async function POST(req: NextRequest) {
 
         const addr = data.pradr?.adr || '';
         const stateName = STATE_CODES[stateCode] || 'Unknown';
-        const entityType = PAN_ENTITY[pan.charAt(3)] || 'proprietorship';
+        // Use real entity type from GSTN if available, otherwise fall back to PAN parse
+        const realEntityType = data.nba || data.ctb || '';
+        const entityTypeMap: Record<string, string> = {
+          'Proprietorship': 'proprietorship',
+          'Partnership': 'partnership',
+          'Limited Liability Partnership': 'llp',
+          'Private Limited Company': 'pvt_ltd',
+          'Public Limited Company': 'public_ltd',
+          'Trust': 'trust',
+        };
+        const entityType = entityTypeMap[realEntityType] || PAN_ENTITY[pan.charAt(3)] || 'proprietorship';
 
         return NextResponse.json({
           success: true,
