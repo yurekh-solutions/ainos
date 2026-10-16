@@ -61,25 +61,41 @@ export async function POST(req: NextRequest) {
     const stateName = STATE_CODES[stateCode] || 'Unknown';
     const entityType = PAN_ENTITY[pan.charAt(3)] || 'proprietorship';
 
-    // Step 2: Try to fetch from public GST API (if available)
+    // Step 2: Try gstinapi.in (free GST verification API)
     let apiData: GstCompanyData | null = null;
     
-    // Try using a free GST verification API
-    // Note: Most GST APIs require API keys. Using demo/public endpoints if available.
     try {
-      // Attempt 1: Try public GST API (if configured in env)
-      const gstApiKey = process.env.GST_API_KEY;
-      if (gstApiKey) {
-        const apiRes = await fetch(`https://api.gst.com/v1/search?gst=${gst}`, {
-          headers: { 'Authorization': `Bearer ${gstApiKey}` },
-          signal: AbortSignal.timeout(5000),
+      const gstinApiKey = process.env.GSTINAPI_KEY;
+      if (gstinApiKey) {
+        const apiRes = await fetch(`https://gstinapi.in/v1/gstin/${gst}`, {
+          headers: { 'x-api-key': gstinApiKey },
+          signal: AbortSignal.timeout(8000),
         });
         if (apiRes.ok) {
-          apiData = await apiRes.json();
+          const result = await apiRes.json();
+          // Parse gstinapi.in response format
+          if (result?.data || result?.success) {
+            const data = result.data || result;
+            apiData = {
+              companyName: data.lgnm || data.nm || data.companyName || null,
+              tradeName: data.tradeNam || data.tradeName || null,
+              address: data.pradr?.addr || data.address || null,
+              legalName: data.lgnm || data.legalName || null,
+              registrationDate: data.rgdt || data.registrationDate || null,
+              constitution: data.ctj || data.constitution || null,
+              natureOfBusiness: data.nba || data.natureOfBusiness || null,
+              email: data.email || null,
+              phone: data.phno || data.phone || null,
+            };
+          }
+        } else {
+          console.log('gstinapi.in returned:', apiRes.status);
         }
+      } else {
+        console.log('GSTINAPI_KEY not configured');
       }
     } catch (err) {
-      console.log('GST API not available, using local parse');
+      console.log('gstinapi.in failed, using mock data');
     }
 
     // Step 3: Generate realistic mock data from GST (deterministic, no AI needed)
