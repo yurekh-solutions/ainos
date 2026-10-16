@@ -118,7 +118,7 @@ const leftFeatures = [
 ];
 
 const inputBase =
-  'w-full h-11 rounded-xl bg-white border border-gray-200 text-sm text-gray-800 ' +
+  'w-full min-w-0 max-w-full h-11 rounded-xl bg-white border border-gray-200 text-sm text-gray-800 ' +
   'placeholder:text-gray-400 outline-none transition ' +
   'focus:border-purple-400 focus:ring-2 focus:ring-purple-100';
 
@@ -453,7 +453,7 @@ export default function RegisterPage() {
   const ctLabel = COMPANY_TYPES.find(c => c.value === companyType)?.label;
 
   return (
-    <div className="min-h-screen bg-[#f8f7fc] overflow-x-hidden">
+    <div className="min-h-screen w-full max-w-[100vw] bg-[#f8f7fc] overflow-x-hidden overflow-y-auto">
       {/* Toast Notification */}
       <AnimatePresence>
         {toast && (
@@ -589,7 +589,7 @@ export default function RegisterPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white rounded-2xl sm:rounded-3xl border border-gray-100 shadow-lg overflow-hidden"
+              className="bg-white rounded-2xl sm:rounded-3xl border border-gray-100 shadow-lg overflow-hidden max-w-full"
             >
               {/* Card Header */}
               <div className="px-4 sm:px-8 pt-6 sm:pt-8 pb-4 sm:pb-6 text-center border-b border-gray-50">
@@ -611,7 +611,7 @@ export default function RegisterPage() {
               </div>
 
               {/* Card Body */}
-              <div className="px-4 sm:px-8 py-4 sm:py-6 pb-20 sm:pb-6">
+              <div className="px-4 sm:px-8 py-4 sm:py-6 pb-24 sm:pb-6 overflow-x-hidden">
                 {success ? (
                   <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-12">
                     <div className="w-16 h-16 rounded-full bg-green-50 border border-green-100 flex items-center justify-center mx-auto mb-5">
@@ -708,7 +708,7 @@ export default function RegisterPage() {
                                 GST Number <span className="text-gray-400 font-normal">(enter to auto-fill)</span>
                               </label>
                               <input type="text" value={gstNumber} onChange={e => handleGstChange(e.target.value)} placeholder="22AAAAA0000A1Z5" maxLength={15}
-                                className={`${inputBase} px-3 font-mono`} />
+                                className={`${inputBase} px-3 font-mono text-xs sm:text-sm`} />
                             </div>
 
                             {fetchingGst && (
@@ -739,8 +739,8 @@ export default function RegisterPage() {
                                   <p className="text-sm font-semibold text-blue-900">GST Verification Required</p>
                                 </div>
                                 <p className="text-xs text-gray-600">Please enter the captcha shown below to verify your GST number and auto-fill company details.</p>
-                                <div className="flex flex-col items-center gap-3">
-                                  <img src={captchaImage} alt="GST Captcha" className="border-2 border-gray-300 rounded-lg bg-white" />
+                                <div className="flex flex-col items-center gap-3 w-full">
+                                  <img src={captchaImage} alt="GST Captcha" className="max-w-full h-auto border-2 border-gray-300 rounded-lg bg-white" />
                                   <input type="text" value={captchaText} onChange={e => setCaptchaText(e.target.value)}
                                     placeholder="Enter captcha text"
                                     className={`${inputBase} px-3 text-center font-mono tracking-widest`}
@@ -757,9 +757,9 @@ export default function RegisterPage() {
                             {gstVerified && (
                               <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
                                 className="p-3 rounded-xl bg-green-50 border border-green-200">
-                                <div className="flex items-center gap-2">
-                                  <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                  <p className="text-[13px] text-green-700">
+                                <div className="flex items-start gap-2">
+                                  <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                  <p className="text-[13px] text-green-700 break-words leading-snug">
                                     <span className="font-semibold">GST verified!</span> Company details auto-filled from GSTN portal.
                                   </p>
                                 </div>
@@ -781,7 +781,7 @@ export default function RegisterPage() {
                                   <MapPin className="w-3.5 h-3.5" style={{ color: '#4c1d95' }} />
                                 </div>
                                 <textarea value={companyAddress} onChange={e => setCompanyAddress(e.target.value)} placeholder="123 Business Park, Sector 5, Gurugram" rows={2}
-                                  className="w-full pl-11 pr-3 py-2.5 rounded-xl bg-white border border-gray-200 text-sm text-gray-800 placeholder:text-gray-400 outline-none transition resize-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100" />
+                                  className="w-full min-w-0 max-w-full pl-11 pr-3 py-2.5 rounded-xl bg-white border border-gray-200 text-sm text-gray-800 placeholder:text-gray-400 outline-none transition resize-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100" />
                               </div>
                             </div>
 
@@ -800,13 +800,13 @@ export default function RegisterPage() {
                                 </label>
                               </div>
                             </div>
-                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 sm:gap-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-2">
                               {COMPANY_TYPES.map(ct => {
                                 const Icon = ct.icon;
                                 const selected = companyType === ct.value;
                                 return (
                                   <button key={ct.value} type="button" onClick={() => { setCompanyType(ct.value); setDocuments({}); setDocPreviews({}); setPreviewDoc(null); }}
-                                    className={`h-auto py-2 px-1 rounded-xl border text-[10px] sm:text-[11px] font-medium transition-all text-center flex flex-col items-center justify-center gap-1 leading-tight min-h-[64px] sm:min-h-[72px] ${selected ? 'text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300'}`}
+                                    className={`h-auto py-2 px-1 rounded-xl border text-[10px] sm:text-[11px] font-medium transition-all text-center flex flex-col items-center justify-center gap-1 leading-tight min-h-[56px] sm:min-h-[64px] lg:min-h-[72px] ${selected ? 'text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300'}`}
                                     style={selected ? { background: '#4c1d95', borderColor: '#4c1d95' } : {}}
                                   >
                                     <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
