@@ -508,7 +508,7 @@ export default function AinosLandingPage() {
 
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-start">
             {/* Left — step list */}
-            <div className="space-y-3">
+            <div className="space-y-3 min-w-0">
               {STEPS.map((s, i) => (
                 <button
                   key={s.title}
@@ -538,7 +538,7 @@ export default function AinosLandingPage() {
             </div>
 
             {/* Right — sticky visual panel */}
-            <div className="lg:sticky lg:top-24">
+            <div className="lg:sticky lg:top-24 min-w-0">
               <div className="relative h-[380px] sm:h-[420px] rounded-3xl bg-gradient-to-br from-purple-100 via-purple-50 to-indigo-100 p-5 sm:p-7 overflow-hidden">
                 <div className="h-full rounded-2xl bg-white border border-gray-100 shadow-xl p-6 sm:p-7 overflow-hidden">
                   <AnimatePresence mode="wait">
@@ -878,13 +878,13 @@ export default function AinosLandingPage() {
               <p className="text-sm sm:text-base text-gray-600 leading-relaxed mb-6">
                 Finance, CRM, inventory, HR, marketing and more — twelve modules, zero setup. Turn on only what your business needs today.
               </p>
-              <div className="inline-flex flex-wrap gap-1 rounded-full bg-white border border-purple-100 p-1 mb-6 w-fit">
+              <div className="flex flex-nowrap overflow-x-auto scrollbar-hide gap-1 rounded-full bg-white border border-purple-100 p-1 mb-6 max-w-full">
                 {ABOUT_CATS.map((c) => (
                   <button
                     key={c}
                     type="button"
                     onClick={() => setAboutCat(c)}
-                    className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${aboutCat === c ? 'bg-[#4c1d95] text-white' : 'text-gray-500 hover:text-gray-900'}`}
+                    className={`rounded-full px-4 py-1.5 text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-colors ${aboutCat === c ? 'bg-[#4c1d95] text-white' : 'text-gray-500 hover:text-gray-900'}`}
                   >
                     {c.toUpperCase()}
                   </button>
@@ -892,11 +892,11 @@ export default function AinosLandingPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {MODULES.filter((m) => aboutCat === 'All' || MODULE_CATS[m.title] === aboutCat).map((m) => (
-                  <div key={m.title} className="flex items-center gap-3 rounded-2xl bg-white border border-purple-100/70 p-3 sm:p-4">
+                  <div key={m.title} className="flex items-center gap-2.5 rounded-2xl bg-white border border-purple-100/70 p-3 sm:p-4">
                     <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-purple-50 ring-1 ring-purple-100 flex items-center justify-center flex-shrink-0">
                       <m.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600" />
                     </span>
-                    <span className="text-xs sm:text-sm font-medium text-gray-800 leading-tight">{m.title}</span>
+                    <span className="text-xs sm:text-sm font-medium text-gray-800 leading-snug min-w-0">{m.title}</span>
                   </div>
                 ))}
               </div>
@@ -1146,7 +1146,7 @@ export default function AinosLandingPage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="relative p-10 sm:p-14 lg:p-16 rounded-3xl bg-gradient-to-br from-[#4c1d95] via-[#5b21b6] to-[#6d28d9] shadow-2xl shadow-purple-900/30 overflow-hidden"
+            className="relative p-8 sm:p-14 lg:p-16 rounded-3xl bg-gradient-to-br from-[#4c1d95] via-[#5b21b6] to-[#6d28d9] shadow-2xl shadow-purple-900/30 overflow-hidden"
           >
             {/* Decorative glow blobs */}
             <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-white/10 blur-3xl" />
