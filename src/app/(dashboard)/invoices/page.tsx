@@ -996,6 +996,18 @@ export default function InvoicesPage() {
                         </label>
                       </div>
                       
+                      {/* Sample Download */}
+                      <div className="text-center">
+                        <a
+                          href="/SKY_VISION_Invoice_156.pdf"
+                          download
+                          className="inline-flex items-center gap-1.5 text-xs font-medium text-purple-600 hover:text-purple-700 transition-colors"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          Download Sample Invoice (PDF)
+                        </a>
+                      </div>
+                      
                       {/* Extract Button */}
                       <button
                         onClick={handleInvoiceExtract}
