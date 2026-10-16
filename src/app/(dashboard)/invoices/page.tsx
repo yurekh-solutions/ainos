@@ -936,7 +936,7 @@ export default function InvoicesPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+              className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
               onClick={() => {
                 setShowExtractModal(false);
                 setExtractedData(null);
@@ -944,16 +944,22 @@ export default function InvoicesPage() {
               }}
             >
               <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
+                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="glass-card w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl"
+                className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl border border-gray-100"
               >
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-2xl font-light" style={{ color: 'hsl(var(--foreground))' }}>Upload Invoice</h2>
-                    <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Extract vendor details, items, GST & totals automatically</p>
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4c1d95, #6d28d9)' }}>
+                      <Upload className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-900">Upload Invoice</h2>
+                      <p className="text-xs text-gray-500 mt-0.5">Extract vendor details, items, GST & totals automatically</p>
+                    </div>
                   </div>
                   <button
                     onClick={() => {
@@ -963,149 +969,171 @@ export default function InvoicesPage() {
                     }}
                     className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
                   >
-                    <AlertCircle className="w-5 h-5" style={{ color: 'hsl(var(--muted-foreground))' }} />
+                    <AlertCircle className="w-5 h-5 text-gray-400" />
                   </button>
                 </div>
 
-                {!extractedData ? (
-                  <div className="space-y-4">
-                    <div className="rounded-2xl border-2 border-dashed p-8 text-center transition-colors hover:border-purple-400 hover:bg-purple-50/30"
-                      style={{ borderColor: 'hsl(var(--border))' }}>
-                      <input
-                        type="file"
-                        accept="image/*,application/pdf"
-                        onChange={(e) => setInvoiceFile(e.target.files?.[0] || null)}
-                        className="hidden"
-                        id="invoice-file-upload"
-                      />
-                      <label htmlFor="invoice-file-upload" className="cursor-pointer">
-                        <Upload className="w-12 h-12 mx-auto mb-3" style={{ color: 'hsl(280 60% 55%)' }} />
-                        <p className="text-sm font-medium mb-1" style={{ color: 'hsl(var(--foreground))' }}>
-                          {invoiceFile ? invoiceFile.name : 'Click to upload invoice'}
-                        </p>
-                        <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>PNG, JPG, PDF supported</p>
-                      </label>
-                    </div>
-                    <button
-                      onClick={handleInvoiceExtract}
-                      disabled={!invoiceFile || extracting}
-                      className="w-full py-3 rounded-xl text-white text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{
-                        background: 'linear-gradient(135deg, hsl(280 60% 55%), hsl(300 60% 55%))',
-                        boxShadow: '0 10px 30px -10px hsl(280 60% 55% / 0.4)'
-                      }}
-                    >
-                      {extracting ? 'Extracting...' : 'Extract Invoice Data'}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="glass-card p-4 rounded-xl space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Vendor Name</p>
-                          <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>{extractedData.vendorName || '—'}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Invoice Number</p>
-                          <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>{extractedData.invoiceNumber || '—'}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Invoice Date</p>
-                          <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>{extractedData.invoiceDate || '—'}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Vendor PAN</p>
-                          <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>{extractedData.vendorPAN || '—'}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Vendor GST</p>
-                          <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>{extractedData.vendorGST || '—'}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Vendor Phone</p>
-                          <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>{extractedData.vendorPhone || '—'}</p>
-                        </div>
+                <div className="p-6">
+                  {!extractedData ? (
+                    <div className="space-y-4">
+                      {/* Upload Area */}
+                      <div className="rounded-2xl border-2 border-dashed border-gray-200 p-8 text-center transition-all hover:border-purple-300 hover:bg-purple-50/30">
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={(e) => setInvoiceFile(e.target.files?.[0] || null)}
+                          className="hidden"
+                          id="invoice-file-upload"
+                        />
+                        <label htmlFor="invoice-file-upload" className="cursor-pointer">
+                          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(76,29,149,0.08)' }}>
+                            <Upload className="w-8 h-8" style={{ color: '#4c1d95' }} />
+                          </div>
+                          <p className="text-sm font-semibold text-gray-900 mb-1">
+                            {invoiceFile ? invoiceFile.name : 'Click to upload invoice'}
+                          </p>
+                          <p className="text-xs text-gray-500">PNG, JPG, PDF supported</p>
+                        </label>
                       </div>
-                      {extractedData.vendorAddress && (
-                        <div>
-                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Vendor Address</p>
-                          <p className="text-sm" style={{ color: 'hsl(var(--foreground))' }}>{extractedData.vendorAddress}</p>
-                        </div>
-                      )}
-                      {Array.isArray(extractedData.items) && extractedData.items.length > 0 && (
-                        <div>
-                          <p className="text-xs mb-2" style={{ color: 'hsl(var(--muted-foreground))' }}>Items</p>
-                          <div className="space-y-1">
-                            {extractedData.items.map((item: any, idx: number) => (
-                              <div key={idx} className="flex justify-between text-sm glass-card px-3 py-2 rounded-lg">
-                                <span style={{ color: 'hsl(var(--foreground))' }}>{item.description}</span>
-                                <span className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>₹{item.amount.toLocaleString('en-IN')}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      <div className="grid grid-cols-3 gap-3 pt-2 border-t" style={{ borderColor: 'hsl(var(--border))' }}>
-                        <div>
-                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Subtotal</p>
-                          <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>₹{(extractedData.subtotal || 0).toLocaleString('en-IN')}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Tax</p>
-                          <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>₹{(extractedData.tax || 0).toLocaleString('en-IN')}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Total</p>
-                          <p className="font-medium" style={{ color: 'hsl(142 76% 36%)' }}>₹{(extractedData.total || 0).toLocaleString('en-IN')}</p>
-                        </div>
-                      </div>
-                      {extractedData.balance !== undefined && (
-                        <div className="grid grid-cols-2 gap-3 pt-2">
-                          <div>
-                            <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Amount Paid</p>
-                            <p className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>₹{(extractedData.amountPaid || 0).toLocaleString('en-IN')}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Balance</p>
-                            <p className="font-medium" style={{ color: 'hsl(25 95% 53%)' }}>₹{(extractedData.balance || 0).toLocaleString('en-IN')}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
+                      
+                      {/* Extract Button */}
                       <button
-                        onClick={() => {
-                          showToast('Invoice data saved to expenses');
-                          setShowExtractModal(false);
-                          setExtractedData(null);
-                          setInvoiceFile(null);
-                        }}
-                        className="flex-1 py-3 rounded-xl text-white text-sm font-medium transition-all"
+                        onClick={handleInvoiceExtract}
+                        disabled={!invoiceFile || extracting}
+                        className="w-full py-3 rounded-xl text-white text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         style={{
-                          background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))',
-                          boxShadow: '0 10px 30px -10px hsl(var(--primary) / 0.4)'
+                          background: 'linear-gradient(135deg, #4c1d95, #6d28d9)',
+                          boxShadow: '0 10px 30px -10px rgba(76,29,149,0.4)'
                         }}
                       >
-                        Add as Expense
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowExtractModal(false);
-                          setExtractedData(null);
-                          setInvoiceFile(null);
-                        }}
-                        className="px-6 py-3 rounded-xl text-sm font-medium transition-all border-2"
-                        style={{
-                          borderColor: 'hsl(var(--border))',
-                          color: 'hsl(var(--foreground))'
-                        }}
-                      >
-                        Close
+                        {extracting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Extracting...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="w-4 h-4" />
+                            <span>Extract Invoice Data</span>
+                          </>
+                        )}
                       </button>
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Extracted Data Card */}
+                      <div className="rounded-2xl border border-gray-200 p-5 space-y-4">
+                        {/* Vendor Info Grid */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Vendor Name</p>
+                            <p className="text-sm font-semibold text-gray-900">{extractedData.vendorName || '—'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Invoice Number</p>
+                            <p className="text-sm font-semibold text-gray-900">{extractedData.invoiceNumber || '—'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Invoice Date</p>
+                            <p className="text-sm font-semibold text-gray-900">{extractedData.invoiceDate || '—'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Vendor PAN</p>
+                            <p className="text-sm font-semibold text-gray-900">{extractedData.vendorPAN || '—'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Vendor GST</p>
+                            <p className="text-sm font-semibold text-gray-900">{extractedData.vendorGST || '—'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Vendor Phone</p>
+                            <p className="text-sm font-semibold text-gray-900">{extractedData.vendorPhone || '—'}</p>
+                          </div>
+                        </div>
+                        
+                        {extractedData.vendorAddress && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Vendor Address</p>
+                            <p className="text-sm text-gray-700">{extractedData.vendorAddress}</p>
+                          </div>
+                        )}
+                        
+                        {Array.isArray(extractedData.items) && extractedData.items.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 mb-2">Items</p>
+                            <div className="space-y-2">
+                              {extractedData.items.map((item: { description: string; amount: number }, idx: number) => (
+                                <div key={idx} className="flex justify-between items-center px-3 py-2 rounded-xl bg-gray-50 border border-gray-100">
+                                  <span className="text-sm text-gray-700">{item.description}</span>
+                                  <span className="text-sm font-semibold text-gray-900">₹{item.amount.toLocaleString('en-IN')}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Totals */}
+                        <div className="grid grid-cols-3 gap-3 pt-3 border-t border-gray-200">
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Subtotal</p>
+                            <p className="text-sm font-semibold text-gray-900">₹{(extractedData.subtotal || 0).toLocaleString('en-IN')}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Tax</p>
+                            <p className="text-sm font-semibold text-gray-900">₹{(extractedData.tax || 0).toLocaleString('en-IN')}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Total</p>
+                            <p className="text-sm font-semibold" style={{ color: '#059669' }}>₹{(extractedData.total || 0).toLocaleString('en-IN')}</p>
+                          </div>
+                        </div>
+                        
+                        {extractedData.balance !== undefined && (
+                          <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200">
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-1">Amount Paid</p>
+                              <p className="text-sm font-semibold text-gray-900">₹{(extractedData.amountPaid || 0).toLocaleString('en-IN')}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-1">Balance</p>
+                              <p className="text-sm font-semibold" style={{ color: '#ea580c' }}>₹{(extractedData.balance || 0).toLocaleString('en-IN')}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Action Buttons */}
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => {
+                            showToast('Invoice data saved to expenses');
+                            setShowExtractModal(false);
+                            setExtractedData(null);
+                            setInvoiceFile(null);
+                          }}
+                          className="flex-1 py-3 rounded-xl text-white text-sm font-semibold transition-all flex items-center justify-center gap-2"
+                          style={{
+                            background: 'linear-gradient(135deg, #4c1d95, #6d28d9)',
+                            boxShadow: '0 10px 30px -10px rgba(76,29,149,0.4)'
+                          }}
+                        >
+                          <Check className="w-4 h-4" />
+                          <span>Add as Expense</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowExtractModal(false);
+                            setExtractedData(null);
+                            setInvoiceFile(null);
+                          }}
+                          className="px-6 py-3 rounded-xl text-sm font-semibold transition-all border-2 border-gray-200 text-gray-700 hover:bg-gray-50"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </motion.div>
             </motion.div>
           )}
