@@ -601,7 +601,7 @@ export default function InvoicesPage() {
     doc.setLineWidth(0.3);
 
     const sigY = H - 35;
-    const signatureStyle = template?.signatureStyle || 'simple';
+    const signatureStyle = 'simple'; // Default signature style
     
     if (signatureStyle === 'detailed') {
       // Detailed style: Place & Date + Buyer signature + Seller signature with company name
