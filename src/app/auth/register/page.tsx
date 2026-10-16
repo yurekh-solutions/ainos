@@ -213,6 +213,7 @@ export default function RegisterPage() {
   const [country, setCountry] = useState('India');
   const [gstNumber, setGstNumber] = useState('');
   const [gstInfo, setGstInfo] = useState<{ stateName: string; entityType: string; entityLabel: string } | null>(null);
+  const [fetchingGst, setFetchingGst] = useState(false);
 
   const handleGstChange = (val: string) => {
     const cleaned = val.toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 15);
@@ -228,10 +229,41 @@ export default function RegisterPage() {
           setDocPreviews({});
           setPreviewDoc(null);
         }
+        // Auto-fetch company details from GST
+        fetchGstDetails(cleaned);
         return;
       }
     }
     setGstInfo(null);
+  };
+
+  const fetchGstDetails = async (gst: string) => {
+    if (gst.length !== 15) return;
+    setFetchingGst(true);
+    try {
+      const res = await fetch('/api/gst-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gstNumber: gst }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Auto-fill available fields
+        if (data.stateName) {
+          // State already set by parseGst
+        }
+        if (data.entityType && data.entityType !== companyType) {
+          setCompanyType(data.entityType);
+        }
+        // If GST API returns company name/address in future, auto-fill here
+        // if (data.companyName) setCompanyName(data.companyName);
+        // if (data.address) setCompanyAddress(data.address);
+      }
+    } catch (err) {
+      console.error('GST fetch failed:', err);
+    } finally {
+      setFetchingGst(false);
+    }
   };
 
   const [documents, setDocuments] = useState<Record<string, { filename: string; fileUrl: string }>>({});
@@ -645,13 +677,37 @@ export default function RegisterPage() {
                               </div>
                             </div>
 
-                            {gstInfo && (
+                            {fetchingGst && (
                               <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-                                className="flex items-center gap-2 p-3 rounded-xl bg-green-50 border border-green-200">
-                                <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                <p className="text-[13px] text-green-700">
-                                  <span className="font-semibold">GST verified.</span>{' '}
-                                  Type: <span className="font-semibold">{gstInfo.entityLabel}</span> · State: <span className="font-semibold">{gstInfo.stateName}</span>
+                                className="flex items-center gap-2 p-3 rounded-xl bg-blue-50 border border-blue-200">
+                                <Loader2 className="w-4 h-4 text-blue-600 animate-spin flex-shrink-0" />
+                                <p className="text-[13px] text-blue-700">
+                                  <span className="font-semibold">Fetching company details...</span>
+                                </p>
+                              </motion.div>
+                            )}
+
+                            {gstInfo && !fetchingGst && (
+                              <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                                className="p-3 rounded-xl bg-green-50 border border-green-200 space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                  <p className="text-[13px] text-green-700">
+                                    <span className="font-semibold">GST verified successfully!</span>
+                                  </p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  <div>
+                                    <span className="text-gray-500">Company Type:</span>{' '}
+                                    <span className="font-semibold text-gray-800">{gstInfo.entityLabel}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500">State:</span>{' '}
+                                    <span className="font-semibold text-gray-800">{gstInfo.stateName}</span>
+                                  </div>
+                                </div>
+                                <p className="text-[11px] text-green-600 mt-1">
+                                  ✓ Company type auto-filled. Fill other details manually or upgrade to GSTN API for auto-fetch.
                                 </p>
                               </motion.div>
                             )}
