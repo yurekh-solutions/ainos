@@ -332,7 +332,7 @@ export default function AinosLandingPage() {
               className="flex items-center border gap-2 border-neutral-200 h-13 max-w-[440px] w-full rounded-full overflow-hidden mt-6 bg-white shadow-sm focus-within:border-purple-300 focus-within:ring-4 focus-within:ring-purple-100/60 transition-all"
             >
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your work email" className="w-full h-full pl-6 outline-none text-sm bg-transparent text-neutral-600" />
-              <button type="submit" className="bg-[#5b21b6] hover:bg-[#4c1d95] active:scale-95 w-44 h-10 rounded-full text-sm text-white font-semibold flex items-center justify-center mr-1.5 transition-all shrink-0 shadow-md shadow-purple-900/20 cursor-pointer">
+              <button type="submit" className="bg-[#5b21b6] hover:bg-[#4c1d95] active:scale-95 w-auto px-4 sm:w-44 sm:px-0 h-10 rounded-full text-sm text-white font-semibold flex items-center justify-center mr-1.5 transition-all shrink-0 shadow-md shadow-purple-900/20 cursor-pointer">
                 Create Account <ArrowRight className="w-4 h-4 ml-1" />
               </button>
             </motion.form>
@@ -1021,7 +1021,7 @@ export default function AinosLandingPage() {
           <div className="mb-5">
             <div className="flex gap-5 w-max animate-[scroll-left_50s_linear_infinite] hover:[animation-play-state:paused]">
               {[...TESTIMONIALS, ...TESTIMONIALS].map((t, i) => (
-                <div key={`r1-${i}-${t.name}`} className="w-[340px] sm:w-[380px] flex-shrink-0 rounded-3xl bg-white border border-gray-100 p-7 shadow-sm transition-colors hover:border-purple-200">
+                <div key={`r1-${i}-${t.name}`} className="w-[min(320px,84vw)] sm:w-[380px] flex-shrink-0 rounded-3xl bg-white border border-gray-100 p-7 shadow-sm transition-colors hover:border-purple-200">
                   <Quote className="w-6 h-6 text-purple-200 mb-4" />
                   <p className="text-sm text-gray-700 leading-relaxed mb-6">&ldquo;{t.quote}&rdquo;</p>
                   <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
@@ -1040,7 +1040,7 @@ export default function AinosLandingPage() {
           <div>
             <div className="flex gap-5 w-max animate-[scroll-right_50s_linear_infinite] hover:[animation-play-state:paused]">
               {[...TESTIMONIALS, ...TESTIMONIALS].map((t, i) => (
-                <div key={`r2-${i}-${t.name}`} className="w-[340px] sm:w-[380px] flex-shrink-0 rounded-3xl bg-white border border-gray-100 p-7 shadow-sm transition-colors hover:border-purple-200">
+                <div key={`r2-${i}-${t.name}`} className="w-[min(320px,84vw)] sm:w-[380px] flex-shrink-0 rounded-3xl bg-white border border-gray-100 p-7 shadow-sm transition-colors hover:border-purple-200">
                   <Quote className="w-6 h-6 text-purple-200 mb-4" />
                   <p className="text-sm text-gray-700 leading-relaxed mb-6">&ldquo;{t.quote}&rdquo;</p>
                   <div className="flex items-center gap-3 pt-4 border-t border-gray-100">

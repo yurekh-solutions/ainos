@@ -177,7 +177,7 @@ function Steps({ step }: { step: number }) {
               >
                 {done ? <Check className="w-3.5 h-3.5" /> : n}
               </div>
-              <span className={`mt-1.5 text-[10px] sm:text-[11px] font-medium ${active || done ? 'text-gray-900' : 'text-gray-400'}`}>{label}</span>
+              <span className={`mt-1.5 text-[11px] font-medium ${active || done ? 'text-gray-900' : 'text-gray-400'}`}>{label}</span>
               <span className={`mt-1 h-0.5 w-6 rounded-full ${active ? 'bg-[#4c1d95]' : 'bg-transparent'}`} />
             </div>
             {i < items.length - 1 && (
@@ -423,8 +423,8 @@ export default function RegisterPage() {
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
 
-          {/* ===== LEFT — Branding & Info Cards ===== */}
-          <div className="space-y-6">
+          {/* ===== LEFT — Branding & Info Cards (desktop only: form comes first on mobile) ===== */}
+          <div className="space-y-6 hidden lg:block">
             {/* Brand Card */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}

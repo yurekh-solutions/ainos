@@ -165,8 +165,8 @@ export default function SignInPage() {
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
 
-          {/* ===== LEFT — Branding & Info Cards ===== */}
-          <div className="space-y-6">
+          {/* ===== LEFT — Branding & Info Cards (desktop only: form comes first on mobile) ===== */}
+          <div className="space-y-6 hidden lg:block">
             {/* Brand Card */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -250,7 +250,7 @@ export default function SignInPage() {
                 <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%)' }}>
                   <LogIn className="w-7 h-7 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-1.5">Supplier Login</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-1.5">Welcome Back</h2>
                 <p className="text-sm text-gray-500">Enter your credentials to access your dashboard</p>
               </div>
 
