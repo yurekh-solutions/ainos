@@ -65,6 +65,21 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
+interface ExtractedTemplate {
+  companyName?: string;
+  tagline?: string;
+  headerText?: string;
+  addressBlock?: string;
+  colorScheme?: string;
+  primaryColor?: string;
+  fontFamily?: string;
+  layout?: string;
+  tableColumns?: string[];
+  termsText?: string;
+  signatureText?: string;
+  sections?: string[];
+}
+
 interface InvoiceTemplate {
   primaryColor: string;
   secondaryColor: string;
@@ -99,8 +114,9 @@ export default function InvoicesPage() {
   // Invoice extraction state
   const [showExtractModal, setShowExtractModal] = useState(false);
   const [extracting, setExtracting] = useState(false);
-  const [extractedData, setExtractedData] = useState<any>(null);
+  const [extractedData, setExtractedData] = useState<ExtractedTemplate | null>(null);
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+  const [templateLogo, setTemplateLogo] = useState('');
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -125,7 +141,7 @@ export default function InvoicesPage() {
         const data = await res.json();
         if (data.success && data.output?.extracted) {
           setExtractedData(data.output.extracted);
-          showToast('Invoice data extracted successfully');
+          showToast('Template design extracted successfully');
         } else {
           showToast(data.error || 'Failed to extract invoice data', 'error');
         }
@@ -136,6 +152,60 @@ export default function InvoicesPage() {
       console.error('Extraction error:', error);
       showToast('Failed to extract invoice', 'error');
       setExtracting(false);
+    }
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!extractedData) return;
+    try {
+      // If a logo was uploaded, attach it to the company profile
+      if (templateLogo) {
+        await fetch('/api/company', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ logoUrl: templateLogo }),
+        });
+      }
+
+      const res = await fetch('/api/invoice-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: extractedData.companyName || 'Uploaded Template',
+          primaryColor: extractedData.primaryColor || '#1f2937',
+          secondaryColor: '#6b7280',
+          backgroundColor: '#ffffff',
+          textColor: '#1f2937',
+          fontFamily: extractedData.fontFamily || 'helvetica',
+          fontSize: 'medium',
+          layout: extractedData.layout || 'bordered-table',
+          showLogo: !!templateLogo,
+          logoSize: 'medium',
+          logoPosition: 'left',
+          showBankDetails: extractedData.sections?.includes('bank-details') ?? true,
+          showTerms: !!extractedData.termsText,
+          showQrCode: false,
+          terms: extractedData.termsText || '',
+          notes: '',
+          headerText: extractedData.tagline || '',
+          footerText: extractedData.signatureText || '',
+          accentWidth: 'medium',
+          borderRadius: 'rounded',
+          isDefault: false,
+        }),
+      });
+      if (res.ok) {
+        showToast('Template saved! New invoices will use this design.');
+        setShowExtractModal(false);
+        setExtractedData(null);
+        setInvoiceFile(null);
+        setTemplateLogo('');
+        fetchData(); // Refresh company (logo) + template
+      } else {
+        showToast('Failed to save template', 'error');
+      }
+    } catch {
+      showToast('Failed to save template', 'error');
     }
   };
 
@@ -958,7 +1028,7 @@ export default function InvoicesPage() {
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold text-gray-900">Upload Invoice Template</h2>
-                      <p className="text-xs text-gray-500 mt-0.5">Upload your company's invoice template — we'll replicate it for all your invoices</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Upload your company&apos;s invoice template — we&apos;ll replicate it for all your invoices</p>
                     </div>
                   </div>
                   <button
@@ -1021,96 +1091,143 @@ export default function InvoicesPage() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {/* Extracted Data Card */}
-                      <div className="rounded-2xl border border-gray-200 p-5 space-y-4">
-                        {/* Vendor Info Grid */}
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 mb-1">Template Name</p>
-                            <p className="text-sm font-semibold text-gray-900">{extractedData.vendorName || '—'}</p>
+                      {/* Template Preview */}
+                      <div className="rounded-2xl border border-gray-200 overflow-hidden">
+                        {/* Mini Invoice Preview */}
+                        <div className="p-5 space-y-3" style={{ borderBottom: '1px solid #e5e7eb' }}>
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="text-base font-bold" style={{ color: extractedData.primaryColor || '#1f2937' }}>
+                                {extractedData.companyName || 'Company Name'}
+                              </p>
+                              {extractedData.tagline && (
+                                <p className="text-xs" style={{ color: extractedData.primaryColor || '#6b7280' }}>{extractedData.tagline}</p>
+                              )}
+                            </div>
+                            {/* Logo Upload */}
+                            <div className="flex flex-col items-center gap-1">
+                              {templateLogo ? (
+                                <img src={templateLogo} alt="Logo" className="w-14 h-14 rounded-lg object-cover border border-gray-200" />
+                              ) : (
+                                <label htmlFor="template-logo-upload" className="cursor-pointer">
+                                  <div className="w-14 h-14 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center hover:border-purple-400 hover:bg-purple-50/30 transition-all">
+                                    <Upload className="w-5 h-5 text-gray-400" />
+                                    <span className="text-[9px] text-gray-400 mt-0.5">Logo</span>
+                                  </div>
+                                </label>
+                              )}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (!f) return;
+                                  const reader = new FileReader();
+                                  reader.onload = () => setTemplateLogo(reader.result as string);
+                                  reader.readAsDataURL(f);
+                                }}
+                                className="hidden"
+                                id="template-logo-upload"
+                              />
+                              {templateLogo && (
+                                <button
+                                  onClick={() => setTemplateLogo('')}
+                                  className="text-[10px] text-red-500 hover:text-red-700"
+                                >
+                                  Remove
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 mb-1">Layout Style</p>
-                            <p className="text-sm font-semibold text-gray-900">{extractedData.invoiceNumber || '—'}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 mb-1">Color Scheme</p>
-                            <p className="text-sm font-semibold text-gray-900">{extractedData.invoiceDate || '—'}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 mb-1">Font Style</p>
-                            <p className="text-sm font-semibold text-gray-900">{extractedData.vendorPAN || '—'}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 mb-1">Logo Position</p>
-                            <p className="text-sm font-semibold text-gray-900">{extractedData.vendorGST || '—'}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 mb-1">Sections</p>
-                            <p className="text-sm font-semibold text-gray-900">{extractedData.vendorPhone || '—'}</p>
+                          
+                          {extractedData.addressBlock && (
+                            <p className="text-[10px] text-gray-500 leading-relaxed">{extractedData.addressBlock}</p>
+                          )}
+                          
+                          {/* Color + Font indicators */}
+                          <div className="flex items-center gap-3 pt-1">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-4 h-4 rounded-full border border-gray-200" style={{ background: extractedData.primaryColor || '#1f2937' }} />
+                              <span className="text-[10px] text-gray-500">{extractedData.colorScheme || 'Default'}</span>
+                            </div>
+                            <span className="text-[10px] text-gray-400">|</span>
+                            <span className="text-[10px] text-gray-500">{extractedData.fontFamily || 'helvetica'}</span>
+                            <span className="text-[10px] text-gray-400">|</span>
+                            <span className="text-[10px] text-gray-500">{extractedData.layout || 'bordered-table'}</span>
                           </div>
                         </div>
                         
-                        {extractedData.vendorAddress && (
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 mb-1">Vendor Address</p>
-                            <p className="text-sm text-gray-700">{extractedData.vendorAddress}</p>
-                          </div>
-                        )}
-                        
-                        {Array.isArray(extractedData.items) && extractedData.items.length > 0 && (
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 mb-2">Items</p>
-                            <div className="space-y-2">
-                              {extractedData.items.map((item: { description: string; amount: number }, idx: number) => (
-                                <div key={idx} className="flex justify-between items-center px-3 py-2 rounded-xl bg-gray-50 border border-gray-100">
-                                  <span className="text-sm text-gray-700">{item.description}</span>
-                                  <span className="text-sm font-semibold text-gray-900">₹{item.amount.toLocaleString('en-IN')}</span>
-                                </div>
-                              ))}
+                        {/* Design Details */}
+                        <div className="p-5 space-y-4 bg-gray-50/50">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-1">Company Name</p>
+                              <p className="text-sm font-semibold text-gray-900">{extractedData.companyName || '—'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-1">Tagline</p>
+                              <p className="text-sm font-semibold text-gray-900">{extractedData.tagline || '—'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-1">Color Scheme</p>
+                              <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 rounded-md border border-gray-200" style={{ background: extractedData.primaryColor || '#1f2937' }} />
+                                <p className="text-sm font-semibold text-gray-900">{extractedData.colorScheme || '—'}</p>
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-1">Font</p>
+                              <p className="text-sm font-semibold text-gray-900">{extractedData.fontFamily || '—'}</p>
                             </div>
                           </div>
-                        )}
-                        
-                        {/* Totals */}
-                        <div className="grid grid-cols-3 gap-3 pt-3 border-t border-gray-200">
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 mb-1">Subtotal</p>
-                            <p className="text-sm font-semibold text-gray-900">₹{(extractedData.subtotal || 0).toLocaleString('en-IN')}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 mb-1">Tax</p>
-                            <p className="text-sm font-semibold text-gray-900">₹{(extractedData.tax || 0).toLocaleString('en-IN')}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-gray-500 mb-1">Total</p>
-                            <p className="text-sm font-semibold" style={{ color: '#059669' }}>₹{(extractedData.total || 0).toLocaleString('en-IN')}</p>
-                          </div>
+                          
+                          {Array.isArray(extractedData.tableColumns) && extractedData.tableColumns.length > 0 && (
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-2">Table Columns</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {extractedData.tableColumns.map((col: string, idx: number) => (
+                                  <span key={idx} className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 text-xs font-medium text-gray-700">
+                                    {col}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {extractedData.termsText && (
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-1">Terms & Conditions</p>
+                              <p className="text-xs text-gray-600 whitespace-pre-line leading-relaxed">{extractedData.termsText}</p>
+                            </div>
+                          )}
+                          
+                          {extractedData.signatureText && (
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-1">Signature Block</p>
+                              <p className="text-xs text-gray-600 whitespace-pre-line">{extractedData.signatureText}</p>
+                            </div>
+                          )}
+                          
+                          {/* Sections */}
+                          {Array.isArray(extractedData.sections) && extractedData.sections.length > 0 && (
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-2">Sections Detected</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {extractedData.sections.map((s: string, idx: number) => (
+                                  <span key={idx} className="px-2 py-1 rounded-full bg-purple-50 border border-purple-100 text-[10px] font-medium text-purple-700">
+                                    {s}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        
-                        {extractedData.balance !== undefined && (
-                          <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200">
-                            <div>
-                              <p className="text-xs font-medium text-gray-500 mb-1">Amount Paid</p>
-                              <p className="text-sm font-semibold text-gray-900">₹{(extractedData.amountPaid || 0).toLocaleString('en-IN')}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs font-medium text-gray-500 mb-1">Balance</p>
-                              <p className="text-sm font-semibold" style={{ color: '#ea580c' }}>₹{(extractedData.balance || 0).toLocaleString('en-IN')}</p>
-                            </div>
-                          </div>
-                        )}
                       </div>
                       
                       {/* Action Buttons */}
                       <div className="flex gap-3">
                         <button
-                          onClick={() => {
-                            showToast('Template saved successfully');
-                            setShowExtractModal(false);
-                            setExtractedData(null);
-                            setInvoiceFile(null);
-                          }}
+                          onClick={handleSaveTemplate}
                           className="flex-1 py-3 rounded-xl text-white text-sm font-semibold transition-all flex items-center justify-center gap-2"
                           style={{
                             background: 'linear-gradient(135deg, #4c1d95, #6d28d9)',
@@ -1125,6 +1242,7 @@ export default function InvoicesPage() {
                             setShowExtractModal(false);
                             setExtractedData(null);
                             setInvoiceFile(null);
+                            setTemplateLogo('');
                           }}
                           className="px-6 py-3 rounded-xl text-sm font-semibold transition-all border-2 border-gray-200 text-gray-700 hover:bg-gray-50"
                         >

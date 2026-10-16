@@ -360,23 +360,35 @@ const invoiceExtractor: ToolHandler = async (input, ctx) => {
     throw new Error('OCR failed: ' + (err instanceof Error ? err.message : String(err)))
   }
 
-  // Step 2: Structure with AI
-  const prompt = `Extract invoice data from this OCR text as JSON. Return ONLY valid JSON, no markdown:
+  // Step 2: Structure with AI — extract TEMPLATE DESIGN (not invoice data)
+  const prompt = `Analyze this invoice OCR text and extract the TEMPLATE DESIGN structure as JSON. Return ONLY valid JSON, no markdown.
+Extract:
+- company header text (name, tagline)
+- address block text
+- color scheme (identify from text like "green", "blue", "red" or infer from company style)
+- layout structure (table columns, sections, alignment)
+- font style
+- terms/conditions text
+- signature block text
+- table columns present
+
+Return this JSON structure:
 {
-  "vendorName": "company name",
-  "vendorAddress": "full address",
-  "vendorPAN": "PAN number",
-  "vendorGST": "GST number",
-  "vendorPhone": "phone",
-  "vendorEmail": "email",
-  "invoiceNumber": "invoice no",
-  "invoiceDate": "DD/MM/YYYY",
-  "items": [{"description": "item", "quantity": 1, "rate": 0, "amount": 0}],
-  "subtotal": 0,
-  "tax": 0,
-  "total": 0,
-  "amountPaid": 0,
-  "balance": 0
+  "companyName": "header company name",
+  "tagline": "tagline or subtitle",
+  "headerText": "full header block text",
+  "addressBlock": "office address text",
+  "colorScheme": "green|blue|red|black|purple|orange",
+  "primaryColor": "#228B22|#1e40af|#dc2626|#000000|#7c3aed|#ea580c",
+  "fontFamily": "helvetica|times|courier",
+  "layout": "bordered-table|minimal|classic",
+  "tableColumns": ["Sr.No", "Description", "Qty", "Rate", "Amount"],
+  "hasConsignee": true,
+  "hasTerms": true,
+  "termsText": "1. Payment by cheque\n2. Not responsible...",
+  "signatureText": "For COMPANY\n(Owner Name)",
+  "hasLogo": false,
+  "sections": ["header", "address", "consignee", "invoice-meta", "items-table", "totals", "terms", "signature"]
 }
 
 OCR Text:
@@ -392,14 +404,14 @@ ${ocrText.slice(0, 3000)}`
       extracted = JSON.parse(jsonMatch[0])
     }
   } catch {
-    throw new Error('AI failed to structure invoice data')
+    throw new Error('AI failed to analyze template design')
   }
 
   return {
     success: true,
     ocrText: ocrText.slice(0, 500),
     extracted,
-    message: 'Invoice data extracted. Review and add as expense or vendor invoice.',
+    message: 'Template design analyzed. Review and save as your invoice template.',
   }
 }
 

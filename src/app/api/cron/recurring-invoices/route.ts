@@ -44,7 +44,7 @@ export async function GET() {
         }
 
         // Extract items and compute totals
-        const items = (rec.items as InvoiceItem[]) || [];
+        const items = (rec.items as unknown as InvoiceItem[]) || [];
         const subtotal = items.reduce((sum: number, it: InvoiceItem) => sum + (it.quantity || 1) * (it.price || 0), 0);
         const taxRate = 18;
         const tax = +(subtotal * 0.18).toFixed(2);
