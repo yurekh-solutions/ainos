@@ -272,6 +272,19 @@ export default function ToolExecutePage() {
               <Users className="w-4 h-4 mt-0.5 flex-shrink-0" />
               This sends a real email to every customer in your CRM that has an email address.
             </div>
+            <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800 flex items-start gap-2">
+              <Mail className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium mb-1">Domain verification required for full delivery</p>
+                <p className="text-xs text-amber-700 mb-2">Without a verified domain, emails only deliver to your own account. Verify your domain at <a href="https://resend.com/domains" target="_blank" rel="noopener" className="underline font-medium">resend.com/domains</a> (5 min setup).</p>
+                <ol className="text-xs text-amber-700 list-decimal list-inside space-y-1">
+                  <li>Go to resend.com/domains → Add Domain</li>
+                  <li>Add the DNS records shown (SPF, DKIM, DMARC)</li>
+                  <li>Wait 5-10 minutes for verification</li>
+                  <li>Set RESEND_FROM in your .env to your verified email</li>
+                </ol>
+              </div>
+            </div>
             <div>
               <label className={labelCls}>Subject *</label>
               <input type="text" value={subject} onChange={e => setSubject(e.target.value)} placeholder="e.g. New collection is live!" className={inputCls} />
