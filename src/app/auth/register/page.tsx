@@ -611,7 +611,7 @@ export default function RegisterPage() {
               </div>
 
               {/* Card Body */}
-              <div className="px-4 sm:px-8 py-4 sm:py-6">
+              <div className="px-4 sm:px-8 py-4 sm:py-6 pb-20 sm:pb-6">
                 {success ? (
                   <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-12">
                     <div className="w-16 h-16 rounded-full bg-green-50 border border-green-100 flex items-center justify-center mx-auto mb-5">
@@ -796,21 +796,21 @@ export default function RegisterPage() {
                               <div>
                                 <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                                   Company Type
-                                  {gstInfo && <span className="ml-2 text-[10px] font-medium text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">Auto-detected</span>}
+                                  {gstInfo && <span className="ml-1.5 inline-flex items-center text-[10px] font-medium text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full whitespace-nowrap">Auto-detected</span>}
                                 </label>
                               </div>
                             </div>
-                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 sm:gap-2">
                               {COMPANY_TYPES.map(ct => {
                                 const Icon = ct.icon;
                                 const selected = companyType === ct.value;
                                 return (
                                   <button key={ct.value} type="button" onClick={() => { setCompanyType(ct.value); setDocuments({}); setDocPreviews({}); setPreviewDoc(null); }}
-                                    className={`h-auto py-2.5 px-1.5 rounded-xl border text-[11px] font-medium transition-all text-center flex flex-col items-center gap-1 leading-tight ${selected ? 'text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300'}`}
+                                    className={`h-auto py-2 px-1 rounded-xl border text-[10px] sm:text-[11px] font-medium transition-all text-center flex flex-col items-center justify-center gap-1 leading-tight min-h-[64px] sm:min-h-[72px] ${selected ? 'text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300'}`}
                                     style={selected ? { background: '#4c1d95', borderColor: '#4c1d95' } : {}}
                                   >
-                                    <Icon className="w-4 h-4 flex-shrink-0" />
-                                    <span className="break-words w-full">{ct.label}</span>
+                                    <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                                    <span className="break-words w-full px-0.5">{ct.label}</span>
                                   </button>
                                 );
                               })}
@@ -823,7 +823,7 @@ export default function RegisterPage() {
                               </motion.div>
                             )}
 
-                            <div className="flex gap-2.5 pt-1">
+                            <div className="flex gap-2.5 pt-1 mb-4 sm:mb-0">
                               <button type="button" onClick={() => { setStep(1); if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                                 className="flex-1 h-11 rounded-xl bg-white border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5">
                                 <ArrowLeft className="w-4 h-4" /> Back
@@ -917,7 +917,7 @@ export default function RegisterPage() {
                               </motion.div>
                             )}
 
-                            <div className="flex gap-2.5 pt-1">
+                            <div className="flex gap-2.5 pt-1 mb-4 sm:mb-0">
                               <button type="button" onClick={() => { setStep(2); if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                                 className="flex-1 h-11 rounded-xl bg-white border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5">
                                 <ArrowLeft className="w-4 h-4" /> Back
