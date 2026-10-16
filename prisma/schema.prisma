@@ -1106,6 +1106,8 @@ model InvoiceTemplate {
   // Accent
   accentWidth     String   @default("thin") @map("accent_width")
   borderRadius    String   @default("medium") @map("border_radius")
+  // Custom Table Columns (JSON array of column definitions)
+  tableColumns    Json?    @map("table_columns") // [{"label":"Sr.No","key":"serial","width":"60px"},...]
   // Tenant
   companyId       String?  @map("company_id")
   createdAt       DateTime @default(now()) @map("created_at")

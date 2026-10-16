@@ -7,6 +7,12 @@ import {
   Eye, ChevronDown, ChevronUp, Star, Plus
 } from 'lucide-react';
 
+interface TableColumn {
+  label: string;
+  key: string;
+  width: string;
+}
+
 interface Template {
   id?: string;
   name: string;
@@ -30,6 +36,7 @@ interface Template {
   footerText: string;
   accentWidth: string;
   borderRadius: string;
+  tableColumns: TableColumn[];
 }
 
 const defaultTemplate: Template = {
@@ -54,6 +61,14 @@ const defaultTemplate: Template = {
   footerText: 'Powered by AINOS',
   accentWidth: 'thin',
   borderRadius: 'medium',
+  tableColumns: [
+    { label: 'Item', key: 'name', width: '40%' },
+    { label: 'HSN', key: 'hsn', width: '12%' },
+    { label: 'Qty', key: 'qty', width: '10%' },
+    { label: 'Rate', key: 'rate', width: '14%' },
+    { label: 'GST', key: 'gst', width: '10%' },
+    { label: 'Total', key: 'total', width: '14%' },
+  ],
 };
 
 const PRESETS: Record<string, Partial<Template>> = {
@@ -128,6 +143,17 @@ const PRESETS: Record<string, Partial<Template>> = {
   Sky: {
     primaryColor: '#0284C7', secondaryColor: '#7DD3FC', backgroundColor: '#F0F9FF',
     textColor: '#082F49', layout: 'standard', fontSize: 'medium', borderRadius: 'large',
+  },
+  'SKY VISION': {
+    primaryColor: '#228B22', secondaryColor: '#2E8B57', backgroundColor: '#FFFFFF',
+    textColor: '#1a1a1a', layout: 'standard', fontSize: 'medium', borderRadius: 'none',
+    tableColumns: [
+      { label: 'Sr. No.', key: 'serial', width: '10%' },
+      { label: 'Description', key: 'name', width: '45%' },
+      { label: 'Days/No.', key: 'qty', width: '12%' },
+      { label: 'Rate Per Day', key: 'rate', width: '16%' },
+      { label: 'Amount', key: 'total', width: '17%' },
+    ],
   },
 };
 
@@ -235,6 +261,38 @@ export default function TemplateDesignerPage() {
   };
 
   const toggleSection = (s: string) => setExpandedSection(prev => prev === s ? null : s);
+
+  // Table column management
+  const addColumn = () => {
+    const newCol: TableColumn = { label: 'New Column', key: `col_${Date.now()}`, width: '15%' };
+    setTemplate(prev => ({ ...prev, tableColumns: [...(prev.tableColumns || []), newCol] }));
+    setSaved(false);
+  };
+
+  const removeColumn = (idx: number) => {
+    setTemplate(prev => ({ ...prev, tableColumns: (prev.tableColumns || []).filter((_, i) => i !== idx) }));
+    setSaved(false);
+  };
+
+  const updateColumn = (idx: number, field: keyof TableColumn, value: string) => {
+    setTemplate(prev => {
+      const cols = [...(prev.tableColumns || [])];
+      cols[idx] = { ...cols[idx], [field]: value };
+      return { ...prev, tableColumns: cols };
+    });
+    setSaved(false);
+  };
+
+  const moveColumn = (idx: number, dir: -1 | 1) => {
+    setTemplate(prev => {
+      const cols = [...(prev.tableColumns || [])];
+      const newIdx = idx + dir;
+      if (newIdx < 0 || newIdx >= cols.length) return prev;
+      [cols[idx], cols[newIdx]] = [cols[newIdx], cols[idx]];
+      return { ...prev, tableColumns: cols };
+    });
+    setSaved(false);
+  };
 
   const fs = FONT_SIZES[template.fontSize as keyof typeof FONT_SIZES] || '14px';
   const br = BORDER_RADII[template.borderRadius as keyof typeof BORDER_RADII] || '8px';
@@ -503,6 +561,67 @@ export default function TemplateDesignerPage() {
             )}
           </div>
 
+          {/* Table Columns */}
+          <div className="glass-card rounded-xl overflow-hidden">
+            <button onClick={() => toggleSection('columns')} className="w-full flex items-center justify-between p-4">
+              <span className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
+                <Layout size={16} /> Table Columns
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${template.primaryColor}15`, color: template.primaryColor }}>
+                  {template.tableColumns?.length || 0} columns
+                </span>
+                {expandedSection === 'columns' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </div>
+            </button>
+            {expandedSection === 'columns' && (
+              <div className="px-4 pb-4 space-y-3">
+                <p className="text-xs" style={{ color: 'var(--muted-foreground)' }}>
+                  Customize invoice table columns — add, remove, rename, reorder
+                </p>
+                {(template.tableColumns || []).map((col, idx) => (
+                  <div key={idx} className="flex items-center gap-2 p-2 rounded-lg border" style={{ borderColor: 'var(--border)' }}>
+                    <div className="flex flex-col gap-0.5">
+                      <button onClick={() => moveColumn(idx, -1)} disabled={idx === 0} className="text-xs opacity-50 hover:opacity-100 disabled:opacity-20">▲</button>
+                      <button onClick={() => moveColumn(idx, 1)} disabled={idx === (template.tableColumns?.length || 1) - 1} className="text-xs opacity-50 hover:opacity-100 disabled:opacity-20">▼</button>
+                    </div>
+                    <input
+                      value={col.label}
+                      onChange={e => updateColumn(idx, 'label', e.target.value)}
+                      className="flex-1 px-2 py-1 rounded text-xs border-0 bg-transparent"
+                      style={{ color: 'var(--foreground)' }}
+                      placeholder="Column label"
+                    />
+                    <input
+                      value={col.key}
+                      onChange={e => updateColumn(idx, 'key', e.target.value)}
+                      className="w-20 px-2 py-1 rounded text-xs font-mono border-0 bg-transparent"
+                      style={{ color: 'var(--muted-foreground)' }}
+                      placeholder="key"
+                    />
+                    <input
+                      value={col.width}
+                      onChange={e => updateColumn(idx, 'width', e.target.value)}
+                      className="w-14 px-2 py-1 rounded text-xs border-0 bg-transparent"
+                      style={{ color: 'var(--muted-foreground)' }}
+                      placeholder="width"
+                    />
+                    <button onClick={() => removeColumn(idx)} className="p-1 rounded hover:bg-red-500/10">
+                      <Trash2 size={13} className="text-red-400" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={addColumn}
+                  className="w-full py-2 rounded-lg text-xs font-medium border-2 border-dashed transition-all hover:scale-[1.01]"
+                  style={{ borderColor: template.primaryColor, color: template.primaryColor, background: `${template.primaryColor}05` }}
+                >
+                  <Plus size={13} className="inline mr-1" /> Add Column
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Content Toggles */}
           <div className="glass-card rounded-xl overflow-hidden">
             <button onClick={() => toggleSection('content')} className="w-full flex items-center justify-between p-4">
@@ -671,9 +790,9 @@ export default function TemplateDesignerPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 12 }}>
                   <thead>
                     <tr style={{ background: `${template.primaryColor}10` }}>
-                      {['Item', 'HSN', 'Qty', 'Rate', 'GST', 'Total'].map(h => (
-                        <th key={h} style={{ padding: template.layout === 'compact' ? '6px 8px' : '8px 12px', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, color: template.primaryColor, fontWeight: 600, textAlign: h === 'Item' || h === 'HSN' ? 'left' : 'right', borderBottom: `2px solid ${template.primaryColor}30` }}>
-                          {h}
+                      {(template.tableColumns || []).map((col, ci) => (
+                        <th key={ci} style={{ padding: template.layout === 'compact' ? '6px 8px' : '8px 12px', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, color: template.primaryColor, fontWeight: 600, textAlign: ci === 0 ? 'left' : 'right', borderBottom: `2px solid ${template.primaryColor}30`, width: col.width }}>
+                          {col.label}
                         </th>
                       ))}
                     </tr>
@@ -681,12 +800,14 @@ export default function TemplateDesignerPage() {
                   <tbody>
                     {sampleItems.map((item, i) => (
                       <tr key={i} style={{ borderBottom: '1px solid var(--border, #e5e7eb)' }}>
-                        <td style={{ padding: template.layout === 'compact' ? '6px 8px' : '10px 12px', fontWeight: 500 }}>{item.name}</td>
-                        <td style={{ padding: template.layout === 'compact' ? '6px 8px' : '10px 12px', fontSize: fs === '12px' ? 10 : 12, opacity: 0.6 }}>{item.hsn}</td>
-                        <td style={{ padding: template.layout === 'compact' ? '6px 8px' : '10px 12px', textAlign: 'right' }}>{item.qty}</td>
-                        <td style={{ padding: template.layout === 'compact' ? '6px 8px' : '10px 12px', textAlign: 'right' }}>₹{item.rate.toLocaleString('en-IN')}</td>
-                        <td style={{ padding: template.layout === 'compact' ? '6px 8px' : '10px 12px', textAlign: 'right' }}>{item.gst}%</td>
-                        <td style={{ padding: template.layout === 'compact' ? '6px 8px' : '10px 12px', textAlign: 'right', fontWeight: 600 }}>₹{(item.rate * 1.18).toLocaleString('en-IN')}</td>
+                        {(template.tableColumns || []).map((col, ci) => {
+                          const val = col.key === 'name' ? item.name : col.key === 'hsn' ? item.hsn : col.key === 'qty' ? item.qty : col.key === 'rate' ? `₹${item.rate.toLocaleString('en-IN')}` : col.key === 'gst' ? `${item.gst}%` : col.key === 'total' ? `₹${(item.rate * 1.18).toLocaleString('en-IN')}` : '—';
+                          return (
+                            <td key={ci} style={{ padding: template.layout === 'compact' ? '6px 8px' : '10px 12px', textAlign: ci === 0 ? 'left' : 'right', fontWeight: ci === (template.tableColumns?.length || 1) - 1 ? 600 : 400, fontSize: col.key === 'hsn' ? (fs === '12px' ? 10 : 12) : undefined, opacity: col.key === 'hsn' ? 0.6 : 1 }}>
+                              {val}
+                            </td>
+                          );
+                        })}
                       </tr>
                     ))}
                   </tbody>

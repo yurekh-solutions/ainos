@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
         footerText: body.footerText,
         accentWidth: body.accentWidth || 'thin',
         borderRadius: body.borderRadius || 'medium',
+        tableColumns: body.tableColumns || undefined,
         companyId: session.user.companyId,
       },
     });
@@ -122,6 +123,7 @@ export async function PUT(req: NextRequest) {
         footerText: data.footerText,
         accentWidth: data.accentWidth,
         borderRadius: data.borderRadius,
+        tableColumns: data.tableColumns,
       },
     });
 
