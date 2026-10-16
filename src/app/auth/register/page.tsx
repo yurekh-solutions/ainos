@@ -6,7 +6,7 @@ import {
   Check, Loader2, AlertCircle,
   Eye, EyeOff, Building2, FolderCheck, Upload,
   Phone, MapPin, Mail, Lock, User, Briefcase,
-  Zap, BarChart3, Users, ShieldCheck, LogIn, Globe, UserPlus
+  Zap, BarChart3, Users, ShieldCheck, LogIn, Globe, UserPlus, Shield
 } from 'lucide-react';
 import { useState, type ChangeEvent, type ElementType } from 'react';
 import Link from 'next/link';
@@ -214,10 +214,27 @@ export default function RegisterPage() {
   const [gstNumber, setGstNumber] = useState('');
   const [gstInfo, setGstInfo] = useState<{ stateName: string; entityType: string; entityLabel: string } | null>(null);
   const [fetchingGst, setFetchingGst] = useState(false);
+  
+  // Captcha states for GST verification
+  const [captchaSessionId, setCaptchaSessionId] = useState('');
+  const [captchaImage, setCaptchaImage] = useState('');
+  const [captchaText, setCaptchaText] = useState('');
+  const [showCaptcha, setShowCaptcha] = useState(false);
+  const [verifyingGst, setVerifyingGst] = useState(false);
+  const [gstVerified, setGstVerified] = useState(false);
+  const [gstError, setGstError] = useState('');
 
   const handleGstChange = (val: string) => {
     const cleaned = val.toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 15);
     setGstNumber(cleaned);
+    // Reset captcha states when GST changes
+    setShowCaptcha(false);
+    setCaptchaImage('');
+    setCaptchaSessionId('');
+    setCaptchaText('');
+    setGstVerified(false);
+    setGstError('');
+    
     if (cleaned.length === 15) {
       const parsed = parseGst(cleaned);
       if (parsed) {
@@ -229,50 +246,79 @@ export default function RegisterPage() {
           setDocPreviews({});
           setPreviewDoc(null);
         }
-        // Auto-fetch company details from GST
-        fetchGstDetails(cleaned);
+        // Fetch captcha for GST verification
+        fetchCaptcha(cleaned);
         return;
       }
     }
     setGstInfo(null);
   };
 
-  const fetchGstDetails = async (gst: string) => {
+  const fetchCaptcha = async (gst: string) => {
     if (gst.length !== 15) return;
     setFetchingGst(true);
+    setGstError('');
     try {
       const res = await fetch('/api/gst-lookup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gstNumber: gst }),
+        body: JSON.stringify({ action: 'getCaptcha', gstNumber: gst }),
       });
       if (res.ok) {
         const data = await res.json();
-        // Auto-fill company type
-        if (data.entityType && data.entityType !== companyType) {
-          setCompanyType(data.entityType);
+        if (data.success) {
+          setCaptchaSessionId(data.sessionId);
+          setCaptchaImage(data.captchaImage);
+          setShowCaptcha(true);
+        } else {
+          setGstError(data.error || 'Failed to load captcha');
         }
-        // Auto-fill company name
-        if (data.companyName && !companyName) {
-          setCompanyName(data.companyName);
-        }
-        // Auto-fill email
-        if (data.email && !companyEmail) {
-          setCompanyEmail(data.email);
-        }
-        // Auto-fill phone
-        if (data.phone && !companyPhone) {
-          setCompanyPhone(data.phone);
-        }
-        // Auto-fill address
-        if (data.address && !companyAddress) {
-          setCompanyAddress(data.address);
-        }
+      } else {
+        const data = await res.json();
+        setGstError(data.error || 'Failed to connect to GST service');
       }
     } catch (err) {
-      console.error('GST fetch failed:', err);
+      setGstError('Failed to connect to GST service. Make sure Flask server is running.');
+      console.error('Captcha fetch failed:', err);
     } finally {
       setFetchingGst(false);
+    }
+  };
+
+  const verifyGstWithCaptcha = async () => {
+    if (!captchaSessionId || !captchaText.trim()) return;
+    setVerifyingGst(true);
+    setGstError('');
+    try {
+      const res = await fetch('/api/gst-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'verifyGST',
+          sessionId: captchaSessionId,
+          gstNumber,
+          captchaText: captchaText.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        // Auto-fill all fields from real GSTN data
+        if (data.companyName) setCompanyName(data.companyName);
+        if (data.tradeName && !companyName) setCompanyName(data.tradeName);
+        if (data.address) setCompanyAddress(data.address);
+        if (data.entityType && data.entityType !== companyType) setCompanyType(data.entityType);
+        setGstVerified(true);
+        setShowCaptcha(false);
+      } else {
+        setGstError(data.error || 'GST verification failed. Please check captcha and try again.');
+        // Refresh captcha on failure
+        if (gstNumber.length === 15) fetchCaptcha(gstNumber);
+      }
+    } catch (err) {
+      setGstError('Verification failed. Please try again.');
+      console.error('GST verify failed:', err);
+    } finally {
+      setVerifyingGst(false);
     }
   };
 
@@ -666,18 +712,51 @@ export default function RegisterPage() {
                                 className="flex items-center gap-2 p-3 rounded-xl bg-blue-50 border border-blue-200">
                                 <Loader2 className="w-4 h-4 text-blue-600 animate-spin flex-shrink-0" />
                                 <p className="text-[13px] text-blue-700">
-                                  <span className="font-semibold">Fetching company details...</span>
+                                  <span className="font-semibold">Loading GST captcha...</span>
                                 </p>
                               </motion.div>
                             )}
 
-                            {gstInfo && !fetchingGst && (
+                            {gstError && (
                               <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-                                className="p-3 rounded-xl bg-green-50 border border-green-200 space-y-2">
+                                className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200">
+                                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                                <p className="text-[13px] text-red-700">
+                                  <span className="font-semibold">Error:</span> {gstError}
+                                </p>
+                              </motion.div>
+                            )}
+
+                            {showCaptcha && captchaImage && (
+                              <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                                className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-200 space-y-3">
+                                <div className="flex items-center gap-2">
+                                  <Shield className="w-4 h-4 text-blue-600" />
+                                  <p className="text-sm font-semibold text-blue-900">GST Verification Required</p>
+                                </div>
+                                <p className="text-xs text-gray-600">Please enter the captcha shown below to verify your GST number and auto-fill company details.</p>
+                                <div className="flex flex-col items-center gap-3">
+                                  <img src={captchaImage} alt="GST Captcha" className="border-2 border-gray-300 rounded-lg bg-white" />
+                                  <input type="text" value={captchaText} onChange={e => setCaptchaText(e.target.value)}
+                                    placeholder="Enter captcha text"
+                                    className={`${inputBase} px-3 text-center font-mono tracking-widest`}
+                                    onKeyDown={e => e.key === 'Enter' && verifyGstWithCaptcha()} />
+                                  <button type="button" onClick={verifyGstWithCaptcha} disabled={verifyingGst || !captchaText.trim()}
+                                    className="w-full py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    style={{ background: 'linear-gradient(135deg, #4c1d95, #7c3aed)' }}>
+                                    {verifyingGst ? <><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</> : <><Shield className="w-4 h-4" /> Verify & Auto-Fill</>}
+                                  </button>
+                                </div>
+                              </motion.div>
+                            )}
+
+                            {gstVerified && (
+                              <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                                className="p-3 rounded-xl bg-green-50 border border-green-200">
                                 <div className="flex items-center gap-2">
                                   <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
                                   <p className="text-[13px] text-green-700">
-                                    <span className="font-semibold">GST verified!</span> Auto-filling details...
+                                    <span className="font-semibold">GST verified!</span> Company details auto-filled from GSTN portal.
                                   </p>
                                 </div>
                               </motion.div>
