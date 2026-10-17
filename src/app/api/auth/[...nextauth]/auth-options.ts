@@ -114,13 +114,16 @@ export const authOptions: NextAuthOptions = {
           if (!isAdmin(existingUser.email)) {
             const company = await prisma.company.findUnique({
               where: { id: companyId },
-              select: { onboardingStatus: true },
+              select: { onboardingStatus: true, name: true },
             });
+            console.log('[Google SignIn] User:', existingUser.email, '| CompanyId:', companyId, '| Status:', company?.onboardingStatus);
             if (company && company.onboardingStatus !== 'approved') {
+              console.log('[Google SignIn] BLOCKED - Status:', company.onboardingStatus);
               return company.onboardingStatus === 'rejected'
                 ? '/auth/signin?error=GoogleRejected'
                 : '/auth/signin?error=GooglePendingApproval';
             }
+            console.log('[Google SignIn] ALLOWED - Company approved');
           }
 
           return true;
