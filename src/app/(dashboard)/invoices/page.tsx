@@ -40,6 +40,7 @@ interface Invoice {
 }
 
 interface Company {
+  id: string;
   name: string;
   email: string;
   phone: string;
@@ -174,6 +175,33 @@ export default function InvoicesPage() {
   const handleSaveTemplate = async () => {
     if (!extractedData) return;
     try {
+      // Auto-create company if user doesn't have one
+      let currentCompany = company;
+      if (!currentCompany?.id) {
+        showToast('Setting up company profile...');
+        const createRes = await fetch('/api/company', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: extractedData.companyName || 'My Company',
+            taxId: extractedData.gstNumber || extractedData.panNumber || '',
+            email: extractedData.email || '',
+            phone: extractedData.phone || '',
+            address: extractedData.addressBlock || '',
+            website: extractedData.website || '',
+          }),
+        });
+        if (createRes.ok) {
+          currentCompany = await createRes.json();
+          setCompany(currentCompany);
+          showToast('Company profile created!');
+        } else {
+          const errData = await createRes.json().catch(() => ({}));
+          showToast(errData.error || 'Failed to create company profile', 'error');
+          return;
+        }
+      }
+
       // If a logo was uploaded, attach it to the company profile
       if (templateLogo) {
         await fetch('/api/company', {

@@ -10,9 +10,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    let user = await prisma.user.findUnique({ where: { email: session.user.email } });
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      // Auto-create user record if session exists but DB row is missing
+      user = await prisma.user.create({
+        data: {
+          email: session.user.email,
+          name: (session.user.name || session.user.email.split('@')[0]) as string,
+        },
+      });
     }
 
     const body = await req.json();
