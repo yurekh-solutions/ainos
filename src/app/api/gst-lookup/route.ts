@@ -1,8 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// GST Scraper - Self-hosted Flask server (100% free, unlimited)
+// GST Scraper - Self-hosted Flask server on Render
 // Flow: getCaptcha → user solves captcha → verifyGST → real data
-const FLASK_URL = process.env.GST_SCRAPER_URL || 'http://localhost:5001';
+const FLASK_URL = process.env.GST_SCRAPER_URL || 'https://ainos-gst-scraper.onrender.com';
+
+// Server-side retry: attempt fetch up to N times with delay between attempts
+// Handles transient 502/503 from Render cold starts or GSTN portal hiccups
+async function fetchWithRetry(url: string, options: RequestInit, retries = 3, delayMs = 3000): Promise<Response> {
+  let lastErr: unknown;
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch(url, options);
+      if (res.ok) return res;
+      // 502/503 = transient — retry. 4xx = client error — don't retry.
+      if (res.status >= 500 && i < retries - 1) {
+        console.warn(`[GST] Attempt ${i + 1}/${retries} returned ${res.status}, retrying in ${delayMs}ms...`);
+        await new Promise(r => setTimeout(r, delayMs));
+        continue;
+      }
+      return res;
+    } catch (err) {
+      lastErr = err;
+      if (i < retries - 1) {
+        console.warn(`[GST] Attempt ${i + 1}/${retries} failed (${(err as Error).message}), retrying in ${delayMs}ms...`);
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+    }
+  }
+  throw lastErr || new Error('All retry attempts exhausted');
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,11 +43,18 @@ export async function POST(req: NextRequest) {
       }
 
       try {
-        const res = await fetch(`${FLASK_URL}/api/v1/getCaptcha`, {
-          signal: AbortSignal.timeout(60000),
-        });
+        const res = await fetchWithRetry(
+          `${FLASK_URL}/api/v1/getCaptcha`,
+          { signal: AbortSignal.timeout(60000) },
+          3, // 3 attempts
+          4000 // 4s between attempts (covers cold start)
+        );
         if (!res.ok) {
-          return NextResponse.json({ error: 'Failed to fetch captcha from GSTN portal' }, { status: 502 });
+          console.error(`[GST] Captcha failed after retries: ${res.status}`);
+          return NextResponse.json({
+            error: 'GST portal is temporarily unavailable. Please try again in a few seconds.',
+            retryable: true,
+          }, { status: 502 });
         }
         const data = await res.json();
         return NextResponse.json({
@@ -31,8 +64,11 @@ export async function POST(req: NextRequest) {
           gstNumber: gstNumber.toUpperCase().trim(),
         });
       } catch (err) {
-        console.error('Flask captcha error:', err);
-        return NextResponse.json({ error: 'GST scraper server not running. Start Flask server on port 5001.' }, { status: 503 });
+        console.error('[GST] Captcha error:', err);
+        return NextResponse.json({
+          error: 'Unable to connect to GST service. Please try again.',
+          retryable: true,
+        }, { status: 503 });
       }
     }
 
@@ -44,19 +80,27 @@ export async function POST(req: NextRequest) {
       }
 
       try {
-        const res = await fetch(`${FLASK_URL}/api/v1/getGSTDetails`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId,
-            GSTIN: gstNumber.toUpperCase().trim(),
-            captcha: captchaText.trim(),
-          }),
-          signal: AbortSignal.timeout(30000),
-        });
+        const res = await fetchWithRetry(
+          `${FLASK_URL}/api/v1/getGSTDetails`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId,
+              GSTIN: gstNumber.toUpperCase().trim(),
+              captcha: captchaText.trim(),
+            }),
+            signal: AbortSignal.timeout(30000),
+          },
+          2, // 2 attempts for verify (session may expire)
+          3000
+        );
 
         if (!res.ok) {
-          return NextResponse.json({ error: 'Failed to verify GST with GSTN portal' }, { status: 502 });
+          return NextResponse.json({
+            error: 'GST verification failed. The GSTN portal may be busy. Please try again.',
+            retryable: true,
+          }, { status: 502 });
         }
 
         const data = await res.json();
@@ -95,7 +139,6 @@ export async function POST(req: NextRequest) {
 
         const addr = data.pradr?.adr || '';
         const stateName = STATE_CODES[stateCode] || 'Unknown';
-        // Use real entity type from GSTN if available, otherwise fall back to PAN parse
         const realEntityType = data.nba || data.ctb || '';
         const entityTypeMap: Record<string, string> = {
           'Proprietorship': 'proprietorship',
@@ -114,7 +157,6 @@ export async function POST(req: NextRequest) {
           pan,
           stateName,
           entityType,
-          // Real data from GSTN
           companyName: data.lgnm || null,
           tradeName: data.tradeNam || null,
           address: addr || null,
@@ -124,19 +166,22 @@ export async function POST(req: NextRequest) {
           natureOfBusiness: Array.isArray(data.nba) ? data.nba.join(', ') : (data.nba || null),
           gstStatus: data.sts || null,
           taxpayerType: data.dty || null,
-          email: null, // GSTN portal doesn't provide email
-          phone: null, // GSTN portal doesn't provide phone
+          email: null,
+          phone: null,
           message: 'Real GST data fetched from GSTN portal',
         });
       } catch (err) {
-        console.error('Flask verify error:', err);
-        return NextResponse.json({ error: 'Failed to connect to GST scraper' }, { status: 503 });
+        console.error('[GST] Verify error:', err);
+        return NextResponse.json({
+          error: 'Unable to connect to GST service. Please try again.',
+          retryable: true,
+        }, { status: 503 });
       }
     }
 
     return NextResponse.json({ error: 'Invalid action. Use getCaptcha or verifyGST.' }, { status: 400 });
   } catch (error) {
-    console.error('GST lookup error:', error);
+    console.error('[GST] Lookup error:', error);
     return NextResponse.json({ error: 'Failed to process GST request' }, { status: 500 });
   }
 }
