@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Plus, Trash2, Save, FileText, Percent, Building2, Package, ChevronDown, IndianRupee, Truck, CreditCard } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface InvoiceItem {
   id: string;
@@ -63,6 +63,7 @@ const GST_RATES = [0, 5, 12, 18, 28];
 
 export default function NewInvoicePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
@@ -130,6 +131,39 @@ export default function NewInvoicePage() {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  // Pre-fill from quote conversion
+  useEffect(() => {
+    const quoteId = searchParams.get('quoteId');
+    const clientName = searchParams.get('client');
+    if (quoteId) {
+      // Fetch quote data and pre-fill invoice form
+      fetch(`/api/quotes`).then(r => r.json()).then((quotes: Array<{id: string; clientName: string; items: Array<{description: string; quantity: number; rate: number}>; subtotal: number; tax: number; discount: number; notes?: string}>) => {
+        const quote = quotes.find((q: {id: string}) => q.id === quoteId);
+        if (quote) {
+          setCustomerName(quote.clientName || clientName || '');
+          if (quote.notes) setNotes(quote.notes);
+          // Pre-fill items from quote
+          if (quote.items && quote.items.length > 0) {
+            const quoteItems: InvoiceItem[] = quote.items.map((item: {description: string; quantity: number; rate: number}, idx: number) => ({
+              id: Date.now().toString() + idx,
+              productId: '',
+              productName: '',
+              description: item.description || '',
+              hsnCode: '',
+              quantity: String(item.quantity || 1),
+              price: String(item.rate || 0),
+              costPrice: '',
+              gstRate: '18',
+            }));
+            setItems(quoteItems);
+          }
+        }
+      }).catch(err => console.error('Error loading quote:', err));
+    } else if (clientName) {
+      setCustomerName(clientName);
+    }
+  }, [searchParams]);
 
   const addItem = () => {
     setItems([...items, {

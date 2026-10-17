@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, FileText, TrendingUp, Search, Calendar, DollarSign } from 'lucide-react';
+import { Plus, X, FileText, TrendingUp, Search, Calendar, DollarSign, ArrowRight } from 'lucide-react';
 
 interface Quote { id: string; quoteNumber: string; clientName: string; items: { description: string; quantity: number; rate: number }[]; subtotal: number; tax: number; discount: number; totalAmount: number; status: string; validUntil: string; notes?: string; createdAt: string; }
 
@@ -125,10 +125,22 @@ export default function QuotesPage() {
                       <td className="px-4 py-3 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>{q.validUntil ? new Date(q.validUntil).toLocaleDateString('en-IN') : '-'}</td>
                       <td className="px-4 py-3"><span className="px-2.5 py-1 rounded-full text-[10px] font-semibold text-white capitalize" style={{ background: statusColors[q.status] }}>{q.status}</span></td>
                       <td className="px-4 py-3">
-                        <select value={q.status} onChange={(e) => updateStatus(q.id, e.target.value)}
-                          className="text-[10px] font-semibold px-2 py-1 rounded-lg border-0 cursor-pointer" style={{ background: 'hsl(var(--muted))', color: statusColors[q.status] }}>
-                          <option value="draft">Draft</option><option value="sent">Sent</option><option value="viewed">Viewed</option><option value="accepted">Accepted</option><option value="rejected">Rejected</option><option value="expired">Expired</option>
-                        </select>
+                        <div className="flex items-center gap-2">
+                          <select value={q.status} onChange={(e) => updateStatus(q.id, e.target.value)}
+                            className="text-[10px] font-semibold px-2 py-1 rounded-lg border-0 cursor-pointer" style={{ background: 'hsl(var(--muted))', color: statusColors[q.status] }}>
+                            <option value="draft">Draft</option><option value="sent">Sent</option><option value="viewed">Viewed</option><option value="accepted">Accepted</option><option value="rejected">Rejected</option><option value="expired">Expired</option>
+                          </select>
+                          {(q.status === 'accepted' || q.status === 'viewed') && (
+                            <button
+                              onClick={() => router.push(`/invoices/new?quoteId=${q.id}&client=${encodeURIComponent(q.clientName)}&amount=${q.totalAmount}`)}
+                              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold text-white transition-all hover:scale-105"
+                              style={{ background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%)' }}
+                              title="Convert to Invoice"
+                            >
+                              <ArrowRight className="w-3 h-3" /> Invoice
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
