@@ -824,20 +824,18 @@ export default function InvoicesPage() {
                 <span>Company Profile</span>
               </Link>
             )}
-            {company?.name && (
-              <button
-                onClick={() => setShowExtractModal(true)}
-                className="group inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl text-sm font-medium transition-all border-2 hover:opacity-80"
-                style={{ 
-                  borderColor: 'hsl(280 60% 55%)',
-                  color: 'hsl(280 60% 55%)',
-                  background: 'hsl(280 60% 55% / 0.05)'
-                }}
-              >
-                <Upload className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:-translate-y-1" />
-                <span>Upload Template</span>
-              </button>
-            )}
+            <button
+              onClick={() => setShowExtractModal(true)}
+              className="group inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl text-sm font-medium transition-all border-2 hover:opacity-80"
+              style={{ 
+                borderColor: 'hsl(280 60% 55%)',
+                color: 'hsl(280 60% 55%)',
+                background: 'hsl(280 60% 55% / 0.05)'
+              }}
+            >
+              <Upload className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:-translate-y-1" />
+              <span>Upload Template</span>
+            </button>
             {company?.name ? (
               <Link
                 href="/invoices/new"
@@ -1266,9 +1264,9 @@ export default function InvoicesPage() {
                             <div>
                               <p className="text-xs font-medium text-gray-500 mb-2">Table Columns</p>
                               <div className="flex flex-wrap gap-1.5">
-                                {extractedData.tableColumns.map((col: any, idx: number) => (
+                                {extractedData.tableColumns.map((col, idx: number) => (
                                   <span key={idx} className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 text-xs font-medium text-gray-700">
-                                    {typeof col === 'string' ? col : col.name || col}
+                                    {typeof col === 'string' ? col : col.name}
                                   </span>
                                 ))}
                               </div>
