@@ -771,6 +771,63 @@ def extract_table_columns(tables, text=''):
     return []
 
 
+def extract_form_fields(text):
+    """Detect custom form fields from invoice PDF text.
+    Returns array of {label, key, type, required, placeholder, options}"""
+    fields = []
+    seen_keys = set()
+
+    # Field detection rules: (regex_pattern, label, key, type, options)
+    field_rules = [
+        # Date fields
+        (r'(?:due\s*date|payment\s*due|date\s*of\s*payment)', 'Due Date', 'dueDate', 'date', None),
+        (r'(?:validity\s*date|valid\s*till|valid\s*upto|expiry\s*date)', 'Validity Date', 'validityDate', 'date', None),
+        (r'(?:delivery\s*date|date\s*of\s*delivery|dispatch\s*date)', 'Delivery Date', 'deliveryDate', 'date', None),
+
+        # Select fields
+        (r'(?:payment\s*terms|terms?\s*of\s*payment|mode\s*of\s*payment)', 'Payment Terms', 'paymentTerms', 'select',
+         ['Immediate', 'Net 15', 'Net 30', 'Net 45', 'Net 60', 'Net 90', 'Advance', 'COD', 'Against Documents']),
+        (r'(?:document\s*type|type\s*of\s*invoice|bill\s*type)', 'Document Type', 'documentType', 'select',
+         ['Tax Invoice', 'Invoice', 'Proforma Invoice', 'Delivery Challan', 'Credit Note', 'Debit Note', 'Receipt']),
+        (r'(?:supply\s*type|type\s*of\s*supply)', 'Supply Type', 'supplyType', 'select',
+         ['Intra-State', 'Inter-State', 'Export', 'SEZ']),
+        (r'(?:billing\s*type|billing\s*method)', 'Billing Type', 'billingType', 'select',
+         ['GST', 'Non-GST', 'MRP']),
+
+        # Text fields
+        (r'(?:po\s*(?:no|number|#)|purchase\s*order\s*(?:no|number))', 'PO Number', 'poNumber', 'text', None),
+        (r'(?:buyer.s?\s*order\s*(?:no|number))', "Buyer's Order No", 'buyerOrderNo', 'text', None),
+        (r'(?:delivery\s*(?:note|challan)\s*(?:no|number))', 'Delivery Note No', 'deliveryNoteNo', 'text', None),
+        (r'(?:dispatch\s*(?:through|via)|shipping\s*(?:via|method|mode))', 'Dispatch Through', 'dispatchThrough', 'text', None),
+        (r'(?:place\s*of\s*(?:supply|delivery))', 'Place of Supply', 'placeOfSupply', 'text', None),
+        (r'(?:e[\s-]?way\s*bill\s*(?:no|number))', 'E-Way Bill No', 'ewayBillNo', 'text', None),
+        (r'(?:project\s*(?:name|no|number|id))', 'Project Name', 'projectName', 'text', None),
+        (r'(?:job\s*(?:no|number|id))', 'Job No', 'jobNo', 'text', None),
+        (r'(?:contract\s*(?:no|number|id))', 'Contract No', 'contractNo', 'text', None),
+        (r'(?:vendor\s*(?:code|id|ref))', 'Vendor Ref', 'vendorRef', 'text', None),
+        (r'(?:gst\s*(?:composition|reg)\s*type)', 'GST Type', 'gstType', 'text', None),
+    ]
+
+    for pattern, label, key, field_type, options in field_rules:
+        if key in seen_keys:
+            continue
+        if re.search(pattern, text, re.IGNORECASE):
+            field = {
+                'label': label,
+                'key': key,
+                'type': field_type,
+                'required': False,
+            }
+            if field_type == 'text':
+                field['placeholder'] = f'Enter {label.lower()}'
+            if options:
+                field['options'] = options
+            fields.append(field)
+            seen_keys.add(key)
+
+    return fields
+
+
 def extract_template(pdf_file):
     """Main extraction function - returns complete template data"""
     # Extract text and layout
@@ -810,6 +867,9 @@ def extract_template(pdf_file):
 
     # Extract bank details
     bank_details = extract_bank_details(full_text, all_tables)
+
+    # Extract custom form fields from PDF text
+    form_fields = extract_form_fields(full_text)
 
     # Detect sections from text
     sections = {
@@ -873,6 +933,7 @@ def extract_template(pdf_file):
             'termsText': terms_text if terms_text else '',
             'signatureText': signature_text if signature_text else '',
             'bankDetails': bank_details,
+            'formFields': form_fields,
         },
         'metadata': {
             'pages': len(pages_data),

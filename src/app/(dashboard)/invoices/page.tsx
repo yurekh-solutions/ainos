@@ -94,6 +94,14 @@ interface ExtractedTemplate {
   hasAccentBar?: boolean;
   hasBorder?: boolean;
   tableColumns?: Array<{ name: string; key: string; width: number }>;
+  formFields?: Array<{
+    label: string;
+    key: string;
+    type: 'text' | 'date' | 'select' | 'number';
+    required?: boolean;
+    placeholder?: string;
+    options?: string[];
+  }>;
   termsText?: string;
   signatureText?: string;
   bankDetails?: Record<string, string>;
@@ -282,6 +290,7 @@ export default function InvoicesPage() {
           termsNumbering: 'numbered',
           signatureStyle: hasSignature ? 'detailed' : 'simple',
           tableColumns: extractedData.tableColumns || undefined,
+          formFields: extractedData.formFields || undefined,
           isDefault: true,
         }),
       });
@@ -1295,6 +1304,19 @@ export default function InvoicesPage() {
                                 {extractedData.tableColumns.map((col, idx: number) => (
                                   <span key={idx} className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 text-xs font-medium text-gray-700">
                                     {typeof col === 'string' ? col : col.name}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {Array.isArray(extractedData.formFields) && extractedData.formFields.length > 0 && (
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-2">Custom Fields</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {extractedData.formFields.map((field, idx: number) => (
+                                  <span key={idx} className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-100 text-xs font-medium text-blue-700">
+                                    {field.label} ({field.type})
                                   </span>
                                 ))}
                               </div>
