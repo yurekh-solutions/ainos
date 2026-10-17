@@ -97,6 +97,10 @@ export default function NewInvoicePage() {
     { id: '1', productId: '', productName: '', description: '', hsnCode: '', quantity: '1', price: '', costPrice: '', gstRate: '18' }
   ]);
   const [showDropdown, setShowDropdown] = useState<string | null>(null);
+  // Customer search
+  const [customers, setCustomers] = useState<Array<{id:string;name:string;email?:string;phone?:string;address?:string;gstNumber?:string;panNumber?:string;state?:string}>>([]);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [showCustomerResults, setShowCustomerResults] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -110,6 +114,11 @@ export default function NewInvoicePage() {
         const c = await companyRes.json();
         setCompany(c);
       }
+      // Fetch customers for auto-fill
+      try {
+        const custRes = await fetch('/api/customers');
+        if (custRes.ok) setCustomers(await custRes.json());
+      } catch { /* customers optional */ }
       if (templatesRes.ok) {
         const templates = await templatesRes.json();
         const defaultTemplate = templates.find((t: InvoiceTemplate) => t.isDefault) || templates[0];
@@ -164,6 +173,29 @@ export default function NewInvoicePage() {
       setCustomerName(clientName);
     }
   }, [searchParams]);
+
+  const selectCustomer = (c: typeof customers[0]) => {
+    setCustomerName(c.name);
+    setCustomerEmail(c.email || '');
+    setCustomerPhone(c.phone || '');
+    setCustomerAddress(c.address || '');
+    setCustomerGst(c.gstNumber || '');
+    setCustomerState(c.state || '');
+    setCustomerPan(c.panNumber || '');
+    setCustomerSearch('');
+    setShowCustomerResults(false);
+    // Auto-detect supply type from GST state match
+    if (c.gstNumber && c.state && company) {
+      // If customer state differs from company state, it's inter-state
+      setSupplyType('intra'); // default, will be overridden by user
+    }
+  };
+
+  const filteredCustomers = customers.filter(c =>
+    c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+    (c.email || '').toLowerCase().includes(customerSearch.toLowerCase()) ||
+    (c.phone || '').includes(customerSearch)
+  );
 
   const addItem = () => {
     setItems([...items, {
@@ -413,11 +445,26 @@ export default function NewInvoicePage() {
               Customer Details
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
+              <div className="relative">
                 <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Name *</label>
-                <input type="text" value={customerName} onChange={e => setCustomerName(e.target.value)}
+                <input type="text" value={customerSearch || customerName} onChange={e => { setCustomerSearch(e.target.value); setCustomerName(''); setShowCustomerResults(true); }}
+                  onFocus={() => setShowCustomerResults(true)}
+                  onBlur={() => setTimeout(() => setShowCustomerResults(false), 200)}
                   className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
-                  style={inputStyle} placeholder="Customer name" required />
+                  style={inputStyle} placeholder="Search customer..." required />
+                {showCustomerResults && filteredCustomers.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 max-h-48 overflow-auto rounded-xl border shadow-lg" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
+                    {filteredCustomers.slice(0, 8).map(c => (
+                      <button key={c.id} type="button" onClick={() => selectCustomer(c)}
+                        className="w-full text-left px-3 py-2 text-sm hover:opacity-80 transition-opacity border-b last:border-b-0"
+                        style={{ borderColor: 'hsl(var(--border) / 0.3)' }}>
+                        <span className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>{c.name}</span>
+                        {c.email && <span className="ml-2 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{c.email}</span>}
+                        {c.gstNumber && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}>{c.gstNumber}</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Email</label>
