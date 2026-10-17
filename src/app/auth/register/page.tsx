@@ -5,8 +5,8 @@ import {
   FileText, ArrowRight, ArrowLeft,
   Check, Loader2, AlertCircle,
   Eye, EyeOff, Building2, FolderCheck, Upload,
-  Phone, MapPin, Mail, Lock, User, Briefcase,
-  Zap, BarChart3, Users, ShieldCheck, LogIn, Globe, UserPlus, Shield
+  Phone, MapPin, Mail, Lock, User, Briefcase, Building,
+  Cpu, BarChart3, Users, ShieldCheck, LogIn, Globe, UserPlus, Shield
 } from 'lucide-react';
 import { useState, type ChangeEvent, type ElementType } from 'react';
 import Link from 'next/link';
@@ -17,7 +17,7 @@ const COMPANY_TYPES = [
   { value: 'llp', label: 'LLP', icon: Building2 },
   { value: 'pvt_ltd', label: 'Pvt Ltd', icon: Briefcase },
   { value: 'public_ltd', label: 'Public Ltd', icon: BarChart3 },
-  { value: 'opc', label: 'OPC', icon: Zap },
+  { value: 'opc', label: 'OPC', icon: Building },
 ];
 
 const COUNTRIES = [
@@ -112,7 +112,7 @@ const DOCUMENT_REQUIREMENTS: Record<string, { name: string; optional?: boolean }
 
 const leftFeatures = [
   { icon: ShieldCheck, title: 'Secure & Encrypted Login', desc: 'Bank-grade security for your data' },
-  { icon: Zap, title: 'AI-Powered Automation', desc: 'Smart workflows that save hours' },
+    { icon: Cpu, title: 'AI-Powered Automation', desc: 'Smart workflows that save hours' },
   { icon: BarChart3, title: 'Real-time Dashboard Access', desc: 'Live analytics at your fingertips' },
   { icon: FileText, title: 'Smart Invoicing & GST', desc: 'Automated billing and compliance' },
 ];
