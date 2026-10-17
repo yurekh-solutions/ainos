@@ -1,7 +1,6 @@
-GST scraper keep-alive: self-sustaining 3-layer protection
+Switch forgot-password email from Resend to Gmail SMTP (Nodemailer)
 
-1. Server-side /api/keep-scraper-alive endpoint pings scraper from AINOS server
-2. KeepScraperAlive client component pings every 4 min while user is on dashboard
-3. Combined with existing GitHub Actions 5-min cron and server-side retry
-
-Result: scraper stays awake as long as anyone uses AINOS — no more 502s.
+- Resend free tier only sends to account owner email (403 for others)
+- Gmail SMTP works for ANY recipient, no domain verification needed
+- Added src/lib/email.ts Nodemailer utility
+- Need Gmail App Password in .env.local (2FA required)
