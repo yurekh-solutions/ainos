@@ -127,30 +127,27 @@ export default function InvoicesPage() {
     if (!invoiceFile) return;
     setExtracting(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = reader.result as string;
-        const res = await fetch('/api/tools/execute', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            toolSlug: 'invoice-extractor',
-            input: { base64 },
-          }),
-        });
-        const data = await res.json();
-        if (data.success && data.output?.extracted) {
-          setExtractedData(data.output.extracted);
-          showToast('Template design extracted successfully');
-        } else {
-          showToast(data.error || 'Failed to extract invoice data', 'error');
-        }
-        setExtracting(false);
-      };
-      reader.readAsDataURL(invoiceFile);
+      // Send PDF to Python template extractor service via proxy
+      const formData = new FormData();
+      formData.append('file', invoiceFile);
+
+      const res = await fetch('/api/template-extract', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.template) {
+        setExtractedData(data.template);
+        showToast('Template design extracted successfully');
+      } else {
+        showToast(data.error || 'Failed to extract template', 'error');
+      }
+      setExtracting(false);
     } catch (error) {
       console.error('Extraction error:', error);
-      showToast('Failed to extract invoice', 'error');
+      showToast('Failed to extract template', 'error');
       setExtracting(false);
     }
   };
