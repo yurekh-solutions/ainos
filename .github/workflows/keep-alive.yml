@@ -33,6 +33,17 @@ jobs:
           else
             echo "⚠️ GST Scraper returned $response"
           fi
+      
+      - name: Ping Template Extractor service
+        run: |
+          echo "Pinging Template Extractor to prevent cold start..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://ainos-template-extractor.onrender.com/api/v1/health)
+          echo "Response status: $response"
+          if [ "$response" = "200" ]; then
+            echo "✅ Template Extractor is alive"
+          else
+            echo "⚠️ Template Extractor returned $response"
+          fi
 
   auto-publish-blogs:
     runs-on: ubuntu-latest
