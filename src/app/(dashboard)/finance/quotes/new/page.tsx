@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ArrowLeft, FileText, Save, Plus, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
 
@@ -17,6 +17,13 @@ export default function NewQuotePage() {
   const [taxRate, setTaxRate] = useState('18');
   const [discountRate, setDiscountRate] = useState('0');
   const [items, setItems] = useState<QuoteItem[]>([{ description: '', quantity: '1', rate: '' }]);
+  const searchParams = useSearchParams();
+
+  // Pre-fill from contact pipeline
+  useEffect(() => {
+    const client = searchParams.get('client');
+    if (client) setClientName(decodeURIComponent(client));
+  }, [searchParams]);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });

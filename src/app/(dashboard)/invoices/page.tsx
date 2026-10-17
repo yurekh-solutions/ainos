@@ -798,16 +798,23 @@ export default function InvoicesPage() {
     doc.save(`${invoice.invoiceNumber}.pdf`);
   };
 
-  // Mark invoice as paid
-  const handleMarkPaid = async (invoice: Invoice) => {
+  // Mark invoice as paid (supports partial payment)
+  const [payInvoice, setPayInvoice] = useState<Invoice | null>(null);
+  const [payAmount, setPayAmount] = useState('');
+
+  const handleMarkPaid = async (invoice: Invoice, amount?: number) => {
     try {
+      const paidAmt = amount ?? invoice.totalAmount;
+      const isFullyPaid = paidAmt >= invoice.totalAmount;
       const res = await fetch(`/api/invoices/${invoice.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'paid' }),
+        body: JSON.stringify({ status: isFullyPaid ? 'paid' : 'sent', paidAmount: paidAmt }),
       });
       if (res.ok) {
-        showToast(`Invoice ${invoice.invoiceNumber} marked as paid!`, 'success');
+        showToast(isFullyPaid ? `Invoice ${invoice.invoiceNumber} marked as paid!` : `Payment of Rs.${paidAmt.toLocaleString('en-IN')} recorded!`, 'success');
+        setPayInvoice(null);
+        setPayAmount('');
         fetchData();
       } else {
         showToast('Failed to update invoice', 'error');
@@ -890,6 +897,7 @@ export default function InvoicesPage() {
   const totalProfit = invoices.reduce((s, i) => s + (i.profitAmount || 0), 0);
 
   return (
+    <>
     <div className="h-full overflow-y-auto p-4 sm:p-6 lg:p-8" style={{ background: 'var(--page-gradient)' }}>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
@@ -1132,9 +1140,9 @@ export default function InvoicesPage() {
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-1">
                             {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
-                              <button onClick={() => handleMarkPaid(invoice)}
+                              <button onClick={() => { setPayInvoice(invoice); setPayAmount(String(invoice.totalAmount - (invoice.paidAmount || 0))); }}
                                 className="p-1.5 rounded-lg transition-colors hover:bg-green-50"
-                                title="Mark as Paid">
+                                title={invoice.paidAmount ? 'Record Payment' : 'Mark as Paid'}>
                                 <CheckCircle className="w-3.5 h-3.5 text-green-600" />
                               </button>
                             )}
@@ -1462,5 +1470,53 @@ export default function InvoicesPage() {
         </AnimatePresence>
       </div>
     </div>
+
+    {/* Partial Payment Dialog */}
+    <AnimatePresence>
+      {payInvoice && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+          <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="rounded-2xl shadow-2xl w-full max-w-md p-6" style={{ background: 'hsl(var(--card))' }}>
+            <h3 className="text-lg font-bold mb-1" style={{ color: 'hsl(var(--foreground))' }}>Record Payment</h3>
+            <p className="text-sm mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>Invoice {payInvoice.invoiceNumber} — {payInvoice.customerName}</p>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span style={{ color: 'hsl(var(--muted-foreground))' }}>Total Amount</span>
+                <span className="font-semibold" style={{ color: 'hsl(var(--foreground))' }}>₹{payInvoice.totalAmount.toLocaleString('en-IN')}</span>
+              </div>
+              {(payInvoice.paidAmount || 0) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span style={{ color: 'hsl(var(--muted-foreground))' }}>Already Paid</span>
+                  <span className="font-semibold text-green-600">₹{(payInvoice.paidAmount || 0).toLocaleString('en-IN')}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm border-t pt-2" style={{ borderColor: 'hsl(var(--border))' }}>
+                <span style={{ color: 'hsl(var(--muted-foreground))' }}>Balance Due</span>
+                <span className="font-bold" style={{ color: 'hsl(var(--primary))' }}>₹{(payInvoice.totalAmount - (payInvoice.paidAmount || 0)).toLocaleString('en-IN')}</span>
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--muted-foreground))' }}>Payment Amount</label>
+                <input type="number" value={payAmount} onChange={e => setPayAmount(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
+                  style={{ background: 'hsl(var(--secondary))', color: 'hsl(var(--foreground))' }} placeholder="Enter amount" />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => handleMarkPaid(payInvoice, Number(payAmount) || 0)}
+                  className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold hover:opacity-90"
+                  style={{ background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%)' }}>
+                  Record Payment
+                </button>
+                <button onClick={() => handleMarkPaid(payInvoice, payInvoice.totalAmount)}
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold border border-green-200 text-green-700 hover:bg-green-50">
+                  Full Pay
+                </button>
+              </div>
+              <button onClick={() => { setPayInvoice(null); setPayAmount(''); }}
+                className="w-full py-2 text-sm hover:opacity-80" style={{ color: 'hsl(var(--muted-foreground))' }}>Cancel</button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   );
 }

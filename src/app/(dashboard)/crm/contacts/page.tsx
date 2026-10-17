@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, X, Search, Users, Tag, Phone, Mail, Building2, Target } from 'lucide-react';
+import { Plus, X, Search, Users, Tag, Phone, Mail, Building2, Target, FileText, ArrowRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface Contact {
   id: string; name: string; email?: string; phone?: string; company?: string;
@@ -12,6 +13,7 @@ interface Contact {
 const stageColors: Record<string, string> = { lead: '#a78bfa', qualified: 'hsl(252 60% 55%)', proposal: '#34d399', negotiation: '#94a3b8', won: '#34d399', lost: '#64748b' };
 
 export default function ContactsPage() {
+  const router = useRouter();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -115,6 +117,18 @@ export default function ContactsPage() {
                       ))}
                     </div>
                   )}
+                  <div className="flex gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'hsl(var(--border) / 0.3)' }}>
+                    <button onClick={() => router.push(`/finance/quotes/new?contactId=${contact.id}&client=${encodeURIComponent(contact.name)}&email=${encodeURIComponent(contact.email || '')}`)}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold text-white transition-all hover:scale-105"
+                      style={{ background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%)' }}>
+                      <FileText className="w-3 h-3" /> Quote
+                    </button>
+                    <button onClick={() => router.push(`/invoices/new?client=${encodeURIComponent(contact.name)}`)}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold border transition-all hover:scale-105"
+                      style={{ borderColor: 'hsl(var(--primary) / 0.3)', color: 'hsl(var(--primary))' }}>
+                      <ArrowRight className="w-3 h-3" /> Invoice
+                    </button>
+                  </div>
                 </motion.div>
               ))}
             </div>
