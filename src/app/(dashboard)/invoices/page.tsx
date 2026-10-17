@@ -1200,9 +1200,9 @@ export default function InvoicesPage() {
                             <div>
                               <p className="text-xs font-medium text-gray-500 mb-2">Table Columns</p>
                               <div className="flex flex-wrap gap-1.5">
-                                {extractedData.tableColumns.map((col: string, idx: number) => (
+                                {extractedData.tableColumns.map((col: any, idx: number) => (
                                   <span key={idx} className="px-2.5 py-1 rounded-lg bg-white border border-gray-200 text-xs font-medium text-gray-700">
-                                    {col}
+                                    {typeof col === 'string' ? col : col.name || col}
                                   </span>
                                 ))}
                               </div>
@@ -1224,15 +1224,17 @@ export default function InvoicesPage() {
                           )}
                           
                           {/* Sections */}
-                          {Array.isArray(extractedData.sections) && extractedData.sections.length > 0 && (
+                          {extractedData.sections && typeof extractedData.sections === 'object' && !Array.isArray(extractedData.sections) && (
                             <div>
                               <p className="text-xs font-medium text-gray-500 mb-2">Sections Detected</p>
                               <div className="flex flex-wrap gap-1.5">
-                                {extractedData.sections.map((s: string, idx: number) => (
-                                  <span key={idx} className="px-2 py-1 rounded-full bg-purple-50 border border-purple-100 text-[10px] font-medium text-purple-700">
-                                    {s}
-                                  </span>
-                                ))}
+                                {Object.entries(extractedData.sections)
+                                  .filter(([_, v]) => v === true)
+                                  .map(([key]) => (
+                                    <span key={key} className="px-2 py-1 rounded-full bg-purple-50 border border-purple-100 text-[10px] font-medium text-purple-700">
+                                      {key.replace(/([A-Z])/g, ' $1').trim()}
+                                    </span>
+                                  ))}
                               </div>
                             </div>
                           )}
