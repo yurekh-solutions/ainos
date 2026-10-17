@@ -101,6 +101,7 @@ const sections: MenuSection[] = [
       { icon: Package, label: 'Products', href: '/products' },
       { icon: Wallet, label: 'Expenses', href: '/finance/expenses' },
       { icon: FileSpreadsheet, label: 'Quotations', href: '/finance/quotes' },
+      { icon: ShoppingCart, label: 'Purchase Orders', href: '/finance/purchase-orders' },
       { icon: Truck, label: 'Delivery Challans', href: '/finance/challans' },
       { icon: FileSpreadsheet, label: 'Tally / Excel', href: '/finance/tally' },
       { icon: Bell, label: 'Payment Reminders', href: '/finance/reminders' },
@@ -118,6 +119,7 @@ const sections: MenuSection[] = [
     title: 'HR & Payroll',
     icon: UserCheck,
     items: [
+      { icon: Users, label: 'Team', href: '/team' },
       { icon: Users, label: 'Employees', href: '/hr/employees' },
       { icon: UserPlus, label: 'Recruitment', href: '/hr/recruitment' },
       { icon: CalendarDays, label: 'Attendance', href: '/hr/attendance' },

@@ -8,12 +8,11 @@ export async function GET(req: NextRequest) {
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+    const where: Record<string, unknown> = {};
+    if (user?.companyId) where.companyId = user.companyId;
+    else where.createdBy = session.user.email;
 
-    const orders = await prisma.purchaseOrder.findMany({
-      where: { companyId: user.companyId },
-      orderBy: { createdAt: 'desc' }
-    });
+    const orders = await prisma.purchaseOrder.findMany({ where, orderBy: { createdAt: 'desc' } });
     return NextResponse.json(orders);
   } catch (error) {
     console.error('Error fetching purchase orders:', error);
@@ -27,13 +26,30 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
-
     const body = await req.json();
-    const poNumber = body.poNumber || `PO-${Date.now()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+
+    // Auto-generate PO number
+    const count = await prisma.purchaseOrder.count();
+    const poNumber = body.poNumber || `PO-${String(count + 1).padStart(4, '0')}-${new Date().getFullYear()}`;
+
     const order = await prisma.purchaseOrder.create({
-      data: { ...body, poNumber, companyId: user.companyId }
+      data: {
+        poNumber,
+        vendorName: body.vendorName,
+        vendorId: body.vendorId,
+        items: body.items,
+        subtotal: body.subtotal,
+        tax: body.tax,
+        discount: body.discount || 0,
+        total: body.total,
+        status: body.status || 'draft',
+        orderDate: body.orderDate ? new Date(body.orderDate) : new Date(),
+        expectedDate: body.expectedDate ? new Date(body.expectedDate) : null,
+        notes: body.notes,
+        companyId: user?.companyId || null,
+      },
     });
+
     return NextResponse.json(order, { status: 201 });
   } catch (error) {
     console.error('Error creating purchase order:', error);
