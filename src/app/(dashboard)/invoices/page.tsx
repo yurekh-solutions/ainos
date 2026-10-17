@@ -36,6 +36,7 @@ interface Invoice {
     taxRate: number;
     taxAmount: number;
     total: number;
+    hsnCode?: string;
   }[];
 }
 
@@ -530,11 +531,7 @@ export default function InvoicesPage() {
     // ─ ITEMS TABLE ──
     const tableHeaderH = 8;
     const rowH = 7;
-    const colNo = M;
-    const colCode = M + 8;
-    const colDesc = M + 28;
-    const colQty = W - M - 45;
-    const colAmt = W - M - 15;
+    const templateCols = template?.tableColumns;
 
     // Table header background
     doc.setFillColor(accentColor.r, accentColor.g, accentColor.b);
@@ -543,11 +540,29 @@ export default function InvoicesPage() {
     doc.setFontSize(7);
     doc.setTextColor(255, 255, 255);
     doc.setFont(fontFamily, 'bold');
-    doc.text('No.', colNo + 2, y + 5);
-    doc.text('ITEM CODE', colCode, y + 5);
-    doc.text('DESCRIPTION', colDesc, y + 5);
-    doc.text('QTY', colQty, y + 5);
-    doc.text('AMOUNT(Rs)', colAmt, y + 5, { align: 'right' });
+
+    if (templateCols && templateCols.length > 0) {
+      // Dynamic columns from template
+      let colX = M;
+      templateCols.forEach((col, idx) => {
+        const colWidth = (contentW * (parseFloat(col.width || '20') / 100));
+        const isLast = idx === templateCols.length - 1;
+        doc.text((col.label || col.key || '').toUpperCase(), isLast ? colX + colWidth - 2 : colX + 2, y + 5, isLast ? { align: 'right' } : undefined);
+        if (!isLast) colX += colWidth;
+      });
+    } else {
+      // Default columns
+      const colNo = M;
+      const colCode = M + 8;
+      const colDesc = M + 28;
+      const colQty = W - M - 45;
+      const colAmt = W - M - 15;
+      doc.text('No.', colNo + 2, y + 5);
+      doc.text('ITEM CODE', colCode, y + 5);
+      doc.text('DESCRIPTION', colDesc, y + 5);
+      doc.text('QTY', colQty, y + 5);
+      doc.text('AMOUNT(Rs)', colAmt, y + 5, { align: 'right' });
+    }
 
     y += tableHeaderH;
 
@@ -565,20 +580,52 @@ export default function InvoicesPage() {
       doc.setFillColor(rowBg[0], rowBg[1], rowBg[2]);
       doc.rect(M, y, contentW, rowH, 'F');
 
-      doc.setTextColor(80, 80, 80);
-      doc.text(`${index + 1}`, colNo + 2, y + 5);
-      doc.text('-', colCode, y + 5);
-
-      const descText = doc.splitTextToSize(item.description || 'Item', 55);
-      doc.setTextColor(50, 50, 50);
-      doc.text(descText[0], colDesc, y + 5);
-
-      doc.setTextColor(80, 80, 80);
-      doc.text(item.quantity.toString(), colQty, y + 5);
-      doc.setTextColor(50, 50, 50);
-      doc.setFont(fontFamily, 'bold');
-      doc.text(item.total.toFixed(2), colAmt, y + 5, { align: 'right' });
-      doc.setFont(fontFamily, 'normal');
+      if (templateCols && templateCols.length > 0) {
+        // Dynamic column rendering
+        let colX = M;
+        const itemValues: Record<string, string> = {
+          'sr.no': `${index + 1}`, 'srno': `${index + 1}`, 'sno': `${index + 1}`,
+          'description': item.description || 'Item', 'desc': item.description || 'Item',
+          'qty': item.quantity.toString(), 'quantity': item.quantity.toString(),
+          'rate': item.price.toFixed(2), 'price': item.price.toFixed(2),
+          'amount': item.total.toFixed(2), 'total': item.total.toFixed(2),
+          'hsn': item.hsnCode || '-', 'hsncode': item.hsnCode || '-',
+          'itemcode': '-', 'item': item.description || 'Item',
+        };
+        templateCols.forEach((col, idx) => {
+          const colWidth = (contentW * (parseFloat(col.width || '20') / 100));
+          const isLast = idx === templateCols.length - 1;
+          const key = (col.key || col.label || '').toLowerCase().replace(/[^a-z]/g, '');
+          const val = itemValues[key] || itemValues[key.split('.')[0]] || '-';
+          doc.setTextColor(key === 'amount' || key === 'total' || key === 'rate' || key === 'price' ? 50 : 80, key === 'amount' || key === 'total' || key === 'rate' || key === 'price' ? 50 : 80, key === 'amount' || key === 'total' || key === 'rate' || key === 'price' ? 50 : 80);
+          if (key === 'amount' || key === 'total') doc.setFont(fontFamily, 'bold');
+          const textX = isLast ? colX + colWidth - 2 : colX + 2;
+          const maxW = colWidth - 4;
+          const textContent = doc.splitTextToSize(val, maxW);
+          doc.text(textContent[0], textX, y + 5, isLast ? { align: 'right' } : undefined);
+          doc.setFont(fontFamily, 'normal');
+          if (!isLast) colX += colWidth;
+        });
+      } else {
+        // Default column rendering
+        const colNo = M;
+        const colCode = M + 8;
+        const colDesc = M + 28;
+        const colQty = W - M - 45;
+        const colAmt = W - M - 15;
+        doc.setTextColor(80, 80, 80);
+        doc.text(`${index + 1}`, colNo + 2, y + 5);
+        doc.text('-', colCode, y + 5);
+        const descText = doc.splitTextToSize(item.description || 'Item', 55);
+        doc.setTextColor(50, 50, 50);
+        doc.text(descText[0], colDesc, y + 5);
+        doc.setTextColor(80, 80, 80);
+        doc.text(item.quantity.toString(), colQty, y + 5);
+        doc.setTextColor(50, 50, 50);
+        doc.setFont(fontFamily, 'bold');
+        doc.text(item.total.toFixed(2), colAmt, y + 5, { align: 'right' });
+        doc.setFont(fontFamily, 'normal');
+      }
 
       // Row separator
       doc.setDrawColor(230, 230, 230);
