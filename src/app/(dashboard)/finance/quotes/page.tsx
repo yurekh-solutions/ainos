@@ -2,7 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, FileText, TrendingUp, Search, Calendar, DollarSign, ArrowRight } from 'lucide-react';
+import { Plus, X, FileText, TrendingUp, Search, Calendar, DollarSign, ArrowRight, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
 
 interface Quote { id: string; quoteNumber: string; clientName: string; items: { description: string; quantity: number; rate: number }[]; subtotal: number; tax: number; discount: number; totalAmount: number; status: string; validUntil: string; notes?: string; createdAt: string; }
 
@@ -38,6 +39,120 @@ export default function QuotesPage() {
 
   const updateStatus = async (id: string, status: string) => {
     try { await fetch('/api/quotes', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status }) }); fetchQuotes(); } catch (e) { console.error(e); }
+  };
+
+  const downloadQuotePDF = async (quote: Quote) => {
+    const doc = new jsPDF();
+    const pageW = doc.internal.pageSize.getWidth();
+    const M = 15; // margin
+    const contentW = pageW - M * 2;
+
+    // Fetch template
+    let template: Record<string, unknown> | null = null;
+    try {
+      const res = await fetch('/api/invoice-templates');
+      if (res.ok) { const t = await res.json(); template = t.find((x: Record<string, unknown>) => x.isDefault) || t[0] || null; }
+    } catch { /* use defaults */ }
+
+    const primary = (template?.primaryColor as string) || '#6D28D9';
+    const fontFamily = (template?.fontFamily as string) || 'Helvetica';
+
+    // Header accent bar
+    doc.setFillColor(primary);
+    doc.rect(0, 0, pageW, 8, 'F');
+
+    // Title
+    doc.setFont(fontFamily, 'bold');
+    doc.setFontSize(28);
+    doc.setTextColor(primary);
+    doc.text('QUOTATION', M, 30);
+
+    // Quote info
+    doc.setFont(fontFamily, 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Quote #: ${quote.quoteNumber}`, M, 42);
+    doc.text(`Date: ${new Date(quote.createdAt).toLocaleDateString('en-IN')}`, M, 50);
+    if (quote.validUntil) doc.text(`Valid Until: ${new Date(quote.validUntil).toLocaleDateString('en-IN')}`, M, 58);
+
+    // Client
+    doc.setFontSize(11);
+    doc.setTextColor(50, 50, 50);
+    doc.setFont(fontFamily, 'bold');
+    doc.text('Prepared For:', pageW - M, 42, { align: 'right' });
+    doc.setFont(fontFamily, 'normal');
+    doc.text(quote.clientName, pageW - M, 50, { align: 'right' });
+
+    // Items table
+    let y = 75;
+    doc.setFillColor(primary);
+    doc.rect(M, y - 6, contentW, 10, 'F');
+    doc.setFont(fontFamily, 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.text('#', M + 3, y);
+    doc.text('DESCRIPTION', M + 15, y);
+    doc.text('QTY', M + contentW * 0.55, y);
+    doc.text('RATE', M + contentW * 0.7, y);
+    doc.text('AMOUNT', pageW - M - 2, y, { align: 'right' });
+
+    y += 8;
+    doc.setTextColor(50, 50, 50);
+    doc.setFont(fontFamily, 'normal');
+    doc.setFontSize(9);
+    (quote.items || []).forEach((item, i) => {
+      const amt = item.quantity * item.rate;
+      doc.text(`${i + 1}`, M + 3, y);
+      doc.text(item.description || 'Item', M + 15, y);
+      doc.text(`${item.quantity}`, M + contentW * 0.55, y);
+      doc.text(`₹${item.rate.toFixed(2)}`, M + contentW * 0.7, y);
+      doc.text(`₹${amt.toFixed(2)}`, pageW - M - 2, y, { align: 'right' });
+      y += 8;
+    });
+
+    // Totals
+    y += 5;
+    doc.setDrawColor(200);
+    doc.line(M + contentW * 0.55, y, pageW - M, y);
+    y += 8;
+    doc.setFontSize(9);
+    doc.text('Subtotal:', M + contentW * 0.55, y);
+    doc.text(`₹${quote.subtotal.toLocaleString('en-IN')}`, pageW - M - 2, y, { align: 'right' });
+    y += 7;
+    doc.text(`Tax (${quote.tax || 0}%):`, M + contentW * 0.55, y);
+    doc.text(`₹${((quote.tax || 0) * quote.subtotal / 100).toFixed(2)}`, pageW - M - 2, y, { align: 'right' });
+    if (quote.discount && quote.discount > 0) {
+      y += 7;
+      doc.setTextColor(220, 50, 50);
+      doc.text(`Discount (${quote.discount}%):`, M + contentW * 0.55, y);
+      doc.text(`-₹${(quote.discount * quote.subtotal / 100).toFixed(2)}`, pageW - M - 2, y, { align: 'right' });
+      doc.setTextColor(50, 50, 50);
+    }
+    y += 10;
+    doc.setFont(fontFamily, 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(primary);
+    doc.text('TOTAL:', M + contentW * 0.55, y);
+    doc.text(`₹${quote.totalAmount.toLocaleString('en-IN')}`, pageW - M - 2, y, { align: 'right' });
+
+    // Notes
+    if (quote.notes) {
+      y += 20;
+      doc.setFont(fontFamily, 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Notes:', M, y);
+      doc.setFont(fontFamily, 'normal');
+      doc.setFontSize(8);
+      doc.text(quote.notes, M, y + 6, { maxWidth: contentW * 0.6 });
+    }
+
+    // Footer
+    const pageH = doc.internal.pageSize.getHeight();
+    doc.setFillColor(primary);
+    doc.rect(0, pageH - 6, pageW, 6, 'F');
+
+    doc.save(`${quote.quoteNumber}.pdf`);
   };
 
   const filtered = quotes.filter(q => {
@@ -140,6 +255,10 @@ export default function QuotesPage() {
                               <ArrowRight className="w-3 h-3" /> Invoice
                             </button>
                           )}
+                          <button onClick={() => downloadQuotePDF(q)}
+                            className="p-1.5 rounded-lg transition-colors hover:opacity-80" title="Download PDF">
+                            <Download className="w-3.5 h-3.5" style={{ color: 'hsl(var(--primary))' }} />
+                          </button>
                         </div>
                       </td>
                     </tr>
