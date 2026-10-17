@@ -128,6 +128,14 @@ interface InvoiceTemplate {
   footerText?: string;
   accentWidth: string;
   borderRadius: string;
+  headerLayout?: string;
+  showDocInfoTable?: boolean;
+  paymentTermsLayout?: string;
+  termsNumbering?: string;
+  showValidityDate?: boolean;
+  signatureStyle?: string;
+  tableColumns?: Array<{ label: string; key: string; width?: string }>;
+  formFields?: Array<{ label: string; key: string; type: string; required?: boolean; placeholder?: string; options?: string[] }>;
 }
 
 export default function InvoicesPage() {
@@ -663,7 +671,7 @@ export default function InvoicesPage() {
       doc.setTextColor(80, 80, 80);
       doc.setFont(fontFamily, 'normal');
       const termsText = template?.terms || 'Payment due within 30 days.';
-      const termsNumbering = 'numbered'; // Default numbering style
+      const termsNumbering = template?.termsNumbering || 'numbered';
       
       // Split terms by newlines or numbers
       const termsArray = termsText.split(/\n|\d+\)[\s]*/).filter(t => t.trim());
@@ -699,16 +707,34 @@ export default function InvoicesPage() {
     // ── SIGNATURES ──
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.3);
-
+    const sigStyle = template?.signatureStyle || 'simple';
     const sigY = H - 35;
-    
-    // Simple signature style: Just signature lines
-    doc.line(M, sigY, M + 50, sigY);
-    doc.line(W - M - 50, sigY, W - M, sigY);
-    doc.setFontSize(7);
-    doc.setTextColor(100, 100, 100);
-    doc.text('Buyer', M + 20, sigY + 4);
-    doc.text('Seller', W - M - 30, sigY + 4);
+
+    if (sigStyle === 'detailed') {
+      // Detailed signature: signature lines + company name, designation, place & date
+      doc.line(M, sigY, M + 60, sigY);
+      doc.line(W - M - 60, sigY, W - M, sigY);
+      doc.setFontSize(7);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Buyer\'s Signature', M + 15, sigY + 4);
+      doc.text('Seller\'s Signature', W - M - 50, sigY + 4);
+      // Company name under seller signature
+      doc.setFontSize(6);
+      doc.setTextColor(80, 80, 80);
+      if (company?.name) {
+        doc.text(`For ${company.name}`, W - M - 60, sigY + 9);
+      }
+      doc.text('Place & Date', W - M - 60, sigY + 13);
+      doc.text('Place & Date', M, sigY + 9);
+    } else {
+      // Simple signature style: Just signature lines
+      doc.line(M, sigY, M + 50, sigY);
+      doc.line(W - M - 50, sigY, W - M, sigY);
+      doc.setFontSize(7);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Buyer', M + 20, sigY + 4);
+      doc.text('Seller', W - M - 30, sigY + 4);
+    }
 
     // ── FOOTER ───
     doc.setDrawColor(accentColor.r, accentColor.g, accentColor.b);
