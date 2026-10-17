@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Also fetch scheduled blogs from BlogSchedule.
-    // Show pending/generating only — hide failed/cancelled (bad UX)
+    // Only fetch schedules that are pending or generating — hide failed/archived/cancelled (bad UX)
     const scheduleWhere: Record<string, unknown> = platform ? {} : { companyId: user.companyId };
     scheduleWhere.status = { in: ['pending', 'generating'] };
     if (websiteId) scheduleWhere.connectedWebsiteId = websiteId;

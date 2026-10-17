@@ -28,6 +28,7 @@ interface ConnectedWebsite {
   id: string; url: string; name: string | null; description: string | null;
   techStack: string | null; niche: string | null; publishMethod: string;
   isActive: boolean; widgetIntegrated: boolean; widgetIntegratedAt: string | null;
+  createdAt: string;
   totalBlogs: number; publishedBlogs: number; pendingBlogs: number;
   subscription: { blogsPerMonth: number; blogsUsed: number; blogsRemaining: number; currentPeriodEnd: string; } | null;
   company?: { name: string | null; id: string } | null;
@@ -742,7 +743,9 @@ export default function BlogPage() {
                             <div>
                               <p className="text-sm font-semibold text-amber-800">Widget Not Integrated</p>
                               <p className="text-xs text-amber-700 mt-0.5">
-                                Blog generation is paused. Paste the embed code on your website first — AINOS will auto-detect the integration and start generating blogs.
+                                {new Date(w.createdAt).getTime() > Date.now() - 2 * 60 * 60 * 1000
+                                  ? 'Blog generation will auto-start within 2 hours even without the widget. Or paste the embed code now for instant detection.'
+                                  : 'Paste the embed code on your website — AINOS will auto-detect and start generating blogs. Auto-start kicks in shortly.'}
                               </p>
                             </div>
                           </div>

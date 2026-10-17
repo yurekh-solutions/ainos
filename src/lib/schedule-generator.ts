@@ -41,15 +41,28 @@ export async function generateScheduleNow(scheduleId: string): Promise<{ status:
       return { status: 'failed', reason: 'No connected website' };
     }
 
-    // CRITICAL: Only generate blogs if the widget is integrated on the website
-    // AINOS must know the website has actually embedded the blog widget
+    // CRITICAL: Only generate blogs if the widget is integrated on the website.
+    // Grace period: if the website was connected < 2 hours ago, skip silently
+    // (still setting up). After 2 hours, auto-enable generation even without
+    // the widget ping — the company may never embed the widget but still
+    // deserves blogs being written for their dashboard.
     if (!website.widgetIntegrated) {
-      console.log(`[Blog Gen] Skipping ${schedule.topic.substring(0, 50)}... — widget not integrated on ${website.name || website.url}`);
-      await prisma.blogSchedule.update({
-        where: { id: schedule.id },
-        data: { status: 'pending' }, // Keep as pending, will retry when widget is integrated
-      });
-      return { status: 'pending', reason: 'Widget not integrated on website' };
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+      if (website.createdAt < twoHoursAgo) {
+        // Grace period expired — auto-enable and proceed
+        console.log(`[Blog Gen] Grace period expired for ${website.name || website.url} — auto-enabling generation`);
+        await prisma.connectedWebsite.update({
+          where: { id: website.id },
+          data: { widgetIntegrated: true, widgetIntegratedAt: new Date() },
+        });
+      } else {
+        console.log(`[Blog Gen] Skipping ${schedule.topic.substring(0, 50)}... — widget not integrated on ${website.name || website.url} (grace period active)`);
+        await prisma.blogSchedule.update({
+          where: { id: schedule.id },
+          data: { status: 'pending' },
+        });
+        return { status: 'pending', reason: 'Widget not integrated on website' };
+      }
     }
 
     // Topic relevance check disabled — user-requested blogs should generate regardless
@@ -408,16 +421,25 @@ WRITING INSTRUCTIONS:
     // keep the row pending ("Preparing") so it retries on the next run or
     // daily quota reset instead of showing a scary FAILED card.
     const quota = /429|403|402|quota|payment required|busy right now/i.test(message);
+    const currentRetry = schedule.retryCount || 0;
     await prisma.blogSchedule.update({
       where: { id: schedule.id },
-      data: { status: quota ? 'pending' : 'failed' },
+      data: {
+        status: quota ? 'pending' : 'failed',
+        retryCount: currentRetry + 1,
+      },
     });
     return { status: quota ? 'pending' : 'failed', reason: message };
   }
 }
 
-// Module-level guard: one background batch per company at a time
+// Module-level guard: one background batch per company at a time.
+// On serverless (Render/Vercel) this Set resets on cold start — that's fine
+// because the DB-based 'generating' recovery below handles interrupted runs.
 const runningCompanies = new Set<string>();
+
+// Maximum retry attempts before a failed schedule is silently archived
+const MAX_RETRIES = 5;
 
 // Kicks off server-side background generation of every pending scheduled blog
 // for a company. Returns immediately; the server keeps writing blogs one by one
@@ -440,18 +462,18 @@ export function startBackgroundGeneration(companyId: string): boolean {
         where: { companyId, status: 'generating' },
         data: { status: 'pending' },
       });
+      // silently reset failed rows with retryCount < MAX_RETRIES so they
+      // get another chance without showing errors in the UI
+      await prisma.blogSchedule.updateMany({
+        where: { companyId, status: 'failed', retryCount: { lt: MAX_RETRIES } },
+        data: { status: 'pending' },
+      });
       for (;;) {
-        // pending first (date order), then retry failed rows once per run
-        let next = await prisma.blogSchedule.findFirst({
-          where: { companyId, status: 'pending' },
+        // pending first (date order), skip schedules that exhausted retries
+        const next = await prisma.blogSchedule.findFirst({
+          where: { companyId, status: 'pending', retryCount: { lt: MAX_RETRIES } },
           orderBy: { scheduledDate: 'asc' },
         });
-        if (!next) {
-          next = await prisma.blogSchedule.findFirst({
-            where: { companyId, status: 'failed', id: { notIn: [...attempted] } },
-            orderBy: { scheduledDate: 'asc' },
-          });
-        }
         if (!next) break;
         console.log(`[Blog Gen] Processing: ${next.topic.substring(0, 50)}... (status: ${next.status})`);
         attempted.add(next.id);
@@ -463,44 +485,35 @@ export function startBackgroundGeneration(companyId: string): boolean {
         // gentle pacing so AI rate limits never trip
         await sleep(result.status === 'failed' ? 6000 : 2500);
       }
+      // Archive old schedules (not delete blogs) to keep the queue clean
+      archiveOldSchedules(companyId);
     } catch { /* stop silently; cron will catch up later */ }
     finally {
       runningCompanies.delete(companyId);
-      // Auto-cleanup: remove blogs older than 7 days to keep content fresh
-      cleanupOldBlogs(companyId);
     }
   })();
   return true;
 }
 
-// Remove published blogs older than 7 days — keeps content always fresh
-async function cleanupOldBlogs(companyId: string) {
+// Archive published schedules older than 7 days — keeps the active queue
+// clean WITHOUT deleting the actual BlogPost records (companies keep their content).
+async function archiveOldSchedules(companyId: string) {
   try {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const oldSchedules = await prisma.blogSchedule.findMany({
+    const result = await prisma.blogSchedule.updateMany({
       where: {
         companyId,
         status: 'published',
         blogPostId: { not: null },
         updatedAt: { lt: sevenDaysAgo },
       },
-      select: { id: true, blogPostId: true },
+      data: { status: 'archived' },
     });
 
-    if (oldSchedules.length === 0) return;
-
-    const blogPostIds = oldSchedules.map(s => s.blogPostId!).filter(Boolean);
-    const scheduleIds = oldSchedules.map(s => s.id);
-
-    // Delete blog posts
-    if (blogPostIds.length > 0) {
-      await prisma.blogPost.deleteMany({ where: { id: { in: blogPostIds } } });
+    if (result.count > 0) {
+      console.log(`[Blog Archive] Archived ${result.count} old schedules for company ${companyId} (blogs preserved)`);
     }
-    // Delete schedules
-    await prisma.blogSchedule.deleteMany({ where: { id: { in: scheduleIds } } });
-
-    console.log(`[Blog Cleanup] Removed ${oldSchedules.length} blogs older than 7 days for company ${companyId}`);
   } catch (err) {
-    console.error('[Blog Cleanup] Error:', err);
+    console.error('[Blog Archive] Error:', err);
   }
 }

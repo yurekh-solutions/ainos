@@ -18,9 +18,15 @@ export async function POST(req: NextRequest) {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Catch-up window: today's pending + any overdue pending + failed (last 3 days) for retry
+    // Catch-up window: today's pending + any overdue pending + failed (last 7 days) for retry
     const retryCutoff = new Date(today);
-    retryCutoff.setDate(retryCutoff.getDate() - 3);
+    retryCutoff.setDate(retryCutoff.getDate() - 7);
+
+    // Also reset any failed schedules with retryCount < 5 so they get another chance
+    await prisma.blogSchedule.updateMany({
+      where: { status: 'failed', retryCount: { lt: 5 } },
+      data: { status: 'pending' },
+    });
 
     const pendingSchedules = await prisma.blogSchedule.findMany({
       where: {

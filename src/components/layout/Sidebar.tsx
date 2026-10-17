@@ -258,7 +258,10 @@ function SectionGroup({
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const pathname = usePathname();
+  const routerPathname = usePathname();
+  // Defer pathname to client-only to prevent hydration mismatch
+  const [pathname, setPathname] = useState('');
+  useEffect(() => { setPathname(routerPathname); }, [routerPathname]);
   const { data: session } = useSession();
 
   useEffect(() => {

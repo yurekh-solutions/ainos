@@ -1,15 +1,7 @@
-feat: Add complete Vyapar-like finance system with advanced accounting
+Blog system: 9.5 to 10/10 - 5 critical fixes
 
-- Prisma schema: 8 new models (Account, JournalEntry, LedgerEntry, CreditNote, DebitNote, RecurringInvoice, BankAccount, BankTransaction)
-- 10 new API routes: accounts, journal-entries, daybook, credit-notes, debit-notes, recurring-invoices, bank-accounts, bank-reconciliation, gst-reports, reports
-- 7 new dashboard pages: daybook, credit-notes, debit-notes, recurring-invoices, bank-accounts, gst-reports, financial reports
-- Credit/debit notes with auto-numbering (CN-0001-YYYY, DN-0001-YYYY)
-- Double-entry accounting with debit=credit validation
-- GST compliance: CGST/SGST intra-state, IGST inter-state auto-calculation
-- GSTR-1, GSTR-2, GSTR-3B report generation
-- Bank reconciliation with auto-matching
-- Recurring invoice management with pause/resume
-- Financial reports: P&L, Trial Balance, Cash Flow
-- Marketing Suite hero banner redesign with dark purple theme, animated orbs, shimmer effects, glass-morphism
-- Fixed missing lucide-react imports (Plus, TrendingUp, Users, Calendar, etc.)
-- Sidebar simplified to 9 essential finance features
+1. Remove destructive 7-day auto-delete: blogs now ARCHIVED (not deleted)
+2. Widget gate auto-enable after 2hr grace period
+3. Retry system with retryCount field + 7-day retry window (max 5 retries)
+4. Serverless-safe background generation with DB-based recovery
+5. Blog page UI: grace period messaging + archived status hidden

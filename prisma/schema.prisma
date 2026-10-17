@@ -1040,6 +1040,7 @@ model BlogSchedule {
   createdAt          DateTime          @default(now()) @map("created_at")
   updatedAt          DateTime          @updatedAt @map("updated_at")
   previewImage       String?           @map("preview_image")
+  retryCount         Int               @default(0) @map("retry_count")
   blogPost           BlogPost?         @relation(fields: [blogPostId], references: [id])
   company            Company?          @relation(fields: [companyId], references: [id])
   connectedWebsite   ConnectedWebsite? @relation(fields: [connectedWebsiteId], references: [id])
