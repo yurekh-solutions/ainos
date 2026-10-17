@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowLeft, Mail, Loader2, AlertCircle, CheckCircle, Copy, KeyRound } from 'lucide-react';
+import { ArrowLeft, Mail, Loader2, AlertCircle, CheckCircle, KeyRound } from 'lucide-react';
 import { useState } from 'react';
 import Link from 'next/link';
 
@@ -9,14 +9,12 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [otp, setOtp] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [sent, setSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setOtp(null);
 
     if (!email) {
       setError('Please enter your email address');
@@ -38,21 +36,12 @@ export default function ForgotPasswordPage() {
         return;
       }
 
-      if (data.otp) {
-        setOtp(data.otp);
-      }
+      // Always show success — don't reveal whether email exists
+      setSent(true);
       setLoading(false);
     } catch {
       setError('Something went wrong. Please try again.');
       setLoading(false);
-    }
-  };
-
-  const copyOTP = () => {
-    if (otp) {
-      navigator.clipboard.writeText(otp);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -81,7 +70,7 @@ export default function ForgotPasswordPage() {
 
           {/* Body */}
           <div className="px-8 py-6">
-            {!otp ? (
+            {!sent ? (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1.5">Email Address</label>
@@ -115,7 +104,7 @@ export default function ForgotPasswordPage() {
                   style={{ background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%)' }}
                 >
                   {loading ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Generating Code...</>
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</>
                   ) : (
                     <><Mail className="w-4 h-4" /> Send Reset Code</>
                   )}
@@ -128,34 +117,31 @@ export default function ForgotPasswordPage() {
                   <div className="w-14 h-14 rounded-full bg-green-50 border border-green-100 flex items-center justify-center mx-auto mb-4">
                     <CheckCircle className="w-7 h-7 text-green-600" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">Reset Code Generated!</h3>
-                  <p className="text-sm text-gray-500 mb-4">Use this code to reset your password. It expires in 10 minutes.</p>
-                </div>
-
-                {/* OTP Display */}
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
-                  <p className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wider">Your Reset Code</p>
-                  <div className="flex items-center justify-center gap-3">
-                    <span className="text-3xl font-bold tracking-[0.3em] text-gray-900 font-mono">{otp}</span>
-                    <button
-                      onClick={copyOTP}
-                      className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
-                      title="Copy code"
-                    >
-                      <Copy className="w-4 h-4 text-gray-500" />
-                    </button>
-                  </div>
-                  {copied && <p className="text-xs text-green-600 mt-2 font-medium">Copied to clipboard!</p>}
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">Check Your Email</h3>
+                  <p className="text-sm text-gray-500 mb-2">
+                    If an account exists with <strong>{email}</strong>, a reset code has been sent.
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    The code expires in 10 minutes. Check your spam folder if you don't see it.
+                  </p>
                 </div>
 
                 {/* Go to Reset */}
                 <Link
-                  href={`/auth/reset-password?email=${encodeURIComponent(email)}&otp=${otp}`}
+                  href={`/auth/reset-password?email=${encodeURIComponent(email)}`}
                   className="block w-full h-12 rounded-xl font-semibold text-white text-sm flex items-center justify-center gap-2 transition-all hover:opacity-90"
                   style={{ background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%)' }}
                 >
-                  Continue to Reset Password <ArrowLeft className="w-4 h-4 rotate-180" />
+                  Enter Reset Code <ArrowLeft className="w-4 h-4 rotate-180" />
                 </Link>
+
+                {/* Resend */}
+                <button
+                  onClick={() => { setSent(false); setError(null); }}
+                  className="block w-full text-center text-sm text-purple-600 hover:text-purple-800 transition-colors font-medium"
+                >
+                  Didn't receive the code? Try again
+                </button>
               </motion.div>
             )}
           </div>
