@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
 import { SessionKeepAlive } from '@/components/auth/SessionKeepAlive';
+import { KeepScraperAlive } from '@/components/KeepScraperAlive';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 
 export default async function DashboardLayout({
@@ -24,6 +25,7 @@ export default async function DashboardLayout({
   return (
     <AuthProvider>
       <SessionKeepAlive />
+      <KeepScraperAlive />
       <div className="flex h-screen bg-gray-50">
         <Sidebar />
         <TopBar />
