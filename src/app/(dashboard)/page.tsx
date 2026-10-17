@@ -371,16 +371,16 @@ export default function DashboardPage() {
             </div>
 
             {/* Tool Buttons */}
-            <div className="flex flex-wrap gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {marketingTools.map((tool, idx) => (
-                <Link key={tool.href} href={tool.href}>
+                <Link key={tool.href} href={tool.href} className="w-full">
                   <motion.span
                     initial={{ opacity: 0, y: 15, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ delay: 0.3 + idx * 0.06, type: 'spring', stiffness: 200 }}
-                    whileHover={{ scale: 1.05, y: -3 }}
-                    whileTap={{ scale: 0.97 }}
-                    className="group inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-white/90 transition-all cursor-pointer"
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="group flex items-center justify-between w-full px-4 sm:px-5 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base font-semibold text-white/90 transition-all cursor-pointer"
                     style={{
                       background: 'rgba(255,255,255,0.07)',
                       backdropFilter: 'blur(12px)',
@@ -397,9 +397,11 @@ export default function DashboardPage() {
                       (e.currentTarget as HTMLElement).style.boxShadow = 'none';
                     }}
                   >
-                    <tool.icon className="w-4 h-4" />
-                    {tool.title}
-                    <ArrowRight className="w-3 h-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                    <span className="flex items-center gap-2.5 sm:gap-3">
+                      <tool.icon className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                      <span className="truncate">{tool.title}</span>
+                    </span>
+                    <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all flex-shrink-0" />
                   </motion.span>
                 </Link>
               ))}
