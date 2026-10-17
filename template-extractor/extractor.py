@@ -287,11 +287,19 @@ def extract_terms_and_signature(text):
     terms_lines = []
     for i, line in enumerate(lines):
         stripped = line.strip()
+        # Detect terms section start (with or without header)
         if re.search(r'terms\s*(and|&)\s*conditions', stripped, re.IGNORECASE):
             in_terms = True
             continue
+        # Also detect direct numbered terms (1) 2) 3) or 1. 2. 3.) without header
+        if not in_terms and re.match(r'^1[\)\.]\s+', stripped):
+            # Check if next lines are also numbered (2), 3), etc.)
+            next_numbered = [l for l in lines[i+1:i+5] if re.match(r'^\d+[\)\.]\s+', l.strip())]
+            if len(next_numbered) >= 1:
+                in_terms = True
+            
         if in_terms:
-            # Stop at "For COMPANY" signature line (but NOT at "For" inside a numbered term)
+            # Stop at "For COMPANY" signature line
             if re.match(r'^For\s+[A-Z]', stripped):
                 break
             # Stop at authorized signatory
@@ -303,40 +311,45 @@ def extract_terms_and_signature(text):
             # Stop at place and date line
             if re.match(r'^Place[:\s]', stripped, re.IGNORECASE):
                 break
-            # Collect ALL non-empty lines (including numbered items like "3. PAN Card No")
+            # Stop at "THE FOLLOWING CLAUSES" section
+            if re.search(r'the following clauses', stripped, re.IGNORECASE):
+                break
+            # Stop at "Powered by" footer
+            if re.search(r'powered\s+by', stripped, re.IGNORECASE):
+                break
+            # Collect ALL non-empty lines
             if stripped:
                 terms_lines.append(stripped)
-            # Allow ONE empty line between terms (don't break on single blank)
-            # Only break on 2+ consecutive empty lines
+            # Handle empty lines between terms
             if not stripped and len(terms_lines) > 0:
-                # Check if next non-empty line is still a term (numbered)
                 remaining = [l.strip() for l in lines[i+1:] if l.strip()]
-                if remaining and not re.match(r'^\d+[\.\)]', remaining[0]):
+                if remaining and not re.match(r'^\d+[\)\.]', remaining[0]):
                     break
-
+    
     if terms_lines:
-        terms_text = '\n'.join(terms_lines[:20])
+        terms_text = '\n'.join(terms_lines[:25])
 
-    # Extract signature block - look for "For COMPANY" pattern first (most common in Indian invoices)
-    sig_patterns = [
+    # Extract signature block - search from END of document for most accurate result
+    # Strategy: look for the last signature-related content (seller/buyer signature, person name, contact)
+    
+    # Strategy 1: Find "Seller's signature" or "For COMPANY" and collect lines AFTER it
+    sig_start_patterns = [
+        r"seller'?s?\s*signature",
         r'^For\s+[A-Z][a-zA-Z\s&\.]+(?:pvt|ltd|private|limited)?\.?',
-        r'(authorized\s*signatory)',
-        r'(proprietor|director|partner)',
-        r'(signature\s*(of|block)?)',
-        r'(sign\s*here)',
-        r'(place\s*(and|&)\s*date)',
     ]
-
-    for i, line in enumerate(lines):
-        for pattern in sig_patterns:
+    
+    # Search from the end to find the LAST occurrence
+    for i in range(len(lines) - 1, -1, -1):
+        line = lines[i].strip()
+        for pattern in sig_start_patterns:
             if re.search(pattern, line, re.IGNORECASE):
-                # Collect signature block (next 3-5 lines)
-                sig_lines = [line.strip()]
-                for j in range(1, 5):
+                # Collect this line and next lines
+                sig_lines = [line]
+                for j in range(1, 6):
                     if i + j < len(lines) and lines[i + j].strip():
                         next_line = lines[i + j].strip()
-                        # Stop if we hit terms/conditions/bank details
-                        if re.search(r'(terms|bank|account|ifsc|gst|pan\s*card)', next_line, re.IGNORECASE):
+                        # Stop at footer
+                        if re.search(r'(powered\s+by|this offer is valid)', next_line, re.IGNORECASE):
                             break
                         sig_lines.append(next_line)
                     else:
@@ -345,38 +358,121 @@ def extract_terms_and_signature(text):
                 break
         if signature_text:
             break
-
-    # Fallback: check last few lines for signature-like content
+    
+    # Strategy 2: Look for person name + email in last 15 lines
     if not signature_text:
-        last_lines = [l.strip() for l in lines[-10:] if l.strip()]
-        for line in last_lines:
-            if re.search(r'(for\s+[A-Z]|thank\s*you|yours\s*faithfully|regards)', line, re.IGNORECASE):
-                idx = lines.index(line)
+        last_lines = [l.strip() for l in lines[-15:] if l.strip()]
+        for idx_in_last, line in enumerate(last_lines):
+            if re.search(r'(place\s*\&|seller|signature|sign\s*here)', line, re.IGNORECASE):
+                real_idx = len(lines) - 15 + idx_in_last
                 sig_lines = [line]
-                for j in range(1, 4):
-                    if idx + j < len(lines) and lines[idx + j].strip():
-                        sig_lines.append(lines[idx + j].strip())
+                for j in range(1, 6):
+                    if real_idx + j < len(lines) and lines[real_idx + j].strip():
+                        next_line = lines[real_idx + j].strip()
+                        if re.search(r'(powered\s+by|the following clauses)', next_line, re.IGNORECASE):
+                            break
+                        sig_lines.append(next_line)
+                    else:
+                        break
                 signature_text = '\n'.join(sig_lines)
+                break
+    
+    # Strategy 3: Find email in last lines and collect surrounding context
+    if not signature_text:
+        for i in range(len(lines) - 1, max(0, len(lines) - 20), -1):
+            if re.search(r'[\w\.\+\-]+@[\w]+', lines[i]):
+                sig_lines = []
+                for j in range(max(0, i - 2), min(len(lines), i + 4)):
+                    if lines[j].strip():
+                        sig_lines.append(lines[j].strip())
+                if sig_lines:
+                    signature_text = '\n'.join(sig_lines)
                 break
 
     return terms_text, signature_text
 
 
-def extract_bank_details(text):
-    """Extract bank account details from PDF"""
+def extract_bank_details(text, tables=None):
+    """Extract bank account details from PDF text and tables"""
     bank_info = {}
     lines = text.split('\n')
     full_text = text
 
-    # Bank name
-    bank_match = re.search(r'(?:bank\s*(?:name)?|banker)[:\s]*([A-Z][a-zA-Z\s&]+(?:bank|banking)?)', full_text, re.IGNORECASE)
-    if bank_match:
-        bank_info['bankName'] = bank_match.group(1).strip()
+    # First, try to extract from table cells (more reliable for structured bank info)
+    if tables:
+        for table in tables:
+            if not table:
+                continue
+            for row in table:
+                if not row:
+                    continue
+                # Process each cell individually
+                for cell in row:
+                    if not cell:
+                        continue
+                    cell_text = str(cell)
+                    cell_lines = cell_text.split('\n')
+                    
+                    # Parse header-value pairs from multi-line cells
+                    # E.g. "A/C NAME BANK NAME BANK BRANCH\nMB Crusher... ICICI Bank..."
+                    for ci, cline in enumerate(cell_lines):
+                        cline_stripped = cline.strip()
+                        
+                        # Bank name: look for "BANK NAME" header, value on next line
+                        if re.search(r'bank\s*name', cline_stripped, re.IGNORECASE) and not bank_info.get('bankName'):
+                            # Next line should have the value
+                            if ci + 1 < len(cell_lines):
+                                next_line = cell_lines[ci + 1].strip()
+                                # Extract just the bank name (e.g. "ICICI Bank" from "MB Crusher... ICICI Bank Mumbai...")
+                                bn = re.search(r'((?:ICICI|HDFC|SBI|Axis|Kotak|Yes|IDFC|Federal|Punjab|Bank\s+of\s+\w+|\w+\s+Bank))\s*(Bank)?', next_line)
+                                if bn:
+                                    name = bn.group(1).strip()
+                                    if bn.group(2) and name != bn.group(2):
+                                        name = f"{name} {bn.group(2)}"
+                                    bank_info['bankName'] = name
+                                elif re.search(r'bank', next_line, re.IGNORECASE):
+                                    # Extract the bank name portion
+                                    bn2 = re.search(r'([A-Z][a-zA-Z]+\s+(?:Bank|bank))', next_line)
+                                    if bn2:
+                                        bank_info['bankName'] = bn2.group(1).strip()
+                        
+                        # A/C Number: look for "A/C NUMBER" header
+                        if re.search(r'a\/c\s*number', cline_stripped, re.IGNORECASE) and not bank_info.get('accountNumber'):
+                            if ci + 1 < len(cell_lines):
+                                next_line = cell_lines[ci + 1].strip()
+                                # Extract account number (digits with spaces/dashes)
+                                an = re.search(r'(\d[\d\s\-/]{5,}\d)', next_line)
+                                if an:
+                                    bank_info['accountNumber'] = an.group(1).strip()
+                        
+                        # IFSC: look for "IFSC" header
+                        if re.search(r'ifsc', cline_stripped, re.IGNORECASE) and not bank_info.get('ifscCode'):
+                            if ci + 1 < len(cell_lines):
+                                next_line = cell_lines[ci + 1].strip()
+                                ic = re.search(r'([A-Z]{4}0[A-Z0-9]{6})', next_line)
+                                if ic:
+                                    bank_info['ifscCode'] = ic.group(1).strip()
+                        
+                        # SWIFT: look for "SWIFT" header
+                        if re.search(r'swift', cline_stripped, re.IGNORECASE) and not bank_info.get('swiftCode'):
+                            if ci + 1 < len(cell_lines):
+                                next_line = cell_lines[ci + 1].strip()
+                                sc = re.search(r'([A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?)', next_line)
+                                if sc:
+                                    bank_info['swiftCode'] = sc.group(1).strip()
 
-    # Account number
-    acc_match = re.search(r'(?:account\s*(?:no|number|#)|a\/c\s*(?:no|number)?)[:\s]*([\d\s\-/]+)', full_text, re.IGNORECASE)
-    if acc_match:
-        bank_info['accountNumber'] = acc_match.group(1).strip()
+    # Fallback: extract from text
+    if not bank_info.get('bankName'):
+        bank_match = re.search(r'(?:bank\s*(?:name)?|banker)[:\s]*([A-Z][a-zA-Z\s&]+(?:bank|banking)?)', full_text, re.IGNORECASE)
+        if bank_match:
+            bank_info['bankName'] = bank_match.group(1).strip()
+
+    if not bank_info.get('accountNumber'):
+        acc_match = re.search(r'(?:account\s*(?:no|number|#)|a\/c\s*(?:no|number)?)[:\s]*([\d\s\-/]+)', full_text, re.IGNORECASE)
+        if acc_match:
+            acc = acc_match.group(1).strip()
+            if len(acc) > 5:
+                bank_info['accountNumber'] = acc
 
     # IFSC code
     ifsc_match = re.search(r'(?:ifsc\s*(?:code)?)[:\s]*([A-Z]{4}0[A-Z0-9]{6})', full_text, re.IGNORECASE)
@@ -592,23 +688,39 @@ def extract_template_info(text):
 
 def extract_table_columns(tables, text=''):
     """Extract table column structure from PDF tables or text"""
-    # First try pdfplumber tables
+    # First try pdfplumber tables - look for table with actual column headers
     if tables:
+        # Known item table header keywords
+        item_header_keywords = [
+            r'sr\.?\s*(?:no|number)', r'item\s*(?:code|no)?', r'description',
+            r'qty', r'quantity', r'rate', r'amount', r'price', r'hsn', r'sac',
+            r'tax', r'gst', r'discount', r'total', r'unit', r'uom'
+        ]
+        
         for table in tables:
             if not table or not table[0]:
                 continue
             headers = table[0]
-            columns = []
-            for idx, header in enumerate(headers):
-                if header and str(header).strip():
-                    col_name = str(header).strip()
-                    columns.append({
-                        'name': col_name,
-                        'key': re.sub(r'[^a-zA-Z0-9]', '', col_name.lower()) or f'col_{idx}',
-                        'width': round(100 / len([h for h in headers if h and str(h).strip()]), 1)
-                    })
-            if columns:
-                return columns
+            # Check if this table's first row looks like column headers
+            header_text = ' '.join(str(h) for h in headers if h).lower()
+            keyword_matches = sum(1 for kw in item_header_keywords if re.search(kw, header_text))
+            
+            # Only use tables with 2+ header keyword matches (actual item tables)
+            if keyword_matches >= 2:
+                columns = []
+                valid_headers = [h for h in headers if h and str(h).strip()]
+                for idx, header in enumerate(headers):
+                    if header and str(header).strip():
+                        col_name = str(header).strip()
+                        # Clean up multi-line headers (take first line)
+                        col_name = col_name.split('\n')[0].strip()
+                        columns.append({
+                            'name': col_name,
+                            'key': re.sub(r'[^a-zA-Z0-9]', '', col_name.lower()) or f'col_{idx}',
+                            'width': round(100 / len(valid_headers), 1)
+                        })
+                if columns:
+                    return columns
 
     # Fallback: parse table from text (for PDFs without proper table borders)
     if text:
@@ -697,7 +809,7 @@ def extract_template(pdf_file):
     terms_text, signature_text = extract_terms_and_signature(full_text)
 
     # Extract bank details
-    bank_details = extract_bank_details(full_text)
+    bank_details = extract_bank_details(full_text, all_tables)
 
     # Detect sections from text
     sections = {

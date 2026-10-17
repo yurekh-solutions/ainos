@@ -70,14 +70,33 @@ interface ExtractedTemplate {
   tagline?: string;
   headerText?: string;
   addressBlock?: string;
+  contactInfo?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
+  gstNumber?: string;
+  panNumber?: string;
   colorScheme?: string;
   primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+  backgroundColor?: string;
+  extractedColors?: string[];
+  isMonochrome?: boolean;
   fontFamily?: string;
+  rawFontName?: string;
+  allFonts?: string[];
+  fontSize?: string | Record<string, number>;
+  fontWeight?: string;
   layout?: string;
-  tableColumns?: string[];
+  headerLayout?: string;
+  hasAccentBar?: boolean;
+  hasBorder?: boolean;
+  tableColumns?: Array<{ name: string; key: string; width: number }>;
   termsText?: string;
   signatureText?: string;
-  sections?: string[];
+  bankDetails?: Record<string, string>;
+  sections?: Record<string, boolean>;
 }
 
 interface InvoiceTemplate {
@@ -164,31 +183,78 @@ export default function InvoicesPage() {
         });
       }
 
+      // Map extracted font family to API-accepted values
+      const rawFont = extractedData.fontFamily || '';
+      let fontFamily = 'Helvetica';
+      if (rawFont.toLowerCase().includes('times')) fontFamily = 'Times';
+      else if (rawFont.toLowerCase().includes('courier')) fontFamily = 'Courier';
+      else if (rawFont.toLowerCase().includes('georgia')) fontFamily = 'Georgia';
+      else if (rawFont.toLowerCase().includes('verdana')) fontFamily = 'Verdana';
+      else if (rawFont.toLowerCase().includes('arial')) fontFamily = 'Arial';
+      else if (rawFont.toLowerCase().includes('dejavu')) fontFamily = 'Helvetica';
+
+      // Map font size from extracted object to API enum
+      const extractedFontSize = extractedData.fontSize;
+      let fontSize = 'medium';
+      if (typeof extractedFontSize === 'object' && extractedFontSize !== null) {
+        const fsObj = extractedFontSize as Record<string, number>;
+        const bodySize = fsObj.body || 11;
+        if (bodySize <= 8) fontSize = 'small';
+        else if (bodySize >= 14) fontSize = 'large';
+      } else if (typeof extractedFontSize === 'string') {
+        fontSize = extractedFontSize;
+      }
+
+      // Map layout
+      const rawLayout = extractedData.layout || 'standard';
+      const layoutMap: Record<string, string> = {
+        'modern': 'standard', 'classic': 'standard', 'framed': 'bordered-table',
+        'professional': 'standard',
+      };
+      const layout = layoutMap[rawLayout] || 'standard';
+
+      // Map header layout
+      const headerLayoutMap: Record<string, string> = {
+        'left': 'side-by-side', 'centered': 'stacked', 'right': 'side-by-side',
+      };
+      const headerLayout = headerLayoutMap[extractedData.headerLayout || ''] || 'stacked';
+
+      // Extract sections flags
+      const sections = extractedData.sections || {};
+      const hasBankDetails = sections.hasBankDetails ?? sections.hasGST ?? false;
+      const hasTerms = sections.hasTerms ?? !!extractedData.termsText;
+      const hasSignature = sections.hasSignature ?? !!extractedData.signatureText;
+
       const res = await fetch('/api/invoice-templates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: extractedData.companyName || 'Uploaded Template',
           primaryColor: extractedData.primaryColor || '#1f2937',
-          secondaryColor: '#6b7280',
-          backgroundColor: '#ffffff',
+          secondaryColor: extractedData.secondaryColor || '#6b7280',
+          backgroundColor: extractedData.backgroundColor || '#ffffff',
           textColor: '#1f2937',
-          fontFamily: extractedData.fontFamily || 'helvetica',
-          fontSize: 'medium',
-          layout: extractedData.layout || 'bordered-table',
+          fontFamily,
+          fontSize,
+          layout,
           showLogo: !!templateLogo,
           logoSize: 'medium',
           logoPosition: 'left',
-          showBankDetails: extractedData.sections?.includes('bank-details') ?? true,
-          showTerms: !!extractedData.termsText,
-          showQrCode: false,
+          showBankDetails: hasBankDetails,
+          showTerms: hasTerms,
+          showQrCode: sections.hasQRCode ?? false,
           terms: extractedData.termsText || '',
           notes: '',
-          headerText: extractedData.tagline || '',
+          headerText: extractedData.tagline || extractedData.companyName || '',
           footerText: extractedData.signatureText || '',
-          accentWidth: 'medium',
-          borderRadius: 'rounded',
-          isDefault: false,
+          accentWidth: extractedData.hasAccentBar ? 'medium' : 'thin',
+          borderRadius: 'medium',
+          headerLayout,
+          showDocInfoTable: sections.hasInvoiceNumber ?? true,
+          termsNumbering: 'numbered',
+          signatureStyle: hasSignature ? 'detailed' : 'simple',
+          tableColumns: extractedData.tableColumns || undefined,
+          isDefault: true,
         }),
       });
       if (res.ok) {
