@@ -1,18 +1,17 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowLeft, Lock, Loader2, AlertCircle, CheckCircle, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Lock, Loader2, AlertCircle, CheckCircle, KeyRound, Eye, EyeOff, LinkIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
-  const prefillEmail = searchParams.get('email') || '';
-  const prefillOtp = searchParams.get('otp') || '';
+  const oobCode = searchParams.get('oobCode') || '';
+  const mode = searchParams.get('mode') || '';
+  const isValidLink = mode === 'resetPassword' && oobCode.length > 0;
 
-  const [email, setEmail] = useState(prefillEmail);
-  const [otp, setOtp] = useState(prefillOtp);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -26,8 +25,8 @@ export default function ResetPasswordPage() {
     setLoading(true);
     setError(null);
 
-    if (!email || !otp || !newPassword || !confirmPassword) {
-      setError('All fields are required');
+    if (!newPassword || !confirmPassword) {
+      setError('Both password fields are required');
       setLoading(false);
       return;
     }
@@ -48,7 +47,7 @@ export default function ResetPasswordPage() {
       const res = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp, newPassword }),
+        body: JSON.stringify({ oobCode, newPassword }),
       });
       const data = await res.json();
 
@@ -89,6 +88,29 @@ export default function ResetPasswordPage() {
     );
   }
 
+  if (!isValidLink) {
+    return (
+      <div className="min-h-screen bg-[#f8f7fc] flex items-center justify-center px-4 py-12">
+        <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md text-center">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-8">
+            <div className="w-16 h-16 rounded-full bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-5">
+              <AlertCircle className="w-8 h-8 text-red-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Invalid Reset Link</h2>
+            <p className="text-sm text-gray-500 mb-6">This password reset link is missing, invalid, or has already been used.</p>
+            <Link
+              href="/auth/forgot-password"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white text-sm transition-all hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%)' }}
+            >
+              <LinkIcon className="w-4 h-4" /> Request a New Link
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#f8f7fc] flex items-center justify-center px-4 py-12">
       <motion.div
@@ -97,7 +119,7 @@ export default function ResetPasswordPage() {
         className="w-full max-w-md"
       >
         {/* Back Link */}
-        <Link href="/auth/forgot-password" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-6 transition-colors">
+        <Link href="/auth/signin" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back
         </Link>
 
@@ -109,37 +131,12 @@ export default function ResetPasswordPage() {
               <KeyRound className="w-7 h-7 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-1.5">Reset Password</h2>
-            <p className="text-sm text-gray-500">Enter your code and new password</p>
+            <p className="text-sm text-gray-500">Choose a new password for your account</p>
           </div>
 
           {/* Body */}
           <div className="px-8 py-6">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Email (readonly if prefilled) */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Email Address</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your.email@example.com"
-                  className="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm text-gray-800 placeholder:text-gray-400 outline-none transition focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
-                />
-              </div>
-
-              {/* OTP */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Reset Code</label>
-                <input
-                  type="text"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  placeholder="Enter 6-digit code"
-                  maxLength={6}
-                  className="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm text-gray-800 placeholder:text-gray-400 outline-none transition focus:border-purple-400 focus:ring-2 focus:ring-purple-100 font-mono tracking-[0.2em] text-center"
-                />
-              </div>
-
               {/* New Password */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1.5">New Password</label>

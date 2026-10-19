@@ -65,7 +65,7 @@ export default function ForgotPasswordPage() {
               <KeyRound className="w-7 h-7 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-1.5">Forgot Password?</h2>
-            <p className="text-sm text-gray-500">Enter your email to receive a reset code</p>
+            <p className="text-sm text-gray-500">Enter your email to receive a reset link</p>
           </div>
 
           {/* Body */}
@@ -106,7 +106,7 @@ export default function ForgotPasswordPage() {
                   {loading ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</>
                   ) : (
-                    <><Mail className="w-4 h-4" /> Send Reset Code</>
+                    <><Mail className="w-4 h-4" /> Send Reset Link</>
                   )}
                 </motion.button>
               </form>
@@ -119,28 +119,19 @@ export default function ForgotPasswordPage() {
                   </div>
                   <h3 className="text-lg font-bold text-gray-900 mb-1">Check Your Email</h3>
                   <p className="text-sm text-gray-500 mb-2">
-                    If an account exists with <strong>{email}</strong>, a reset code has been sent.
+                    If an account exists with <strong>{email}</strong>, a reset link has been sent.
                   </p>
                   <p className="text-xs text-gray-400">
-                    The code expires in 10 minutes. Check your spam folder if you don't see it.
+                    Open the email and click the reset link to choose a new password. Check your spam folder if you don&apos;t see it.
                   </p>
                 </div>
-
-                {/* Go to Reset */}
-                <Link
-                  href={`/auth/reset-password?email=${encodeURIComponent(email)}`}
-                  className="block w-full h-12 rounded-xl font-semibold text-white text-sm flex items-center justify-center gap-2 transition-all hover:opacity-90"
-                  style={{ background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%)' }}
-                >
-                  Enter Reset Code <ArrowLeft className="w-4 h-4 rotate-180" />
-                </Link>
 
                 {/* Resend */}
                 <button
                   onClick={() => { setSent(false); setError(null); }}
                   className="block w-full text-center text-sm text-purple-600 hover:text-purple-800 transition-colors font-medium"
                 >
-                  Didn't receive the code? Try again
+                  Didn&apos;t receive the link? Try again
                 </button>
               </motion.div>
             )}
