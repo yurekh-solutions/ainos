@@ -40,7 +40,10 @@ function getFirebaseAdmin(): App {
 const BASE_URL = process.env.NEXTAUTH_URL_BASE || 'https://ainos-ywu0.onrender.com';
 
 /**
- * Emails a Firebase-hosted password reset link to the user.
+ * Sends a Firebase password reset email to the user.
+ * Uses the Identity Toolkit REST API (accounts:sendOobCode) which actually
+ * delivers the email — Admin SDK's generatePasswordResetLink only returns
+ * the link without sending anything.
  * Users live in Prisma (not Firebase Auth), so a placeholder Firebase account
  * is created when missing — the real password always stays in Prisma.
  */
@@ -61,11 +64,24 @@ export async function sendPasswordResetEmail(email: string): Promise<void> {
     }
   }
 
-  // The link routes through Firebase's __/auth/action handler, which redirects
-  // to /auth/reset-password with ?oobCode=... — our page completes the reset.
-  await auth.generatePasswordResetLink(email, {
-    url: `${BASE_URL}/auth/reset-password`,
+  // Use Identity Toolkit REST API to actually SEND the reset email
+  const apiKey = process.env.FIREBASE_WEB_API_KEY;
+  if (!apiKey) throw new Error('FIREBASE_WEB_API_KEY not set');
+
+  const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      requestType: 'PASSWORD_RESET',
+      email,
+      continueUrl: `${BASE_URL}/auth/reset-password`,
+    }),
   });
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error?.message || 'Failed to send reset email');
+  }
 }
 
 /**
