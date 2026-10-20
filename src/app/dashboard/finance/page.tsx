@@ -67,7 +67,7 @@ export default function FinanceOverviewPage() {
         </motion.section>
 
         {/* Recent invoices + collections */}
-        <motion.div {...fadeUp(0.08)} className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 items-start">
+        <motion.div {...fadeUp(0.08)} className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
           <RecentInvoicesCard data={data} loaded={loaded} className="lg:col-span-2" />
           <CollectionsCard data={data} loaded={loaded} rate={collectionRate} />
         </motion.div>

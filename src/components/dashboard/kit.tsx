@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import {
   ScrollText, Contact2, Boxes, Coins, FileBarChart, PackageCheck, Sheet, BellRing, Paintbrush,
   AtSign, SearchCheck, PenTool, Bot, MailOpen,
-  Receipt, CalendarClock, CheckCircle2, Circle, ChevronRight, ArrowRight,
+  Receipt, CalendarClock, CheckCircle2, Circle, ChevronRight, ArrowRight, Plus,
 } from 'lucide-react';
 
 // ── Surfaces ──
@@ -177,13 +177,18 @@ export interface FinanceSummary {
   invoiceCount: number;
   customers: number;
   products: number;
+  statusCounts: Record<'paid' | 'sent' | 'draft' | 'overdue', number>;
   recent: InvoiceRow[];
 }
 
 const EMPTY_SUMMARY: FinanceSummary = {
   billed: 0, collected: 0, outstanding: 0, overdueCount: 0,
-  invoiceCount: 0, customers: 0, products: 0, recent: [],
+  invoiceCount: 0, customers: 0, products: 0,
+  statusCounts: { paid: 0, sent: 0, draft: 0, overdue: 0 },
+  recent: [],
 };
+
+export const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 /** Billing numbers with the same semantics as the invoices page: totalAmount, cancelled excluded. */
 export function useFinanceSummary() {
@@ -204,6 +209,7 @@ export function useFinanceSummary() {
       const active = invList.filter(inv => inv.status !== 'cancelled');
       const billed = active.reduce((s, inv) => s + amount(inv), 0);
       const collected = active.filter(inv => inv.status === 'paid').reduce((s, inv) => s + amount(inv), 0);
+      const countOf = (status: string) => invList.filter(inv => (inv.status || 'draft') === status).length;
 
       setData({
         billed,
@@ -213,6 +219,7 @@ export function useFinanceSummary() {
         invoiceCount: invList.length,
         customers: Array.isArray(customers) ? customers.length : 0,
         products: Array.isArray(products) ? products.length : 0,
+        statusCounts: { paid: countOf('paid'), sent: countOf('sent'), draft: countOf('draft'), overdue: countOf('overdue') },
         recent: invList.slice(0, 5).map(inv => ({
           id: String(inv.id),
           invoiceNumber: String(inv.invoiceNumber ?? ''),
@@ -248,15 +255,33 @@ export function useTemplateCount() {
 const INVOICE_COLS = 'grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_64px_64px] sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_104px_84px] items-center gap-2.5 sm:gap-4';
 
 // ── Shared widgets ──
+const STATUS_SUMMARY: { key: keyof FinanceSummary['statusCounts']; label: string; dot: string }[] = [
+  { key: 'paid', label: 'Paid', dot: 'bg-emerald-500' },
+  { key: 'sent', label: 'Sent', dot: 'bg-blue-500' },
+  { key: 'draft', label: 'Draft', dot: 'bg-neutral-400' },
+  { key: 'overdue', label: 'Overdue', dot: 'bg-rose-500' },
+];
+
 export function RecentInvoicesCard({ data, loaded, className = '' }: { data: FinanceSummary; loaded: boolean; className?: string }) {
   return (
-    <section className={`${CARD} min-w-0 ${className}`}>
+    <section className={`${CARD} min-w-0 flex flex-col ${className}`}>
       <WidgetHeader
         title="Recent invoices"
-        subtitle="Your latest five bills"
+        subtitle="Your latest five bills at a glance"
         action={data.recent.length > 0 && <ViewAll href="/invoices" />}
       />
-      <div className="px-3 sm:px-4 pb-4">
+      {loaded && data.recent.length > 0 && (
+        <div className="flex flex-wrap gap-2 px-5 sm:px-6 pb-4 -mt-1">
+          {STATUS_SUMMARY.map(s => (
+            <span key={s.key} className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-[#f7f8fa] text-xs text-neutral-600">
+              <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+              {s.label}
+              <span className="font-semibold text-neutral-900 tabular-nums">{data.statusCounts[s.key]}</span>
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="px-3 sm:px-4 pb-4 flex-1 flex flex-col">
         {!loaded ? (
           <div className="space-y-1">
             {[0, 1, 2].map(i => (
@@ -283,7 +308,7 @@ export function RecentInvoicesCard({ data, loaded, className = '' }: { data: Fin
             </Link>
           </div>
         ) : (
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1 flex flex-col">
             <div className={`${INVOICE_COLS} px-3 py-2.5 rounded-xl bg-[#f7f8fa] text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-neutral-400`}>
               <span>Customer</span>
               <span>Invoice</span>
@@ -318,6 +343,14 @@ export function RecentInvoicesCard({ data, loaded, className = '' }: { data: Fin
                 </li>
               ))}
             </ul>
+            <div className="mt-auto pt-4 px-3 flex items-center justify-between gap-3">
+              <p className="text-xs text-neutral-400 font-light">
+                Showing {data.recent.length} of {plural(data.invoiceCount, 'invoice')}
+              </p>
+              <Link href="/invoices" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#6d28d9] hover:text-[#4c1d95]">
+                <Plus className="w-3.5 h-3.5" /> New invoice
+              </Link>
+            </div>
           </div>
         )}
       </div>
@@ -325,49 +358,95 @@ export function RecentInvoicesCard({ data, loaded, className = '' }: { data: Fin
   );
 }
 
+const RING_R = 52;
+const RING_C = 2 * Math.PI * RING_R;
+
 export function CollectionsCard({ data, loaded, rate, className = '' }: { data: FinanceSummary; loaded: boolean; rate: number; className?: string }) {
+  const legend = [
+    { label: 'Received', value: data.collected, dot: 'bg-[#6d28d9]' },
+    { label: 'Pending', value: data.outstanding, dot: 'bg-orange-400' },
+    { label: 'Total billed', value: data.billed, dot: 'bg-neutral-300' },
+  ];
+
   return (
-    <section className={`${CARD} min-w-0 ${className}`}>
-      <WidgetHeader title="Collections" subtitle="Paid vs billed" />
-      <div className="px-5 sm:px-6 pb-5 sm:pb-6">
-        <div className="flex items-end justify-between gap-4">
-          <div className="flex items-baseline gap-2">
-            {loaded ? (
-              <p className="text-3xl font-semibold text-neutral-900 tabular-nums tracking-tight">{rate}%</p>
-            ) : (
-              <Skeleton className="h-9 w-16" />
-            )}
-            <span className="text-sm text-neutral-500 font-light">collected</span>
+    <section className={`${CARD} min-w-0 flex flex-col ${className}`}>
+      <WidgetHeader title="Collections" subtitle="How much of your billing is paid" />
+      <div className="px-5 sm:px-6 pb-5 sm:pb-6 flex-1 flex flex-col">
+        <div className="flex items-center gap-5 sm:gap-6">
+          <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0">
+            <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90" aria-hidden="true">
+              <circle cx="60" cy="60" r={RING_R} fill="none" stroke="#fff1e6" strokeWidth="12" />
+              <motion.circle
+                cx="60" cy="60" r={RING_R} fill="none" stroke="#6d28d9" strokeWidth="12" strokeLinecap="round"
+                strokeDasharray={RING_C}
+                initial={{ strokeDashoffset: RING_C }}
+                animate={{ strokeDashoffset: RING_C * (1 - (loaded ? rate : 0) / 100) }}
+                transition={{ duration: 0.9, ease: 'easeOut' }}
+                style={{ opacity: rate > 0 ? 1 : 0 }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              {loaded ? (
+                <p className="text-2xl font-semibold text-neutral-900 tabular-nums tracking-tight">{rate}%</p>
+              ) : (
+                <Skeleton className="h-7 w-12" />
+              )}
+              <p className="text-[11px] text-neutral-500 font-light">collected</p>
+            </div>
           </div>
+          <dl className="flex-1 min-w-0 space-y-3">
+            {legend.map(item => (
+              <div key={item.label} className="min-w-0">
+                <dt className="flex items-center gap-2 text-xs text-neutral-500 font-light">
+                  <span className={`w-2 h-2 rounded-full ${item.dot}`} />
+                  {item.label}
+                </dt>
+                <dd className="text-sm sm:text-[15px] font-semibold text-neutral-900 tabular-nums mt-0.5 pl-4 break-words">
+                  {loaded ? formatINR(item.value) : '—'}
+                </dd>
+              </div>
+            ))}
+          </dl>
         </div>
-        <div className="h-2 rounded-full bg-neutral-100 overflow-hidden mt-4">
-          <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-[#7c3aed] to-[#5b21b6]"
-            initial={{ width: 0 }}
-            animate={{ width: `${rate}%` }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
-          />
+
+        <div className="mt-auto pt-5">
+          {!loaded ? (
+            <Skeleton className="h-11 w-full rounded-xl" />
+          ) : data.overdueCount > 0 ? (
+            <Link
+              href="/finance/reminders"
+              className="flex items-center gap-3 p-3 rounded-xl bg-rose-50/70 hover:bg-rose-50 transition-colors"
+            >
+              <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center flex-shrink-0">
+                <CalendarClock className="w-4 h-4 text-rose-600" />
+              </span>
+              <span className="flex-1 text-[13px] text-rose-700">{plural(data.overdueCount, 'invoice')} overdue — send reminders</span>
+              <ChevronRight className="w-4 h-4 text-rose-400" />
+            </Link>
+          ) : data.outstanding > 0 ? (
+            <Link
+              href="/finance/reminders"
+              className="flex items-center gap-3 p-3 rounded-xl bg-orange-50/70 hover:bg-orange-50 transition-colors"
+            >
+              <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center flex-shrink-0">
+                <CalendarClock className="w-4 h-4 text-orange-500" />
+              </span>
+              <span className="flex-1 text-[13px] text-orange-700">{formatINR(data.outstanding)} still to collect — follow up</span>
+              <ChevronRight className="w-4 h-4 text-orange-300" />
+            </Link>
+          ) : data.billed > 0 ? (
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-50/70">
+              <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center flex-shrink-0">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              </span>
+              <span className="flex-1 text-[13px] text-emerald-700">Every invoice is paid. Nice work.</span>
+            </div>
+          ) : (
+            <p className="text-[13px] text-neutral-500 font-light p-3 rounded-xl bg-[#f7f8fa]">
+              Collections show up here once you send your first invoice.
+            </p>
+          )}
         </div>
-        <dl className="grid grid-cols-2 gap-3 mt-5">
-          <div className="min-w-0 p-3 rounded-xl bg-[#f7f8fa]">
-            <dt className="text-xs text-neutral-500 font-light">Received</dt>
-            <dd className="text-sm font-semibold text-neutral-900 tabular-nums truncate mt-0.5">{formatINR(data.collected)}</dd>
-          </div>
-          <div className="min-w-0 p-3 rounded-xl bg-[#f7f8fa]">
-            <dt className="text-xs text-neutral-500 font-light">Pending</dt>
-            <dd className="text-sm font-semibold text-neutral-900 tabular-nums truncate mt-0.5">{formatINR(data.outstanding)}</dd>
-          </div>
-        </dl>
-        {data.overdueCount > 0 && (
-          <Link
-            href="/finance/reminders"
-            className="mt-3 flex items-center gap-3 p-3 rounded-xl bg-rose-50/70 hover:bg-rose-50 transition-colors"
-          >
-            <CalendarClock className="w-4 h-4 text-rose-600 flex-shrink-0" />
-            <span className="flex-1 text-sm text-rose-700">{data.overdueCount} overdue — send reminders</span>
-            <ChevronRight className="w-4 h-4 text-rose-400" />
-          </Link>
-        )}
       </div>
     </section>
   );

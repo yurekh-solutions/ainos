@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSession } from 'next-auth/react';
@@ -9,10 +10,25 @@ import {
   FilePlus2, NotebookPen, CalendarDays, Calculator, Megaphone, ArrowRight,
 } from 'lucide-react';
 import {
-  CARD, HOVER, PAGE, CONTAINER, fadeUp, IconCircle, Skeleton, Tone,
+  CARD, HOVER, PAGE, CONTAINER, fadeUp, IconCircle, Skeleton, Tone, plural,
   formatINR, formatCompact, FINANCE_TOOLS, marketingTools,
   useFinanceSummary, useTemplateCount, RecentInvoicesCard, CollectionsCard,
 } from '@/components/dashboard/kit';
+
+const TOOL_TONES: Tone[] = ['purple', 'blue', 'green', 'orange'];
+
+function useCampaignCount() {
+  const [count, setCount] = useState<number | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/email-campaigns')
+      .then(r => (r.ok ? r.json() : []))
+      .then(d => { if (!cancelled) setCount(Array.isArray(d) ? d.length : 0); })
+      .catch(() => { if (!cancelled) setCount(0); });
+    return () => { cancelled = true; };
+  }, []);
+  return count;
+}
 
 /** Isometric bar-chart monitor drawn in SVG so it stays crisp on the banner. */
 function HeroIllustration({ className }: { className?: string }) {
@@ -66,12 +82,40 @@ export default function DashboardPage() {
   const { data: session } = useSession();
   const { data, loaded, collectionRate } = useFinanceSummary();
   const templateLabel = useTemplateCount();
+  const campaignCount = useCampaignCount();
 
-  const stats: { label: string; value: string; full: string; hint: string; icon: React.ElementType; tone: Tone }[] = [
-    { label: 'Total billed', value: formatCompact(data.billed), full: formatINR(data.billed), hint: `${data.invoiceCount} invoice${data.invoiceCount === 1 ? '' : 's'}`, icon: IndianRupee, tone: 'green' },
-    { label: 'Collected', value: formatCompact(data.collected), full: formatINR(data.collected), hint: `${collectionRate}% of billed`, icon: BadgeCheck, tone: 'purple' },
-    { label: 'Outstanding', value: formatCompact(data.outstanding), full: formatINR(data.outstanding), hint: data.overdueCount ? `${data.overdueCount} overdue` : 'Nothing overdue', icon: Hourglass, tone: 'orange' },
-    { label: 'Customers', value: data.customers.toString(), full: data.customers.toString(), hint: `${data.products} product${data.products === 1 ? '' : 's'} in catalog`, icon: UsersRound, tone: 'blue' },
+  const outstandingFoot = data.overdueCount > 0
+    ? { text: `${data.overdueCount} overdue`, cls: 'bg-rose-50 text-rose-600' }
+    : data.outstanding > 0
+      ? { text: 'Awaiting payment', cls: 'bg-orange-50 text-orange-600' }
+      : { text: 'All settled', cls: 'bg-emerald-50 text-emerald-600' };
+
+  const stats: { label: string; value: string; full: string; icon: React.ElementType; tone: Tone; href: string; foot: React.ReactNode }[] = [
+    {
+      label: 'Total billed', value: formatCompact(data.billed), full: formatINR(data.billed), icon: IndianRupee, tone: 'green', href: '/invoices',
+      foot: <span className="text-neutral-500 font-light">Across <span className="font-medium text-neutral-800">{plural(data.invoiceCount, 'invoice')}</span></span>,
+    },
+    {
+      label: 'Collected', value: formatCompact(data.collected), full: formatINR(data.collected), icon: BadgeCheck, tone: 'purple', href: '/invoices',
+      foot: (
+        <span className="flex items-center gap-2">
+          <span className="flex-1 h-1.5 rounded-full bg-neutral-100 overflow-hidden">
+            <span className="block h-full rounded-full bg-[#6d28d9] transition-[width] duration-700" style={{ width: `${collectionRate}%` }} />
+          </span>
+          <span className="text-neutral-500 tabular-nums">{collectionRate}%</span>
+        </span>
+      ),
+    },
+    {
+      label: 'Outstanding', value: formatCompact(data.outstanding), full: formatINR(data.outstanding), icon: Hourglass, tone: 'orange', href: '/finance/reminders',
+      foot: <span className={`inline-flex px-2.5 py-1 rounded-full font-medium ${outstandingFoot.cls}`}>{outstandingFoot.text}</span>,
+    },
+    {
+      label: 'Customers', value: data.customers.toString(), full: data.customers.toString(), icon: UsersRound, tone: 'blue', href: '/customers',
+      foot: data.customers === 0
+        ? <span className="inline-flex items-center gap-1 font-medium text-[#6d28d9]">Add your first <ArrowRight className="w-3 h-3" /></span>
+        : <span className="text-neutral-500 font-light">{plural(data.products, 'product')} in catalog</span>,
+    },
   ];
 
   const mTools = marketingTools(templateLabel);
@@ -82,7 +126,11 @@ export default function DashboardPage() {
       icon: Calculator,
       tools: FINANCE_TOOLS,
       href: '/dashboard/finance',
-      meta: `${data.invoiceCount} invoices · ${data.products} products`,
+      metrics: [
+        { label: 'Invoices', value: data.invoiceCount.toString() },
+        { label: 'Customers', value: data.customers.toString() },
+        { label: 'Products', value: data.products.toString() },
+      ],
     },
     {
       title: 'Marketing Suite',
@@ -90,7 +138,10 @@ export default function DashboardPage() {
       icon: Megaphone,
       tools: mTools,
       href: '/dashboard/marketing',
-      meta: `${templateLabel} invitation templates`,
+      metrics: [
+        { label: 'Templates', value: templateLabel },
+        { label: 'Campaigns', value: campaignCount === null ? '—' : campaignCount.toString() },
+      ],
     },
   ];
 
@@ -161,21 +212,21 @@ export default function DashboardPage() {
         {/* Stats */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
           {stats.map((stat, i) => (
-            <motion.div key={stat.label} {...fadeUp(0.04 + i * 0.03)} className={`${CARD} p-4 sm:p-5 min-w-0`}>
-              <div className="flex items-start gap-3">
-                <IconCircle icon={stat.icon} tone={stat.tone} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-500 truncate">{stat.label}</p>
-                  {loaded ? (
-                    <p title={stat.full} className="mt-1.5 text-lg sm:text-2xl font-semibold text-neutral-900 tabular-nums tracking-tight truncate">
-                      {stat.value}
-                    </p>
-                  ) : (
-                    <Skeleton className="mt-2 h-7 w-20" />
-                  )}
-                  <p className={`text-xs font-light mt-1 truncate ${i === 0 ? 'text-[#6d28d9]' : 'text-neutral-400'}`}>{stat.hint}</p>
+            <motion.div key={stat.label} {...fadeUp(0.04 + i * 0.03)} className="min-w-0">
+              <Link href={stat.href} className={`group ${CARD} ${HOVER} p-4 sm:p-5 h-full flex flex-col min-w-0`}>
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-[13px] font-medium text-neutral-500 leading-snug pt-1">{stat.label}</p>
+                  <IconCircle icon={stat.icon} tone={stat.tone} />
                 </div>
-              </div>
+                {loaded ? (
+                  <p title={stat.full} className="mt-2 text-xl sm:text-[26px] font-semibold text-neutral-900 tabular-nums tracking-tight break-words">
+                    {stat.value}
+                  </p>
+                ) : (
+                  <Skeleton className="mt-3 h-7 w-20" />
+                )}
+                <div className="mt-auto pt-3 text-xs">{loaded ? stat.foot : <Skeleton className="h-4 w-24" />}</div>
+              </Link>
             </motion.div>
           ))}
         </section>
@@ -183,42 +234,59 @@ export default function DashboardPage() {
         {/* Suites */}
         <motion.section {...fadeUp(0.1)} className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
           {suites.map(suite => (
-            <Link key={suite.title} href={suite.href} className={`group ${CARD} ${HOVER} p-5 sm:p-6 flex flex-col min-w-0`}>
+            <div key={suite.title} className={`${CARD} p-5 sm:p-6 flex flex-col min-w-0`}>
               <div className="flex items-start gap-4">
                 <IconCircle icon={suite.icon} size="lg" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="text-base font-semibold text-neutral-900">{suite.title}</h3>
-                    <span className="px-2.5 py-0.5 rounded-full bg-neutral-100 text-[11px] font-medium text-neutral-600 flex-shrink-0">
+                    <span className="px-2.5 py-0.5 rounded-full bg-violet-50 text-[11px] font-medium text-[#6d28d9] flex-shrink-0">
                       {suite.tools.length} tools
                     </span>
                   </div>
                   <p className="text-[13px] text-neutral-500 font-light leading-relaxed mt-1">{suite.description}</p>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 sm:pl-16">
-                {suite.tools.slice(0, 4).map(t => (
-                  <span key={t.title} className="inline-flex items-center gap-1.5 text-xs text-neutral-600">
-                    <t.icon className="w-3.5 h-3.5 text-[#6d28d9]" />
-                    {t.title}
-                  </span>
+
+              <div className="grid grid-cols-2 gap-1 sm:gap-2 mt-4 -mx-2">
+                {suite.tools.slice(0, 4).map((t, i) => (
+                  <Link
+                    key={t.title}
+                    href={t.href}
+                    className="group flex items-center gap-3 p-2 sm:p-2.5 rounded-xl hover:bg-[#f7f5fb] transition-colors min-w-0"
+                  >
+                    <IconCircle icon={t.icon} tone={TOOL_TONES[i % TOOL_TONES.length]} size="sm" />
+                    <span className="min-w-0">
+                      <span className="block text-[13px] font-medium text-neutral-800 group-hover:text-[#6d28d9] leading-snug transition-colors">{t.title}</span>
+                      <span className="block text-[11px] text-neutral-500 font-light leading-snug mt-0.5">{t.short}</span>
+                    </span>
+                  </Link>
                 ))}
-                {suite.tools.length > 4 && (
-                  <span className="text-xs text-neutral-400">+{suite.tools.length - 4} more</span>
-                )}
               </div>
-              <div className="flex items-center justify-between gap-3 mt-auto pt-5 sm:pl-16">
-                <span className="text-xs text-neutral-400 font-light truncate">{loaded ? suite.meta : '—'}</span>
-                <span className="inline-flex items-center gap-1 text-[13px] font-medium text-[#6d28d9] flex-shrink-0">
-                  Open suite <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                </span>
+
+              <div className="flex flex-wrap items-end justify-between gap-4 mt-auto pt-5">
+                <div className="flex items-center gap-5 sm:gap-6">
+                  {suite.metrics.map(m => (
+                    <div key={m.label} className="min-w-0">
+                      <p className="text-base font-semibold text-neutral-900 tabular-nums">{loaded ? m.value : '—'}</p>
+                      <p className="text-[11px] text-neutral-500 font-light">{m.label}</p>
+                    </div>
+                  ))}
+                </div>
+                <Link
+                  href={suite.href}
+                  className="group inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-violet-50 text-[#6d28d9] hover:bg-[#6d28d9] hover:text-white text-[13px] font-medium transition-colors"
+                >
+                  All {suite.tools.length} tools
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </Link>
               </div>
-            </Link>
+            </div>
           ))}
         </motion.section>
 
         {/* Recent invoices + collections */}
-        <motion.div {...fadeUp(0.14)} className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 items-start">
+        <motion.div {...fadeUp(0.14)} className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
           <RecentInvoicesCard data={data} loaded={loaded} className="lg:col-span-2" />
           <CollectionsCard data={data} loaded={loaded} rate={collectionRate} />
         </motion.div>
