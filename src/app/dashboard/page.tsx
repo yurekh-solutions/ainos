@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import {
   IndianRupee, BadgeCheck, Hourglass, UsersRound,
-  FilePlus2, NotebookPen, CalendarDays, Calculator, Megaphone, Star, ArrowRight,
+  FilePlus2, NotebookPen, CalendarDays, Calculator, Megaphone, ArrowRight,
 } from 'lucide-react';
 import {
   CARD, HOVER, PAGE, CONTAINER, fadeUp, IconCircle, Skeleton, Tone,
@@ -116,8 +117,10 @@ export default function DashboardPage() {
           <HeroIllustration className="pointer-events-none absolute right-2 top-3 w-28 sm:w-44 md:right-8 md:top-1/2 md:-translate-y-1/2 md:w-56 lg:w-64 opacity-95" />
 
           <div className="relative p-5 sm:p-7 lg:p-8 md:pr-72 lg:pr-80">
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 ring-1 ring-white/15">
-              <Star className="w-3 h-3 text-[#c4b5fd] fill-[#c4b5fd]" />
+            <span className="hidden sm:inline-flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-white/10 ring-1 ring-white/15">
+              <span className="w-6 h-6 rounded-full bg-white flex items-center justify-center flex-shrink-0">
+                <Image src="/ainos-alpha.png" alt="" width={14} height={13} className="w-3.5 h-auto" />
+              </span>
               <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/90">AINOS Business Suite</span>
             </span>
             <h1 className="text-xl sm:text-3xl font-semibold tracking-tight sm:mt-4 pr-28 sm:pr-44 md:pr-0">

@@ -1,6 +1,7 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
-/** AINOS "A" mark with the wordmark; `tone` switches text colours for dark or light surfaces. */
+/** AINOS alpha mark in a circle with the "ainos" wordmark; `tone` adapts it for dark or light surfaces. */
 export function BrandMark({
   tone = 'light',
   showText = true,
@@ -10,23 +11,27 @@ export function BrandMark({
   showText?: boolean;
   href?: string;
 }) {
-  const id = tone === 'dark' ? 'ainos-mark-dark' : 'ainos-mark-light';
+  const dark = tone === 'dark';
   return (
-    <Link href={href} className="flex items-center gap-2.5 min-w-0">
-      <svg viewBox="0 0 32 32" className="w-8 h-8 flex-shrink-0" aria-hidden="true">
-        <defs>
-          <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor={tone === 'dark' ? '#c4b5fd' : '#8b5cf6'} />
-            <stop offset="1" stopColor={tone === 'dark' ? '#7c3aed' : '#4c1d95'} />
-          </linearGradient>
-        </defs>
-        <path d="M16 3 L29.5 28.5 H22.6 L16 15.4 L9.4 28.5 H2.5 Z" fill={`url(#${id})`} />
-        <path d="M16 20.2 L19.6 27 H12.4 Z" fill={tone === 'dark' ? '#ede9fe' : '#a78bfa'} />
-      </svg>
+    <Link href={href} className="flex items-center gap-2.5 min-w-0" aria-label="AINOS dashboard">
+      <span
+        className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+          dark ? 'bg-white shadow-[0_4px_14px_-4px_rgba(0,0,0,0.45)]' : 'bg-violet-50 ring-1 ring-violet-100'
+        }`}
+      >
+        <Image src="/ainos-alpha.png" alt="" width={20} height={19} className="w-5 h-auto" priority />
+      </span>
       {showText && (
         <div className="min-w-0 leading-tight">
-          <p className={`text-[15px] font-semibold tracking-wide ${tone === 'dark' ? 'text-white' : 'text-neutral-900'}`}>AINOS</p>
-          <p className={`text-[11px] font-light ${tone === 'dark' ? 'text-white/60' : 'text-neutral-500'}`}>Business Suite</p>
+          <Image
+            src="/ainos-wordmark.png"
+            alt="ainos"
+            width={68}
+            height={20}
+            className={`h-[18px] w-auto ${dark ? 'brightness-0 invert' : ''}`}
+            priority
+          />
+          <p className={`text-[11px] font-light mt-0.5 ${dark ? 'text-white/60' : 'text-neutral-500'}`}>Business Suite</p>
         </div>
       )}
     </Link>
