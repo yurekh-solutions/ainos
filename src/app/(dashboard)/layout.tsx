@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { SessionKeepAlive } from '@/components/auth/SessionKeepAlive';
 import { KeepScraperAlive } from '@/components/KeepScraperAlive';
 import { AuthProvider } from '@/components/auth/AuthProvider';
@@ -30,11 +31,12 @@ export default async function DashboardLayout({
         <Sidebar />
         <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
           <TopBar />
-          <main className="flex-1 overflow-auto pt-4">
+          <main className="flex-1 overflow-auto pt-4 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
             <div className="min-h-full">{children}</div>
           </main>
         </div>
       </div>
+      <MobileBottomNav />
     </AuthProvider>
   );
 }
