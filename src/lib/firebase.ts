@@ -68,6 +68,8 @@ export async function sendPasswordResetEmail(email: string): Promise<void> {
   const apiKey = process.env.FIREBASE_WEB_API_KEY;
   if (!apiKey) throw new Error('FIREBASE_WEB_API_KEY not set');
 
+  console.log('[Firebase] Sending reset email to:', email);
+
   const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -78,8 +80,10 @@ export async function sendPasswordResetEmail(email: string): Promise<void> {
     }),
   });
 
+  const data = await res.json();
+  console.log('[Firebase] sendOobCode response:', res.status, JSON.stringify(data));
+
   if (!res.ok) {
-    const data = await res.json();
     throw new Error(data.error?.message || 'Failed to send reset email');
   }
 }

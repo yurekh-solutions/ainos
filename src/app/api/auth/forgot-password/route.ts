@@ -24,10 +24,12 @@ export async function POST(req: NextRequest) {
     // verification needed. The link lands back on /auth/reset-password.
     try {
       await sendPasswordResetEmail(user.email);
+      console.log('[Auth] Reset email sent successfully to:', user.email);
     } catch (err) {
-      console.error('[Auth] Firebase reset email failed:', err);
+      const errMsg = (err as Error)?.message || 'Unknown error';
+      console.error('[Auth] Firebase reset email failed:', errMsg);
       return NextResponse.json(
-        { error: 'Could not send the reset email. Please try again in a moment.' },
+        { error: `Could not send the reset email: ${errMsg}` },
         { status: 500 }
       );
     }
