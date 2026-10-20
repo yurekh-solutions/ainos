@@ -24,7 +24,7 @@ export default async function DashboardLayout({
   return (
     <AuthProvider>
       <SessionKeepAlive />
-      <div className="flex h-screen bg-[#f3f1f7]">
+      <div className="flex h-screen bg-[#f5f6f8]">
         <Sidebar />
         <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
           <TopBar />

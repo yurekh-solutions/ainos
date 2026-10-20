@@ -30,18 +30,15 @@ interface InvoiceRow {
 
 type Suite = 'finance' | 'marketing';
 
-// ── Neumorphic surface tokens (soft lavender base, single purple accent) ──
-const BASE = 'bg-[#f3f1f7]';
-const RAISED = `${BASE} rounded-3xl border border-white/70 shadow-[10px_10px_22px_#dcd7e6,-10px_-10px_22px_#ffffff]`;
-const RAISED_SM = `${BASE} rounded-2xl border border-white/70 shadow-[6px_6px_14px_#dcd7e6,-6px_-6px_14px_#ffffff]`;
-const INSET = `${BASE} shadow-[inset_3px_3px_7px_#dcd7e6,inset_-3px_-3px_7px_#ffffff]`;
-const PRESS = 'transition-shadow duration-200 hover:shadow-[3px_3px_8px_#dcd7e6,-3px_-3px_8px_#ffffff] active:shadow-[inset_3px_3px_7px_#dcd7e6,inset_-3px_-3px_7px_#ffffff]';
+// ── Surface tokens: flat white widgets on a light grey canvas, no borders ──
+const CARD = 'bg-white rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.06)]';
+const HOVER = 'transition-shadow duration-200 hover:shadow-[0_6px_16px_-4px_rgba(16,24,40,0.10)]';
 const ACCENT = 'text-[#5b21b6]';
 
 const fadeUp = (delay = 0) => ({
-  initial: { opacity: 0, y: 8 },
+  initial: { opacity: 0, y: 6 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.35, delay, ease: 'easeOut' as const },
+  transition: { duration: 0.3, delay, ease: 'easeOut' as const },
 });
 
 const formatINR = (n: number) => `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
@@ -54,48 +51,49 @@ const formatCompact = (n: number) => {
 };
 
 const STATUS_STYLE: Record<string, string> = {
-  paid: 'bg-purple-100/70 text-[#5b21b6]',
+  paid: 'bg-purple-50 text-[#5b21b6]',
   overdue: 'bg-red-50 text-red-600',
-  cancelled: 'bg-neutral-200/60 text-neutral-400 line-through',
+  cancelled: 'bg-neutral-100 text-neutral-400 line-through',
 };
 
-function IconWell({ icon: Icon, size = 'md' }: { icon: React.ElementType; size?: 'sm' | 'md' | 'lg' }) {
-  const box = size === 'sm' ? 'w-9 h-9 rounded-xl' : size === 'lg' ? 'w-14 h-14 rounded-2xl' : 'w-11 h-11 rounded-xl';
-  const glyph = size === 'sm' ? 'w-4 h-4' : size === 'lg' ? 'w-6 h-6' : 'w-5 h-5';
+function IconBox({ icon: Icon, size = 'md' }: { icon: React.ElementType; size?: 'sm' | 'md' | 'lg' }) {
+  const box = size === 'sm' ? 'w-9 h-9 rounded-lg' : size === 'lg' ? 'w-12 h-12 rounded-xl' : 'w-10 h-10 rounded-xl';
+  const glyph = size === 'lg' ? 'w-6 h-6' : size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
   return (
-    <div className={`${box} ${INSET} flex items-center justify-center flex-shrink-0`}>
+    <div className={`${box} bg-purple-50 flex items-center justify-center flex-shrink-0`}>
       <Icon className={`${glyph} ${ACCENT}`} />
     </div>
   );
 }
 
-function SectionTitle({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
+// Widget header lives inside the card, Zoho-style
+function WidgetHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
   return (
-    <div className="flex items-end justify-between gap-4 mb-5">
+    <div className="flex items-start justify-between gap-4 px-5 sm:px-6 pt-5 pb-4">
       <div className="min-w-0">
-        <h2 className="text-lg font-semibold text-neutral-900 tracking-tight">{title}</h2>
-        {subtitle && <p className="text-sm text-neutral-500 font-light mt-0.5">{subtitle}</p>}
+        <h2 className="text-[15px] font-semibold text-neutral-900">{title}</h2>
+        {subtitle && <p className="text-xs text-neutral-500 font-light mt-0.5">{subtitle}</p>}
       </div>
       {action}
     </div>
   );
 }
 
-function ToolRow({ tool }: { tool: Tool }) {
+function ToolItem({ tool }: { tool: Tool }) {
   return (
-    <Link href={tool.href} className={`group flex items-start gap-4 p-4 sm:p-5 ${RAISED_SM} ${PRESS}`}>
-      <IconWell icon={tool.icon} />
+    <Link href={tool.href} className="group flex items-start gap-3.5 p-4 rounded-xl hover:bg-[#f7f5fb] transition-colors">
+      <IconBox icon={tool.icon} />
       <div className="flex-1 min-w-0">
-        <p className="text-[15px] font-medium text-neutral-900">{tool.title}</p>
-        <p className="text-sm text-neutral-500 font-light leading-relaxed mt-1 line-clamp-2">{tool.description}</p>
+        <p className="text-sm font-medium text-neutral-900 group-hover:text-[#5b21b6] transition-colors">{tool.title}</p>
+        <p className="text-[13px] text-neutral-500 font-light leading-relaxed mt-0.5 line-clamp-2">{tool.description}</p>
       </div>
-      <ChevronRight className="w-4 h-4 mt-1 text-neutral-400 group-hover:text-[#5b21b6] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+      <ChevronRight className="w-4 h-4 mt-0.5 text-neutral-300 group-hover:text-[#5b21b6] transition-colors flex-shrink-0" />
     </Link>
   );
 }
 
 function Skeleton({ className }: { className: string }) {
-  return <div className={`rounded-md bg-[#e6e2ee] animate-pulse ${className}`} />;
+  return <div className={`rounded-md bg-neutral-100 animate-pulse ${className}`} />;
 }
 
 export default function DashboardPage() {
@@ -233,114 +231,111 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className={`min-h-full ${BASE}`}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 space-y-8 sm:space-y-10">
+    <div className="min-h-full bg-[#f5f6f8]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-5">
 
-        {/* Welcome */}
-        <motion.section {...fadeUp()} className={`${RAISED} p-5 sm:p-8`}>
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-            <div className="min-w-0">
-              <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${INSET}`}>
-                <span className="w-1.5 h-1.5 rounded-full bg-[#5b21b6]" />
-                <span className="text-xs font-medium tracking-wide text-[#5b21b6]">AINOS Business Suite</span>
-              </span>
-              <h1 className="text-2xl sm:text-3xl font-semibold text-neutral-900 tracking-tight mt-4">
-                {getGreeting()}, {firstName}
-              </h1>
-              <p className="text-sm sm:text-base text-neutral-600 font-light mt-2 max-w-lg leading-relaxed">
-                {data.overdueCount > 0
-                  ? `You have ${data.overdueCount} overdue invoice${data.overdueCount === 1 ? '' : 's'} to follow up on.`
-                  : 'Billing, accounts and marketing for your business — all in one workspace.'}
-              </p>
-              <p className="text-xs text-neutral-400 font-light mt-3">{today}</p>
-            </div>
-            <div className="grid grid-cols-2 sm:flex gap-3 sm:gap-4 flex-shrink-0">
-              <Link
-                href="/invoices"
-                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#5b21b6] hover:bg-[#4c1d95] text-white text-sm font-medium shadow-[5px_5px_12px_#cfc7df,-5px_-5px_12px_#ffffff] active:scale-[0.98] transition-all"
-              >
-                <FilePlus2 className="w-4 h-4" />
-                New invoice
-              </Link>
-              <Link
-                href="/marketing/blog"
-                className={`inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full ${BASE} border border-white/70 shadow-[5px_5px_12px_#dcd7e6,-5px_-5px_12px_#ffffff] ${PRESS} text-neutral-800 text-sm font-medium`}
-              >
-                <NotebookPen className={`w-4 h-4 ${ACCENT}`} />
-                Write a blog
-              </Link>
-            </div>
+        {/* Page header */}
+        <motion.header {...fadeUp()} className="flex flex-col md:flex-row md:items-end md:justify-between gap-5 pb-1">
+          <div className="min-w-0">
+            <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-purple-50">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#5b21b6]" />
+              <span className="text-[11px] font-medium uppercase tracking-wider text-[#5b21b6]">AINOS Business Suite</span>
+            </span>
+            <h1 className="text-2xl sm:text-[28px] font-semibold text-neutral-900 tracking-tight mt-3">
+              {getGreeting()}, {firstName}
+            </h1>
+            <p className="text-sm text-neutral-500 font-light mt-1.5 max-w-xl leading-relaxed">
+              {data.overdueCount > 0
+                ? `You have ${data.overdueCount} overdue invoice${data.overdueCount === 1 ? '' : 's'} to follow up on.`
+                : 'Billing, accounts and marketing for your business — all in one workspace.'}
+              <span className="text-neutral-400"> · {today}</span>
+            </p>
           </div>
-        </motion.section>
+          <div className="grid grid-cols-2 sm:flex gap-3 flex-shrink-0">
+            <Link
+              href="/marketing/blog"
+              className={`inline-flex items-center justify-center gap-2 px-4 h-10 rounded-lg bg-white text-neutral-700 hover:text-[#5b21b6] text-sm font-medium ${CARD} ${HOVER}`}
+            >
+              <NotebookPen className={`w-4 h-4 ${ACCENT}`} />
+              Write a blog
+            </Link>
+            <Link
+              href="/invoices"
+              className="inline-flex items-center justify-center gap-2 px-4 h-10 rounded-lg bg-[#5b21b6] hover:bg-[#4c1d95] text-white text-sm font-medium shadow-sm transition-colors"
+            >
+              <FilePlus2 className="w-4 h-4" />
+              New invoice
+            </Link>
+          </div>
+        </motion.header>
 
         {/* Stats */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
           {stats.map((stat, i) => (
-            <motion.div key={stat.label} {...fadeUp(0.05 + i * 0.04)} className={`${RAISED_SM} p-4 sm:p-5`}>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm text-neutral-500 font-light truncate">{stat.label}</span>
-                <IconWell icon={stat.icon} size="sm" />
+            <motion.div key={stat.label} {...fadeUp(0.04 + i * 0.03)} className={`${CARD} p-4 sm:p-5`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium uppercase tracking-wider text-neutral-500 truncate">{stat.label}</p>
+                  {loaded ? (
+                    <p title={stat.full} className="mt-2 text-xl sm:text-2xl font-semibold text-neutral-900 tabular-nums tracking-tight truncate">
+                      {stat.value}
+                    </p>
+                  ) : (
+                    <Skeleton className="mt-2 h-7 w-20" />
+                  )}
+                </div>
+                <div className="hidden sm:block"><IconBox icon={stat.icon} size="sm" /></div>
               </div>
-              {loaded ? (
-                <p title={stat.full} className="mt-3 text-xl sm:text-2xl font-semibold text-neutral-900 tabular-nums tracking-tight truncate">
-                  {stat.value}
-                </p>
-              ) : (
-                <Skeleton className="mt-3 h-7 w-20" />
-              )}
-              <p className="text-xs text-neutral-400 font-light mt-1 truncate">{stat.hint}</p>
+              <p className="text-xs text-neutral-400 font-light mt-2 truncate">{stat.hint}</p>
             </motion.div>
           ))}
         </section>
 
-        {/* Workspace — what AINOS gives you */}
-        <motion.section {...fadeUp(0.12)}>
-          <SectionTitle title="Your workspace" subtitle="Two suites, one login — pick where you want to work" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            {suites.map(suite => (
-              <button
-                key={suite.key}
-                onClick={() => openSuite(suite.key)}
-                className={`group text-left p-5 sm:p-6 ${RAISED} ${PRESS}`}
-              >
-                <div className="flex items-start gap-4">
-                  <IconWell icon={suite.icon} size="lg" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-3">
-                      <h3 className="text-base sm:text-lg font-semibold text-neutral-900 tracking-tight">{suite.title}</h3>
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium text-neutral-600 ${INSET}`}>
-                        {suite.tools.length} tools
-                      </span>
-                    </div>
-                    <p className="text-sm text-neutral-500 font-light leading-relaxed mt-1.5">{suite.description}</p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-5">
-                  {suite.tools.slice(0, 4).map(t => (
-                    <span key={t.href} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs text-neutral-600 ${INSET}`}>
-                      <t.icon className={`w-3.5 h-3.5 ${ACCENT}`} />
-                      {t.title}
+        {/* Workspace */}
+        <motion.section {...fadeUp(0.1)} className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+          {suites.map(suite => (
+            <button
+              key={suite.key}
+              onClick={() => openSuite(suite.key)}
+              className={`group text-left ${CARD} ${HOVER} p-5 sm:p-6 flex flex-col`}
+            >
+              <div className="flex items-start gap-4">
+                <IconBox icon={suite.icon} size="lg" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-base font-semibold text-neutral-900">{suite.title}</h3>
+                    <span className="px-2 py-0.5 rounded-md bg-neutral-100 text-xs font-medium text-neutral-600 flex-shrink-0">
+                      {suite.tools.length} tools
                     </span>
-                  ))}
-                  {suite.tools.length > 4 && (
-                    <span className="inline-flex items-center px-2 py-1.5 text-xs text-neutral-400">+{suite.tools.length - 4} more</span>
-                  )}
+                  </div>
+                  <p className="text-sm text-neutral-500 font-light leading-relaxed mt-1">{suite.description}</p>
                 </div>
-                <div className="flex items-center justify-between gap-3 mt-5 pt-4 border-t border-[#e4e0ec]">
-                  <span className="text-xs text-neutral-400 font-light truncate">{loaded ? suite.meta : '—'}</span>
-                  <span className="inline-flex items-center gap-1 text-sm font-medium text-[#5b21b6] flex-shrink-0">
-                    Open suite <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+              <div className="flex flex-wrap gap-2 mt-4 sm:pl-16">
+                {suite.tools.slice(0, 4).map(t => (
+                  <span key={t.href} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#f7f5fb] text-xs text-neutral-600">
+                    <t.icon className={`w-3.5 h-3.5 ${ACCENT}`} />
+                    {t.title}
                   </span>
-                </div>
-              </button>
-            ))}
-          </div>
+                ))}
+                {suite.tools.length > 4 && (
+                  <span className="inline-flex items-center px-1.5 py-1 text-xs text-neutral-400">+{suite.tools.length - 4} more</span>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-3 mt-auto pt-5 sm:pl-16">
+                <span className="text-xs text-neutral-400 font-light truncate">{loaded ? suite.meta : '—'}</span>
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-[#5b21b6] flex-shrink-0">
+                  Open suite <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </span>
+              </div>
+            </button>
+          ))}
         </motion.section>
 
-        {/* Recent invoices + side column */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <motion.section {...fadeUp(0.18)} className="lg:col-span-2 min-w-0">
-            <SectionTitle
+        {/* Recent invoices + side widgets */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 items-start">
+          <motion.section {...fadeUp(0.14)} className={`${CARD} lg:col-span-2 min-w-0`}>
+            <WidgetHeader
               title="Recent invoices"
               subtitle="Your latest five bills"
               action={
@@ -351,12 +346,12 @@ export default function DashboardPage() {
                 )
               }
             />
-            <div className={`${RAISED} p-2 sm:p-3`}>
+            <div className="px-2 sm:px-3 pb-3">
               {!loaded ? (
                 <div className="space-y-1">
                   {[0, 1, 2].map(i => (
-                    <div key={i} className="flex items-center gap-4 p-3 sm:px-4">
-                      <Skeleton className="w-10 h-10 rounded-xl" />
+                    <div key={i} className="flex items-center gap-4 p-3">
+                      <Skeleton className="w-9 h-9 rounded-lg" />
                       <div className="flex-1 space-y-2">
                         <Skeleton className="h-4 w-1/3" />
                         <Skeleton className="h-3 w-1/4" />
@@ -366,50 +361,70 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : data.recent.length === 0 ? (
-                <div className="px-6 py-12 text-center">
-                  <div className="flex justify-center"><IconWell icon={Receipt} size="lg" /></div>
-                  <p className="text-[15px] font-medium text-neutral-900 mt-5">No invoices yet</p>
+                <div className="px-6 pt-6 pb-10 text-center">
+                  <div className="flex justify-center"><IconBox icon={Receipt} size="lg" /></div>
+                  <p className="text-sm font-medium text-neutral-900 mt-4">No invoices yet</p>
                   <p className="text-sm text-neutral-500 font-light mt-1">Your invoices will show up here once you create one.</p>
                   <Link
                     href="/invoices"
-                    className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 rounded-full bg-[#5b21b6] hover:bg-[#4c1d95] text-white text-sm font-medium shadow-[5px_5px_12px_#cfc7df,-5px_-5px_12px_#ffffff] transition-colors"
+                    className="inline-flex items-center gap-2 mt-5 px-4 h-10 rounded-lg bg-[#5b21b6] hover:bg-[#4c1d95] text-white text-sm font-medium transition-colors"
                   >
                     Create invoice <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
               ) : (
-                <ul className="space-y-1">
-                  {data.recent.map(inv => (
-                    <li key={inv.id}>
-                      <Link href="/invoices" className="flex items-center gap-3 sm:gap-4 p-3 sm:px-4 rounded-2xl hover:bg-white/60 transition-colors">
-                        <div className={`w-10 h-10 rounded-xl ${INSET} flex items-center justify-center flex-shrink-0 text-sm font-medium text-[#5b21b6]`}>
-                          {inv.customerName.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-neutral-900 truncate">{inv.customerName}</p>
-                          <p className="text-xs text-neutral-500 font-light truncate mt-0.5">
-                            {inv.invoiceNumber}{formatDate(inv.date) && ` · ${formatDate(inv.date)}`}
-                          </p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-sm font-medium text-neutral-900 tabular-nums">{formatINR(inv.amount)}</p>
-                          <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[11px] font-medium capitalize ${STATUS_STYLE[inv.status] || 'bg-neutral-200/60 text-neutral-600'}`}>
-                            {inv.status}
-                          </span>
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  {/* Column labels (tablet and up) */}
+                  <div className="hidden sm:flex items-center gap-4 px-3 py-2 rounded-lg bg-[#f7f8fa] text-[11px] font-medium uppercase tracking-wider text-neutral-400">
+                    <span className="flex-1">Customer</span>
+                    <span className="w-32">Invoice</span>
+                    <span className="w-28 text-right">Amount</span>
+                    <span className="w-24 text-right">Status</span>
+                  </div>
+                  <ul className="mt-1">
+                    {data.recent.map(inv => (
+                      <li key={inv.id}>
+                        <Link href="/invoices" className="flex items-center gap-3 sm:gap-4 p-3 rounded-lg hover:bg-[#f7f5fb] transition-colors">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0 text-sm font-medium text-[#5b21b6]">
+                              {inv.customerName.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-neutral-900 truncate">{inv.customerName}</p>
+                              <p className="sm:hidden text-xs text-neutral-500 font-light truncate mt-0.5">
+                                {inv.invoiceNumber}{formatDate(inv.date) && ` · ${formatDate(inv.date)}`}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="hidden sm:block w-32 min-w-0">
+                            <p className="text-sm text-neutral-700 truncate">{inv.invoiceNumber}</p>
+                            <p className="text-xs text-neutral-400 font-light">{formatDate(inv.date)}</p>
+                          </div>
+                          <div className="text-right sm:w-28 flex-shrink-0">
+                            <p className="text-sm font-medium text-neutral-900 tabular-nums">{formatINR(inv.amount)}</p>
+                            <span className={`sm:hidden inline-block mt-1 px-2 py-0.5 rounded-md text-[11px] font-medium capitalize ${STATUS_STYLE[inv.status] || 'bg-neutral-100 text-neutral-600'}`}>
+                              {inv.status}
+                            </span>
+                          </div>
+                          <div className="hidden sm:flex w-24 justify-end">
+                            <span className={`px-2 py-0.5 rounded-md text-[11px] font-medium capitalize ${STATUS_STYLE[inv.status] || 'bg-neutral-100 text-neutral-600'}`}>
+                              {inv.status}
+                            </span>
+                          </div>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </>
               )}
             </div>
           </motion.section>
 
-          <motion.aside {...fadeUp(0.22)} className="space-y-8 min-w-0">
+          <motion.aside {...fadeUp(0.18)} className="space-y-4 sm:space-y-5 min-w-0">
             {/* Collections */}
-            <section>
-              <SectionTitle title="Collections" subtitle="Paid vs billed" />
-              <div className={`${RAISED} p-5 sm:p-6`}>
+            <section className={CARD}>
+              <WidgetHeader title="Collections" subtitle="Paid vs billed" />
+              <div className="px-5 sm:px-6 pb-5 sm:pb-6">
                 <div className="flex items-baseline justify-between gap-3">
                   {loaded ? (
                     <p className="text-3xl font-semibold text-neutral-900 tabular-nums tracking-tight">{collectionRate}%</p>
@@ -418,7 +433,7 @@ export default function DashboardPage() {
                   )}
                   <span className="text-sm text-neutral-500 font-light">collected</span>
                 </div>
-                <div className={`h-3 rounded-full ${INSET} p-0.5 mt-4`}>
+                <div className="h-2 rounded-full bg-neutral-100 overflow-hidden mt-4">
                   <motion.div
                     className="h-full rounded-full bg-[#5b21b6]"
                     initial={{ width: 0 }}
@@ -427,11 +442,11 @@ export default function DashboardPage() {
                   />
                 </div>
                 <dl className="grid grid-cols-2 gap-3 mt-5">
-                  <div className={`min-w-0 p-3 rounded-2xl ${INSET}`}>
+                  <div className="min-w-0 p-3 rounded-xl bg-[#f7f8fa]">
                     <dt className="text-xs text-neutral-500 font-light">Received</dt>
                     <dd className="text-sm font-medium text-neutral-900 tabular-nums truncate mt-0.5">{formatINR(data.collected)}</dd>
                   </div>
-                  <div className={`min-w-0 p-3 rounded-2xl ${INSET}`}>
+                  <div className="min-w-0 p-3 rounded-xl bg-[#f7f8fa]">
                     <dt className="text-xs text-neutral-500 font-light">Pending</dt>
                     <dd className="text-sm font-medium text-neutral-900 tabular-nums truncate mt-0.5">{formatINR(data.outstanding)}</dd>
                   </div>
@@ -439,7 +454,7 @@ export default function DashboardPage() {
                 {data.overdueCount > 0 && (
                   <Link
                     href="/finance/reminders"
-                    className="mt-4 flex items-center gap-3 p-3 rounded-2xl bg-red-50/70 hover:bg-red-50 transition-colors"
+                    className="mt-3 flex items-center gap-3 p-3 rounded-xl bg-red-50/70 hover:bg-red-50 transition-colors"
                   >
                     <CalendarClock className="w-4 h-4 text-red-600 flex-shrink-0" />
                     <span className="flex-1 text-sm text-red-700">{data.overdueCount} overdue — send reminders</span>
@@ -451,14 +466,14 @@ export default function DashboardPage() {
 
             {/* Getting started (hidden once complete) */}
             {loaded && !setupComplete && (
-              <section>
-                <SectionTitle title="Getting started" subtitle={`${doneCount} of ${setupSteps.length} steps complete`} />
-                <div className={`${RAISED} p-2 sm:p-3`}>
+              <section className={CARD}>
+                <WidgetHeader title="Getting started" subtitle={`${doneCount} of ${setupSteps.length} steps complete`} />
+                <div className="px-2 sm:px-3 pb-3">
                   {setupSteps.map((step) => (
                     <Link
                       key={step.label}
                       href={step.href}
-                      className="group flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-white/60 transition-colors"
+                      className="group flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#f7f5fb] transition-colors"
                     >
                       {step.done ? (
                         <CheckCircle2 className={`w-5 h-5 flex-shrink-0 ${ACCENT}`} />
@@ -468,7 +483,7 @@ export default function DashboardPage() {
                       <span className={`flex-1 text-sm ${step.done ? 'text-neutral-400 line-through font-light' : 'text-neutral-700'}`}>
                         {step.label}
                       </span>
-                      {!step.done && <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:text-[#5b21b6] transition-colors" />}
+                      {!step.done && <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-[#5b21b6] transition-colors" />}
                     </Link>
                   ))}
                 </div>
@@ -478,26 +493,26 @@ export default function DashboardPage() {
         </div>
 
         {/* Tools */}
-        <motion.section id="tools" {...fadeUp(0.26)} className="scroll-mt-6">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5">
-            <div>
-              <h2 className="text-lg font-semibold text-neutral-900 tracking-tight">
+        <motion.section id="tools" {...fadeUp(0.22)} className={`${CARD} scroll-mt-6`}>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-5 sm:px-6 pt-5 pb-3">
+            <div className="min-w-0">
+              <h2 className="text-[15px] font-semibold text-neutral-900">
                 {tab === 'finance' ? 'Finance tools' : 'Marketing tools'}
               </h2>
-              <p className="text-sm text-neutral-500 font-light mt-0.5">
+              <p className="text-xs text-neutral-500 font-light mt-0.5">
                 {tab === 'finance' ? 'Billing, GST and everyday accounts' : 'Content, SEO and social in one place'}
               </p>
             </div>
-            <div role="tablist" className={`inline-flex self-start sm:self-auto p-1.5 rounded-full ${INSET}`}>
+            <div role="tablist" className="inline-flex self-start sm:self-auto p-1 rounded-lg bg-neutral-100">
               {suites.map(suite => (
                 <button
                   key={suite.key}
                   role="tab"
                   aria-selected={tab === suite.key}
                   onClick={() => setTab(suite.key)}
-                  className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
                     tab === suite.key
-                      ? `${BASE} text-[#5b21b6] shadow-[3px_3px_7px_#dcd7e6,-3px_-3px_7px_#ffffff]`
+                      ? 'bg-white text-[#5b21b6] shadow-[0_1px_2px_rgba(16,24,40,0.08)]'
                       : 'text-neutral-500 hover:text-neutral-800'
                   }`}
                 >
@@ -509,8 +524,8 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            {tools.map((tool) => <ToolRow key={tool.href} tool={tool} />)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 px-2 sm:px-3 pb-3">
+            {tools.map((tool) => <ToolItem key={tool.href} tool={tool} />)}
           </div>
         </motion.section>
       </div>
