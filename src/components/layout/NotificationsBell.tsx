@@ -56,13 +56,12 @@ export function NotificationsBell() {
 
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen(!open)} className="relative p-2.5 rounded-xl transition-all hover:scale-105"
-        style={{ background: 'hsl(var(--muted))' }}>
-        <Bell className="w-5 h-5" style={{ color: 'hsl(var(--foreground))' }} />
+      <button onClick={() => setOpen(!open)} aria-label="Notifications"
+        className="relative w-10 h-10 rounded-full flex items-center justify-center text-neutral-600 hover:bg-neutral-100 transition-colors">
+        <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
           <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
-            className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-[10px] font-bold text-white flex items-center justify-center"
-            style={{ background: '#d63031', boxShadow: '0 0 8px rgba(214, 48, 49, 0.5)' }}>
+            className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-semibold text-white flex items-center justify-center bg-[#5b21b6] ring-2 ring-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </motion.span>
         )}
@@ -70,14 +69,13 @@ export function NotificationsBell() {
 
       <AnimatePresence>
         {open && (
-          <motion.div initial={{ opacity: 0, y: -10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            className="absolute right-0 top-12 w-80 max-h-96 rounded-2xl overflow-hidden z-50"
-            style={{ background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)', border: '1px solid hsl(var(--border) / 0.5)', boxShadow: '0 20px 60px -10px rgb(0 0 0 / 0.3)' }}>
+          <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.15 }}
+            className="fixed left-4 right-4 top-[4.5rem] sm:absolute sm:left-auto sm:right-0 sm:top-12 sm:w-80 max-h-96 rounded-2xl overflow-hidden z-50 bg-white border border-neutral-200 shadow-lg shadow-neutral-900/5">
             {/* Header */}
-            <div className="flex items-center justify-between p-4" style={{ borderBottom: '1px solid hsl(var(--border) / 0.5)' }}>
-              <h3 className="text-sm font-bold" style={{ color: 'hsl(var(--foreground))' }}>Notifications</h3>
+            <div className="flex items-center justify-between p-4 border-b border-neutral-100">
+              <h3 className="text-sm font-medium text-neutral-900">Notifications</h3>
               {unreadCount > 0 && (
-                <button onClick={markAllRead} className="text-[10px] font-semibold flex items-center gap-1 hover:opacity-70" style={{ color: 'hsl(var(--primary))' }}>
+                <button onClick={markAllRead} className="text-xs font-medium flex items-center gap-1 text-[#5b21b6] hover:text-[#4c1d95]">
                   <CheckCheck className="w-3 h-3" /> Mark all read
                 </button>
               )}

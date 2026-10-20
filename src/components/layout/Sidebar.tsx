@@ -16,7 +16,6 @@ import {
   LogOut,
   Building2,
   BarChart3,
-  Menu,
   X,
   ChevronDown,
   Target,
@@ -54,6 +53,7 @@ import {
   Radio,
   Hash,
 } from 'lucide-react';
+import { OPEN_SIDEBAR_EVENT } from './TopBar';
 
 interface MenuItem {
   icon: React.ElementType;
@@ -181,7 +181,7 @@ const sections: MenuSection[] = [
 
 // Focused mode: Dashboard + Marketing + Accounts (Finance) only.
 // Other sections (CRM, HR, Inventory, Projects, Support, Compliance, AI) are hidden.
-const visibleMainItems = mainItems.filter((item) => item.href === '/');
+const visibleMainItems = mainItems.filter((item) => item.href === '/dashboard');
 const visibleSections = sections.filter((section) =>
   section.title === 'Marketing' || section.title === 'Finance'
 );
@@ -205,15 +205,15 @@ function SectionGroup({
     <div className="mb-1">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg transition-colors hover:bg-gray-100:bg-gray-800"
+        className="flex items-center gap-2.5 w-full px-3 py-2.5 rounded-xl transition-colors hover:bg-neutral-50"
       >
-        <SectionIcon className="w-4 h-4 flex-shrink-0" style={{ color: '#6b7280' }} />
+        <SectionIcon className="w-4 h-4 flex-shrink-0 text-neutral-500" />
         {!collapsed && (
           <>
-            <span className="flex-1 text-left text-xs font-semibold text-gray-700">
+            <span className="flex-1 text-left text-sm font-medium text-neutral-800">
               {section.title}
             </span>
-            <ChevronDown className={`w-3.5 h-3.5 text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${open ? 'rotate-180' : ''}`} />
           </>
         )}
       </button>
@@ -227,7 +227,7 @@ function SectionGroup({
             transition={{ duration: 0.15 }}
             className="overflow-hidden"
           >
-            <div className="pl-9 pr-3 py-1 space-y-0.5">
+            <div className="pl-6 pr-1 py-1 space-y-0.5">
               {section.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -236,13 +236,13 @@ function SectionGroup({
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors ${
                       isActive
-                        ? 'bg-purple-50 text-purple-700 font-semibold'
-                        : 'text-gray-700 hover:bg-gray-50:bg-gray-800'
+                        ? 'bg-purple-50 text-[#5b21b6] font-medium'
+                        : 'text-neutral-600 font-light hover:bg-neutral-50 hover:text-neutral-900'
                     }`}
                   >
-                    <Icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: isActive ? '#7c3aed' : '#6b7280' }} />
+                    <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-[#5b21b6]' : 'text-neutral-400'}`} />
                     <span>{item.label}</span>
                   </Link>
                 );
@@ -275,33 +275,17 @@ export function Sidebar() {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setMobileOpen(false);
     };
+    const handleOpen = () => setMobileOpen(true);
     window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
+    window.addEventListener(OPEN_SIDEBAR_EVENT, handleOpen);
+    return () => {
+      window.removeEventListener('keydown', handleEscape);
+      window.removeEventListener(OPEN_SIDEBAR_EVENT, handleOpen);
+    };
   }, []);
 
   return (
     <>
-      {/* Mobile Header */}
-      {!mobileOpen && (
-        <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
-          <div className="flex items-center justify-between p-4">
-            <Link href="/dashboard" className="flex items-center gap-3">
-              <img src="/ainos.jpg" alt="AINOS" className="w-8 h-8 rounded-lg object-cover" />
-              <div>
-                <h1 className="text-base font-bold text-gray-900">AINOS</h1>
-                <p className="text-[10px] text-gray-500">Business Suite</p>
-              </div>
-            </Link>
-            <button
-              onClick={() => setMobileOpen(true)}
-              className="p-2 rounded-lg hover:bg-gray-100:bg-gray-800"
-            >
-              <Menu className="w-5 h-5 text-gray-600" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Mobile Overlay */}
       <AnimatePresence>
         {mobileOpen && (
@@ -310,7 +294,7 @@ export function Sidebar() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setMobileOpen(false)}
-            className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[60]"
+            className="lg:hidden fixed inset-0 bg-neutral-900/40 z-[60]"
           />
         )}
       </AnimatePresence>
@@ -323,22 +307,23 @@ export function Sidebar() {
             animate={{ x: 0 }}
             exit={{ x: -300 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="lg:hidden fixed top-0 left-0 bottom-0 w-[280px] bg-white z-[70] flex flex-col border-r border-gray-200"
+            className="lg:hidden fixed top-0 left-0 bottom-0 w-[85vw] max-w-[300px] bg-white z-[70] flex flex-col border-r border-neutral-200"
           >
             {/* Logo */}
-            <div className="p-4 flex items-center justify-between border-b border-gray-200">
+            <div className="h-16 px-4 flex items-center justify-between border-b border-neutral-200">
               <Link href="/dashboard" className="flex items-center gap-3">
                 <img src="/ainos.jpg" alt="AINOS" className="w-9 h-9 rounded-lg object-cover" />
                 <div>
-                  <h1 className="text-lg font-bold text-gray-900">AINOS</h1>
-                  <p className="text-xs text-gray-500">Business Suite</p>
+                  <h1 className="text-base font-semibold text-neutral-900">AINOS</h1>
+                  <p className="text-xs text-neutral-500 font-light">Business Suite</p>
                 </div>
               </Link>
               <button
                 onClick={() => setMobileOpen(false)}
-                className="p-2 rounded-lg hover:bg-gray-100:bg-gray-800"
+                aria-label="Close menu"
+                className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-neutral-100"
               >
-                <X className="w-5 h-5 text-gray-600" />
+                <X className="w-5 h-5 text-neutral-600" />
               </button>
             </div>
 
@@ -352,10 +337,10 @@ export function Sidebar() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
                       isActive
-                        ? 'bg-purple-50 text-purple-700 font-medium'
-                        : 'text-gray-700 hover:bg-gray-50:bg-gray-800'
+                        ? 'bg-purple-50 text-[#5b21b6] font-medium'
+                        : 'text-neutral-700 hover:bg-neutral-50'
                     }`}
                   >
                     <Icon className="w-5 h-5 flex-shrink-0" />
@@ -377,23 +362,23 @@ export function Sidebar() {
             </nav>
 
             {/* User Profile */}
-            <div className="p-3 space-y-2 border-t border-gray-200">
-              <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50">
-                <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-white text-sm font-medium">
+            <div className="p-3 space-y-2 border-t border-neutral-200">
+              <div className="flex items-center gap-3 p-2 rounded-xl bg-neutral-50">
+                <div className="w-8 h-8 rounded-full bg-[#5b21b6] flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
                   {session?.user?.name?.[0] || 'U'}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 truncate">
+                  <p className="text-sm font-medium text-neutral-900 truncate">
                     {session?.user?.name || 'User'}
                   </p>
-                  <p className="text-xs text-gray-500 truncate">
+                  <p className="text-xs text-neutral-500 font-light truncate">
                     {session?.user?.email || ''}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg w-full hover:bg-gray-50:bg-gray-800 text-gray-700"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full hover:bg-neutral-50 text-neutral-700"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="text-sm">Sign Out</span>
@@ -407,15 +392,15 @@ export function Sidebar() {
       <motion.aside
         initial={false}
         animate={{ width: collapsed ? 72 : 256 }}
-        className="hidden lg:flex bg-white h-screen flex-col relative z-50 border-r border-gray-200"
+        className="hidden lg:flex bg-white h-screen flex-shrink-0 flex-col relative z-40 border-r border-neutral-200"
       >
         {/* Logo */}
-        <Link href="/dashboard" className="p-4 flex items-center gap-3 border-b border-gray-200">
+        <Link href="/dashboard" className="h-16 px-4 flex items-center gap-3 border-b border-neutral-200">
           <img src="/ainos.jpg" alt="AINOS" className="w-9 h-9 rounded-lg object-cover flex-shrink-0" />
           {!collapsed && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <h1 className="text-lg font-bold text-gray-900">AINOS</h1>
-              <p className="text-xs text-gray-500">Business Suite</p>
+              <h1 className="text-base font-semibold text-neutral-900">AINOS</h1>
+              <p className="text-xs text-neutral-500 font-light">Business Suite</p>
             </motion.div>
           )}
         </Link>
@@ -430,19 +415,13 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${
+                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors group ${
                   isActive
-                    ? 'bg-purple-50 text-purple-700 font-medium'
-                    : 'text-gray-700 hover:bg-gray-50:bg-gray-800'
+                    ? 'bg-purple-50 text-[#5b21b6] font-medium'
+                    : 'text-neutral-700 hover:bg-neutral-50'
                 }`}
               >
-                {isActive && (
-                  <motion.span
-                    layoutId="activeBar"
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-purple-600"
-                  />
-                )}
-                <Icon className="w-5 h-5 flex-shrink-0" style={{ color: isActive ? '#7c3aed' : '#6b7280' }} />
+                <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-[#5b21b6]' : 'text-neutral-500'}`} />
                 {!collapsed && (
                   <motion.span
                     initial={{ opacity: 0 }}
@@ -471,27 +450,28 @@ export function Sidebar() {
         {/* Collapse Button */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow-sm hover:shadow-md transition-shadow"
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white border border-neutral-200 flex items-center justify-center hover:border-purple-200 transition-colors"
         >
           {collapsed ? (
-            <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
+            <ChevronRight className="w-3.5 h-3.5 text-neutral-500" />
           ) : (
-            <ChevronLeft className="w-3.5 h-3.5 text-gray-600" />
+            <ChevronLeft className="w-3.5 h-3.5 text-neutral-500" />
           )}
         </button>
 
         {/* User Profile */}
-        <div className="p-3 space-y-2 border-t border-gray-200">
-          <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50">
-            <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+        <div className="p-3 space-y-2 border-t border-neutral-200">
+          <div className="flex items-center gap-3 p-2 rounded-xl bg-neutral-50">
+            <div className="w-8 h-8 rounded-full bg-[#5b21b6] flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
               {session?.user?.name?.[0] || 'U'}
             </div>
             {!collapsed && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-sm font-medium text-neutral-900 truncate">
                   {session?.user?.name || 'User'}
                 </p>
-                <p className="text-xs text-gray-500 truncate">
+                <p className="text-xs text-neutral-500 font-light truncate">
                   {session?.user?.email || ''}
                 </p>
               </motion.div>
@@ -499,9 +479,9 @@ export function Sidebar() {
           </div>
           <button
             onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors w-full ${
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors w-full ${
               collapsed ? 'justify-center' : ''
-            } hover:bg-gray-50:bg-gray-800 text-gray-700`}
+            } hover:bg-neutral-50 text-neutral-700`}
           >
             <LogOut className="w-4 h-4 flex-shrink-0" />
             {!collapsed && <span className="text-sm">Sign Out</span>}

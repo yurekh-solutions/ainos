@@ -24,11 +24,11 @@ export default async function DashboardLayout({
   return (
     <AuthProvider>
       <SessionKeepAlive />
-      <div className="flex h-screen bg-gray-50">
+      <div className="flex h-screen bg-[#fafafa]">
         <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
           <TopBar />
-          <main className="flex-1 overflow-auto pt-20">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden">
             <div className="min-h-full">{children}</div>
           </main>
         </div>
