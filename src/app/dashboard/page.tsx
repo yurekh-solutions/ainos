@@ -8,7 +8,7 @@ import {
   ScrollText, Contact2, Boxes, Coins, FileBarChart, PackageCheck, Sheet, BellRing, Paintbrush,
   AtSign, SearchCheck, PenTool, Bot, MailOpen,
   IndianRupee, BadgeCheck, Hourglass, UsersRound,
-  FilePlus2, NotebookPen, Receipt, CalendarClock,
+  FilePlus2, NotebookPen, Receipt, CalendarClock, Calculator, Megaphone,
   CheckCircle2, Circle, ChevronRight, ArrowRight,
 } from 'lucide-react';
 
@@ -28,8 +28,15 @@ interface InvoiceRow {
   date: string;
 }
 
+type Suite = 'finance' | 'marketing';
+
+// ── Neumorphic surface tokens (soft lavender base, single purple accent) ──
+const BASE = 'bg-[#f3f1f7]';
+const RAISED = `${BASE} rounded-3xl border border-white/70 shadow-[10px_10px_22px_#dcd7e6,-10px_-10px_22px_#ffffff]`;
+const RAISED_SM = `${BASE} rounded-2xl border border-white/70 shadow-[6px_6px_14px_#dcd7e6,-6px_-6px_14px_#ffffff]`;
+const INSET = `${BASE} shadow-[inset_3px_3px_7px_#dcd7e6,inset_-3px_-3px_7px_#ffffff]`;
+const PRESS = 'transition-shadow duration-200 hover:shadow-[3px_3px_8px_#dcd7e6,-3px_-3px_8px_#ffffff] active:shadow-[inset_3px_3px_7px_#dcd7e6,inset_-3px_-3px_7px_#ffffff]';
 const ACCENT = 'text-[#5b21b6]';
-const CARD = 'rounded-2xl bg-white border border-neutral-200';
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 8 },
@@ -47,14 +54,24 @@ const formatCompact = (n: number) => {
 };
 
 const STATUS_STYLE: Record<string, string> = {
-  paid: 'bg-purple-50 text-[#5b21b6]',
+  paid: 'bg-purple-100/70 text-[#5b21b6]',
   overdue: 'bg-red-50 text-red-600',
-  cancelled: 'bg-neutral-100 text-neutral-400 line-through',
+  cancelled: 'bg-neutral-200/60 text-neutral-400 line-through',
 };
+
+function IconWell({ icon: Icon, size = 'md' }: { icon: React.ElementType; size?: 'sm' | 'md' | 'lg' }) {
+  const box = size === 'sm' ? 'w-9 h-9 rounded-xl' : size === 'lg' ? 'w-14 h-14 rounded-2xl' : 'w-11 h-11 rounded-xl';
+  const glyph = size === 'sm' ? 'w-4 h-4' : size === 'lg' ? 'w-6 h-6' : 'w-5 h-5';
+  return (
+    <div className={`${box} ${INSET} flex items-center justify-center flex-shrink-0`}>
+      <Icon className={`${glyph} ${ACCENT}`} />
+    </div>
+  );
+}
 
 function SectionTitle({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
   return (
-    <div className="flex items-end justify-between gap-4 mb-4">
+    <div className="flex items-end justify-between gap-4 mb-5">
       <div className="min-w-0">
         <h2 className="text-lg font-semibold text-neutral-900 tracking-tight">{title}</h2>
         {subtitle && <p className="text-sm text-neutral-500 font-light mt-0.5">{subtitle}</p>}
@@ -65,33 +82,27 @@ function SectionTitle({ title, subtitle, action }: { title: string; subtitle?: s
 }
 
 function ToolRow({ tool }: { tool: Tool }) {
-  const Icon = tool.icon;
   return (
-    <Link
-      href={tool.href}
-      className="group flex items-start gap-4 p-4 sm:p-5 rounded-2xl bg-white border border-neutral-200 hover:border-purple-200 hover:bg-purple-50/40 transition-colors"
-    >
-      <div className="w-11 h-11 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
-        <Icon className={`w-5 h-5 ${ACCENT}`} />
-      </div>
+    <Link href={tool.href} className={`group flex items-start gap-4 p-4 sm:p-5 ${RAISED_SM} ${PRESS}`}>
+      <IconWell icon={tool.icon} />
       <div className="flex-1 min-w-0">
         <p className="text-[15px] font-medium text-neutral-900">{tool.title}</p>
         <p className="text-sm text-neutral-500 font-light leading-relaxed mt-1 line-clamp-2">{tool.description}</p>
       </div>
-      <ChevronRight className="w-4 h-4 mt-1 text-neutral-300 group-hover:text-[#5b21b6] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+      <ChevronRight className="w-4 h-4 mt-1 text-neutral-400 group-hover:text-[#5b21b6] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
     </Link>
   );
 }
 
 function Skeleton({ className }: { className: string }) {
-  return <div className={`rounded-md bg-neutral-100 animate-pulse ${className}`} />;
+  return <div className={`rounded-md bg-[#e6e2ee] animate-pulse ${className}`} />;
 }
 
 export default function DashboardPage() {
   const { data: session } = useSession();
   const [templateCount, setTemplateCount] = useState<number | null>(null);
   const [loaded, setLoaded] = useState(false);
-  const [tab, setTab] = useState<'finance' | 'marketing'>('finance');
+  const [tab, setTab] = useState<Suite>('finance');
   const [data, setData] = useState({
     billed: 0, collected: 0, outstanding: 0, overdueCount: 0,
     invoiceCount: 0, customers: 0, products: 0,
@@ -181,7 +192,31 @@ export default function DashboardPage() {
     { title: 'Invitations', description: `${templateLabel} festival and occasion templates with your branding.`, icon: MailOpen, href: '/marketing/invitations' },
   ];
 
+  const suites: { key: Suite; title: string; description: string; icon: React.ElementType; tools: Tool[]; meta: string }[] = [
+    {
+      key: 'finance',
+      title: 'Finance Suite',
+      description: 'GST billing, quotations, expenses, challans and Tally sync for Indian businesses.',
+      icon: Calculator,
+      tools: financeTools,
+      meta: `${data.invoiceCount} invoices · ${data.products} products`,
+    },
+    {
+      key: 'marketing',
+      title: 'Marketing Suite',
+      description: 'Social captions, SEO audits, blogs and branded invitations to grow your reach.',
+      icon: Megaphone,
+      tools: marketingTools,
+      meta: `${templateLabel} invitation templates`,
+    },
+  ];
+
   const tools = tab === 'finance' ? financeTools : marketingTools;
+
+  const openSuite = (key: Suite) => {
+    setTab(key);
+    document.getElementById('tools')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -198,38 +233,38 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-full bg-[#fafafa]">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 lg:py-10 space-y-6 sm:space-y-8">
+    <div className={`min-h-full ${BASE}`}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 space-y-8 sm:space-y-10">
 
         {/* Welcome */}
-        <motion.section {...fadeUp()} className={`${CARD} relative overflow-hidden`}>
-          <div
-            aria-hidden
-            className="absolute inset-y-0 right-0 w-2/3 bg-[radial-gradient(#e9e4f5_1px,transparent_1px)] [background-size:22px_22px] [mask-image:linear-gradient(to_left,black,transparent)]"
-          />
-          <div className="relative p-5 sm:p-8 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+        <motion.section {...fadeUp()} className={`${RAISED} p-5 sm:p-8`}>
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <div className="min-w-0">
-              <p className="text-sm text-neutral-500 font-light">{today}</p>
-              <h1 className="text-2xl sm:text-3xl font-semibold text-neutral-900 tracking-tight mt-1">
+              <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${INSET}`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#5b21b6]" />
+                <span className="text-xs font-medium tracking-wide text-[#5b21b6]">AINOS Business Suite</span>
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-semibold text-neutral-900 tracking-tight mt-4">
                 {getGreeting()}, {firstName}
               </h1>
-              <p className="text-sm sm:text-base text-neutral-600 font-light mt-2 max-w-md leading-relaxed">
+              <p className="text-sm sm:text-base text-neutral-600 font-light mt-2 max-w-lg leading-relaxed">
                 {data.overdueCount > 0
                   ? `You have ${data.overdueCount} overdue invoice${data.overdueCount === 1 ? '' : 's'} to follow up on.`
-                  : 'Here’s a quick look at your business today.'}
+                  : 'Billing, accounts and marketing for your business — all in one workspace.'}
               </p>
+              <p className="text-xs text-neutral-400 font-light mt-3">{today}</p>
             </div>
-            <div className="grid grid-cols-2 sm:flex gap-3 flex-shrink-0">
+            <div className="grid grid-cols-2 sm:flex gap-3 sm:gap-4 flex-shrink-0">
               <Link
                 href="/invoices"
-                className="inline-flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 rounded-full bg-[#5b21b6] hover:bg-[#4c1d95] active:scale-[0.98] text-white text-sm font-medium transition-all"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#5b21b6] hover:bg-[#4c1d95] text-white text-sm font-medium shadow-[5px_5px_12px_#cfc7df,-5px_-5px_12px_#ffffff] active:scale-[0.98] transition-all"
               >
                 <FilePlus2 className="w-4 h-4" />
                 New invoice
               </Link>
               <Link
                 href="/marketing/blog"
-                className="inline-flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 rounded-full bg-white border border-neutral-200 hover:border-purple-200 hover:bg-purple-50 text-neutral-800 text-sm font-medium transition-colors"
+                className={`inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full ${BASE} border border-white/70 shadow-[5px_5px_12px_#dcd7e6,-5px_-5px_12px_#ffffff] ${PRESS} text-neutral-800 text-sm font-medium`}
               >
                 <NotebookPen className={`w-4 h-4 ${ACCENT}`} />
                 Write a blog
@@ -239,33 +274,72 @@ export default function DashboardPage() {
         </motion.section>
 
         {/* Stats */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {stats.map((stat, i) => {
-            const Icon = stat.icon;
-            return (
-              <motion.div key={stat.label} {...fadeUp(0.05 + i * 0.04)} className={`${CARD} p-4 sm:p-5`}>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm text-neutral-500 font-light truncate">{stat.label}</span>
-                  <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0">
-                    <Icon className={`w-4 h-4 ${ACCENT}`} />
-                  </div>
-                </div>
-                {loaded ? (
-                  <p title={stat.full} className="mt-3 text-xl sm:text-2xl font-semibold text-neutral-900 tabular-nums tracking-tight truncate">
-                    {stat.value}
-                  </p>
-                ) : (
-                  <Skeleton className="mt-3 h-7 w-20" />
-                )}
-                <p className="text-xs text-neutral-400 font-light mt-1 truncate">{stat.hint}</p>
-              </motion.div>
-            );
-          })}
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          {stats.map((stat, i) => (
+            <motion.div key={stat.label} {...fadeUp(0.05 + i * 0.04)} className={`${RAISED_SM} p-4 sm:p-5`}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm text-neutral-500 font-light truncate">{stat.label}</span>
+                <IconWell icon={stat.icon} size="sm" />
+              </div>
+              {loaded ? (
+                <p title={stat.full} className="mt-3 text-xl sm:text-2xl font-semibold text-neutral-900 tabular-nums tracking-tight truncate">
+                  {stat.value}
+                </p>
+              ) : (
+                <Skeleton className="mt-3 h-7 w-20" />
+              )}
+              <p className="text-xs text-neutral-400 font-light mt-1 truncate">{stat.hint}</p>
+            </motion.div>
+          ))}
         </section>
 
+        {/* Workspace — what AINOS gives you */}
+        <motion.section {...fadeUp(0.12)}>
+          <SectionTitle title="Your workspace" subtitle="Two suites, one login — pick where you want to work" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            {suites.map(suite => (
+              <button
+                key={suite.key}
+                onClick={() => openSuite(suite.key)}
+                className={`group text-left p-5 sm:p-6 ${RAISED} ${PRESS}`}
+              >
+                <div className="flex items-start gap-4">
+                  <IconWell icon={suite.icon} size="lg" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-base sm:text-lg font-semibold text-neutral-900 tracking-tight">{suite.title}</h3>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium text-neutral-600 ${INSET}`}>
+                        {suite.tools.length} tools
+                      </span>
+                    </div>
+                    <p className="text-sm text-neutral-500 font-light leading-relaxed mt-1.5">{suite.description}</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-5">
+                  {suite.tools.slice(0, 4).map(t => (
+                    <span key={t.href} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs text-neutral-600 ${INSET}`}>
+                      <t.icon className={`w-3.5 h-3.5 ${ACCENT}`} />
+                      {t.title}
+                    </span>
+                  ))}
+                  {suite.tools.length > 4 && (
+                    <span className="inline-flex items-center px-2 py-1.5 text-xs text-neutral-400">+{suite.tools.length - 4} more</span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between gap-3 mt-5 pt-4 border-t border-[#e4e0ec]">
+                  <span className="text-xs text-neutral-400 font-light truncate">{loaded ? suite.meta : '—'}</span>
+                  <span className="inline-flex items-center gap-1 text-sm font-medium text-[#5b21b6] flex-shrink-0">
+                    Open suite <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </motion.section>
+
         {/* Recent invoices + side column */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-          <motion.section {...fadeUp(0.15)} className="lg:col-span-2 min-w-0">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <motion.section {...fadeUp(0.18)} className="lg:col-span-2 min-w-0">
             <SectionTitle
               title="Recent invoices"
               subtitle="Your latest five bills"
@@ -277,11 +351,11 @@ export default function DashboardPage() {
                 )
               }
             />
-            <div className={`${CARD} overflow-hidden`}>
+            <div className={`${RAISED} p-2 sm:p-3`}>
               {!loaded ? (
-                <div className="divide-y divide-neutral-100">
+                <div className="space-y-1">
                   {[0, 1, 2].map(i => (
-                    <div key={i} className="flex items-center gap-4 p-4 sm:px-5">
+                    <div key={i} className="flex items-center gap-4 p-3 sm:px-4">
                       <Skeleton className="w-10 h-10 rounded-xl" />
                       <div className="flex-1 space-y-2">
                         <Skeleton className="h-4 w-1/3" />
@@ -293,24 +367,22 @@ export default function DashboardPage() {
                 </div>
               ) : data.recent.length === 0 ? (
                 <div className="px-6 py-12 text-center">
-                  <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center mx-auto">
-                    <Receipt className={`w-6 h-6 ${ACCENT}`} />
-                  </div>
-                  <p className="text-[15px] font-medium text-neutral-900 mt-4">No invoices yet</p>
+                  <div className="flex justify-center"><IconWell icon={Receipt} size="lg" /></div>
+                  <p className="text-[15px] font-medium text-neutral-900 mt-5">No invoices yet</p>
                   <p className="text-sm text-neutral-500 font-light mt-1">Your invoices will show up here once you create one.</p>
                   <Link
                     href="/invoices"
-                    className="inline-flex items-center gap-2 mt-5 px-5 py-2.5 rounded-full bg-[#5b21b6] hover:bg-[#4c1d95] text-white text-sm font-medium transition-colors"
+                    className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 rounded-full bg-[#5b21b6] hover:bg-[#4c1d95] text-white text-sm font-medium shadow-[5px_5px_12px_#cfc7df,-5px_-5px_12px_#ffffff] transition-colors"
                   >
                     Create invoice <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
               ) : (
-                <ul className="divide-y divide-neutral-100">
+                <ul className="space-y-1">
                   {data.recent.map(inv => (
                     <li key={inv.id}>
-                      <Link href="/invoices" className="flex items-center gap-3 sm:gap-4 p-4 sm:px-5 hover:bg-neutral-50 transition-colors">
-                        <div className="w-10 h-10 rounded-xl bg-neutral-50 border border-neutral-100 flex items-center justify-center flex-shrink-0 text-sm font-medium text-neutral-600">
+                      <Link href="/invoices" className="flex items-center gap-3 sm:gap-4 p-3 sm:px-4 rounded-2xl hover:bg-white/60 transition-colors">
+                        <div className={`w-10 h-10 rounded-xl ${INSET} flex items-center justify-center flex-shrink-0 text-sm font-medium text-[#5b21b6]`}>
                           {inv.customerName.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -321,7 +393,7 @@ export default function DashboardPage() {
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-sm font-medium text-neutral-900 tabular-nums">{formatINR(inv.amount)}</p>
-                          <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[11px] font-medium capitalize ${STATUS_STYLE[inv.status] || 'bg-neutral-100 text-neutral-600'}`}>
+                          <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[11px] font-medium capitalize ${STATUS_STYLE[inv.status] || 'bg-neutral-200/60 text-neutral-600'}`}>
                             {inv.status}
                           </span>
                         </div>
@@ -333,11 +405,11 @@ export default function DashboardPage() {
             </div>
           </motion.section>
 
-          <motion.aside {...fadeUp(0.2)} className="space-y-6 sm:space-y-8 min-w-0">
+          <motion.aside {...fadeUp(0.22)} className="space-y-8 min-w-0">
             {/* Collections */}
             <section>
               <SectionTitle title="Collections" subtitle="Paid vs billed" />
-              <div className={`${CARD} p-5`}>
+              <div className={`${RAISED} p-5 sm:p-6`}>
                 <div className="flex items-baseline justify-between gap-3">
                   {loaded ? (
                     <p className="text-3xl font-semibold text-neutral-900 tabular-nums tracking-tight">{collectionRate}%</p>
@@ -346,7 +418,7 @@ export default function DashboardPage() {
                   )}
                   <span className="text-sm text-neutral-500 font-light">collected</span>
                 </div>
-                <div className="h-2 rounded-full bg-neutral-100 overflow-hidden mt-4">
+                <div className={`h-3 rounded-full ${INSET} p-0.5 mt-4`}>
                   <motion.div
                     className="h-full rounded-full bg-[#5b21b6]"
                     initial={{ width: 0 }}
@@ -354,12 +426,12 @@ export default function DashboardPage() {
                     transition={{ duration: 0.8, ease: 'easeOut' }}
                   />
                 </div>
-                <dl className="grid grid-cols-2 gap-4 mt-5 pt-5 border-t border-neutral-100">
-                  <div className="min-w-0">
+                <dl className="grid grid-cols-2 gap-3 mt-5">
+                  <div className={`min-w-0 p-3 rounded-2xl ${INSET}`}>
                     <dt className="text-xs text-neutral-500 font-light">Received</dt>
                     <dd className="text-sm font-medium text-neutral-900 tabular-nums truncate mt-0.5">{formatINR(data.collected)}</dd>
                   </div>
-                  <div className="min-w-0">
+                  <div className={`min-w-0 p-3 rounded-2xl ${INSET}`}>
                     <dt className="text-xs text-neutral-500 font-light">Pending</dt>
                     <dd className="text-sm font-medium text-neutral-900 tabular-nums truncate mt-0.5">{formatINR(data.outstanding)}</dd>
                   </div>
@@ -367,7 +439,7 @@ export default function DashboardPage() {
                 {data.overdueCount > 0 && (
                   <Link
                     href="/finance/reminders"
-                    className="mt-5 flex items-center gap-3 p-3 rounded-xl bg-red-50/60 hover:bg-red-50 transition-colors"
+                    className="mt-4 flex items-center gap-3 p-3 rounded-2xl bg-red-50/70 hover:bg-red-50 transition-colors"
                   >
                     <CalendarClock className="w-4 h-4 text-red-600 flex-shrink-0" />
                     <span className="flex-1 text-sm text-red-700">{data.overdueCount} overdue — send reminders</span>
@@ -381,12 +453,12 @@ export default function DashboardPage() {
             {loaded && !setupComplete && (
               <section>
                 <SectionTitle title="Getting started" subtitle={`${doneCount} of ${setupSteps.length} steps complete`} />
-                <div className={`${CARD} p-3`}>
+                <div className={`${RAISED} p-2 sm:p-3`}>
                   {setupSteps.map((step) => (
                     <Link
                       key={step.label}
                       href={step.href}
-                      className="group flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-neutral-50 transition-colors"
+                      className="group flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-white/60 transition-colors"
                     >
                       {step.done ? (
                         <CheckCircle2 className={`w-5 h-5 flex-shrink-0 ${ACCENT}`} />
@@ -396,7 +468,7 @@ export default function DashboardPage() {
                       <span className={`flex-1 text-sm ${step.done ? 'text-neutral-400 line-through font-light' : 'text-neutral-700'}`}>
                         {step.label}
                       </span>
-                      {!step.done && <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-[#5b21b6] transition-colors" />}
+                      {!step.done && <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:text-[#5b21b6] transition-colors" />}
                     </Link>
                   ))}
                 </div>
@@ -406,34 +478,38 @@ export default function DashboardPage() {
         </div>
 
         {/* Tools */}
-        <motion.section {...fadeUp(0.25)}>
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-4">
+        <motion.section id="tools" {...fadeUp(0.26)} className="scroll-mt-6">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5">
             <div>
-              <h2 className="text-lg font-semibold text-neutral-900 tracking-tight">Your tools</h2>
+              <h2 className="text-lg font-semibold text-neutral-900 tracking-tight">
+                {tab === 'finance' ? 'Finance tools' : 'Marketing tools'}
+              </h2>
               <p className="text-sm text-neutral-500 font-light mt-0.5">
                 {tab === 'finance' ? 'Billing, GST and everyday accounts' : 'Content, SEO and social in one place'}
               </p>
             </div>
-            <div role="tablist" className="inline-flex self-start sm:self-auto p-1 rounded-full bg-neutral-100">
-              {(['finance', 'marketing'] as const).map(key => (
+            <div role="tablist" className={`inline-flex self-start sm:self-auto p-1.5 rounded-full ${INSET}`}>
+              {suites.map(suite => (
                 <button
-                  key={key}
+                  key={suite.key}
                   role="tab"
-                  aria-selected={tab === key}
-                  onClick={() => setTab(key)}
-                  className={`px-5 py-2 rounded-full text-sm font-medium capitalize transition-colors ${
-                    tab === key ? 'bg-white text-[#5b21b6] shadow-sm' : 'text-neutral-500 hover:text-neutral-800'
+                  aria-selected={tab === suite.key}
+                  onClick={() => setTab(suite.key)}
+                  className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                    tab === suite.key
+                      ? `${BASE} text-[#5b21b6] shadow-[3px_3px_7px_#dcd7e6,-3px_-3px_7px_#ffffff]`
+                      : 'text-neutral-500 hover:text-neutral-800'
                   }`}
                 >
-                  {key}
-                  <span className={`ml-1.5 text-xs ${tab === key ? 'text-purple-300' : 'text-neutral-400'}`}>
-                    {key === 'finance' ? financeTools.length : marketingTools.length}
+                  {suite.key === 'finance' ? 'Finance' : 'Marketing'}
+                  <span className={`ml-1.5 text-xs ${tab === suite.key ? 'text-purple-300' : 'text-neutral-400'}`}>
+                    {suite.tools.length}
                   </span>
                 </button>
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {tools.map((tool) => <ToolRow key={tool.href} tool={tool} />)}
           </div>
         </motion.section>
