@@ -79,3 +79,61 @@ export function passwordResetEmailTemplate(resetUrl: string): string {
     </div>
   `;
 }
+
+/**
+ * Welcome email template for new registrations.
+ */
+export function welcomeEmailTemplate(userName: string, companyName: string): string {
+  return `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 24px; background: #f8f7fc;">
+      <div style="background: white; border-radius: 16px; padding: 40px 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <div style="width: 64px; height: 64px; margin: 0 auto 16px; background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #111827;">Welcome to AINOS!</h1>
+          <p style="margin: 8px 0 0; font-size: 14px; color: #6b7280;">Your account has been created successfully.</p>
+        </div>
+
+        <div style="margin: 24px 0;">
+          <p style="margin: 0 0 16px; font-size: 15px; color: #374151; line-height: 1.6;">
+            Hi <strong>${userName}</strong>,
+          </p>
+          <p style="margin: 0 0 16px; font-size: 15px; color: #374151; line-height: 1.6;">
+            Your company <strong>${companyName}</strong> has been registered on AINOS Business Suite. We're excited to have you on board!
+          </p>
+          <p style="margin: 0 0 16px; font-size: 15px; color: #374151; line-height: 1.6;">
+            <strong>What's next?</strong>
+          </p>
+          <ul style="margin: 0 0 16px; padding-left: 20px; font-size: 14px; color: #374151; line-height: 1.8;">
+            <li>Complete your company profile</li>
+            <li>Upload required documents for verification</li>
+            <li>Explore our business tools and features</li>
+            <li>Get 100 welcome credits to start with</li>
+          </ul>
+        </div>
+
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/signin" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 15px;">Sign In to AINOS</a>
+        </div>
+
+        <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; margin: 24px 0;">
+          <p style="margin: 0; font-size: 13px; color: #6b7280; line-height: 1.6;">
+            <strong style="color: #111827;">Need help?</strong><br>
+            Our admin team will review your registration and approve your account shortly. You'll receive a notification once approved.
+          </p>
+        </div>
+
+        <div style="text-align: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb;">
+          <p style="margin: 0; font-size: 12px; color: #9ca3af;">
+            AINOS Business Suite<br>
+            Billing, accounts and marketing for your business.
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
+}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
+import { sendEmail, welcomeEmailTemplate } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
   try {
@@ -109,6 +110,19 @@ export async function POST(req: NextRequest) {
         balance: 100, // Welcome credits
       },
     });
+
+    // Send welcome email
+    try {
+      await sendEmail({
+        to: email,
+        subject: 'Welcome to AINOS Business Suite!',
+        html: welcomeEmailTemplate(name, companyName),
+      });
+      console.log(`[Auth] Welcome email sent to: ${email}`);
+    } catch (emailError) {
+      console.error('[Auth] Welcome email failed:', emailError);
+      // Don't fail registration if email fails
+    }
 
     return NextResponse.json(
       {
