@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { liveNow } from '@/lib/site-health';
 
-// Public API - no auth required. Returns only published posts.
+// Public API - no auth required. Returns only published posts past their go-live date.
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -15,11 +16,13 @@ export async function GET(req: NextRequest) {
       const post = await prisma.blogPost.findUnique({
         where: { slug, status: 'published' },
       });
-      if (!post) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      if (!post || (post.publishedAt && post.publishedAt > new Date())) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      }
       return NextResponse.json(post);
     }
 
-    const where: Record<string, unknown> = { status: 'published' };
+    const where: Record<string, unknown> = { status: 'published', AND: [liveNow()] };
 
     if (category && category !== 'All') {
       where.category = category;
@@ -41,7 +44,7 @@ export async function GET(req: NextRequest) {
 
     // Get distinct categories
     const allPublished = await prisma.blogPost.findMany({
-      where: { status: 'published' },
+      where: { status: 'published', ...liveNow() },
       select: { category: true },
     });
     const categories = [...new Set(allPublished.map((p: { category: string | null }) => p.category).filter(Boolean))] as string[];

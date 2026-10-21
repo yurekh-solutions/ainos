@@ -15,8 +15,8 @@ const fallbackImage = (topic: string, seed: number, context?: string) => {
     'no text, no watermarks, no logos, no people faces',
   ].join(', ');
   const params = new URLSearchParams({
-    width: '1200',
-    height: '630',
+    width: '1920',
+    height: '1080',
     model: 'flux-realism',
     enhance: 'true',
     nologo: 'true',
@@ -34,6 +34,10 @@ const ABSTRACT_WORDS = new Set(['guide','plan','action','strategy','strategies',
 
 // Map abstract topics to concrete visual concepts
 const TOPIC_VISUAL_MAP: Record<string, string> = {
+  'av': 'professional audio visual equipment with speakers, projector and stage lighting',
+  'audio': 'professional sound equipment with speakers and mixing console',
+  'jeans': 'premium denim jeans with detailed fabric texture in a fashion studio',
+  'fashion': 'curated clothing collection with detailed fabric textures in a fashion studio',
   'marketing': 'modern marketing team brainstorming with charts and graphs on whiteboard',
   'digital': 'person working on laptop with analytics dashboard',
   'agency': 'creative office workspace with design mockups',
@@ -60,10 +64,11 @@ function getVisualConcept(topic: string, context?: string): string {
   const lowerTopic = topic.toLowerCase();
   const lowerContext = (context || '').toLowerCase();
 
-  // Check if any visual map keyword matches
-  for (const [keyword, visual] of Object.entries(TOPIC_VISUAL_MAP)) {
-    if (lowerTopic.includes(keyword) || lowerContext.includes(keyword)) {
-      return visual;
+  // Prefer the article's subject before its broader niche. Word boundaries
+  // prevent short terms like "ai" from matching unrelated words like "retail".
+  for (const text of [lowerTopic, lowerContext]) {
+    for (const [keyword, visual] of Object.entries(TOPIC_VISUAL_MAP)) {
+      if (new RegExp(`\\b${keyword}\\b`, 'i').test(text)) return visual;
     }
   }
 
@@ -102,14 +107,15 @@ export async function getBlogImage(topic: string, context?: string): Promise<str
     try {
       const res = await fetch(
         `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=20&orientation=landscape`,
-        { headers: { Authorization: process.env.PEXELS_API_KEY } }
+        { headers: { Authorization: process.env.PEXELS_API_KEY }, signal: AbortSignal.timeout(15_000) }
       );
       if (res.ok) {
         const data: { photos?: Array<{ src?: { large?: string; landscape?: string } }> } = await res.json();
         const photos = data.photos || [];
         if (photos.length) {
           const pick = photos[hash % photos.length];
-          const url = pick.src?.large || pick.src?.landscape;
+          // landscape is a 1200x627 crop — the exact blog card / OG ratio
+          const url = pick.src?.landscape || pick.src?.large;
           if (url) return url;
         }
       }
@@ -121,7 +127,7 @@ export async function getBlogImage(topic: string, context?: string): Promise<str
     try {
       const res = await fetch(
         `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=20&orientation=landscape`,
-        { headers: { Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}` } }
+        { headers: { Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}` }, signal: AbortSignal.timeout(15_000) }
       );
       if (res.ok) {
         const data: { results?: Array<{ urls?: { regular?: string } }> } = await res.json();
@@ -137,6 +143,30 @@ export async function getBlogImage(topic: string, context?: string): Promise<str
 
   // 3) Pollinations generated image (no key required)
   return fallbackImage(topic, seed, context);
+}
+
+// True when the URL actually serves a real image (not an error page/JSON).
+async function imageLoads(url: string, timeoutMs: number): Promise<boolean> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+    if (!res.ok || !(res.headers.get('content-type') || '').startsWith('image/')) return false;
+    const buf = await res.arrayBuffer();
+    return buf.byteLength > 8_000;
+  } catch {
+    return false;
+  }
+}
+
+// Verify the image before publishing. Providers may become unavailable later,
+// so the widget also handles loading errors. Retry generated images once.
+export async function getVerifiedBlogImage(topic: string, context?: string): Promise<string> {
+  const first = await getBlogImage(topic, context);
+  if (await imageLoads(first, 60_000)) return first;
+  const retry = first.includes('image.pollinations.ai')
+    ? first.replace(/seed=(\d+)/, (_, s) => `seed=${(Number(s) + 7919) % 100000}`)
+    : fallbackImage(topic, Date.now() % 100000, context);
+  if (await imageLoads(retry, 60_000)) return retry;
+  throw new Error('Featured image unavailable — retry generation later');
 }
 
 // Strip ALL inline images from blog content.

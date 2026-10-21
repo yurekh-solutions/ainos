@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { liveNow, normalizeHost } from '@/lib/site-health';
 
 // CORS-enabled public API for embedding blogs on ANY website
 // Supports: WordPress, Shopify, React, HTML, Wix, Squarespace, etc.
@@ -59,16 +60,6 @@ function cleanContent(raw: string): string {
   return trimmed;
 }
 
-// "https://www.SkyAV.in/some/path" -> "skyav.in"
-function normalizeHost(u: string): string {
-  try {
-    const url = new URL(u.startsWith('http') ? u : `https://${u}`);
-    return url.host.replace(/^www\./, '').toLowerCase();
-  } catch {
-    return '';
-  }
-}
-
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -87,7 +78,7 @@ export async function GET(req: NextRequest) {
             include: {
               subscription: {
                 include: {
-                  connectedWebsite: true,
+                  connectedWebsite: { select: { name: true, url: true, niche: true } },
                 },
               },
             },
@@ -95,6 +86,10 @@ export async function GET(req: NextRequest) {
         },
       });
       if (!post) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      // Scheduled posts stay hidden on client sites until their go-live date
+      if (post.publishedAt && post.publishedAt > new Date()) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      }
 
       // Tenant guard: an embedded single-post view must never show another
       // company's article on a client's website
@@ -105,7 +100,7 @@ export async function GET(req: NextRequest) {
           select: { id: true, url: true, companyId: true },
         });
         const siteMatch = sites.find(w => normalizeHost(w.url || '') === slugSiteHost);
-        if (siteMatch && post.companyId && post.companyId !== siteMatch.companyId) {
+        if (!siteMatch || !post.companyId || post.companyId !== siteMatch.companyId) {
           return NextResponse.json({ error: 'Not found' }, { status: 404 });
         }
       }
@@ -113,7 +108,9 @@ export async function GET(req: NextRequest) {
       const website = post.schedules?.[0]?.subscription?.connectedWebsite;
 
       const responseData = {
-        ...post,
+        id: post.id, title: post.title, slug: post.slug, excerpt: post.excerpt,
+        category: post.category, tags: post.tags, featuredImage: post.featuredImage,
+        publishedAt: post.publishedAt, createdAt: post.createdAt,
         content: cleanContent(post.content || ''),
         websiteName: website?.name || null,
         websiteUrl: website?.url || null,
@@ -157,13 +154,13 @@ export async function GET(req: NextRequest) {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type',
-          'Cache-Control': 'public, max-age=3600',
+          'Cache-Control': 'no-store',
         },
       });
     }
 
-    // List of published posts
-    const where: Record<string, unknown> = { status: 'published' };
+    // List of posts that are published and past their go-live date
+    const where: Record<string, unknown> = { status: 'published', AND: [liveNow()] };
 
     // Tenant isolation: serve ONLY the blogs of the website this widget is
     // embedded on (host matched against connected websites). Unknown sites
@@ -255,7 +252,7 @@ export async function GET(req: NextRequest) {
 
     // Get distinct categories (same tenant only)
     const allPublished = await prisma.blogPost.findMany({
-      where: { status: 'published', companyId: where.companyId as string },
+      where: { status: 'published', companyId: where.companyId as string, ...liveNow() },
       select: { category: true },
     });
     const categories = [...new Set(allPublished.map((p: { category: string | null }) => p.category).filter(Boolean))] as string[];
@@ -267,7 +264,7 @@ export async function GET(req: NextRequest) {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type',
-          'Cache-Control': 'public, max-age=3600',
+          'Cache-Control': 'no-store',
         },
       }
     );

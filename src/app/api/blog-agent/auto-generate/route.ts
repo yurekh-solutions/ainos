@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { generateScheduleNow } from '@/lib/schedule-generator';
+import { runHealthChecks } from '@/lib/site-health';
 
 // POST /api/blog-agent/auto-generate
-// Called daily by cron - generates today's pending blogs, catches up overdue
-// pending schedules, and retries failed ones from the last 3 days
+// Called daily by cron - re-checks every connected website for the embed code
+// (notifying owners when a site connects or drops off), generates today's
+// pending blogs, catches up overdue pending schedules, and retries failed ones
+// from the last 3 days
 export async function POST(req: NextRequest) {
   try {
     // Verify cron secret (optional security)
@@ -12,6 +15,11 @@ export async function POST(req: NextRequest) {
     if (authHeader && authHeader !== `Bearer ${process.env.CRON_SECRET || 'ainos-cron-2024'}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const health = await runHealthChecks().catch((err) => {
+      console.error('[Auto-generate] health checks failed:', err);
+      return null;
+    });
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -57,6 +65,7 @@ export async function POST(req: NextRequest) {
       results,
       published: results.filter(r => r.status === 'published').length,
       failed: results.filter(r => r.status === 'failed').length,
+      health,
     });
   } catch (error) {
     console.error('Auto-generate error:', error);

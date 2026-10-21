@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { generateAIText } from '@/lib/ai-provider';
-import { getBlogImage, replaceContentImages } from '@/lib/blog-images';
+import { getVerifiedBlogImage } from '@/lib/blog-images';
+import { tidyBlogContent, blogQualityIssue, blogExcerpt, cleanBlogTags } from '@/lib/blog-quality';
 
 // AI Blog Agent - generates SEO-friendly blog posts with high-quality featured images
 // (Pexels → Unsplash → Pollinations fallback) via unified AI provider (Gemini first)
@@ -11,17 +12,17 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { topic, keywords, tone, length, industry, language } = await req.json();
-    if (!topic) return NextResponse.json({ error: 'Topic is required' }, { status: 400 });
+    if (typeof topic !== 'string' || !topic.trim()) return NextResponse.json({ error: 'Topic is required' }, { status: 400 });
 
     const langName = language === 'hi' ? 'Hindi' : language === 'mr' ? 'Marathi' : 'English';
-    const wordCount = length === 'short' ? '400-500' : length === 'long' ? '1200-1500' : '700-900';
+    const wordCount = length === 'short' ? '400-500' : length === 'long' ? '1200-1500' : length === 'extra-long' ? '2800-3200' : '700-900';
 
     const systemPrompt = `You are an expert SEO and AEO (Answer Engine Optimization) content writer. You write highly engaging, SEO-optimized blog posts that rank on Google, get cited by AI (ChatGPT, Perplexity, Gemini), and drive organic traffic.
 
 CONTENT STRUCTURE (follow exactly):
 1. Start with a DIRECT ANSWER paragraph (2-3 sentences answering the main query — for AEO/AI citation)
 2. Then write the full article with this structure:
-   - # Title (H1 with primary keyword)
+   - Put the title only in the JSON title field, not an H1 inside content
    - ## Introduction (engaging hook + what reader will learn)
    - ## Main sections (H2) with ### subsections (H3) where needed
    - ## FAQ section (3-5 questions with direct answers)
@@ -33,12 +34,12 @@ RULES:
 - Target industry: ${industry || 'general business'}
 - Word count: ${wordCount} words
 - Each H2 section should be 150-300 words with actionable, specific content
-- Use data, statistics, examples, and real-world scenarios
+- Use specific practical examples. Never fabricate statistics, citations, company claims, or testimonials. Label hypothetical scenarios clearly.
 - Include a DIRECT ANSWER (40-60 words) right after the intro for AEO
 - Optimize for primary keyword and LSI/related terms naturally
 - Use EEAT signals: cite expertise, experience, data sources
 - FAQ answers should be concise (2-3 sentences) for AI citation
-- Write in CLEAN MARKDOWN: # for H1, ## for H2, ### for H3
+- Write in CLEAN MARKDOWN: ## for H2, ### for H3. Include at least ${length === 'short' ? 3 : 4} useful H2 sections.
 - Use bullet points and numbered lists where appropriate
 - Include a strong CTA at the end
 
@@ -70,7 +71,7 @@ PIPELINE:
 
 QUALITY CHECKS:
 - Every H2 section must have SPECIFIC, ACTIONABLE content (not fluff)
-- Include at least 2-3 statistics or data points
+- Include practical examples; only include statistics with a reliable source, never invent them
 - Use real-world examples relevant to ${industry || 'the industry'}
 - FAQ answers must be direct (2-3 sentences max)
 - NO generic filler content
@@ -79,7 +80,7 @@ QUALITY CHECKS:
     // Generate blog content via unified AI provider (Gemini first, Pollinations fallback)
     let result;
     try {
-      const aiRaw = await generateAIText(systemPrompt, userPrompt, { json: true });
+      const aiRaw = await generateAIText(systemPrompt, userPrompt, { json: true, timeoutMs: 180_000 });
       try {
         result = JSON.parse(aiRaw);
       } catch {
@@ -99,19 +100,19 @@ QUALITY CHECKS:
         }
       }
     } catch {
-      const slug = topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      result = {
-        title: topic,
-        slug,
-        excerpt: `Learn about ${topic} - expert insights and actionable strategies for your business.`,
-        content: `# ${topic}\n\nThis is a draft blog post about ${topic}. AI generation was temporarily unavailable. Please edit and complete this content manually.\n\n## Key Points\n\n- Point 1\n- Point 2\n- Point 3\n\n## Conclusion\n\nAdd your conclusion here.`,
-        tags: [topic.toLowerCase().split(' ')[0]],
-        category: industry || 'General Business',
-      };
+      return NextResponse.json({ error: 'Article generation is unavailable right now. Please try again.' }, { status: 502 });
     }
 
-    // Ensure SEO fields exist
-    if (!result.seoScore) {
+    result.content = tidyBlogContent(result.content);
+    const issue = blogQualityIssue(result.content, length === 'short' ? 400 : 700, length === 'short' ? 3 : 4);
+    if (issue) return NextResponse.json({ error: `Article did not pass quality checks: ${issue}. Please retry.` }, { status: 502 });
+    result.tags = cleanBlogTags(result.tags);
+    result.title = typeof result.title === 'string' && result.title.trim() ? result.title.trim() : topic;
+    result.excerpt = typeof result.excerpt === 'string' && result.excerpt.trim().length >= 40
+      ? result.excerpt.trim().slice(0, 200) : blogExcerpt(result.content);
+
+    // This is a structural checklist score, not a predicted search ranking.
+    {
       // Calculate basic SEO score
       let score = 50;
       const tips: string[] = [];
@@ -147,18 +148,13 @@ QUALITY CHECKS:
       }
     }
 
-    // Attach a high-quality featured image (Pexels → Unsplash → Pollinations fallback)
-    result.featuredImage = await getBlogImage(topic, industry);
-
-    // Replace ALL AI-generated images in content with topic-relevant images
-    // AI often inserts random Pexels URLs (red skirts, candles etc.) unrelated to topic
-    if (result.content) {
-      result.content = await replaceContentImages(result.content, topic, industry);
-    }
+    result.tags = cleanBlogTags(result.tags);
+    // A failed image check is an error, never a successful blog with a broken URL.
+    result.featuredImage = await getVerifiedBlogImage(topic, industry);
 
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error generating blog post:', error);
-    return NextResponse.json({ error: 'Failed to generate blog post' }, { status: 500 });
+    return NextResponse.json({ error: 'Could not prepare a complete article and featured image. Please try again.' }, { status: 502 });
   }
 }

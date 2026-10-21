@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { liveNow } from '@/lib/site-health';
 
 // RSS Feed for blog syndication
 // Users can subscribe to this feed in their RSS readers
 export async function GET() {
   try {
     const posts = await prisma.blogPost.findMany({
-      where: { status: 'published' },
+      where: { status: 'published', ...liveNow() },
       orderBy: { publishedAt: 'desc' },
       take: 50,
     });

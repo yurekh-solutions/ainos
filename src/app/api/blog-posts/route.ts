@@ -24,9 +24,13 @@ export async function GET(req: NextRequest) {
     if (status) where.status = status;
     if (category && category !== 'All') where.category = category;
     if (websiteId) {
+      const owned = await prisma.connectedWebsite.findFirst({
+        where: { id: websiteId, ...(platform ? {} : { companyId: user.companyId }) }, select: { id: true },
+      });
+      if (!owned) return NextResponse.json({ error: 'Website not found' }, { status: 404 });
       // Get ALL blog IDs from schedules for this website (including published)
       const allSchedules = await prisma.blogSchedule.findMany({
-        where: { connectedWebsiteId: websiteId, companyId: user.companyId },
+        where: { connectedWebsiteId: websiteId, ...(platform ? {} : { companyId: user.companyId }) },
         select: { blogPostId: true },
       });
       const blogIds = allSchedules.map(s => s.blogPostId).filter(Boolean) as string[];
@@ -91,7 +95,7 @@ export async function GET(req: NextRequest) {
     if (!platform && user.companyId) pendingCompanies.add(user.companyId);
     console.log(`[Blog Posts API] Pending companies: ${[...pendingCompanies].join(', ') || 'none'}`);
     console.log(`[Blog Posts API] Total schedules: ${schedules.length}, Pending: ${schedules.filter(s => s.status === 'pending').length}`);
-    pendingCompanies.forEach(cid => {
+    if (!platform) pendingCompanies.forEach(cid => {
       const started = startBackgroundGeneration(cid);
       console.log(`[Blog Posts API] startBackgroundGeneration(${cid}) = ${started}`);
     });
@@ -123,22 +127,9 @@ export async function GET(req: NextRequest) {
         .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
       const tags = [...new Set([...topicTags, ...kwList.slice(0, 3)])].slice(0, 6);
 
-      // Generate unique excerpt based on topic
-      const topicLower = s.topic.toLowerCase();
-      let excerpt = '';
-      if (topicLower.includes('how to') || topicLower.includes('guide')) {
-        excerpt = `Step-by-step walkthrough on ${s.topic.toLowerCase()}. Learn proven techniques, real-world examples, and expert tips to master this topic.`;
-      } else if (topicLower.includes('strategy') || topicLower.includes('strategies')) {
-        excerpt = `Discover battle-tested strategies for ${s.topic.toLowerCase()}. Includes case studies, actionable frameworks, and implementation tips.`;
-      } else if (topicLower.includes('tips') || topicLower.includes('best practices')) {
-        excerpt = `Top expert tips and best practices for ${s.topic.toLowerCase()}. Boost your results with these proven recommendations.`;
-      } else if (topicLower.includes('trends') || topicLower.includes('future')) {
-        excerpt = `Explore the latest trends shaping ${s.topic.toLowerCase()}. Stay ahead with insights on what's coming next in the industry.`;
-      } else if (topicLower.includes('mistakes') || topicLower.includes('avoid')) {
-        excerpt = `Common pitfalls to avoid in ${s.topic.toLowerCase()}. Learn from real examples and protect your business from costly errors.`;
-      } else {
-        excerpt = `Comprehensive insights on ${s.topic.toLowerCase()}. Expert analysis, practical takeaways, and actionable recommendations for professionals.`;
-      }
+      const excerpt = s.status === 'generating'
+        ? 'AINOS is writing this article and preparing its featured image. The complete article will appear when ready.'
+        : 'This topic is queued on your publishing calendar. The complete article and featured image will appear after generation.';
 
       return {
         id: s.id,
@@ -148,7 +139,7 @@ export async function GET(req: NextRequest) {
         excerpt,
         featuredImage: s.previewImage,
         category,
-        status: s.status === 'pending' || s.status === 'generating' ? 'scheduled' : s.status,
+        status: s.status === 'pending' ? 'scheduled' : s.status,
         author: null,
         publishedAt: null,
         scheduledAt: s.scheduledDate,
@@ -185,10 +176,40 @@ export async function POST(req: NextRequest) {
     const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
 
-    const body = await req.json();
+    const { websiteId, ...body } = await req.json();
+    let website = null;
+    if (websiteId) {
+      website = await prisma.connectedWebsite.findFirst({
+        where: { id: websiteId, companyId: user.companyId, isActive: true },
+        include: { subscriptions: { select: { id: true }, take: 1 } },
+      });
+      if (!website) return NextResponse.json({ error: 'Website not found' }, { status: 404 });
+    }
+    if (body.status === 'scheduled') {
+      const when = new Date(body.scheduledAt);
+      if (!Number.isFinite(when.getTime()) || when <= new Date()) {
+        return NextResponse.json({ error: 'Choose a future publishing date' }, { status: 400 });
+      }
+      // Prepared posts share the same date-based visibility as agent posts.
+      body.status = 'published';
+      body.publishedAt = when.toISOString();
+    } else if (body.status === 'published' && !body.publishedAt) {
+      body.publishedAt = new Date().toISOString();
+    }
     const slug = body.slug || body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const post = await prisma.blogPost.create({
-      data: { ...body, slug, companyId: user.companyId, author: user.id }
+    const post = await prisma.$transaction(async tx => {
+      const created = await tx.blogPost.create({
+        data: { ...body, slug, companyId: user.companyId, author: user.id },
+      });
+      if (website) await tx.blogSchedule.create({
+        data: {
+          topic: created.title, scheduledDate: created.scheduledAt || created.publishedAt || created.createdAt,
+          status: 'published', blogPostId: created.id, connectedWebsiteId: website.id,
+          subscriptionId: website.subscriptions[0]?.id, companyId: user.companyId,
+          publishTargets: ['ainos'],
+        },
+      });
+      return created;
     });
     return NextResponse.json(post, { status: 201 });
   } catch (error) {

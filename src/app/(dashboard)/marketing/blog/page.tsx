@@ -1,14 +1,16 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import { isAdmin } from '@/lib/admin';
+import BlogCalendar from '@/components/blog/BlogCalendar';
 import {
   X, FileText, Eye, Calendar, Sparkles, Wand2, Search,
   Clock, Trash2, Edit3, CheckCircle, Send, ArrowLeft,
   BookOpen, Layers, ExternalLink, Globe, CalendarRange, TrendingUp, Shield, Zap,
   Code, Copy, Check, Rss, Map, Palette, RefreshCw, BarChart3, Share2, Target, Award,
-  Link2, Loader2, AlertCircle, ArrowRight, ChevronDown
+  Link2, Loader2, AlertCircle, ArrowRight, ChevronDown,
+  Radar, PlugZap, Unplug, CircleDashed, CalendarDays, LayoutGrid
 } from 'lucide-react';
 
 interface BlogPost {
@@ -28,6 +30,9 @@ interface ConnectedWebsite {
   id: string; url: string; name: string | null; description: string | null;
   techStack: string | null; niche: string | null; publishMethod: string;
   isActive: boolean; widgetIntegrated: boolean; widgetIntegratedAt: string | null;
+  connectionStatus: 'pending' | 'connected' | 'disconnected';
+  widgetLastSeenAt: string | null; widgetLastSeenUrl: string | null;
+  lastCheckedAt: string | null; lastCheckResult: 'code_found' | 'code_missing' | 'site_unreachable' | null;
   createdAt: string;
   totalBlogs: number; publishedBlogs: number; pendingBlogs: number;
   subscription: { blogsPerMonth: number; blogsUsed: number; blogsRemaining: number; currentPeriodEnd: string; } | null;
@@ -91,6 +96,40 @@ function renderMarkdown(md: string): string {
     .replace(/<p class="mb-3.*?><\/p>/g, '');
 }
 
+// "5 min ago" style relative time for connection status
+function timeAgo(iso: string | null): string {
+  if (!iso) return '';
+  const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
+
+// Honest connection status shown on each website card
+function connectionView(w: ConnectedWebsite) {
+  if (w.connectionStatus === 'connected') {
+    return {
+      label: 'Live on your site', icon: PlugZap, pill: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500',
+      detail: w.widgetLastSeenAt ? `Blog widget last seen ${timeAgo(w.widgetLastSeenAt)}` : `Embed code found ${timeAgo(w.lastCheckedAt)}`,
+    };
+  }
+  if (w.connectionStatus === 'disconnected') {
+    return {
+      label: 'Connection lost', icon: Unplug, pill: 'bg-rose-100 text-rose-700', dot: 'bg-rose-500',
+      detail: w.lastCheckResult === 'site_unreachable'
+        ? 'AINOS could not reach your website. Check that it is online.'
+        : 'The AINOS blog code is no longer on your website. Paste it again to bring your blogs back.',
+    };
+  }
+  return {
+    label: 'Not connected yet', icon: CircleDashed, pill: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500',
+    detail: w.lastCheckResult === 'site_unreachable'
+      ? 'AINOS could not reach your website yet.'
+      : 'Paste the embed code on your website so visitors can read your blogs.',
+  };
+}
+
 export default function BlogPage() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -102,7 +141,7 @@ export default function BlogPage() {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [statusFilter, setStatusFilter] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
+  const [siteView, setSiteView] = useState<'cards' | 'calendar'>('cards');
   const [scheduleDate, setScheduleDate] = useState('');
   const [showEmbed, setShowEmbed] = useState(false);
   const [copiedCode, setCopiedCode] = useState('');
@@ -124,6 +163,8 @@ export default function BlogPage() {
   const [connectError, setConnectError] = useState('');
   const [schedulingId, setSchedulingId] = useState<string | null>(null);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
+  const [checkingId, setCheckingId] = useState<string | null>(null);
+  const autoChecked = useRef<Set<string>>(new Set());
 
   // ── Website blogs (expandable) ──
   const [expandedWebsiteId, setExpandedWebsiteId] = useState<string | null>(null);
@@ -208,6 +249,33 @@ export default function BlogPage() {
   }, [platformMode, isAdminUser]);
 
   useEffect(() => { fetchWebsites(); }, [fetchWebsites]);
+
+  // Live check of the client's site for the embed code; merges the fresh
+  // status into the card without reloading the list
+  const handleCheckConnection = useCallback(async (websiteId: string) => {
+    setCheckingId(websiteId);
+    try {
+      const res = await fetch('/api/blog-agent/verify-connection', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ websiteId }),
+      });
+      if (res.ok) {
+        const fresh = await res.json();
+        setWebsites(prev => prev.map(w => w.id === websiteId
+          ? { ...w, ...fresh, widgetIntegrated: w.widgetIntegrated || fresh.connectionStatus === 'connected' }
+          : w));
+      }
+    } catch (e) { console.error(e); }
+    setCheckingId(null);
+  }, []);
+
+  // Re-check sites that haven't been checked in the last 6 hours (once per visit)
+  useEffect(() => {
+    if (platformMode) return;
+    const stale = websites.filter(w => w.isActive && !autoChecked.current.has(w.id)
+      && (!w.lastCheckedAt || Date.now() - new Date(w.lastCheckedAt).getTime() > 6 * 60 * 60 * 1000));
+    stale.forEach(w => { autoChecked.current.add(w.id); handleCheckConnection(w.id); });
+  }, [websites, handleCheckConnection, platformMode]);
 
   const handleConnectWebsite = async () => {
     if (!connectUrl.trim()) return;
@@ -394,31 +462,6 @@ export default function BlogPage() {
   // All categories for tabs
   const allCategories = ['All', ...categories];
 
-  // Calendar helper: group posts by date
-  const getCalendarDays = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const days: { date: Date; posts: BlogPost[] }[] = [];
-    // Pad start
-    for (let i = 0; i < firstDay.getDay(); i++) {
-      const d = new Date(year, month, -firstDay.getDay() + i + 1);
-      days.push({ date: d, posts: [] });
-    }
-    for (let d = 1; d <= lastDay.getDate(); d++) {
-      const date = new Date(year, month, d);
-      const dateStr = date.toISOString().split('T')[0];
-      const dayPosts = posts.filter(p => {
-        const pDate = (p.scheduledAt || p.publishedAt || '').split('T')[0];
-        return pDate === dateStr;
-      });
-      days.push({ date, posts: dayPosts });
-    }
-    return days;
-  };
-
   return (
     <div className="h-full overflow-auto bg-gray-50">
       {/* ═══════════ TOP ACTION BAR ═══════════ */}
@@ -532,8 +575,8 @@ export default function BlogPage() {
         >
           {[
             { label: 'Connected Sites', value: websites.length, sub: 'Active Websites', icon: Globe, iconBg: 'bg-purple-100', iconColor: 'text-purple-600', subColor: 'text-purple-500' },
-            { label: 'Blogs Generated', value: totalSiteBlogs, sub: 'This Month', icon: FileText, iconBg: 'bg-blue-100', iconColor: 'text-blue-600', subColor: 'text-blue-500' },
-            { label: 'Published Live', value: totalSitePublished, sub: 'Live on Site', icon: CheckCircle, iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600', subColor: 'text-emerald-500' },
+            { label: 'Blogs Planned', value: totalSiteBlogs, sub: 'On your calendar', icon: FileText, iconBg: 'bg-blue-100', iconColor: 'text-blue-600', subColor: 'text-blue-500' },
+            { label: 'Blogs Written', value: totalSitePublished, sub: 'Ready or live', icon: CheckCircle, iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600', subColor: 'text-emerald-500' },
             { label: 'In Queue', value: totalSitePending, sub: 'Pending', icon: Clock, iconBg: 'bg-orange-100', iconColor: 'text-orange-600', subColor: 'text-orange-500' },
             { label: 'Total Views', value: totalViews, sub: 'All Time', icon: Eye, iconBg: 'bg-pink-100', iconColor: 'text-pink-600', subColor: 'text-pink-500' },
           ].map((s, i) => (
@@ -577,21 +620,21 @@ export default function BlogPage() {
                   <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
                   <div>
                     <p className="text-xs font-semibold text-gray-900">Paste Embed Code</p>
-                    <p className="text-[11px] text-gray-500">Add 2-line script to your site. AINOS auto-detects integration.</p>
+                    <p className="text-[11px] text-gray-500">Add the 2-line code to your site. AINOS checks your site and confirms when it is live.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
                   <div>
-                    <p className="text-xs font-semibold text-gray-900">Daily New Blogs</p>
-                    <p className="text-[11px] text-gray-500">AI generates 1 fresh SEO blog every day. Each gets its own page URL.</p>
+                    <p className="text-xs font-semibold text-gray-900">Blog Calendar</p>
+                    <p className="text-[11px] text-gray-500">Every blog has a date. It is written ahead and goes live on your site that day, with its own page URL.</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">4</span>
                   <div>
-                    <p className="text-xs font-semibold text-gray-900">Auto Cleanup (7 Days)</p>
-                    <p className="text-[11px] text-gray-500">Blogs older than 7 days auto-remove. Always fresh content.</p>
+                    <p className="text-xs font-semibold text-gray-900">Connection Watch</p>
+                    <p className="text-[11px] text-gray-500">AINOS re-checks your site daily and alerts you if the blog code goes missing.</p>
                   </div>
                 </div>
               </div>
@@ -600,7 +643,7 @@ export default function BlogPage() {
                   <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-green-500" /> Individual blog pages (<code className="px-1 py-0.5 bg-gray-100 rounded text-[10px]">blog/slug</code>)</span>
                   <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-green-500" /> Replaces existing blog sections</span>
                   <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-green-500" /> SEO-optimized with JSON-LD</span>
-                  <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-green-500" /> Zero maintenance required</span>
+                  <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-green-500" /> Featured image on every blog</span>
                 </div>
                 <a href="/marketing/blog/guide" className="flex items-center gap-1 text-[11px] font-semibold text-purple-600 hover:text-purple-800:text-purple-300 transition-colors flex-shrink-0">
                   Read Full Integration Guide <ArrowRight className="w-3.5 h-3.5" />
@@ -642,50 +685,49 @@ export default function BlogPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {websites.map((w, i) => (
+            {websites.map((w, i) => {
+              const cv = connectionView(w);
+              const checking = checkingId === w.id;
+              const setup = [
+                { label: 'Website added', done: true },
+                { label: 'Blogs scheduled', done: w.totalBlogs > 0 },
+                { label: 'Embed code detected on your site', done: w.connectionStatus === 'connected' },
+              ];
+              return (
               <motion.div key={w.id}
                 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
                 className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                 <div className="p-5 sm:p-6">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     {/* Left: Website info */}
-                    <div className="flex items-start gap-4">
+                    <div className="flex items-start gap-4 min-w-0">
                       <div className="w-14 h-14 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0 border border-purple-100">
                         <Globe className="w-6 h-6 text-purple-500" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-bold text-gray-900 text-sm sm:text-base">{w.name || w.url}</h3>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Connected
+                          <h3 className="font-bold text-gray-900 text-sm sm:text-base break-all">{w.name || w.url}</h3>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${cv.pill}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${cv.dot} ${w.connectionStatus === 'connected' ? 'animate-pulse' : ''}`} /> {cv.label}
                           </span>
-                          {w.widgetIntegrated ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 flex items-center gap-1">
-                              <CheckCircle className="w-3 h-3" /> Widget Live
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 flex items-center gap-1">
-                              <AlertCircle className="w-3 h-3" /> Widget Not Integrated
-                            </span>
-                          )}
                           {platformMode && w.company?.name && (
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700">{w.company.name}</span>
                           )}
                         </div>
                         <a href={w.url} target="_blank" rel="noopener noreferrer"
-                          className="text-xs text-purple-600 hover:underline flex items-center gap-1 mt-0.5">
-                          {w.url} <ExternalLink className="w-3 h-3" />
+                          className="text-xs text-purple-600 hover:underline flex items-center gap-1 mt-0.5 break-all">
+                          {w.url} <ExternalLink className="w-3 h-3 flex-shrink-0" />
                         </a>
                         {w.niche && <p className="text-[11px] text-gray-400 mt-1">Niche: {w.niche}</p>}
                         {/* Mini stats */}
                         <div className="flex items-center gap-4 mt-2">
                           <div className="text-center">
                             <p className="text-lg font-bold text-gray-900">{w.totalBlogs}</p>
-                            <p className="text-[10px] text-gray-400">Blogs Generated</p>
+                            <p className="text-[10px] text-gray-400">Planned</p>
                           </div>
                           <div className="text-center">
                             <p className="text-lg font-bold text-emerald-600">{w.publishedBlogs}</p>
-                            <p className="text-[10px] text-gray-400">Published</p>
+                            <p className="text-[10px] text-gray-400">Written</p>
                           </div>
                           <div className="text-center">
                             <p className="text-lg font-bold text-orange-500">{w.pendingBlogs}</p>
@@ -696,7 +738,7 @@ export default function BlogPage() {
                     </div>
 
                     {/* Right: Actions */}
-                    <div className="flex items-center gap-2 sm:flex-col sm:items-end">
+                    <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end">
                       <button onClick={() => toggleExpandWebsite(w.id)}
                         className="px-4 py-2 rounded-xl text-xs font-bold text-blue-700 border border-blue-200 hover:bg-blue-50:bg-blue-900/20 transition-colors flex items-center gap-1.5">
                         <FileText className="w-3.5 h-3.5" /> {expandedWebsiteId === w.id ? 'Hide Blogs' : 'View Blogs'}
@@ -717,6 +759,48 @@ export default function BlogPage() {
                       </button>
                     </div>
                   </div>
+
+                  {/* Connection health + setup */}
+                  <div className={`mt-5 rounded-xl p-4 ${w.connectionStatus === 'connected' ? 'bg-emerald-50/60' : w.connectionStatus === 'disconnected' ? 'bg-rose-50/70' : 'bg-amber-50/70'}`}>
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                          <cv.icon className={`w-4 h-4 ${w.connectionStatus === 'connected' ? 'text-emerald-600' : w.connectionStatus === 'disconnected' ? 'text-rose-600' : 'text-amber-600'}`} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-gray-900">{checking ? 'Checking your website...' : cv.label}</p>
+                          <p className="text-xs text-gray-600 mt-0.5 break-words">{cv.detail}</p>
+                          {w.lastCheckedAt && (
+                            <p className="text-[11px] text-gray-400 mt-0.5">Last checked {timeAgo(w.lastCheckedAt)}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+                        <button onClick={() => setShowEmbed(true)}
+                          className="px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 transition-colors flex items-center gap-1.5">
+                          <Code className="w-3.5 h-3.5" /> Get Embed Code
+                        </button>
+                        <button onClick={() => handleCheckConnection(w.id)} disabled={checking}
+                          className="px-3.5 py-2 rounded-xl text-xs font-bold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition-colors flex items-center gap-1.5 disabled:opacity-60">
+                          {checking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Radar className="w-3.5 h-3.5" />} Check Connection
+                        </button>
+                      </div>
+                    </div>
+                    {w.connectionStatus !== 'connected' && (
+                      <div className="mt-4 pt-3 border-t border-black/5 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {setup.map((s, si) => (
+                          <div key={s.label} className="flex items-center gap-2 min-w-0">
+                            {s.done ? (
+                              <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                            ) : (
+                              <span className="w-4 h-4 rounded-full border-2 border-gray-300 text-[9px] font-bold text-gray-400 flex items-center justify-center flex-shrink-0">{si + 1}</span>
+                            )}
+                            <span className={`text-xs ${s.done ? 'text-gray-700' : 'text-gray-500'}`}>{s.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Expandable Blog List */}
@@ -730,26 +814,22 @@ export default function BlogPage() {
                       className="overflow-hidden border-t border-gray-200"
                     >
                       <div className="p-5 sm:p-6">
-                        <div className="flex items-center justify-between mb-4">
-                          <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-purple-600" /> Blogs for {w.name || w.url}
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                          <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2 min-w-0">
+                            <FileText className="w-4 h-4 text-purple-600 flex-shrink-0" /> <span className="break-all">Blogs for {w.name || w.url}</span>
                           </h4>
-                          <span className="text-xs text-gray-500">{(websiteBlogs[w.id] || []).length} blogs</span>
-                        </div>
-
-                        {!w.widgetIntegrated && (
-                          <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
-                            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                            <div>
-                              <p className="text-sm font-semibold text-amber-800">Widget Not Integrated</p>
-                              <p className="text-xs text-amber-700 mt-0.5">
-                                {new Date(w.createdAt).getTime() > Date.now() - 2 * 60 * 60 * 1000
-                                  ? 'Blog generation will auto-start within 2 hours even without the widget. Or paste the embed code now for instant detection.'
-                                  : 'Paste the embed code on your website — AINOS will auto-detect and start generating blogs. Auto-start kicks in shortly.'}
-                              </p>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-gray-500">{(websiteBlogs[w.id] || []).length} blogs</span>
+                            <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                              {([['cards', 'Cards', LayoutGrid], ['calendar', 'Calendar', CalendarDays]] as const).map(([v, label, Icon]) => (
+                                <button key={v} onClick={() => setSiteView(v)}
+                                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold flex items-center gap-1 transition-colors ${siteView === v ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}>
+                                  <Icon className="w-3.5 h-3.5" /> {label}
+                                </button>
+                              ))}
                             </div>
                           </div>
-                        )}
+                        </div>
 
                         {websiteBlogsLoading ? (
                           <div className="text-center py-8">
@@ -761,6 +841,8 @@ export default function BlogPage() {
                             <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                             <p className="text-sm text-gray-500">No blogs yet. Click Schedule 30 More to generate blogs.</p>
                           </div>
+                        ) : siteView === 'calendar' ? (
+                          <BlogCalendar posts={websiteBlogs[w.id] || []} onOpen={(post) => setShowReader(post)} />
                         ) : (
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {(websiteBlogs[w.id] || []).map((post) => (
@@ -857,7 +939,8 @@ export default function BlogPage() {
                   )}
                 </AnimatePresence>
               </motion.div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -1256,7 +1339,7 @@ export default function BlogPage() {
                     <div className="text-center">
                       <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-2 text-lg font-bold">3</div>
                       <p className="text-xs font-semibold text-emerald-900">Blogs Go Live!</p>
-                      <p className="text-[10px] text-emerald-700 mt-1">Auto-updates daily</p>
+                      <p className="text-[10px] text-emerald-700 mt-1">AINOS confirms the connection</p>
                     </div>
                   </div>
                 </div>

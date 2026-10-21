@@ -30,17 +30,32 @@
   const AINOS_API = `${baseUrl}/api/blog-embed`;
   const WIDGET_PING_API = `${baseUrl}/api/blog-agent/widget-ping`;
 
-  // Ping AINOS to confirm widget is integrated on this site
+  // Confirm a successfully loaded widget on each page visit. A short heartbeat
+  // also covers pages left open, without running in hidden browser tabs.
+  // text/plain keeps it a simple request (no CORS preflight on any domain).
+  let heartbeatStarted = false;
   function sendIntegrationPing() {
+    if (!heartbeatStarted) {
+      heartbeatStarted = true;
+      setInterval(function () {
+        if (document.visibilityState === 'visible') sendIntegrationPing();
+      }, 10 * 60 * 1000);
+    }
     try {
+      const body = JSON.stringify({ siteUrl: window.location.href });
+      if (navigator.sendBeacon && navigator.sendBeacon(WIDGET_PING_API, new Blob([body], { type: 'text/plain' }))) return;
       fetch(WIDGET_PING_API, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ siteUrl: window.location.href }),
-        mode: 'no-cors' // no-cors so it works on any domain without CORS setup
+        headers: { 'Content-Type': 'text/plain' },
+        body: body,
+        mode: 'no-cors',
+        keepalive: true
       }).catch(function() { /* silent — ping is best-effort */ });
     } catch (e) { /* silent */ }
   }
+
+  // Broken image -> hide its frame instead of showing a broken icon
+  const IMG_FALLBACK = 'onerror="this.parentNode.style.display=\'none\'"';
 
   // ─── Routing modes ──────────────────────────────────
   // Two modes:
@@ -378,8 +393,9 @@
     if (!md) return '';
     md = cleanBlogContent(md);
     return md
-      // Images: ![alt](url) — must come BEFORE links to avoid conflict
-      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<div class="ainos-blog-inline-img"><img src="$2" alt="$1" loading="lazy" style="width:100%;max-height:420px;object-fit:cover;border-radius:12px;margin:24px 0;display:block;"></div>')
+      // Keep one featured image only, including older stored articles.
+      .replace(/!\[[^\]]*\]\([^)]+\)/g, '')
+      .replace(/<img[^>]*>/gi, '')
       // Links
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
       // Headings (process H4 first to avoid H3/H2/H1 matching ####)
@@ -417,7 +433,7 @@
     const safeImage = post.featuredImage ? sanitize(post.featuredImage) : '';
     const articleHref = pathBlogUrl(containerEl || document.querySelector('#ainos-blog') || document.body, post.slug);
     const imgHtml = safeImage
-      ? `<div class="ainos-blog-card-img"><img src="${safeImage}" alt="${safeTitle}" loading="lazy"/></div>`
+      ? `<div class="ainos-blog-card-img"><img src="${safeImage}" alt="${safeTitle}" loading="lazy" ${IMG_FALLBACK}/></div>`
       : '';
 
     const showTags = opts.showTags !== false;
@@ -480,7 +496,7 @@
           </div>
           ${post.tags && post.tags.length ? `<div class="ainos-blog-tags-full">${post.tags.map(t => `<span class="ainos-blog-tag">#${sanitize(t)}</span>`).join('')}</div>` : ''}
         </header>
-        ${safeImage ? `<div class="ainos-blog-featured-image"><img src="${safeImage}" alt="${safeTitle}"/></div>` : ''}
+        ${safeImage ? `<div class="ainos-blog-featured-image"><img src="${safeImage}" alt="${safeTitle}" ${IMG_FALLBACK}/></div>` : ''}
         <div class="ainos-blog-body">${safeContent}</div>
         ${safeWebsiteName ? `<footer class="ainos-blog-footer"><p>Originally published on <a href="${safeWebsiteUrl}" target="_blank" rel="noopener">${safeWebsiteName}</a></p></footer>` : ''}
       </article>`;
@@ -546,6 +562,7 @@
 
       const data = await res.json();
       const posts = data.posts || [];
+      sendIntegrationPing();
       if (posts.length === 0) {
         container.innerHTML = '<div class="ainos-blog-empty">No articles found.</div>';
         return;
@@ -600,6 +617,7 @@
       container.innerHTML =
         `<div class="ainos-blog-back"><a href="${backHref}">&larr; All articles</a></div>` +
         renderFullPost(data);
+      sendIntegrationPing();
 
       // BlogPosting structured data on the client's own domain
       const oldList = document.getElementById('ainos-blog-list-schema');
@@ -798,9 +816,6 @@
   }
 
   function init() {
-    // Notify AINOS that widget is live on this site
-    sendIntegrationPing();
-
     injectStyles();
 
     // 1. Check for explicit AINOS container first

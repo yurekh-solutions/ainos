@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { liveNow } from '@/lib/site-health';
 
 // XML Sitemap for blog posts - helps Google index all blog pages
 export async function GET() {
   try {
     const posts = await prisma.blogPost.findMany({
-      where: { status: 'published' },
+      where: { status: 'published', ...liveNow() },
       select: { slug: true, publishedAt: true, createdAt: true },
       orderBy: { publishedAt: 'desc' },
     });

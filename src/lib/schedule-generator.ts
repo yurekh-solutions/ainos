@@ -2,13 +2,18 @@ import { prisma } from '@/lib/prisma';
 import { scrapePage } from '@/lib/website-scraper';
 import { publishBlog } from '@/lib/blog-publisher';
 import { generateAIText } from '@/lib/ai-provider';
-import { getBlogImage, replaceContentImages } from '@/lib/blog-images';
+import { getVerifiedBlogImage } from '@/lib/blog-images';
+import { tidyBlogContent, blogQualityIssue, blogExcerpt, cleanBlogTags } from '@/lib/blog-quality';
+
+const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 90);
 
 // Generates ONE scheduled blog immediately: AI writes SEO/AEO content,
-// a premium featured image is attached (Pexels -> Unsplash -> Pollinations),
-// the published BlogPost is created and schedule + quota are updated.
+// a verified featured image is attached (Pexels -> Unsplash -> Pollinations),
+// the BlogPost is created and schedule + quota are updated.
+// The post goes live on client sites on its scheduled date (publishedAt is
+// the go-live time). Writing ahead never changes that date.
 // Shared by the daily cron (auto-generate) and the on-demand "Generate Now" endpoint.
-export async function generateScheduleNow(scheduleId: string): Promise<{ status: string; blogPostId?: string; reason?: string; already?: boolean }> {
+export async function generateScheduleNow(scheduleId: string): Promise<{ status: string; blogPostId?: string; reason?: string; already?: boolean; liveAt?: string }> {
   const schedule = await prisma.blogSchedule.findUnique({
     where: { id: scheduleId },
     include: {
@@ -21,16 +26,25 @@ export async function generateScheduleNow(scheduleId: string): Promise<{ status:
   });
 
   if (!schedule) return { status: 'failed', reason: 'Schedule not found' };
-  if (schedule.status === 'published' && schedule.blogPostId) {
+  if (schedule.blogPostId) {
     return { status: 'published', blogPostId: schedule.blogPostId, already: true };
+  }
+  if (!['pending', 'failed'].includes(schedule.status)) {
+    return { status: schedule.status, reason: 'Schedule is not ready for generation' };
+  }
+  // External receivers may ignore publishedAt. Do not deliver ahead of time.
+  const targets = Array.isArray(schedule.publishTargets) ? schedule.publishTargets : ['ainos'];
+  if (schedule.scheduledDate > new Date() && targets.some(t => t !== 'ainos')) {
+    return { status: 'pending', reason: 'External publishing waits until the scheduled time' };
   }
 
   try {
-    // Mark as generating
-    await prisma.blogSchedule.update({
-      where: { id: schedule.id },
+    // Atomic claim: cron and dashboard requests must not write the same article.
+    const claimed = await prisma.blogSchedule.updateMany({
+      where: { id: schedule.id, status: { in: ['pending', 'failed'] }, blogPostId: null },
       data: { status: 'generating' },
     });
+    if (!claimed.count) return { status: 'generating', reason: 'This article is already being written' };
 
     const website = schedule.subscription?.connectedWebsite;
     if (!website) {
@@ -41,21 +55,18 @@ export async function generateScheduleNow(scheduleId: string): Promise<{ status:
       return { status: 'failed', reason: 'No connected website' };
     }
 
-    // CRITICAL: Only generate blogs if the widget is integrated on the website.
-    // Grace period: if the website was connected < 2 hours ago, skip silently
-    // (still setting up). After 2 hours, auto-enable generation even without
-    // the widget ping — the company may never embed the widget but still
-    // deserves blogs being written for their dashboard.
-    if (!website.widgetIntegrated) {
+    // Sites without the embed code get a 2 hour setup window before writing
+    // starts. After that blogs are still written (they show in the dashboard
+    // and go live as soon as the code is added) but the connection status is
+    // never faked — only a real widget sighting or page check marks it connected.
+    const siteLive = website.connectionStatus === 'connected';
+    if (!website.isActive) {
+      await prisma.blogSchedule.update({ where: { id: schedule.id }, data: { status: 'cancelled' } });
+      return { status: 'cancelled', reason: 'Website or subscription is inactive' };
+    }
+    if (!siteLive) {
       const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
-      if (website.createdAt < twoHoursAgo) {
-        // Grace period expired — auto-enable and proceed
-        console.log(`[Blog Gen] Grace period expired for ${website.name || website.url} — auto-enabling generation`);
-        await prisma.connectedWebsite.update({
-          where: { id: website.id },
-          data: { widgetIntegrated: true, widgetIntegratedAt: new Date() },
-        });
-      } else {
+      if (website.createdAt >= twoHoursAgo) {
         console.log(`[Blog Gen] Skipping ${schedule.topic.substring(0, 50)}... — widget not integrated on ${website.name || website.url} (grace period active)`);
         await prisma.blogSchedule.update({
           where: { id: schedule.id },
@@ -111,7 +122,7 @@ ABSOLUTE QUALITY RULES (MUST follow — articles failing these are rejected):
 
 WRITING VOICE:
 - Conversational yet authoritative. Sound like a human expert, NOT a generic AI.
-- Every claim needs a number, a stat, a brand name, a location, or a real example.
+- Use concrete, useful examples. Never invent statistics, citations, testimonials, prices, or company case studies. Only state business facts supported by the supplied website context; label hypothetical scenarios clearly.
 - Reference the company's actual services, products, and target market where relevant.
 - Use "Pro Tip:" or "Industry Insight:" callouts in at least 3 sections.
 - Write for the reader who needs to make a buying decision — not for search engines.
@@ -153,7 +164,7 @@ WRITING INSTRUCTIONS:
 - Target audience: visitors to this specific website
 - The blog must feel like it was written BY this company FOR their customers
 - Reference the company's actual services, products, and location where relevant
-- Include 2-3 specific case studies or real-world scenarios
+- Include 2-3 practical scenarios; label them hypothetical unless the website context verifies them
 - Every H2 section must have genuine depth (400+ words each)
 - NO fluff, NO repetitive content, NO generic advice that applies to any business
 - Write for humans first, search engines second
@@ -255,53 +266,75 @@ WRITING INSTRUCTIONS:
       blogData.content = rawContent;
     }
 
-    // 2. Check minimum content quality
-    const wordCount = (rawContent || '').split(/\s+/).filter((w: string) => w.length > 0).length;
-    const h2Count = (rawContent || '').match(/^## /gm)?.length || 0;
-
-    if (wordCount < 300) {
-      console.warn(`[Content Rejection] "${schedule.topic}" has only ${wordCount} words (minimum 300)`);
-      await prisma.blogSchedule.update({ where: { id: schedule.id }, data: { status: 'failed' } });
-      return { status: 'failed', reason: `Content too short: ${wordCount} words` };
-    }
-    if (h2Count < 3) {
-      console.warn(`[Content Rejection] "${schedule.topic}" has only ${h2Count} H2 sections (minimum 3)`);
-      await prisma.blogSchedule.update({ where: { id: schedule.id }, data: { status: 'failed' } });
-      return { status: 'failed', reason: `Not enough sections: ${h2Count} H2 headings` };
+    // 2. Check minimum content quality. Thin articles are retried (failed rows
+    // go back to pending up to MAX_RETRIES) instead of being published.
+    rawContent = tidyBlogContent(rawContent);
+    blogData.content = rawContent;
+    const qualityIssue = blogQualityIssue(rawContent);
+    if (qualityIssue) {
+      console.warn(`[Content Rejection] "${schedule.topic}": ${qualityIssue}`);
+      await prisma.blogSchedule.update({ where: { id: schedule.id }, data: { status: 'failed', retryCount: (schedule.retryCount || 0) + 1 } });
+      return { status: 'failed', reason: qualityIssue };
     }
 
-    // Featured image: prefer a fresh real photo (Pexels/Unsplash) when a
-    // Always generate a fresh topic-relevant image (Pexels -> Unsplash -> improved Pollinations fallback)
-    const imageUrl = await getBlogImage(schedule.topic, website.niche || undefined);
+    // Featured image: always a fresh topic-relevant image, checked to actually
+    // load before it is attached (Pexels -> Unsplash -> Pollinations)
+    const imageUrl = await getVerifiedBlogImage(blogData.title || schedule.topic, website.niche || undefined);
 
-    // Replace ALL AI-generated images in content with topic-relevant images
-    // AI often inserts random Pexels URLs unrelated to the blog topic
-    let finalContent = blogData.content || '';
-    if (finalContent) {
-      finalContent = await replaceContentImages(finalContent, schedule.topic, website.niche || undefined);
-    }
+    const finalContent = rawContent;
 
     // Create BlogPost — handle slug conflicts by appending unique suffix
-    let slug = blogData.slug || schedule.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    let slug = slugify(blogData.slug || blogData.title || schedule.topic) || slugify(schedule.topic);
     const existingSlug = await prisma.blogPost.findUnique({ where: { slug } });
     if (existingSlug) {
       slug = `${slug}-${Date.now().toString(36)}`;
     }
 
-    const blogPost = await prisma.blogPost.create({
+    const now = new Date();
+    const goLive = schedule.scheduledDate > now ? schedule.scheduledDate : now;
+    const liveLater = goLive > now;
+    const tags = cleanBlogTags(blogData.tags);
+    const excerpt = (typeof blogData.excerpt === 'string' && blogData.excerpt.trim().length >= 40)
+      ? blogData.excerpt.trim().slice(0, 200)
+      : blogExcerpt(finalContent);
+
+    // Article, schedule link, and quota commit together. A notification or
+    // delivery failure must not create another article or charge quota twice.
+    const blogPost = await prisma.$transaction(async tx => {
+      const post = await tx.blogPost.create({
       data: {
         title: blogData.title || schedule.topic,
         slug,
         content: finalContent,
-        excerpt: blogData.excerpt || '',
+        excerpt,
         featuredImage: imageUrl,
         category: blogData.category || website.niche || 'General',
         status: 'published',
-        publishedAt: new Date(),
-        tags: blogData.tags || [],
+        publishedAt: goLive,
+        scheduledAt: schedule.scheduledDate,
+        tags,
         companyId: schedule.companyId,
       },
-    });
+      });
+      const linked = await tx.blogSchedule.updateMany({
+        where: { id: schedule.id, status: 'generating', blogPostId: null },
+        data: { status: 'published', blogPostId: post.id },
+      });
+      if (!linked.count) throw new Error('Schedule was cancelled while writing');
+      if (schedule.subscriptionId) {
+        await tx.blogSubscription.update({
+          where: { id: schedule.subscriptionId },
+          data: { blogsUsed: { increment: 1 }, blogsRemaining: { decrement: 1 } },
+        });
+      }
+      return post;
+    }, { timeout: 15_000 });
+    const liveDate = goLive.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    const notice = liveLater
+      ? { title: 'Blog ready', text: `"${blogPost.title}" is written and scheduled for ${liveDate}.${siteLive ? '' : ' Add the embed code so visitors can see it on your website.'}` }
+      : siteLive
+        ? { title: 'New Blog Published!', text: `"${blogPost.title}" is published and available through your website integration.` }
+        : { title: 'New Blog Published!', text: `"${blogPost.title}" is published. Add the AINOS embed code to your website so visitors can see it.` };
 
     // Create notification for all users in the company
     if (!schedule.companyId) {
@@ -317,9 +350,9 @@ WRITING INSTRUCTIONS:
           data: {
             userId: user.id,
             company: { connect: { id: schedule.companyId } },
-            title: 'New Blog Published!',
-            message: `"${blogPost.title}" has been published and is live on your website.`,
-            type: 'blog_published',
+            title: notice.title,
+            message: notice.text,
+            type: liveLater ? 'blog_ready' : 'blog_published',
             read: false,
           },
         });
@@ -332,8 +365,8 @@ WRITING INSTRUCTIONS:
           if (emailRecipients.length > 0) {
             const emailHtml = `
               <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #7c3aed;">🎉 New Blog Published!</h2>
-                <p><strong>"${blogPost.title}"</strong> has been published and is now live.</p>
+                <h2 style="color: #7c3aed;">${notice.title}</h2>
+                <p>${notice.text.replace(/</g, '&lt;')}</p>
                 <p style="color: #666;">Category: ${blogPost.category}</p>
                 <a href="/blog/${blogPost.slug}" style="display: inline-block; background: #7c3aed; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; margin-top: 16px;">Read Blog</a>
                 <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
@@ -349,7 +382,7 @@ WRITING INSTRUCTIONS:
               body: JSON.stringify({
                 from: 'AINOS Blog <onboarding@resend.dev>',
                 to: emailRecipients,
-                subject: `New Blog Published: ${blogPost.title}`,
+                subject: `${notice.title}: ${blogPost.title}`,
                 html: emailHtml,
               }),
               signal: AbortSignal.timeout(10000),
@@ -361,15 +394,6 @@ WRITING INSTRUCTIONS:
       }
     }
 
-    // Update schedule
-    await prisma.blogSchedule.update({
-      where: { id: schedule.id },
-      data: {
-        status: 'published',
-        blogPostId: blogPost.id,
-      },
-    });
-
     // Publish to external targets (webhook, WordPress, email)
     const publishTargets = (schedule.publishTargets as string[]) || ['ainos'];
     const externalTargets = publishTargets.filter(t => t !== 'ainos');
@@ -377,13 +401,13 @@ WRITING INSTRUCTIONS:
       const publishResults = await publishBlog(
         {
           title: blogData.title || schedule.topic,
-          slug: blogData.slug || '',
-          content: blogData.content || '',
-          excerpt: blogData.excerpt || '',
-          tags: blogData.tags || [],
+          slug: blogPost.slug,
+          content: finalContent,
+          excerpt,
+          tags,
           category: blogData.category || '',
           featuredImage: imageUrl,
-          publishedAt: new Date().toISOString(),
+          publishedAt: goLive.toISOString(),
         },
         {
           publishMethod: website.publishMethod,
@@ -402,28 +426,21 @@ WRITING INSTRUCTIONS:
       });
     }
 
-    // Update subscription quota
-    if (schedule.subscriptionId) {
-      await prisma.blogSubscription.update({
-        where: { id: schedule.subscriptionId },
-        data: {
-          blogsUsed: { increment: 1 },
-          blogsRemaining: { decrement: 1 },
-        },
-      });
-    }
-
-    return { status: 'published', blogPostId: blogPost.id };
+    return { status: 'published', blogPostId: blogPost.id, liveAt: goLive.toISOString() };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
-    console.error(`[blog-gen] schedule ${scheduleId} not published:`, message);
+    console.error(`[blog-gen] schedule ${scheduleId}:`, message);
+    const persisted = await prisma.blogSchedule.findUnique({ where: { id: schedule.id }, select: { blogPostId: true } });
+    if (persisted?.blogPostId) {
+      return { status: 'published', blogPostId: persisted.blogPostId, reason: 'Article saved; a notification or external delivery failed' };
+    }
     // Quota/rate-limit errors (Gemini 429, Pollinations 402) are temporary —
     // keep the row pending ("Preparing") so it retries on the next run or
     // daily quota reset instead of showing a scary FAILED card.
-    const quota = /429|403|402|quota|payment required|busy right now/i.test(message);
+    const quota = /429|403|402|quota|payment required|busy right now|featured image unavailable/i.test(message);
     const currentRetry = schedule.retryCount || 0;
-    await prisma.blogSchedule.update({
-      where: { id: schedule.id },
+    await prisma.blogSchedule.updateMany({
+      where: { id: schedule.id, status: 'generating' },
       data: {
         status: quota ? 'pending' : 'failed',
         retryCount: currentRetry + 1,
@@ -459,7 +476,7 @@ export function startBackgroundGeneration(companyId: string): boolean {
       // recover rows stuck in 'generating' from an interrupted previous run
       // (safe: the runningCompanies guard ensures a single loop per company)
       await prisma.blogSchedule.updateMany({
-        where: { companyId, status: 'generating' },
+        where: { companyId, status: 'generating', updatedAt: { lt: new Date(Date.now() - 60 * 60 * 1000) } },
         data: { status: 'pending' },
       });
       // silently reset failed rows with retryCount < MAX_RETRIES so they
@@ -471,7 +488,7 @@ export function startBackgroundGeneration(companyId: string): boolean {
       for (;;) {
         // pending first (date order), skip schedules that exhausted retries
         const next = await prisma.blogSchedule.findFirst({
-          where: { companyId, status: 'pending', retryCount: { lt: MAX_RETRIES } },
+          where: { companyId, status: 'pending', retryCount: { lt: MAX_RETRIES }, id: { notIn: [...attempted] } },
           orderBy: { scheduledDate: 'asc' },
         });
         if (!next) break;
@@ -506,6 +523,7 @@ async function archiveOldSchedules(companyId: string) {
         status: 'published',
         blogPostId: { not: null },
         updatedAt: { lt: sevenDaysAgo },
+        blogPost: { publishedAt: { lt: sevenDaysAgo } },
       },
       data: { status: 'archived' },
     });
