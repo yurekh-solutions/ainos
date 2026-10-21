@@ -13,7 +13,9 @@ import {
   BarChart3, CheckCircle2, TrendingUp, Building2, Layers,
   UserPlus, LayoutGrid, FileSpreadsheet, Rocket,
   Loader2, ArrowDownRight, Quote,
-  ChevronLeft, ChevronRight, ChevronDown
+  ChevronLeft, ChevronRight, ChevronDown,
+  Sparkles, Palette, Search, PenLine, Presentation,
+  MessageSquare, QrCode, ShoppingBag
 } from 'lucide-react';
 
 const MODULES = [
@@ -84,12 +86,29 @@ const MODULES = [
 ];
 
 const WORKFLOWS = [
-  { title: 'Invoice in under a minute', desc: 'Raise a GST invoice with automatic CGST/SGST/IGST split and share it with your customer the same moment.' },
-  { title: 'Bring your Tally data along', desc: 'Import customers, ledgers and stock from Tally — no retyping, no lost history.' },
-  { title: 'Watch cash flow live', desc: 'Revenue, invoices, clients and tasks update in real time on one dashboard.' },
-  { title: 'Put AI to work', desc: 'Blogs, captions, creatives and insights generated from a single brief in the AI Media Studio.' },
-  { title: 'Payroll without the mess', desc: 'Attendance, leave and salary processing connected end to end for your whole team.' },
-  { title: 'Stock that stays accurate', desc: 'Every sale, purchase and transfer updates inventory instantly, across every warehouse.' },
+  { icon: ScrollText, tag: 'Finance', title: 'Invoice in under a minute', desc: 'Raise a GST invoice with automatic CGST/SGST/IGST split and share it with your customer the same moment.' },
+  { icon: FileSpreadsheet, tag: 'Finance', title: 'Bring your Tally data along', desc: 'Import customers, ledgers and stock from Tally — no retyping, no lost history.' },
+  { icon: BarChart3, tag: 'Analytics', title: 'Watch cash flow live', desc: 'Revenue, invoices, clients and tasks update in real time on one dashboard.' },
+  { icon: Sparkles, tag: 'AI Studio', title: 'Put AI to work', desc: 'Blogs, captions, creatives and insights generated from a single brief in the AI Media Studio.' },
+  { icon: Palette, tag: 'Branding', title: 'Logo & brand kit in seconds', desc: 'Generate a logo, colour palette and complete brand kit with AI — ready for invoices, social and web.' },
+  { icon: Search, tag: 'Marketing', title: 'SEO audit on demand', desc: 'Scan your website for ranking issues and get a clear, prioritised fix list in minutes.' },
+  { icon: PenLine, tag: 'Marketing', title: 'Content & email copy', desc: 'Blogs, captions and campaign emails written in your brand voice from one short brief.' },
+  { icon: Presentation, tag: 'Business', title: 'Pitch deck & business plan', desc: 'Investor-ready decks and detailed business plans built from your company data.' },
+  { icon: MessageSquare, tag: 'Support', title: 'AI chatbot for your website', desc: 'Train a custom chatbot on your business and answer customer queries around the clock.' },
+  { icon: QrCode, tag: 'Design', title: 'Posters, flyers & QR codes', desc: 'Design on-brand posters and custom QR codes for menus, payments and events.' },
+  { icon: ShoppingBag, tag: 'E-commerce', title: 'Marketplace-ready listings', desc: 'Optimise product titles, descriptions and keywords for Amazon, Flipkart and more.' },
+  { icon: Users, tag: 'HR', title: 'Payroll without the mess', desc: 'Attendance, leave and salary processing connected end to end for your whole team.' },
+  { icon: Package, tag: 'Inventory', title: 'Stock that stays accurate', desc: 'Every sale, purchase and transfer updates inventory instantly, across every warehouse.' },
+  { icon: Scale, tag: 'Legal', title: 'Legal docs in a few clicks', desc: 'NDAs, agreements and policies drafted from verified templates and stored securely.' },
+];
+
+const AI_TOOLS = [
+  { icon: Palette, name: 'Logo Generator' },
+  { icon: Layers, name: 'Brand Kit' },
+  { icon: Search, name: 'SEO Audit' },
+  { icon: PenLine, name: 'Content Writer' },
+  { icon: Presentation, name: 'Pitch Deck' },
+  { icon: MessageSquare, name: 'AI Chatbot' },
 ];
 
 const STEPS = [
@@ -186,10 +205,39 @@ export default function AinosLandingPage() {
   const [email, setEmail] = React.useState('');
   const router = useRouter();
   const sliderRef = React.useRef<HTMLDivElement>(null);
+  const [sliderProgress, setSliderProgress] = React.useState(0);
+  const [sliderPaused, setSliderPaused] = React.useState(false);
+
+  // One card width + gap, so arrows and autoplay move exactly one card
+  const slideStep = () => {
+    const card = sliderRef.current?.querySelector<HTMLElement>('[data-slide]');
+    return card ? card.offsetWidth + 20 : 400;
+  };
 
   const scrollSlider = (dir: number) => {
-    sliderRef.current?.scrollBy({ left: dir * 400, behavior: 'smooth' });
+    const el = sliderRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    if (dir > 0 && el.scrollLeft >= max - 4) el.scrollTo({ left: 0, behavior: 'smooth' });
+    else if (dir < 0 && el.scrollLeft <= 4) el.scrollTo({ left: max, behavior: 'smooth' });
+    else el.scrollBy({ left: dir * slideStep(), behavior: 'smooth' });
   };
+
+  const handleSliderScroll = () => {
+    const el = sliderRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    setSliderProgress(max > 0 ? el.scrollLeft / max : 0);
+  };
+
+  // Autoplay the Why AINOS slider; pauses on hover/touch and for reduced motion
+  React.useEffect(() => {
+    if (sliderPaused) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const t = setInterval(() => scrollSlider(1), 3500);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- scrollSlider only reads the ref
+  }, [sliderPaused]);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, hash: string) => {
     e.preventDefault();
@@ -765,9 +813,10 @@ export default function AinosLandingPage() {
       </section>
 
       {/* ─── WHY AINOS — SCROLLABLE SLIDER ───────────────────────── */}
-      <section id="workflow" className="py-20 px-4 sm:px-6 lg:px-8 overflow-hidden scroll-mt-20">
+      <section id="workflow" className="py-16 sm:py-20 overflow-hidden scroll-mt-20">
+        <div className="px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-wrap items-end justify-between gap-6 mb-10">
+          <div className="flex flex-wrap items-end justify-between gap-6 mb-8 sm:mb-10">
             <div className="max-w-xl">
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700 mb-4">
                 <TrendingUp className="w-3.5 h-3.5" /> Why AINOS
@@ -789,32 +838,80 @@ export default function AinosLandingPage() {
             </div>
           </div>
 
-          <div
-            id="workflow-slider"
-            ref={sliderRef}
-            className="flex gap-5 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
-            {WORKFLOWS.map((w, i) => (
-              <motion.div
-                key={w.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.06 }}
-                className="snap-start shrink-0 w-[85vw] sm:w-[400px] rounded-2xl bg-white ring-1 ring-gray-100 shadow-sm p-7 flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:ring-purple-200"
-              >
-                <span className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-5">
+        </div>
+        </div>
+
+        {/* Full-bleed to the right edge, left-aligned with the content column */}
+        <div
+          id="workflow-slider"
+          ref={sliderRef}
+          onScroll={handleSliderScroll}
+          onMouseEnter={() => setSliderPaused(true)}
+          onMouseLeave={() => setSliderPaused(false)}
+          onTouchStart={() => setSliderPaused(true)}
+          onTouchEnd={() => setSliderPaused(false)}
+          onFocus={() => setSliderPaused(true)}
+          onBlur={() => setSliderPaused(false)}
+          className="flex gap-5 overflow-x-auto snap-x snap-mandatory pt-2 pb-6 scrollbar-hide"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {WORKFLOWS.map((w, i) => (
+            <motion.div
+              key={w.title}
+              data-slide
+              initial={{ opacity: 0, x: 40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.5, delay: Math.min(i, 3) * 0.08, ease: 'easeOut' }}
+              className="group snap-start shrink-0 w-[82vw] max-w-[360px] sm:w-[340px] lg:w-[360px] rounded-3xl bg-white ring-1 ring-gray-100 shadow-sm p-6 sm:p-7 flex flex-col transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-purple-900/10 hover:ring-purple-200"
+            >
+              <div className="flex items-start justify-between mb-6">
+                <span className="w-12 h-12 rounded-2xl bg-purple-50 ring-1 ring-purple-100 flex items-center justify-center transition-colors duration-300 group-hover:bg-[#4c1d95] group-hover:ring-[#4c1d95]">
+                  <w.icon className="w-5 h-5 text-purple-600 transition-colors duration-300 group-hover:text-white" />
+                </span>
+                <span className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent leading-none">
                   {String(i + 1).padStart(2, '0')}
                 </span>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2.5">{w.title}</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">{w.desc}</p>
-                <span className="mt-auto pt-6 block h-1 w-12 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500" />
-              </motion.div>
-            ))}
+              </div>
+              <span className="self-start mb-3 px-2.5 py-1 rounded-full bg-purple-50 text-[11px] font-semibold uppercase tracking-wider text-purple-700">
+                {w.tag}
+              </span>
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2.5">{w.title}</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">{w.desc}</p>
+              <div className="mt-auto pt-6">
+                <span className="block h-1 w-12 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-500 group-hover:w-24" />
+              </div>
+            </motion.div>
+          ))}
+          {/* Trailing space so the last card never sits flush against the edge */}
+          <div aria-hidden className="shrink-0 w-px sm:w-4 lg:w-16" />
+        </div>
+
+        {/* Progress + arrows */}
+        <div className="px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto mt-2 flex items-center gap-4">
+          <div className="relative h-1 flex-1 rounded-full bg-purple-100 overflow-hidden">
+            <div
+              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-[width] duration-300"
+              style={{ width: `${Math.max(8, sliderProgress * 100)}%` }}
+            />
+          </div>
+          <div className="flex md:hidden items-center gap-2">
+            <button type="button" onClick={() => scrollSlider(-1)} aria-label="Scroll left" className="w-10 h-10 rounded-full bg-white ring-1 ring-gray-200 flex items-center justify-center text-gray-600 active:scale-95 transition-all">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button type="button" onClick={() => scrollSlider(1)} aria-label="Scroll right" className="w-10 h-10 rounded-full bg-white ring-1 ring-gray-200 flex items-center justify-center text-gray-600 active:scale-95 transition-all">
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
         </div>
-        <style>{`#workflow-slider::-webkit-scrollbar { display: none; }`}</style>
+        </div>
+        <style>{`
+          #workflow-slider::-webkit-scrollbar { display: none; }
+          #workflow-slider { padding-left: 1rem; scroll-padding-left: 1rem; }
+          @media (min-width: 640px) { #workflow-slider { padding-left: 1.5rem; scroll-padding-left: 1.5rem; } }
+          @media (min-width: 1024px) { #workflow-slider { padding-left: max(2rem, calc((100% - 80rem) / 2)); scroll-padding-left: max(2rem, calc((100% - 80rem) / 2)); } }
+        `}</style>
       </section>
 
       {/* ─── ABOUT — MAGNIFIC-STYLE BENTO ────────────────────────── */}
@@ -845,7 +942,7 @@ export default function AinosLandingPage() {
               transition={{ delay: 0.1 }}
             >
               <Link href="/auth/register" className="inline-flex items-center gap-2 rounded-full bg-[#4c1d95] px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-purple-900/25 transition-colors hover:bg-[#3b0f78]">
-                Get Started <ArrowRight className="w-4 h-4" />
+                Ready Now<ArrowRight className="w-4 h-4" />
               </Link>
             </motion.div>
           </div>
@@ -881,10 +978,10 @@ export default function AinosLandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.08 }}
-              className="lg:col-span-7 rounded-3xl bg-gradient-to-br from-[#3b0f78] via-[#4c1d95] to-[#6d28d9] p-7 sm:p-8 text-white relative overflow-hidden"
+              className="lg:col-span-7 rounded-3xl bg-gradient-to-br from-[#3b0f78] via-[#4c1d95] to-[#6d28d9] p-7 sm:p-8 text-white relative overflow-hidden flex flex-col justify-center"
             >
               <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-white/10 blur-3xl" />
-              <div className="relative flex flex-col lg:flex-row lg:items-center gap-8 h-full">
+              <div className="relative flex flex-col md:flex-row md:items-center gap-8">
                 <div className="max-w-sm">
                   <h3 className="text-2xl font-bold mb-3">Your entire business on one dashboard</h3>
                   <p className="text-sm sm:text-base text-purple-100/90 leading-relaxed">
@@ -892,7 +989,7 @@ export default function AinosLandingPage() {
                   </p>
                 </div>
                 {/* Mini dashboard visual */}
-                <div className="w-full lg:w-72 flex-shrink-0 rounded-2xl bg-white/10 ring-1 ring-white/15 p-4 backdrop-blur-sm">
+                <div className="w-full md:w-64 xl:w-72 flex-shrink-0 rounded-2xl bg-white/10 ring-1 ring-white/15 p-4 backdrop-blur-sm">
                   <div className="flex items-center gap-1.5 mb-3">
                     <span className="w-2 h-2 rounded-full bg-white/30" />
                     <span className="w-2 h-2 rounded-full bg-white/30" />
@@ -909,11 +1006,33 @@ export default function AinosLandingPage() {
                       <p className="text-sm font-semibold">142</p>
                     </div>
                   </div>
-                  <div className="flex items-end gap-1.5 h-16">
+                  <div className="flex items-end gap-1.5 h-16 lg:h-20">
                     {[40, 55, 45, 70, 85, 62, 92].map((h, i) => (
                       <div key={i} className={`flex-1 rounded-t ${i === 6 ? 'bg-white' : 'bg-white/25'}`} style={{ height: `${h}%` }} />
                     ))}
                   </div>
+                </div>
+              </div>
+
+              {/* Built-in AI tools */}
+              <div className="relative mt-8 pt-6 border-t border-white/15">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-200/80 mb-4">15 AI tools built in</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {AI_TOOLS.map((t, i) => (
+                    <motion.div
+                      key={t.name}
+                      initial={{ opacity: 0, y: 12 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.15 + i * 0.05 }}
+                      className="flex items-center gap-2.5 rounded-xl bg-white/10 ring-1 ring-white/15 px-3 py-2.5 transition-colors hover:bg-white/15"
+                    >
+                      <span className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
+                        <t.icon className="w-3.5 h-3.5 text-white" />
+                      </span>
+                      <span className="text-xs sm:text-sm font-medium truncate">{t.name}</span>
+                    </motion.div>
+                  ))}
                 </div>
               </div>
             </motion.div>
