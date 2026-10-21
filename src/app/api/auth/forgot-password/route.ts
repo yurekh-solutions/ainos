@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sendPasswordResetEmail } from '@/lib/firebase';
+import { sendEmail, passwordResetEmailTemplate } from '@/lib/email';
+import { randomBytes, createHash } from 'crypto';
+
+const BASE_URL = process.env.NEXTAUTH_URL_BASE || 'https://ainos-ywu0.onrender.com';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,6 +16,7 @@ export async function POST(req: NextRequest) {
     const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
 
     if (!user) {
+      // Enumeration-safe: always return success even if user doesn't exist
       return NextResponse.json({ message: 'If an account exists with that email, a reset link has been sent.' });
     }
 
@@ -20,16 +24,41 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'This account uses Google sign-in. Please sign in with Google.' }, { status: 400 });
     }
 
-    // Firebase emails the reset link — delivers to ANY inbox, no domain
-    // verification needed. The link lands back on /auth/reset-password.
+    // Generate secure reset token
+    const resetToken = randomBytes(32).toString('hex');
+    const resetTokenHash = createHash('sha256').update(resetToken).digest('hex');
+    const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    // Store hashed token in database
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetToken: resetTokenHash,
+        resetTokenExpiry,
+      },
+    });
+
+    // Build reset URL
+    const resetUrl = `${BASE_URL}/auth/reset-password?token=${resetToken}`;
+
+    // Send email via Brevo
     try {
-      await sendPasswordResetEmail(user.email);
-      console.log('[Auth] Reset email sent successfully to:', user.email);
+      await sendEmail({
+        to: user.email,
+        subject: 'Reset Your AINOS Password',
+        html: passwordResetEmailTemplate(resetUrl),
+      });
+      console.log('[Auth] Reset email sent via Brevo to:', user.email);
     } catch (err) {
       const errMsg = (err as Error)?.message || 'Unknown error';
-      console.error('[Auth] Firebase reset email failed:', errMsg);
+      console.error('[Auth] Brevo email failed:', errMsg);
+      // Clear the token if email fails
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { resetToken: null, resetTokenExpiry: null },
+      });
       return NextResponse.json(
-        { error: `Could not send the reset email: ${errMsg}` },
+        { error: 'Could not send the reset email. Please try again later.' },
         { status: 500 }
       );
     }

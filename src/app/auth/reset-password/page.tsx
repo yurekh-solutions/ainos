@@ -8,9 +8,8 @@ import Link from 'next/link';
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
-  const oobCode = searchParams.get('oobCode') || '';
-  const mode = searchParams.get('mode') || '';
-  const isValidLink = mode === 'resetPassword' && oobCode.length > 0;
+  const token = searchParams.get('token') || '';
+  const isValidLink = token.length > 0;
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -47,7 +46,7 @@ export default function ResetPasswordPage() {
       const res = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ oobCode, newPassword }),
+        body: JSON.stringify({ token, newPassword }),
       });
       const data = await res.json();
 
