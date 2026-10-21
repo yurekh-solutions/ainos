@@ -9,7 +9,7 @@ import {
   ArrowRight, Users, Bot,
   ScrollText, Contact2, Megaphone,
   Package, Scale,
-  Shield, Zap, Headphones,
+  Shield, Timer, Headphones,
   BarChart3, CheckCircle2, TrendingUp, Building2, Layers,
   UserPlus, LayoutGrid, FileSpreadsheet, Rocket,
   Loader2, ArrowDownRight, Quote,
@@ -115,19 +115,6 @@ const STEPS = [
   },
 ];
 
-const ABOUT_CATS = ['All', 'Finance', 'Sales', 'Operations', 'Intelligence'];
-
-const MODULE_CATS: Record<string, string> = {
-  'Finance & Billing': 'Finance',
-  'CRM & Sales': 'Sales',
-  'Marketing Suite': 'Sales',
-  'HR & Payroll': 'Operations',
-  'Inventory Control': 'Operations',
-  'Legal Operations': 'Operations',
-  'AI Assistant': 'Intelligence',
-  'Analytics': 'Intelligence',
-};
-
 const TESTIMONIALS = [
   {
     quote: 'We replaced four different apps with AINOS. Invoicing, CRM, inventory and payroll — finally in one place.',
@@ -211,7 +198,6 @@ export default function AinosLandingPage() {
   };
 
   const [activeStep, setActiveStep] = React.useState(0);
-  const [aboutCat, setAboutCat] = React.useState('All');
   const [openFaq, setOpenFaq] = React.useState<number | null>(null);
 
   // Auto-rotate the four-step walkthrough every 5s
@@ -293,8 +279,7 @@ export default function AinosLandingPage() {
         <div className="relative w-full md:px-12 lg:px-20 xl:px-28 mx-auto flex flex-col md:flex-row items-center justify-between gap-8 py-10 md:py-14">
           {/* Left */}
           <div className="flex flex-col items-center md:items-start max-w-xl w-full">
-            <Link href="/auth/register" className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-full p-1 pr-4 text-sm hover:bg-purple-100 transition-colors">
-              <span className="bg-[#5b21b6] text-white text-xs px-3 py-1 rounded-full font-semibold">YUREKH</span>
+            <Link href="/auth/register" className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-full px-4 py-1.5 text-sm hover:bg-purple-100 transition-colors">
               <span className="flex items-center gap-2 text-purple-700">
                 <span className="text-sm font-medium">Introducing AINOS OS</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -348,7 +333,7 @@ export default function AinosLandingPage() {
               <div className="flex md:hidden flex-col gap-3 w-full">
                 {[
                   { icon: Shield, title: 'Secure & Reliable', desc: 'Your data, our priority' },
-                  { icon: Zap, title: 'Quick Setup', desc: 'Get started in minutes' },
+                  { icon: Timer, title: 'Quick Setup', desc: 'Get started in minutes' },
                   { icon: Headphones, title: 'Dedicated Support', desc: 'We\'re here to help' },
                 ].map((item) => (
                   <div key={item.title} className="flex items-center gap-3 p-3.5 rounded-xl bg-purple-50/60 border border-purple-100 w-full">
@@ -366,7 +351,7 @@ export default function AinosLandingPage() {
               <div className="hidden md:flex flex-wrap items-center gap-x-7 gap-y-4">
                 {[
                   { icon: Shield, title: 'Secure & Reliable', desc: 'Your data, our priority' },
-                  { icon: Zap, title: 'Quick Setup', desc: 'Get started in minutes' },
+                  { icon: Timer, title: 'Quick Setup', desc: 'Get started in minutes' },
                   { icon: Headphones, title: 'Dedicated Support', desc: 'We\'re here to help' },
                 ].map((item) => (
                   <div key={item.title} className="flex items-center gap-3">
@@ -878,20 +863,8 @@ export default function AinosLandingPage() {
               <p className="text-sm sm:text-base text-gray-600 leading-relaxed mb-6">
                 Finance, CRM, inventory, HR, marketing and more — twelve modules, zero setup. Turn on only what your business needs today.
               </p>
-              <div className="flex flex-nowrap overflow-x-auto scrollbar-hide gap-1 rounded-full bg-white border border-purple-100 p-1 mb-6 max-w-full">
-                {ABOUT_CATS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setAboutCat(c)}
-                    className={`rounded-full px-4 py-1.5 text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-colors ${aboutCat === c ? 'bg-[#4c1d95] text-white' : 'text-gray-500 hover:text-gray-900'}`}
-                  >
-                    {c.toUpperCase()}
-                  </button>
-                ))}
-              </div>
               <div className="grid grid-cols-2 gap-3">
-                {MODULES.filter((m) => aboutCat === 'All' || MODULE_CATS[m.title] === aboutCat).map((m) => (
+                {MODULES.map((m) => (
                   <div key={m.title} className="flex items-center gap-2.5 rounded-2xl bg-white border border-purple-100/70 p-3 sm:p-4">
                     <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-purple-50 ring-1 ring-purple-100 flex items-center justify-center flex-shrink-0">
                       <m.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600" />
@@ -1167,11 +1140,11 @@ export default function AinosLandingPage() {
                 href="/auth/register"
                 className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-white hover:bg-purple-50 active:scale-95 text-[#4c1d95] font-semibold transition-all shadow-lg shadow-purple-900/40"
               >
-                Start Your Trial
+                Explore Now
                 <ArrowRight className="w-5 h-5" />
               </Link>
               <p className="mt-6 text-sm text-purple-200/80">
-                No credit card required • Setup in 2 minutes
+                Setup in 2 minutes
               </p>
             </div>
           </motion.div>
@@ -1219,9 +1192,8 @@ export default function AinosLandingPage() {
             </div>
           </div>
 
-          <div className="pt-6 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-gray-500">
-            <p>© {new Date().getFullYear()} AINOS. All rights reserved.</p>
-            <Link href="https://yurekh.com/" target="_blank" rel="noopener noreferrer" className="hover:text-[#4c1d95] transition-colors">Built by Yurekh</Link>
+          <div className="pt-6 border-t border-gray-200 flex items-center justify-center text-sm text-gray-500">
+            <p>© {new Date().getFullYear()} AINOS. All rights reserved. <Link href="https://yurekh.com/" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#4c1d95] hover:text-[#3b0f78] transition-colors">YUREKH</Link></p>
           </div>
         </div>
       </footer>
