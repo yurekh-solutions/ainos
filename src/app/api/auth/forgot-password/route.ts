@@ -13,7 +13,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    // Case-insensitive lookup: PostgreSQL is case-sensitive, so use findFirst
+    // with mode: 'insensitive' to match emails regardless of casing.
+    const user = await prisma.user.findFirst({
+      where: { email: { equals: email.toLowerCase().trim(), mode: 'insensitive' } },
+    });
 
     if (!user) {
       // Enumeration-safe: always return success even if user doesn't exist
