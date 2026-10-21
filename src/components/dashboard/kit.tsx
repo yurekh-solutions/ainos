@@ -262,18 +262,36 @@ const STATUS_SUMMARY: { key: keyof FinanceSummary['statusCounts']; label: string
   { key: 'overdue', label: 'Overdue', dot: 'bg-rose-500' },
 ];
 
-export function RecentInvoicesCard({ data, loaded, className = '' }: { data: FinanceSummary; loaded: boolean; className?: string }) {
+export function RecentInvoicesCard({ data, loaded, className = '', appearance = 'default' }: { data: FinanceSummary; loaded: boolean; className?: string; appearance?: 'default' | 'lavender' }) {
+  const lavender = appearance === 'lavender';
+  const columns = lavender ? 'overview-invoice-cols' : INVOICE_COLS;
   return (
-    <section className={`${CARD} min-w-0 flex flex-col ${className}`}>
+    <section className={`${lavender ? 'overview-card overview-widget overview-invoices' : CARD} min-w-0 flex flex-col ${className}`}>
+      {lavender && (
+        <svg viewBox="0 0 440 220" className="overview-invoice-art" aria-hidden="true">
+          <defs>
+            <linearGradient id="overview-invoice-wave" x1="0" y1="0" x2="1" y2="1">
+              <stop stopColor="#ede5ff" /><stop offset="1" stopColor="#cbb5fa" />
+            </linearGradient>
+          </defs>
+          <path d="M0 211c75-65 110 47 188-29S270 30 344 57s62 81 96 80v83H0Z" fill="#eee7ff" />
+          <path d="M0 218c109-52 148 27 215-51S301 58 352 93s49 33 88 26v101H0Z" fill="url(#overview-invoice-wave)" />
+          <g transform="translate(310 58) rotate(9)">
+            <rect x="3" y="6" width="94" height="133" rx="7" fill="#b49adf" opacity="0.2" />
+            <rect width="94" height="133" rx="7" fill="#fcfaff" />
+            <path d="M16 20h10m11 0h41m-62 22h62m-62 14h48m-48 14h60m-60 20h20m14 0h26m-60 19h60" stroke="#d8c9f5" strokeWidth="5" strokeLinecap="round" />
+          </g>
+        </svg>
+      )}
       <WidgetHeader
-        title="Recent invoices"
+        title={lavender ? 'Recent Invoices' : 'Recent invoices'}
         subtitle="Your latest five bills at a glance"
-        action={data.recent.length > 0 && <ViewAll href="/invoices" />}
+        action={(lavender || data.recent.length > 0) && <ViewAll href="/invoices" />}
       />
-      {loaded && data.recent.length > 0 && (
+      {loaded && (lavender || data.recent.length > 0) && (
         <div className="flex flex-wrap gap-2 px-5 sm:px-6 pb-4 -mt-1">
           {STATUS_SUMMARY.map(s => (
-            <span key={s.key} className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-[#f7f8fa] text-xs text-neutral-600">
+            <span key={s.key} className={`inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-[#f7f8fa] text-xs text-neutral-600 ${lavender ? `overview-status overview-status-${s.key}` : ''}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
               {s.label}
               <span className="font-semibold text-neutral-900 tabular-nums">{data.statusCounts[s.key]}</span>
@@ -309,7 +327,7 @@ export function RecentInvoicesCard({ data, loaded, className = '' }: { data: Fin
           </div>
         ) : (
           <div className="min-w-0 flex-1 flex flex-col">
-            <div className={`${INVOICE_COLS} px-3 py-2.5 rounded-xl bg-[#f7f8fa] text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-neutral-400`}>
+            <div className={`${columns} ${lavender ? 'overview-invoice-head' : ''} px-3 py-2.5 rounded-xl bg-[#f7f8fa] text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-neutral-400`}>
               <span>Customer</span>
               <span>Invoice</span>
               <span className="text-right">Amount</span>
@@ -320,19 +338,19 @@ export function RecentInvoicesCard({ data, loaded, className = '' }: { data: Fin
                 <li key={inv.id}>
                   <Link
                     href="/invoices"
-                    className={`${INVOICE_COLS} px-3 py-3 rounded-xl hover:bg-[#f7f5fb] transition-colors`}
+                    className={`${columns} ${lavender ? 'overview-invoice-row' : ''} px-3 py-3 rounded-xl hover:bg-[#f7f5fb] transition-colors`}
                   >
                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                       <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-violet-50 flex items-center justify-center flex-shrink-0 text-xs sm:text-sm font-semibold text-[#6d28d9]">
                         {inv.customerName.charAt(0).toUpperCase()}
                       </span>
-                      <p className="text-[13px] sm:text-sm font-medium text-neutral-900 line-clamp-2 break-words">{inv.customerName}</p>
+                      <p className={`text-[13px] sm:text-sm font-medium text-neutral-900 break-words ${lavender ? '' : 'line-clamp-2'}`}>{inv.customerName}</p>
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[12px] sm:text-sm text-neutral-700 truncate">{inv.invoiceNumber}</p>
+                      <p className={`text-[12px] sm:text-sm text-neutral-700 ${lavender ? 'break-words' : 'truncate'}`}>{inv.invoiceNumber}</p>
                       <p className="text-[11px] text-neutral-400 font-light">{formatDate(inv.date)}</p>
                     </div>
-                    <p title={formatINR(inv.amount)} className="text-[13px] sm:text-sm font-semibold text-neutral-900 tabular-nums text-right truncate">
+                    <p title={formatINR(inv.amount)} className={`text-[13px] sm:text-sm font-semibold text-neutral-900 tabular-nums text-right ${lavender ? 'break-words' : 'truncate'}`}>
                       <span className="sm:hidden">{formatCompact(inv.amount)}</span>
                       <span className="hidden sm:inline">{formatINR(inv.amount)}</span>
                     </p>
@@ -343,7 +361,7 @@ export function RecentInvoicesCard({ data, loaded, className = '' }: { data: Fin
                 </li>
               ))}
             </ul>
-            <div className="mt-auto pt-4 px-3 flex items-center justify-between gap-3">
+            <div className="mt-auto pt-4 px-3 flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs text-neutral-400 font-light">
                 Showing {data.recent.length} of {plural(data.invoiceCount, 'invoice')}
               </p>
@@ -361,23 +379,24 @@ export function RecentInvoicesCard({ data, loaded, className = '' }: { data: Fin
 const RING_R = 52;
 const RING_C = 2 * Math.PI * RING_R;
 
-export function CollectionsCard({ data, loaded, rate, className = '' }: { data: FinanceSummary; loaded: boolean; rate: number; className?: string }) {
+export function CollectionsCard({ data, loaded, rate, className = '', appearance = 'default' }: { data: FinanceSummary; loaded: boolean; rate: number; className?: string; appearance?: 'default' | 'lavender' }) {
+  const lavender = appearance === 'lavender';
   const legend = [
-    { label: 'Received', value: data.collected, dot: 'bg-[#6d28d9]' },
+    { label: 'Received', value: data.collected, dot: lavender ? 'bg-emerald-500' : 'bg-[#6d28d9]' },
     { label: 'Pending', value: data.outstanding, dot: 'bg-orange-400' },
     { label: 'Total billed', value: data.billed, dot: 'bg-neutral-300' },
   ];
 
   return (
-    <section className={`${CARD} min-w-0 flex flex-col ${className}`}>
+    <section className={`${lavender ? 'overview-card overview-widget overview-collections' : CARD} min-w-0 flex flex-col ${className}`}>
       <WidgetHeader title="Collections" subtitle="How much of your billing is paid" />
       <div className="px-5 sm:px-6 pb-5 sm:pb-6 flex-1 flex flex-col">
-        <div className="flex items-center gap-5 sm:gap-6">
+        <div className={`flex items-center gap-5 sm:gap-6 ${lavender ? 'overview-collections-chart' : ''}`}>
           <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex-shrink-0">
             <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90" aria-hidden="true">
-              <circle cx="60" cy="60" r={RING_R} fill="none" stroke="#fff1e6" strokeWidth="12" />
+              <circle cx="60" cy="60" r={RING_R} fill="none" stroke={lavender ? '#e0d7f4' : '#fff1e6'} strokeWidth={lavender ? 9 : 12} />
               <motion.circle
-                cx="60" cy="60" r={RING_R} fill="none" stroke="#6d28d9" strokeWidth="12" strokeLinecap="round"
+                cx="60" cy="60" r={RING_R} fill="none" stroke={lavender ? '#10b981' : '#6d28d9'} strokeWidth={lavender ? 9 : 12} strokeLinecap="round"
                 strokeDasharray={RING_C}
                 initial={{ strokeDashoffset: RING_C }}
                 animate={{ strokeDashoffset: RING_C * (1 - (loaded ? rate : 0) / 100) }}

@@ -1,88 +1,95 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import {
-  IndianRupee, BadgeCheck, Hourglass, UsersRound,
-  FilePlus2, NotebookPen, CalendarDays, Calculator, Megaphone, ArrowRight,
+  IndianRupee, Hourglass, UsersRound,
+  Wallet, Calculator, Megaphone, ArrowRight, ArrowDown, ArrowUp,
 } from 'lucide-react';
 import {
-  CARD, HOVER, PAGE, CONTAINER, fadeUp, IconCircle, Skeleton, Tone, plural,
+  fadeUp, IconCircle, Skeleton, Tone, plural,
   formatINR, formatCompact, FINANCE_TOOLS, marketingTools,
   useFinanceSummary, useTemplateCount, RecentInvoicesCard, CollectionsCard,
 } from '@/components/dashboard/kit';
 
-const TOOL_TONES: Tone[] = ['purple', 'blue', 'green', 'orange'];
+const TOOL_TONES: Tone[] = ['purple', 'blue', 'purple', 'orange', 'blue'];
 
-function useCampaignCount() {
-  const [count, setCount] = useState<number | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/email-campaigns')
-      .then(r => (r.ok ? r.json() : []))
-      .then(d => { if (!cancelled) setCount(Array.isArray(d) ? d.length : 0); })
-      .catch(() => { if (!cancelled) setCount(0); });
-    return () => { cancelled = true; };
-  }, []);
-  return count;
-}
-
-/** Isometric bar-chart monitor drawn in SVG so it stays crisp on the banner. */
-function HeroIllustration({ className }: { className?: string }) {
-  const base = 118;
-  const bars = [
-    { x: 74, h: 30 },
-    { x: 98, h: 50 },
-    { x: 122, h: 40 },
-    { x: 146, h: 66 },
-  ];
-  const w = 16;
-  const d = 7;
+function SuiteIllustration({ kind }: { kind: 'finance' | 'marketing' }) {
+  const id = `overview-${kind}`;
   return (
-    <svg viewBox="0 0 220 150" className={className} aria-hidden="true">
+    <svg viewBox="0 0 240 190" className={`overview-art overview-art-${kind}`} aria-hidden="true">
       <defs>
-        <linearGradient id="hero-screen" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#ffffff" stopOpacity="0.28" />
-          <stop offset="1" stopColor="#c4b5fd" stopOpacity="0.08" />
+        <linearGradient id={`${id}-body`} x1="0" y1="0" x2="1" y2="1">
+          <stop stopColor="#b59aff" /><stop offset="0.45" stopColor="#8751ef" /><stop offset="1" stopColor="#4e1bb8" />
         </linearGradient>
-        <linearGradient id="hero-bar" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#e0e7ff" />
-          <stop offset="1" stopColor="#818cf8" />
+        <linearGradient id={`${id}-paper`} x1="0" y1="0" x2="1" y2="1">
+          <stop stopColor="#ffffff" /><stop offset="1" stopColor="#d5c5ff" />
         </linearGradient>
-        <linearGradient id="hero-base" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#8b5cf6" stopOpacity="0.55" />
-          <stop offset="1" stopColor="#6366f1" stopOpacity="0.25" />
+        <linearGradient id={`${id}-dark`} x1="0" y1="0" x2="0" y2="1">
+          <stop stopColor="#7745de" /><stop offset="1" stopColor="#361180" />
         </linearGradient>
+        <radialGradient id={`${id}-shine`}>
+          <stop stopColor="#c2a6ff" /><stop offset="1" stopColor="#7540e0" />
+        </radialGradient>
+        <filter id={`${id}-shadow`} x="-40%" y="-40%" width="180%" height="200%">
+          <feDropShadow dx="0" dy="8" stdDeviation="6" floodColor="#6f43bc" floodOpacity="0.25" />
+        </filter>
       </defs>
-      {/* platform */}
-      <path d="M38 124 L118 96 L198 124 L118 148 Z" fill="url(#hero-base)" />
-      {/* screen */}
-      <path d="M58 28 L180 6 Q186 5 186 11 L186 98 Q186 103 181 104 L60 124 Q54 125 54 119 L54 34 Q54 29 58 28 Z" fill="url(#hero-screen)" stroke="#ffffff" strokeOpacity="0.35" />
-      <path d="M66 40 L110 32" stroke="#ffffff" strokeOpacity="0.55" strokeWidth="3" strokeLinecap="round" />
-      <path d="M66 50 L92 46" stroke="#ffffff" strokeOpacity="0.3" strokeWidth="3" strokeLinecap="round" />
-      {/* bars */}
-      {bars.map(({ x, h }) => (
-        <g key={x}>
-          <path d={`M${x + w} ${base - h} L${x + w + d} ${base - h - d} L${x + w + d} ${base - d} L${x + w} ${base} Z`} fill="#6366f1" />
-          <path d={`M${x} ${base - h} L${x + d} ${base - h - d} L${x + w + d} ${base - h - d} L${x + w} ${base - h} Z`} fill="#eef2ff" />
-          <rect x={x} y={base - h} width={w} height={h} fill="url(#hero-bar)" />
-        </g>
-      ))}
-      {/* trend line */}
-      <path d="M78 76 L106 60 L130 68 L160 44" fill="none" stroke="#fde68a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="160" cy="44" r="4" fill="#fde68a" />
+      {kind === 'finance' ? (
+        <>
+          <path d="M12 165C-4 126 13 102 47 103c26 0 27 18 52 3s44-7 58 14 43-2 71 22v41H12Z" fill="#ded1ff" />
+          <ellipse cx="133" cy="169" rx="85" ry="10" fill="#a482e4" opacity="0.2" />
+          <g filter={`url(#${id}-shadow)`} transform="translate(96 30) rotate(12)">
+            <path d="M0 3Q0-3 7-3h58q7 0 7 7v96H0Z" fill={`url(#${id}-body)`} />
+            <path d="M8 4h59v89H8Z" fill={`url(#${id}-paper)`} />
+            <path d="M16 18h21m-21 12h41m-41 12h30m-30 12h41" stroke="#c0a7f4" strokeWidth="5" strokeLinecap="round" />
+            <path d="M12 72h27l7-10 8 5 8-15" fill="none" stroke="#8d60de" strokeWidth="3" />
+          </g>
+          <path d="M59 136l14-35q2-5 9-5h47l-17 41Z" fill={`url(#${id}-body)`} />
+          <path d="M59 136h63l9 12H68q-11 0-9-12Z" fill="#5525aa" />
+          <g filter={`url(#${id}-shadow)`} transform="translate(143 80) rotate(12)">
+            <rect width="60" height="83" rx="9" fill={`url(#${id}-dark)`} />
+            <rect x="7" y="8" width="46" height="20" rx="3" fill="#cdb7ff" />
+            <path d="M34 16h12" stroke="#7750bf" strokeWidth="3" />
+            {[0, 1, 2, 3].map(row => [0, 1, 2].map(col => (
+              <rect key={`${row}-${col}`} x={9 + col * 15} y={36 + row * 10} width="10" height="6" rx="2" fill={col === 2 ? '#ac89f1' : '#dfceff'} />
+            )))}
+          </g>
+        </>
+      ) : (
+        <>
+          <ellipse cx="133" cy="173" rx="65" ry="10" fill="#ae8bdf" opacity="0.19" />
+          <g filter={`url(#${id}-shadow)`} transform="rotate(20 130 100)">
+            <path d="M142 102h17l-2 58q-1 8-8 8h-8l-8-48Z" fill={`url(#${id}-dark)`} />
+            <path d="M147 107h11l-2 50q-1 5-6 5h-5Z" fill="#9866ed" />
+            <rect x="152" y="67" width="38" height="48" rx="19" fill={`url(#${id}-dark)`} />
+            <path d="M91 52l78 19v39l-78 27Z" fill={`url(#${id}-body)`} />
+            <path d="M99 57l69 17v9L99 67Z" fill="#c5a5ff" opacity="0.75" />
+            <ellipse cx="91" cy="94" rx="25" ry="46" fill="#a979ff" />
+            <ellipse cx="91" cy="94" rx="20" ry="40" fill={`url(#${id}-dark)`} />
+            <ellipse cx="91" cy="94" rx="15" ry="33" fill={`url(#${id}-shine)`} />
+            <path d="M88 62c-11 9-16 39-9 59" fill="none" stroke="#d4b8ff" strokeWidth="3" strokeLinecap="round" />
+            <ellipse cx="101" cy="93" rx="7" ry="13" fill="#b28af7" />
+          </g>
+          <g transform="translate(184 25) rotate(18)" filter={`url(#${id}-shadow)`}>
+            <rect width="30" height="30" rx="7" fill={`url(#${id}-dark)`} />
+            <path d="M8 10h14v9H15l-4 4v-4H8Z" fill="#eee5ff" />
+          </g>
+          <g transform="translate(193 142) rotate(20)" filter={`url(#${id}-shadow)`}>
+            <rect width="28" height="28" rx="7" fill={`url(#${id}-body)`} />
+            <path d="M7 12h5l3-5 3 1-1 5h4l-2 8H9Z" fill="#eee5ff" />
+          </g>
+          <circle cx="57" cy="143" r="10" fill="#ab82f2" /><circle cx="57" cy="143" r="4" fill="#ece1ff" />
+          <path d="M212 83l8-5m-5 18h8" stroke="#a479ed" strokeWidth="4" strokeLinecap="round" />
+        </>
+      )}
     </svg>
   );
 }
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
   const { data, loaded, collectionRate } = useFinanceSummary();
   const templateLabel = useTemplateCount();
-  const campaignCount = useCampaignCount();
 
   const outstandingFoot = data.overdueCount > 0
     ? { text: `${data.overdueCount} overdue`, cls: 'bg-rose-50 text-rose-600' }
@@ -96,13 +103,11 @@ export default function DashboardPage() {
       foot: <span className="text-neutral-500 font-light">Across <span className="font-medium text-neutral-800">{plural(data.invoiceCount, 'invoice')}</span></span>,
     },
     {
-      label: 'Collected', value: formatCompact(data.collected), full: formatINR(data.collected), icon: BadgeCheck, tone: 'purple', href: '/invoices',
+      label: 'Collected', value: formatCompact(data.collected), full: formatINR(data.collected), icon: Wallet, tone: 'purple', href: '/invoices',
       foot: (
-        <span className="flex items-center gap-2">
-          <span className="flex-1 h-1.5 rounded-full bg-neutral-100 overflow-hidden">
-            <span className="block h-full rounded-full bg-[#6d28d9] transition-[width] duration-700" style={{ width: `${collectionRate}%` }} />
-          </span>
-          <span className="text-neutral-500 tabular-nums">{collectionRate}%</span>
+        <span className={`overview-rate ${collectionRate > 0 ? 'is-positive' : ''}`}>
+          {collectionRate > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+          {collectionRate}% collected
         </span>
       ),
     },
@@ -123,172 +128,85 @@ export default function DashboardPage() {
     {
       title: 'Finance Suite',
       description: 'GST billing, quotations, expenses, challans and Tally sync for Indian businesses.',
+      kind: 'finance' as const,
       icon: Calculator,
       tools: FINANCE_TOOLS,
+      shortcuts: [...FINANCE_TOOLS.slice(0, 4), mTools[2]],
       href: '/dashboard/finance',
-      metrics: [
-        { label: 'Invoices', value: data.invoiceCount.toString() },
-        { label: 'Customers', value: data.customers.toString() },
-        { label: 'Products', value: data.products.toString() },
-      ],
     },
     {
       title: 'Marketing Suite',
       description: 'Social captions, SEO audits, blogs and branded invitations to grow your reach.',
+      kind: 'marketing' as const,
       icon: Megaphone,
       tools: mTools,
+      shortcuts: [mTools[0], mTools[1], mTools[3]],
       href: '/dashboard/marketing',
-      metrics: [
-        { label: 'Templates', value: templateLabel },
-        { label: 'Campaigns', value: campaignCount === null ? '—' : campaignCount.toString() },
-      ],
     },
   ];
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  };
-  const firstName = session?.user?.name?.split(' ')[0] || 'there';
-  const todayLong = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
-  const todayShort = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
-
   return (
-    <div className={PAGE}>
-      <div className={CONTAINER}>
-
-        {/* Welcome banner */}
-        <motion.section
-          {...fadeUp()}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#2a1170] via-[#251266] to-[#3b1d9a] text-white shadow-[0_12px_30px_-12px_rgba(59,29,154,0.6)]"
-        >
-          <div className="pointer-events-none absolute -top-24 right-0 w-[420px] h-[420px] rounded-full bg-[radial-gradient(closest-side,rgba(139,92,246,0.35),transparent)]" />
-          <HeroIllustration className="pointer-events-none absolute right-2 top-3 w-28 sm:w-44 md:right-8 md:top-1/2 md:-translate-y-1/2 md:w-56 lg:w-64 opacity-95" />
-
-          <div className="relative p-5 sm:p-7 lg:p-8 md:pr-72 lg:pr-80">
-            <span className="hidden sm:inline-flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-white/10 ring-1 ring-white/15">
-              <span className="w-6 h-6 rounded-full bg-white flex items-center justify-center flex-shrink-0">
-                <Image src="/ainos-alpha.png" alt="" width={14} height={13} className="w-3.5 h-auto" />
-              </span>
-              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/90">AINOS Business Suite</span>
-            </span>
-            <h1 className="text-xl sm:text-3xl font-semibold tracking-tight sm:mt-4 pr-28 sm:pr-44 md:pr-0">
-              {getGreeting()}, {firstName}
-            </h1>
-            <p className="text-[13px] sm:text-sm text-white/75 font-light mt-2 max-w-md leading-relaxed pr-24 sm:pr-40 md:pr-0">
-              {data.overdueCount > 0
-                ? `You have ${data.overdueCount} overdue invoice${data.overdueCount === 1 ? '' : 's'} to follow up on.`
-                : 'Billing, accounts and marketing for your business — all in one workspace.'}
-            </p>
-
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-4 sm:mt-6">
-              <p className="inline-flex items-center gap-2 text-[13px] text-white/80">
-                <CalendarDays className="w-4 h-4 text-white/60" />
-                <span className="sm:hidden">{todayShort}</span>
-                <span className="hidden sm:inline">{todayLong}</span>
-              </p>
-              <div className="grid grid-cols-2 sm:flex gap-3">
-                <Link
-                  href="/marketing/blog"
-                  className="inline-flex items-center justify-center gap-2 px-4 h-10 rounded-full bg-white text-[#3b1d9a] hover:bg-violet-50 text-sm font-medium transition-colors"
-                >
-                  <NotebookPen className="w-4 h-4" />
-                  Write a blog
-                </Link>
-                <Link
-                  href="/invoices"
-                  className="inline-flex items-center justify-center gap-2 px-4 h-10 rounded-full bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium ring-1 ring-white/15 transition-colors"
-                >
-                  <FilePlus2 className="w-4 h-4" />
-                  New invoice
-                </Link>
-              </div>
-            </div>
-          </div>
-        </motion.section>
+    <div className="ainos-overview">
+      <div className="overview-container">
+        <h1 className="sr-only">AINOS Business Dashboard</h1>
 
         {/* Stats */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+        <section className="overview-stats" aria-label="Business summary">
           {stats.map((stat, i) => (
             <motion.div key={stat.label} {...fadeUp(0.04 + i * 0.03)} className="min-w-0">
-              <Link href={stat.href} className={`group ${CARD} ${HOVER} p-4 sm:p-5 h-full flex flex-col min-w-0`}>
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-[13px] font-medium text-neutral-500 leading-snug pt-1">{stat.label}</p>
-                  <IconCircle icon={stat.icon} tone={stat.tone} />
+              <Link href={stat.href} className={`overview-card overview-stat overview-tone-${stat.tone}`}>
+                <IconCircle icon={stat.icon} tone={stat.tone} size="lg" />
+                <div className="overview-stat-copy">
+                  <p className="overview-stat-label">{stat.label}</p>
+                  {loaded ? (
+                    <p title={stat.full} className="overview-stat-value">{stat.value}</p>
+                  ) : (
+                    <Skeleton className="mt-2 h-7 w-20" />
+                  )}
+                  <div className="overview-stat-foot">{loaded ? stat.foot : <Skeleton className="h-4 w-20" />}</div>
                 </div>
-                {loaded ? (
-                  <p title={stat.full} className="mt-2 text-xl sm:text-[26px] font-semibold text-neutral-900 tabular-nums tracking-tight break-words">
-                    {stat.value}
-                  </p>
-                ) : (
-                  <Skeleton className="mt-3 h-7 w-20" />
-                )}
-                <div className="mt-auto pt-3 text-xs">{loaded ? stat.foot : <Skeleton className="h-4 w-24" />}</div>
               </Link>
             </motion.div>
           ))}
         </section>
 
         {/* Suites */}
-        <motion.section {...fadeUp(0.1)} className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+        <motion.section {...fadeUp(0.1)} className="overview-suites" aria-label="Your business suites">
           {suites.map(suite => (
-            <div key={suite.title} className={`${CARD} p-5 sm:p-6 flex flex-col min-w-0`}>
-              <div className="flex items-start gap-4">
+            <section key={suite.title} className={`overview-card overview-suite overview-suite-${suite.kind}`}>
+              <div className="overview-suite-header">
                 <IconCircle icon={suite.icon} size="lg" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-base font-semibold text-neutral-900">{suite.title}</h3>
-                    <span className="px-2.5 py-0.5 rounded-full bg-violet-50 text-[11px] font-medium text-[#6d28d9] flex-shrink-0">
-                      {suite.tools.length} tools
-                    </span>
-                  </div>
-                  <p className="text-[13px] text-neutral-500 font-light leading-relaxed mt-1">{suite.description}</p>
+                <div className="overview-suite-heading">
+                  <h2>{suite.title}</h2>
+                  <p>{suite.description}</p>
                 </div>
+                <span className="overview-tool-count">{suite.tools.length} tools</span>
               </div>
-
-              <div className="grid grid-cols-2 gap-1 sm:gap-2 mt-4 -mx-2">
-                {suite.tools.slice(0, 4).map((t, i) => (
-                  <Link
-                    key={t.title}
-                    href={t.href}
-                    className="group flex items-center gap-3 p-2 sm:p-2.5 rounded-xl hover:bg-[#f7f5fb] transition-colors min-w-0"
-                  >
+              <div className="overview-shortcuts">
+                {suite.shortcuts.map((t, i) => (
+                  <Link key={t.title} href={t.href} className="overview-shortcut">
                     <IconCircle icon={t.icon} tone={TOOL_TONES[i % TOOL_TONES.length]} size="sm" />
                     <span className="min-w-0">
-                      <span className="block text-[13px] font-medium text-neutral-800 group-hover:text-[#6d28d9] leading-snug transition-colors">{t.title}</span>
-                      <span className="block text-[11px] text-neutral-500 font-light leading-snug mt-0.5">{t.short}</span>
+                      <span className="overview-shortcut-title">{t.title}</span>
+                      <span className="overview-shortcut-detail">{t.short}</span>
                     </span>
                   </Link>
                 ))}
               </div>
-
-              <div className="flex flex-wrap items-end justify-between gap-4 mt-auto pt-5">
-                <div className="flex items-center gap-5 sm:gap-6">
-                  {suite.metrics.map(m => (
-                    <div key={m.label} className="min-w-0">
-                      <p className="text-base font-semibold text-neutral-900 tabular-nums">{loaded ? m.value : '—'}</p>
-                      <p className="text-[11px] text-neutral-500 font-light">{m.label}</p>
-                    </div>
-                  ))}
-                </div>
-                <Link
-                  href={suite.href}
-                  className="group inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-violet-50 text-[#6d28d9] hover:bg-[#6d28d9] hover:text-white text-[13px] font-medium transition-colors"
-                >
-                  All {suite.tools.length} tools
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              <div className="overview-suite-footer">
+                <SuiteIllustration kind={suite.kind} />
+                <Link href={suite.href} className="overview-explore">
+                  Explore All Tools <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
-            </div>
+            </section>
           ))}
         </motion.section>
 
         {/* Recent invoices + collections */}
-        <motion.div {...fadeUp(0.14)} className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
-          <RecentInvoicesCard data={data} loaded={loaded} className="lg:col-span-2" />
-          <CollectionsCard data={data} loaded={loaded} rate={collectionRate} />
+        <motion.div {...fadeUp(0.14)} className="overview-widgets">
+          <RecentInvoicesCard data={data} loaded={loaded} appearance="lavender" />
+          <CollectionsCard data={data} loaded={loaded} rate={collectionRate} appearance="lavender" />
         </motion.div>
       </div>
     </div>
