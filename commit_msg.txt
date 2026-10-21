@@ -1,6 +1,1 @@
-Revert to Resend for forgot-password email (remove Nodemailer)
-
-- User prefers Resend over Gmail SMTP
-- Removed src/lib/email.ts and nodemailer dependency
-- Resend free tier limitation: only sends to yurekhsolutions@gmail.com
-- Domain verification needed at resend.com/domains for all users
+fix: add detailed logging for Firebase reset email debugging
