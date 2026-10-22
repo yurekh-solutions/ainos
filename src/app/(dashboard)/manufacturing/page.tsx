@@ -170,8 +170,8 @@ export default function ManufacturingPage() {
     <div className="p-4 md:p-6 h-full overflow-auto" style={{ background: 'var(--page-gradient)' }}>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div><h1 className="text-2xl font-bold tracking-tight" style={{ color: 'hsl(var(--foreground))' }}>Manufacturing</h1>
-            <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>MRP & Production Management</p></div>
+          <div><h1 className="text-2xl font-bold tracking-tight" style={{ color: 'hsl(var(--foreground))' }}>Manufacturing Hub</h1>
+            <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Manage bills of materials, production orders, and quality control</p></div>
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => { resetForm(); setShowForm(true); }}
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-medium" style={{ background: 'linear-gradient(135deg, #6D28D9, #8B5CF6)' }}>
             <Plus className="w-4 h-4" /> New {TABS.find(t => t.key === activeTab)?.label.replace(/s$/, '').replace('Bills of Materials', 'BOM')}
@@ -191,12 +191,18 @@ export default function ManufacturingPage() {
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..."
             className="w-full pl-10 pr-4 py-2.5 rounded-lg border text-sm" style={{ background: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }} /></div>
 
-        {loading ? <p className="text-center py-8" style={{ color: 'hsl(var(--muted-foreground))' }}>Loading...</p> :
+        {loading ? <p className="text-center py-8" style={{ color: 'hsl(var(--muted-foreground))' }}>Loading data...</p> :
           <div className="overflow-x-auto rounded-xl border" style={{ borderColor: 'hsl(var(--border))' }}>
             <table className="w-full text-sm"><thead><tr style={{ background: 'hsl(var(--card))' }}>
               {getTableHeaders().map(h => <th key={h} className="px-4 py-3 text-left font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>{h}</th>)}
             </tr></thead><tbody>{renderTable()}</tbody></table>
-            {filtered.length === 0 && <p className="text-center py-8 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>No items found</p>}
+            {filtered.length === 0 && (
+              <div className="text-center py-12">
+                <Layers className="w-12 h-12 mx-auto mb-3" style={{ color: 'hsl(var(--muted-foreground))' }} />
+                <p className="font-medium mb-1" style={{ color: 'hsl(var(--foreground))' }}>No items found</p>
+                <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>Create your first {TABS.find(t => t.key === activeTab)?.label.toLowerCase()} to get started</p>
+              </div>
+            )}
           </div>}
 
         {showForm && (
