@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Send, PenTool, Wand2, Megaphone, ArrowRight } from 'lucide-react';
+import { Send, PenTool, Megaphone, ArrowRight } from 'lucide-react';
 import {
   CARD, PAGE, CONTAINER, fadeUp, IconCircle, PageHeader, WidgetHeader, ViewAll, Skeleton, StatusPill, Tone,
   marketingTools, useTemplateCount, formatDate,
@@ -142,29 +142,6 @@ export default function MarketingOverviewPage() {
                 ))}
               </ul>
             )}
-          </div>
-        </motion.section>
-
-        {/* Tools marketplace banner */}
-        <motion.section
-          {...fadeUp(0.12)}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#2a1170] via-[#251266] to-[#3b1d9a] text-white shadow-[0_12px_30px_-12px_rgba(59,29,154,0.6)]"
-        >
-          <div className="pointer-events-none absolute -top-20 -right-10 w-72 h-72 rounded-full bg-[radial-gradient(closest-side,rgba(139,92,246,0.35),transparent)]" />
-          <div className="relative flex items-center gap-3 sm:gap-4 p-4 sm:p-6">
-            <span className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 ring-1 ring-white/15 flex items-center justify-center flex-shrink-0">
-              <Wand2 className="w-5 h-5 text-[#c4b5fd]" />
-            </span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm sm:text-base font-semibold">Grow faster with AI</p>
-              <p className="text-xs sm:text-[13px] text-white/75 font-light mt-0.5 leading-relaxed">Let our AI tools handle the heavy lifting while you focus on what matters.</p>
-            </div>
-            <Link
-              href="/tools"
-              className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 h-9 sm:h-10 rounded-full bg-white text-[#3b1d9a] hover:bg-violet-50 text-[13px] sm:text-sm font-medium transition-colors flex-shrink-0"
-            >
-              Explore tools <ArrowRight className="hidden sm:block w-4 h-4" />
-            </Link>
           </div>
         </motion.section>
       </div>

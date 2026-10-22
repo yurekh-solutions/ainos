@@ -43,7 +43,7 @@ export default function EcomCustomersPage() {
     <div className="p-4 md:p-6 h-full overflow-auto" style={{ background: 'var(--page-gradient)' }}>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-7xl mx-auto space-y-6">
         <div><h1 className="text-2xl font-bold tracking-tight" style={{ color: 'hsl(var(--foreground))' }}>Customers</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{customers.length} customers from orders</p></div>
+          <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>People who have placed orders in your stores</p></div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[{ label: 'Total Customers', value: customers.length, icon: Users, color: '#6D28D9' },

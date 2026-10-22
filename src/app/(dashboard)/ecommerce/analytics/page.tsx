@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, ShoppingCart, Users, DollarSign, Package, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+// ArrowUpRight/ArrowDownRight kept for status colouring of the Low Stock card
 
 export default function EcomAnalyticsPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -37,18 +38,15 @@ export default function EcomAnalyticsPage() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                { label: 'Revenue', value: `₹${totalRevenue.toFixed(0)}`, icon: DollarSign, color: '#10b981', change: '+12%' },
-                { label: 'Orders', value: totalOrders, icon: ShoppingCart, color: '#6D28D9', change: '+8%' },
-                { label: 'Avg Order', value: `${avgOrderValue.toFixed(0)}`, icon: TrendingUp, color: '#8B5CF6', change: '+5%' },
-                { label: 'Low Stock', value: lowStock, icon: Package, color: '#ef4444', change: lowStock > 0 ? 'Alert' : 'OK' },
+                { label: 'Revenue (delivered)', value: `₹${totalRevenue.toFixed(0)}`, icon: DollarSign, color: '#10b981' },
+                { label: 'Total Orders', value: totalOrders, icon: ShoppingCart, color: '#6D28D9' },
+                { label: 'Avg Order Value', value: `₹${avgOrderValue.toFixed(0)}`, icon: TrendingUp, color: '#8B5CF6' },
+                { label: 'Low Stock Items', value: lowStock, icon: Package, color: lowStock > 0 ? '#ef4444' : '#10b981' },
               ].map((s, i) => (
                 <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
                   className="rounded-xl p-4 border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="p-2 rounded-lg" style={{ background: s.color + '20' }}><s.icon className="w-5 h-5" style={{ color: s.color }} /></div>
-                    <span className="flex items-center gap-0.5 text-xs font-medium" style={{ color: s.change.startsWith('+') ? '#10b981' : s.change === 'Alert' ? '#ef4444' : '#6b7280' }}>
-                      {s.change.startsWith('+') ? <ArrowUpRight className="w-3 h-3" /> : s.change === 'Alert' ? <ArrowDownRight className="w-3 h-3" /> : null}{s.change}
-                    </span>
                   </div>
                   <p className="text-2xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>{s.value}</p>
                   <p className="text-xs mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{s.label}</p>

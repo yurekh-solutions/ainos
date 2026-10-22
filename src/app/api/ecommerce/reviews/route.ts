@@ -35,6 +35,9 @@ export async function PUT(req: NextRequest) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
+    const existing = await prisma.productReview.findUnique({ where: { id } });
+    if (!existing || existing.companyId !== user.companyId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
     const body = await req.json();
     const review = await prisma.productReview.update({ where: { id }, data: body });
     return NextResponse.json(review);
@@ -54,6 +57,9 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+
+    const existing = await prisma.productReview.findUnique({ where: { id } });
+    if (!existing || existing.companyId !== user.companyId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     await prisma.productReview.delete({ where: { id } });
     return NextResponse.json({ success: true });

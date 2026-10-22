@@ -91,20 +91,30 @@ export async function PUT(req: NextRequest) {
 
     const body = await req.json();
 
+    // Verify the record belongs to this company before modifying it
+    const owned = async (model: 'workCenter' | 'manufacturingOrder' | 'qualityCheck' | 'scrapOrder' | 'bOM') => {
+      const record = await (prisma[model] as typeof prisma.workCenter).findUnique({ where: { id } });
+      return record && record.companyId === user.companyId;
+    };
+
     if (type === 'workcenters') {
+      if (!(await owned('workCenter'))) return NextResponse.json({ error: 'Not found' }, { status: 404 });
       const data = await prisma.workCenter.update({ where: { id }, data: { ...(body.name && { name: body.name }), ...(body.capacity !== undefined && { capacity: body.capacity }), ...(body.costPerHour !== undefined && { costPerHour: body.costPerHour }), ...(body.status && { status: body.status }) } });
       return NextResponse.json(data);
     }
     if (type === 'orders') {
+      if (!(await owned('manufacturingOrder'))) return NextResponse.json({ error: 'Not found' }, { status: 404 });
       const data = await prisma.manufacturingOrder.update({ where: { id }, data: { ...(body.status && { status: body.status }), ...(body.quantity !== undefined && { quantity: body.quantity }), ...(body.notes && { notes: body.notes }) } });
       return NextResponse.json(data);
     }
     if (type === 'quality') {
+      if (!(await owned('qualityCheck'))) return NextResponse.json({ error: 'Not found' }, { status: 404 });
       const data = await prisma.qualityCheck.update({ where: { id }, data: { ...(body.result && { result: body.result }), ...(body.notes && { notes: body.notes }) } });
       return NextResponse.json(data);
     }
 
     // Default: BOM
+    if (!(await owned('bOM'))) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     const data = await prisma.bOM.update({ where: { id }, data: { ...(body.name && { name: body.name }), ...(body.components !== undefined && { components: body.components }) } });
     return NextResponse.json(data);
   } catch (e) {
@@ -125,11 +135,17 @@ export async function DELETE(req: NextRequest) {
     const type = searchParams.get('type');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
-    if (type === 'workcenters') await prisma.workCenter.delete({ where: { id } });
-    else if (type === 'orders') await prisma.manufacturingOrder.delete({ where: { id } });
-    else if (type === 'quality') await prisma.qualityCheck.delete({ where: { id } });
-    else if (type === 'scrap') await prisma.scrapOrder.delete({ where: { id } });
-    else await prisma.bOM.delete({ where: { id } });
+    // Verify the record belongs to this company before deleting it
+    const owned = async (model: 'workCenter' | 'manufacturingOrder' | 'qualityCheck' | 'scrapOrder' | 'bOM') => {
+      const record = await (prisma[model] as typeof prisma.workCenter).findUnique({ where: { id } });
+      return record && record.companyId === user.companyId;
+    };
+
+    if (type === 'workcenters') { if (!(await owned('workCenter'))) return NextResponse.json({ error: 'Not found' }, { status: 404 }); await prisma.workCenter.delete({ where: { id } }); }
+    else if (type === 'orders') { if (!(await owned('manufacturingOrder'))) return NextResponse.json({ error: 'Not found' }, { status: 404 }); await prisma.manufacturingOrder.delete({ where: { id } }); }
+    else if (type === 'quality') { if (!(await owned('qualityCheck'))) return NextResponse.json({ error: 'Not found' }, { status: 404 }); await prisma.qualityCheck.delete({ where: { id } }); }
+    else if (type === 'scrap') { if (!(await owned('scrapOrder'))) return NextResponse.json({ error: 'Not found' }, { status: 404 }); await prisma.scrapOrder.delete({ where: { id } }); }
+    else { if (!(await owned('bOM'))) return NextResponse.json({ error: 'Not found' }, { status: 404 }); await prisma.bOM.delete({ where: { id } }); }
 
     return NextResponse.json({ success: true });
   } catch (e) {

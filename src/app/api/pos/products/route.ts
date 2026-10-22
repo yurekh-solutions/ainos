@@ -66,6 +66,9 @@ export async function PUT(req: NextRequest) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
+    const existing = await prisma.pOSProduct.findUnique({ where: { id } });
+    if (!existing || existing.companyId !== user.companyId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
     const body = await req.json();
     const product = await prisma.pOSProduct.update({
       where: { id },
@@ -96,6 +99,9 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+
+    const existing = await prisma.pOSProduct.findUnique({ where: { id } });
+    if (!existing || existing.companyId !== user.companyId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     await prisma.pOSProduct.delete({ where: { id } });
     return NextResponse.json({ success: true });

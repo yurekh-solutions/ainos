@@ -83,6 +83,9 @@ export async function PUT(req: NextRequest) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
+    const existing = await prisma.pOSOrder.findUnique({ where: { id } });
+    if (!existing || existing.companyId !== user.companyId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
     const body = await req.json();
     const order = await prisma.pOSOrder.update({
       where: { id },
