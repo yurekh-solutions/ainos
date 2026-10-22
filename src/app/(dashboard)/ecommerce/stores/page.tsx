@@ -40,23 +40,23 @@ export default function EcomStoresPage() {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'hsl(var(--foreground))' }}>Online Stores</h1>
-            <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Manage your eCommerce stores</p>
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'hsl(var(--foreground))' }}>Your Stores</h1>
+            <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Create and manage your online storefronts</p>
           </div>
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
             onClick={() => setShowForm(true)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-medium"
             style={{ background: 'linear-gradient(135deg, #6D28D9, #8B5CF6)' }}>
-            <Plus className="w-4 h-4" /> New Store
+            <Plus className="w-4 h-4" /> Add Store
           </motion.button>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { label: 'Total Stores', value: stores.length, icon: Store, color: '#6D28D9' },
-            { label: 'Total Products', value: totalProducts, icon: Package, color: '#8B5CF6' },
-            { label: 'Total Orders', value: totalOrders, icon: ShoppingCart, color: '#A78BFA' },
+            { label: 'Active Stores', value: stores.length, icon: Store, color: '#6D28D9' },
+            { label: 'Products Listed', value: totalProducts, icon: Package, color: '#8B5CF6' },
+            { label: 'Orders Received', value: totalOrders, icon: ShoppingCart, color: '#A78BFA' },
           ].map((s, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
               className="rounded-xl p-4 border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
@@ -79,8 +79,14 @@ export default function EcomStoresPage() {
         </div>
 
         {/* Stores Grid */}
-        {loading ? <p className="text-center py-8" style={{ color: 'hsl(var(--muted-foreground))' }}>Loading...</p> :
-          filtered.length === 0 ? <p className="text-center py-8" style={{ color: 'hsl(var(--muted-foreground))' }}>No stores found</p> :
+        {loading ? <p className="text-center py-8" style={{ color: 'hsl(var(--muted-foreground))' }}>Loading your stores...</p> :
+          filtered.length === 0 ? (
+            <div className="text-center py-12">
+              <Store className="w-12 h-12 mx-auto mb-3" style={{ color: 'hsl(var(--muted-foreground))' }} />
+              <p className="font-medium mb-1" style={{ color: 'hsl(var(--foreground))' }}>No stores yet</p>
+              <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>Create your first online store to get started</p>
+            </div>
+          ) :
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((store, i) => (
               <motion.div key={store.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
@@ -96,7 +102,7 @@ export default function EcomStoresPage() {
                   </span>
                 </div>
                 <h3 className="font-semibold mb-1" style={{ color: 'hsl(var(--foreground))' }}>{store.name}</h3>
-                <p className="text-xs mb-3 line-clamp-2" style={{ color: 'hsl(var(--muted-foreground))' }}>{store.description || 'No description'}</p>
+                <p className="text-xs mb-3 line-clamp-2" style={{ color: 'hsl(var(--muted-foreground))' }}>{store.description || 'No description added'}</p>
                 <div className="flex items-center gap-4 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   <span className="flex items-center gap-1"><Package className="w-3 h-3" /> {store._count?.products || 0} products</span>
                   <span className="flex items-center gap-1"><ShoppingCart className="w-3 h-3" /> {store._count?.orders || 0} orders</span>
@@ -112,15 +118,15 @@ export default function EcomStoresPage() {
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
               className="w-full max-w-md rounded-xl p-6 border" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>New Store</h2>
+                <h2 className="text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Create New Store</h2>
                 <button onClick={() => setShowForm(false)}><X className="w-5 h-5" style={{ color: 'hsl(var(--muted-foreground))' }} /></button>
               </div>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div><label className="block text-sm font-medium mb-1" style={{ color: 'hsl(var(--foreground))' }}>Store Name</label>
-                  <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
+                <div><label className="block text-sm font-medium mb-1" style={{ color: 'hsl(var(--foreground))' }}>Store Name *</label>
+                  <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="My Awesome Store"
                     className="w-full px-3 py-2 rounded-lg border text-sm" style={{ background: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }} /></div>
                 <div><label className="block text-sm font-medium mb-1" style={{ color: 'hsl(var(--foreground))' }}>Description</label>
-                  <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3}
+                  <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} placeholder="Tell customers what you sell..."
                     className="w-full px-3 py-2 rounded-lg border text-sm" style={{ background: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }} /></div>
                 <div className="grid grid-cols-2 gap-4">
                   <div><label className="block text-sm font-medium mb-1" style={{ color: 'hsl(var(--foreground))' }}>Currency</label>
