@@ -1,0 +1,139 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+
+export async function GET(req: NextRequest) {
+  try {
+    const session = await getServerSession(req);
+    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get('type'); // boms, orders, workcenters, quality, scrap
+
+    if (type === 'workcenters') {
+      const data = await prisma.workCenter.findMany({ where: { companyId: user.companyId }, orderBy: { name: 'asc' } });
+      return NextResponse.json(data);
+    }
+    if (type === 'orders') {
+      const data = await prisma.manufacturingOrder.findMany({ where: { companyId: user.companyId }, include: { bom: true }, orderBy: { createdAt: 'desc' } });
+      return NextResponse.json(data);
+    }
+    if (type === 'quality') {
+      const data = await prisma.qualityCheck.findMany({ where: { companyId: user.companyId }, orderBy: { createdAt: 'desc' } });
+      return NextResponse.json(data);
+    }
+    if (type === 'scrap') {
+      const data = await prisma.scrapOrder.findMany({ where: { companyId: user.companyId }, orderBy: { createdAt: 'desc' } });
+      return NextResponse.json(data);
+    }
+
+    // Default: BOMs
+    const data = await prisma.bOM.findMany({ where: { companyId: user.companyId }, orderBy: { createdAt: 'desc' } });
+    return NextResponse.json(data);
+  } catch (e) {
+    console.error('GET /api/manufacturing error:', e);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const session = await getServerSession(req);
+    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+
+    const body = await req.json();
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get('type');
+
+    if (type === 'workcenters') {
+      const data = await prisma.workCenter.create({ data: { name: body.name, capacity: body.capacity || 0, costPerHour: body.costPerHour || 0, status: body.status || 'active', companyId: user.companyId } });
+      return NextResponse.json(data, { status: 201 });
+    }
+    if (type === 'orders') {
+      const count = await prisma.manufacturingOrder.count({ where: { companyId: user.companyId } });
+      const orderNumber = `MO-${String(count + 1).padStart(5, '0')}`;
+      const data = await prisma.manufacturingOrder.create({ data: { orderNumber, productName: body.productName, quantity: body.quantity || 0, bomId: body.bomId || null, status: body.status || 'draft', scheduledStart: body.scheduledStart ? new Date(body.scheduledStart) : null, companyId: user.companyId } });
+      return NextResponse.json(data, { status: 201 });
+    }
+    if (type === 'quality') {
+      const data = await prisma.qualityCheck.create({ data: { orderNumber: body.orderNumber || '', productName: body.productName || '', checkType: body.checkType || 'visual', result: body.result || 'pending', notes: body.notes || '', companyId: user.companyId } });
+      return NextResponse.json(data, { status: 201 });
+    }
+    if (type === 'scrap') {
+      const data = await prisma.scrapOrder.create({ data: { productName: body.productName || '', quantity: body.quantity || 0, reason: body.reason || '', status: body.status || 'draft', companyId: user.companyId } });
+      return NextResponse.json(data, { status: 201 });
+    }
+
+    // Default: BOM
+    const data = await prisma.bOM.create({ data: { name: body.name, productName: body.productName || body.name, quantity: body.quantity || 1, components: body.components || [], companyId: user.companyId } });
+    return NextResponse.json(data, { status: 201 });
+  } catch (e) {
+    console.error('POST /api/manufacturing error:', e);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    const session = await getServerSession(req);
+    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    const type = searchParams.get('type');
+    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+
+    const body = await req.json();
+
+    if (type === 'workcenters') {
+      const data = await prisma.workCenter.update({ where: { id }, data: { ...(body.name && { name: body.name }), ...(body.capacity !== undefined && { capacity: body.capacity }), ...(body.costPerHour !== undefined && { costPerHour: body.costPerHour }), ...(body.status && { status: body.status }) } });
+      return NextResponse.json(data);
+    }
+    if (type === 'orders') {
+      const data = await prisma.manufacturingOrder.update({ where: { id }, data: { ...(body.status && { status: body.status }), ...(body.quantity !== undefined && { quantity: body.quantity }), ...(body.notes && { notes: body.notes }) } });
+      return NextResponse.json(data);
+    }
+    if (type === 'quality') {
+      const data = await prisma.qualityCheck.update({ where: { id }, data: { ...(body.result && { result: body.result }), ...(body.notes && { notes: body.notes }) } });
+      return NextResponse.json(data);
+    }
+
+    // Default: BOM
+    const data = await prisma.bOM.update({ where: { id }, data: { ...(body.name && { name: body.name }), ...(body.components !== undefined && { components: body.components }) } });
+    return NextResponse.json(data);
+  } catch (e) {
+    console.error('PUT /api/manufacturing error:', e);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getServerSession(req);
+    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    const type = searchParams.get('type');
+    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+
+    if (type === 'workcenters') await prisma.workCenter.delete({ where: { id } });
+    else if (type === 'orders') await prisma.manufacturingOrder.delete({ where: { id } });
+    else if (type === 'quality') await prisma.qualityCheck.delete({ where: { id } });
+    else if (type === 'scrap') await prisma.scrapOrder.delete({ where: { id } });
+    else await prisma.bOM.delete({ where: { id } });
+
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    console.error('DELETE /api/manufacturing error:', e);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

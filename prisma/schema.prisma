@@ -107,6 +107,27 @@ model Company {
   bankAccounts       BankAccount[]
   bankTransactions   BankTransaction[]
   onboardingAudits   OnboardingAudit[]
+  onlineStores       OnlineStore[]
+  ecomCategories     EcomCategory[]
+  ecomProducts       EcomProduct[]
+  shoppingCarts      ShoppingCart[]
+  ecomOrders         EcomOrder[]
+  productReviews     ProductReview[]
+  couponCodes        CouponCode[]
+  websites           Website[]
+  webPages           WebPage[]
+  webForms           WebForm[]
+  webMenus           WebMenu[]
+  posSessions        POSSession[]
+  posOrders          POSOrder[]
+  posCategories      POSCategory[]
+  posProducts        POSProduct[]
+  workCenters        WorkCenter[]
+  boms               BOM[]
+  manufacturingOrders ManufacturingOrder[]
+  workOrders         WorkOrder[]
+  qualityChecks      QualityCheck[]
+  scrapOrders        ScrapOrder[]
 
   @@map("companies")
 }
@@ -1358,4 +1379,498 @@ model OnboardingAudit {
   @@index([action])
   @@index([createdAt])
   @@map("onboarding_audits")
+}
+
+// ═══════════════════════════════════════════
+// PHASE 1: ECOMMERCE MODULE
+// ═══════════════════════════════════════════
+
+model OnlineStore {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  domain      String?  @unique
+  status      String   @default("active") // active, draft, suspended
+  currency    String   @default("INR")
+  logoUrl     String?  @map("logo_url")
+  theme       String   @default("default")
+  settings    Json?
+  companyId   String?  @map("company_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  company     Company? @relation(fields: [companyId], references: [id])
+  products    EcomProduct[]
+  orders      EcomOrder[]
+  categories  EcomCategory[]
+
+  @@index([companyId])
+  @@map("online_stores")
+}
+
+model EcomCategory {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  parentId    String?  @map("parent_id")
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  storeId     String?  @map("store_id")
+  companyId   String?  @map("company_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  company     Company? @relation(fields: [companyId], references: [id])
+  store       OnlineStore? @relation(fields: [storeId], references: [id])
+  parent      EcomCategory? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    EcomCategory[] @relation("CategoryHierarchy")
+  products    EcomProduct[]
+
+  @@index([companyId])
+  @@index([storeId])
+  @@map("ecom_categories")
+}
+
+model EcomProduct {
+  id            String   @id @default(uuid())
+  name          String
+  slug          String   @unique
+  description   String?
+  shortDesc     String?  @map("short_desc")
+  sku           String?  @unique
+  barcode       String?  @unique
+  price         Float
+  comparePrice  Float?   @map("compare_price")
+  costPrice     Float?   @map("cost_price")
+  stock         Int      @default(0)
+  trackStock    Boolean  @default(true) @map("track_stock")
+  status        String   @default("active") // active, draft, archived
+  isFeatured    Boolean  @default(false) @map("is_featured")
+  weight        Float?
+  dimensions    Json?
+  images        Json?    // [{url, alt, order}]
+  variants      Json?    // [{size, color, price, stock, sku}]
+  tags          Json?
+  seoTitle      String?  @map("seo_title")
+  seoDesc       String?  @map("seo_desc")
+  categoryId    String?  @map("category_id")
+  storeId       String?  @map("store_id")
+  companyId     String?  @map("company_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  store         OnlineStore? @relation(fields: [storeId], references: [id])
+  category      EcomCategory? @relation(fields: [categoryId], references: [id])
+  company       Company? @relation(fields: [companyId], references: [id])
+  reviews       ProductReview[]
+  cartItems     ShoppingCart[]
+
+  @@index([companyId])
+  @@index([storeId])
+  @@index([categoryId])
+  @@map("ecom_products")
+}
+
+model ShoppingCart {
+  id        String   @id @default(uuid())
+  productId String   @map("product_id")
+  quantity  Int      @default(1)
+  variant   Json?    // selected variant
+  sessionId String?  @map("session_id") // for guest carts
+  userId    String?  @map("user_id")
+  companyId String?  @map("company_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  product   EcomProduct @relation(fields: [productId], references: [id])
+  company   Company? @relation(fields: [companyId], references: [id])
+
+  @@index([sessionId])
+  @@index([userId])
+  @@index([companyId])
+  @@map("shopping_carts")
+}
+
+model EcomOrder {
+  id              String    @id @default(uuid())
+  orderNumber     String    @unique @map("order_number")
+  customerName    String    @map("customer_name")
+  customerEmail   String?   @map("customer_email")
+  customerPhone   String?   @map("customer_phone")
+  shippingAddress Json?     @map("shipping_address")
+  billingAddress  Json?     @map("billing_address")
+  items           Json?
+  subtotal        Float?
+  tax             Float?
+  shippingCost    Float?    @map("shipping_cost")
+  discount        Float?    @default(0)
+  total           Float?
+  status          String    @default("pending") // pending, confirmed, processing, shipped, delivered, cancelled, refunded
+  paymentStatus   String    @default("pending") @map("payment_status") // pending, paid, failed, refunded
+  paymentMethod   String?   @map("payment_method")
+  paymentId       String?   @map("payment_id")
+  shippingMethod  String?   @map("shipping_method")
+  trackingNumber  String?   @map("tracking_number")
+  notes           String?
+  couponCode      String?   @map("coupon_code")
+  storeId         String?   @map("store_id")
+  companyId       String?   @map("company_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  store           OnlineStore? @relation(fields: [storeId], references: [id])
+  company         Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([storeId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("ecom_orders")
+}
+
+model ProductReview {
+  id        String   @id @default(uuid())
+  productId String   @map("product_id")
+  rating    Int      // 1-5
+  title     String?
+  comment   String?
+  authorName String? @map("author_name")
+  authorEmail String? @map("author_email")
+  isApproved Boolean @default(false) @map("is_approved")
+  companyId String?  @map("company_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  product   EcomProduct @relation(fields: [productId], references: [id])
+  company   Company? @relation(fields: [companyId], references: [id])
+
+  @@index([productId])
+  @@index([companyId])
+  @@map("product_reviews")
+}
+
+model CouponCode {
+  id          String    @id @default(uuid())
+  code        String    @unique
+  type        String    @default("percentage") // percentage, fixed
+  value       Float
+  minOrder    Float?    @map("min_order")
+  maxDiscount Float?    @map("max_discount")
+  usageLimit  Int?      @map("usage_limit")
+  usedCount   Int       @default(0) @map("used_count")
+  startDate   DateTime? @map("start_date")
+  endDate     DateTime? @map("end_date")
+  isActive    Boolean   @default(true) @map("is_active")
+  applicableProducts Json? @map("applicable_products") // null = all
+  companyId   String?   @map("company_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  company     Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([code])
+  @@map("coupon_codes")
+}
+
+// ═══════════════════════════════════════════
+// PHASE 1: WEBSITE BUILDER MODULE
+// ═══════════════════════════════════════════
+
+model Website {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  domain      String?  @unique
+  subdomain   String?  @unique // ainos-site-xxx.ainos.io
+  status      String   @default("draft") // draft, published, suspended
+  template    String?  @default("default")
+  config      Json?    // theme colors, fonts, layout settings
+  logoUrl     String?  @map("logo_url")
+  faviconUrl  String?  @map("favicon_url")
+  seoTitle    String?  @map("seo_title")
+  seoDesc     String?  @map("seo_desc")
+  analyticsId String?  @map("analytics_id") // Google Analytics
+  customCode  String?  @map("custom_code") // head/body custom code
+  companyId   String?  @map("company_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  company     Company? @relation(fields: [companyId], references: [id])
+  pages       WebPage[]
+  forms       WebForm[]
+  menus       WebMenu[]
+
+  @@index([companyId])
+  @@map("websites")
+}
+
+model WebPage {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String
+  content     Json?    // array of blocks/components
+  status      String   @default("draft") // draft, published
+  isHome      Boolean  @default(false) @map("is_home")
+  seoTitle    String?  @map("seo_title")
+  seoDesc     String?  @map("seo_desc")
+  ogImage     String?  @map("og_image")
+  websiteId   String?  @map("website_id")
+  companyId   String?  @map("company_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  website     Website? @relation(fields: [websiteId], references: [id])
+  company     Company? @relation(fields: [companyId], references: [id])
+
+  @@unique([websiteId, slug])
+  @@index([companyId])
+  @@map("web_pages")
+}
+
+model WebForm {
+  id          String   @id @default(uuid())
+  name        String
+  fields      Json?    // [{label, type, required, options}]
+  submissions Json?    // stored form submissions
+  websiteId   String?  @map("website_id")
+  companyId   String?  @map("company_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  website     Website? @relation(fields: [websiteId], references: [id])
+  company     Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@map("web_forms")
+}
+
+model WebMenu {
+  id        String   @id @default(uuid())
+  name      String
+  items     Json?    // [{label, url, order, children}]
+  websiteId String?  @map("website_id")
+  companyId String?  @map("company_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  website   Website? @relation(fields: [websiteId], references: [id])
+  company   Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@map("web_menus")
+}
+
+// ═══════════════════════════════════════════
+// PHASE 1: POINT OF SALE (POS) MODULE
+// ═══════════════════════════════════════════
+
+model POSSession {
+  id           String    @id @default(uuid())
+  name         String
+  status       String    @default("closed") // open, closed
+  openedAt     DateTime? @map("opened_at")
+  closedAt     DateTime? @map("closed_at")
+  openedBy     String?   @map("opened_by")
+  closedBy     String?   @map("closed_by")
+  openingCash  Float     @default(0) @map("opening_cash")
+  closingCash  Float?    @map("closing_cash")
+  totalSales   Float     @default(0) @map("total_sales")
+  totalOrders  Int       @default(0) @map("total_orders")
+  notes        String?
+  companyId    String?   @map("company_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  orders       POSOrder[]
+  company      Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([status])
+  @@map("pos_sessions")
+}
+
+model POSOrder {
+  id           String    @id @default(uuid())
+  orderNumber  String    @unique @map("order_number")
+  items        Json?
+  subtotal     Float?
+  tax          Float?
+  discount     Float?    @default(0)
+  total        Float?
+  status       String    @default("completed") // completed, voided, refunded
+  paymentMethod String   @default("cash") @map("payment_method") // cash, card, upi
+  amountPaid   Float?    @map("amount_paid")
+  changeAmount Float?    @map("change_amount")
+  customerName String?   @map("customer_name")
+  notes        String?
+  sessionId    String?   @map("session_id")
+  companyId    String?   @map("company_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  session      POSSession? @relation(fields: [sessionId], references: [id])
+  company      Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("pos_orders")
+}
+
+model POSCategory {
+  id        String   @id @default(uuid())
+  name      String
+  color     String?  // hex color for POS UI
+  sortOrder Int      @default(0) @map("sort_order")
+  companyId String?  @map("company_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  products  POSProduct[]
+  company   Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@map("pos_categories")
+}
+
+model POSProduct {
+  id          String   @id @default(uuid())
+  name        String
+  sku         String?
+  barcode     String?  @unique
+  price       Float
+  categoryId  String?  @map("category_id")
+  imageUrl    String?  @map("image_url")
+  isInStock   Boolean  @default(true) @map("is_in_stock")
+  quickKey    String?  @map("quick_key") // shortcut key on POS screen
+  companyId   String?  @map("company_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  category    POSCategory? @relation(fields: [categoryId], references: [id])
+  company     Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([categoryId])
+  @@map("pos_products")
+}
+
+// ═══════════════════════════════════════════
+// PHASE 1: MANUFACTURING (MRP) MODULE
+// ═══════════════════════════════════════════
+
+model WorkCenter {
+  id          String   @id @default(uuid())
+  name        String
+  code        String?  @unique
+  description String?
+  capacity    Int?     // units per hour
+  costPerHour Float?   @map("cost_per_hour")
+  status      String   @default("active") // active, maintenance, inactive
+  location    String?
+  companyId   String?  @map("company_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  workOrders  WorkOrder[]
+  company     Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@map("work_centers")
+}
+
+model BOM {
+  id          String   @id @default(uuid())
+  name        String
+  code        String?  @unique
+  product     String   // finished product name
+  productId   String?  @map("product_id") // link to Product model
+  quantity    Float    @default(1) // output quantity
+  components  Json?    // [{productId, name, quantity, unit}]
+  version     Int      @default(1)
+  status      String   @default("active") // active, draft, archived
+  notes       String?
+  companyId   String?  @map("company_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  orders      ManufacturingOrder[]
+  company     Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@map("boms")
+}
+
+model ManufacturingOrder {
+  id            String    @id @default(uuid())
+  moNumber      String    @unique @map("mo_number")
+  bomId         String?   @map("bom_id")
+  product       String
+  quantity      Float
+  plannedDate   DateTime? @map("planned_date")
+  startDate     DateTime? @map("start_date")
+  endDate       DateTime? @map("end_date")
+  status        String    @default("draft") // draft, confirmed, in_progress, done, cancelled
+  priority      String    @default("medium")
+  components    Json?     // consumed materials
+  producedQty   Float     @default(0) @map("produced_qty")
+  scrappedQty   Float     @default(0) @map("scrapped_qty")
+  notes         String?
+  companyId     String?   @map("company_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  bom           BOM?      @relation(fields: [bomId], references: [id])
+  workOrders    WorkOrder[]
+  company       Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([status])
+  @@map("manufacturing_orders")
+}
+
+model WorkOrder {
+  id            String    @id @default(uuid())
+  moId          String?   @map("mo_id")
+  name          String
+  workCenterId  String?   @map("work_center_id")
+  plannedHours  Float?    @map("planned_hours")
+  actualHours   Float?    @map("actual_hours")
+  status        String    @default("pending") // pending, in_progress, done, cancelled
+  assignedTo    String?   @map("assigned_to")
+  startDate     DateTime? @map("start_date")
+  endDate       DateTime? @map("end_date")
+  notes         String?
+  companyId     String?   @map("company_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  mo            ManufacturingOrder? @relation(fields: [moId], references: [id])
+  workCenter    WorkCenter? @relation(fields: [workCenterId], references: [id])
+  company       Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([moId])
+  @@map("work_orders")
+}
+
+model QualityCheck {
+  id          String    @id @default(uuid())
+  title       String
+  type        String    @default("inspection") // inspection, test, audit
+  moId        String?   @map("mo_id")
+  productId   String?   @map("product_id")
+  checklist   Json?     // [{item, pass, notes}]
+  status      String    @default("pending") // pending, passed, failed
+  inspector   String?   @map("inspector")
+  inspectedAt DateTime? @map("inspected_at")
+  notes       String?
+  companyId   String?   @map("company_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  company     Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([moId])
+  @@map("quality_checks")
+}
+
+model ScrapOrder {
+  id          String   @id @default(uuid())
+  moId        String?  @map("mo_id")
+  product     String
+  quantity    Float
+  reason      String?
+  cost        Float?   // loss value
+  disposedAt  DateTime? @map("disposed_at")
+  companyId   String?  @map("company_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  company     Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@map("scrap_orders")
 }

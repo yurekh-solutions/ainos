@@ -1250,21 +1250,18 @@ export default function AinosLandingPage() {
                 <Rocket className="w-3.5 h-3.5" /> Get started today
               </span>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight text-balance">
-                Ready to transform your business?
+                Run your entire business on one platform
               </h2>
               <p className="text-base sm:text-lg text-purple-100 mb-8 max-w-2xl mx-auto">
-                Join thousands of businesses using AINOS to streamline operations and boost growth.
+                Bring finance, sales, operations and AI together in a single, secure workspace — built to help growing businesses work smarter and scale with confidence.
               </p>
               <Link
                 href="/auth/register"
                 className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-white hover:bg-purple-50 active:scale-95 text-[#4c1d95] font-semibold transition-all shadow-lg shadow-purple-900/40"
               >
-                Explore Now
+                Create Your Account
                 <ArrowRight className="w-5 h-5" />
               </Link>
-              <p className="mt-6 text-sm text-purple-200/80">
-                Setup in 2 minutes
-              </p>
             </div>
           </motion.div>
         </div>

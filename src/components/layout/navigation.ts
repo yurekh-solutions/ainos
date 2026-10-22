@@ -2,6 +2,10 @@ import {
   LayoutDashboard, Landmark, Radio,
   ScrollText, Contact2, Boxes, Coins, FileBarChart, ShoppingCart, PackageCheck, Sheet, BellRing, Paintbrush,
   Send, AtSign, SearchCheck, PenTool, MailOpen,
+  Store, Package, ClipboardList, BarChart3, Tag, MessageSquare,
+  Globe,
+  Monitor, CreditCard, Receipt,
+  Layers, Settings, Wrench,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -11,7 +15,7 @@ export interface NavItem {
 }
 
 export interface NavGroup {
-  key: 'finance' | 'marketing';
+  key: 'finance' | 'marketing' | 'ecommerce' | 'websites' | 'pos' | 'manufacturing';
   title: string;
   icon: React.ElementType;
   /** Overview page for the whole group */
@@ -51,6 +55,53 @@ export const NAV_GROUPS: NavGroup[] = [
       { icon: SearchCheck, label: 'SEO Platform', href: '/marketing/seo' },
       { icon: PenTool, label: 'Blog & Content', href: '/marketing/blog' },
       { icon: MailOpen, label: 'Invitations', href: '/marketing/invitations' },
+    ],
+  },
+  {
+    key: 'ecommerce',
+    title: 'eCommerce',
+    icon: Store,
+    href: '/ecommerce/stores',
+    items: [
+      { icon: Store, label: 'Stores', href: '/ecommerce/stores' },
+      { icon: Package, label: 'Products', href: '/ecommerce/products' },
+      { icon: ClipboardList, label: 'Orders', href: '/ecommerce/orders' },
+      { icon: Contact2, label: 'Customers', href: '/ecommerce/customers' },
+      { icon: BarChart3, label: 'Analytics', href: '/ecommerce/analytics' },
+      { icon: Tag, label: 'Coupons', href: '/ecommerce/coupons' },
+      { icon: MessageSquare, label: 'Reviews', href: '/ecommerce/reviews' },
+      { icon: Settings, label: 'Settings', href: '/ecommerce/settings' },
+    ],
+  },
+  {
+    key: 'websites',
+    title: 'Websites',
+    icon: Globe,
+    href: '/websites',
+    items: [
+      { icon: Globe, label: 'All Websites', href: '/websites' },
+    ],
+  },
+  {
+    key: 'pos',
+    title: 'Point of Sale',
+    icon: Monitor,
+    href: '/pos/sessions',
+    items: [
+      { icon: Monitor, label: 'Sessions', href: '/pos/sessions' },
+      { icon: CreditCard, label: 'Register', href: '/pos/register' },
+      { icon: Receipt, label: 'Orders', href: '/pos/orders' },
+      { icon: Package, label: 'Products', href: '/pos/products' },
+      { icon: BarChart3, label: 'Reports', href: '/pos/reports' },
+    ],
+  },
+  {
+    key: 'manufacturing',
+    title: 'Manufacturing',
+    icon: Wrench,
+    href: '/manufacturing',
+    items: [
+      { icon: Layers, label: 'All Modules', href: '/manufacturing' },
     ],
   },
 ];
