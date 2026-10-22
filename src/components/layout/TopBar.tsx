@@ -33,7 +33,12 @@ function QuickSearch() {
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
-    return SEARCH_ITEMS.filter(i => i.label.toLowerCase().includes(q) || i.group.toLowerCase().includes(q)).slice(0, 7);
+    // Split query into words and match ALL words against label or group
+    const words = q.split(/\s+/).filter(Boolean);
+    return SEARCH_ITEMS.filter(item => {
+      const haystack = `${item.label} ${item.group}`.toLowerCase();
+      return words.every(w => haystack.includes(w));
+    }).slice(0, 7);
   }, [query]);
 
   useEffect(() => {
