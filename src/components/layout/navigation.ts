@@ -3,7 +3,6 @@ import {
   ScrollText, Contact2, Boxes, Coins, FileBarChart, ShoppingCart, PackageCheck, Sheet, BellRing, Paintbrush,
   Send, AtSign, SearchCheck, PenTool, MailOpen,
   Store, Package, ClipboardList, BarChart3, Tag, MessageSquare,
-  Globe,
   Monitor, CreditCard, Receipt,
   Layers, Settings, Wrench,
 } from 'lucide-react';
@@ -15,7 +14,7 @@ export interface NavItem {
 }
 
 export interface NavGroup {
-  key: 'finance' | 'marketing' | 'ecommerce' | 'websites' | 'pos' | 'manufacturing';
+  key: 'finance' | 'marketing' | 'ecommerce' | 'pos' | 'manufacturing';
   title: string;
   icon: React.ElementType;
   /** Overview page for the whole group */
@@ -71,15 +70,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { icon: Tag, label: 'Coupons', href: '/ecommerce/coupons' },
       { icon: MessageSquare, label: 'Reviews', href: '/ecommerce/reviews' },
       { icon: Settings, label: 'Settings', href: '/ecommerce/settings' },
-    ],
-  },
-  {
-    key: 'websites',
-    title: 'Websites',
-    icon: Globe,
-    href: '/websites',
-    items: [
-      { icon: Globe, label: 'All Websites', href: '/websites' },
     ],
   },
   {
