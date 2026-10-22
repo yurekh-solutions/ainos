@@ -127,23 +127,23 @@ export interface Tool {
 }
 
 export const FINANCE_TOOLS: Tool[] = [
-  { title: 'Invoices', short: 'GST billing', description: 'GST invoices with CGST/SGST/IGST split, HSN codes and profit tracking.', icon: ScrollText, href: '/invoices' },
-  { title: 'Customers', short: 'Client records', description: 'Customer records with GSTIN, PAN and state-wise billing addresses.', icon: Contact2, href: '/customers' },
-  { title: 'Products', short: 'Your catalog', description: 'Catalog with HSN codes, GST rates, cost price, MRP and barcodes.', icon: Boxes, href: '/products' },
-  { title: 'Expenses', short: 'Track spending', description: 'Track spending across software, salaries, marketing and more.', icon: Coins, href: '/finance/expenses' },
-  { title: 'Quotations', short: 'Quote to invoice', description: 'Send professional quotes and convert them to invoices.', icon: FileBarChart, href: '/finance/quotes' },
-  { title: 'Delivery Challans', short: 'Goods transport', description: 'Challans for goods transport with sequential numbering.', icon: PackageCheck, href: '/finance/challans' },
-  { title: 'Tally / Excel', short: 'Import & export', description: 'Import and export data in Tally-compatible Excel format.', icon: Sheet, href: '/finance/tally' },
-  { title: 'Payment Reminders', short: 'Follow up dues', description: 'Follow up on overdue invoices with WhatsApp reminders.', icon: BellRing, href: '/finance/reminders' },
-  { title: 'Template Designer', short: 'Layouts & fonts', description: 'Customise invoice layouts, colours and fonts for your brand.', icon: Paintbrush, href: '/finance/templates' },
+  { title: 'Invoices', short: 'Professional billing', description: 'Create GST-compliant invoices with automatic tax calculations and payment tracking.', icon: ScrollText, href: '/invoices' },
+  { title: 'Customers', short: 'Manage your clients', description: 'Store customer details with GSTIN, PAN and billing addresses for quick invoicing.', icon: Contact2, href: '/customers' },
+  { title: 'Products', short: 'Your product catalog', description: 'Manage products with HSN codes, GST rates, pricing and inventory tracking.', icon: Boxes, href: '/products' },
+  { title: 'Expenses', short: 'Track business spending', description: 'Record and categorize expenses for software, salaries, marketing and operations.', icon: Coins, href: '/finance/expenses' },
+  { title: 'Quotations', short: 'Win more deals', description: 'Send professional quotes and convert approved quotes to invoices instantly.', icon: FileBarChart, href: '/finance/quotes' },
+  { title: 'Delivery Challans', short: 'Shipping documents', description: 'Generate delivery challans for goods transport with sequential numbering.', icon: PackageCheck, href: '/finance/challans' },
+  { title: 'Tally / Excel', short: 'Data import & export', description: 'Import existing data or export reports in Tally-compatible Excel format.', icon: Sheet, href: '/finance/tally' },
+  { title: 'Payment Reminders', short: 'Collect payments faster', description: 'Send automated WhatsApp reminders for overdue invoices.', icon: BellRing, href: '/finance/reminders' },
+  { title: 'Template Designer', short: 'Custom invoice layouts', description: 'Design professional invoice templates with your brand colors and fonts.', icon: Paintbrush, href: '/finance/templates' },
 ];
 
 export const marketingTools = (templateLabel: string): Tool[] => [
-  { title: 'Social Media', short: 'Captions & hashtags', description: 'Captions, hooks and hashtags for every platform.', icon: AtSign, href: '/marketing/email' },
-  { title: 'SEO Platform', short: 'Track & improve rankings', description: 'Site audits, keyword research and competitor insights.', icon: SearchCheck, href: '/marketing/seo' },
-  { title: 'Blog & Content', short: 'Create & manage content', description: 'SEO-optimised articles with one-click publishing.', icon: PenTool, href: '/marketing/blog' },
-  { title: 'Blog Agent', short: 'Automated blog writer', description: 'Researches, writes and publishes blogs on a schedule.', icon: Bot, href: '/marketing/blog' },
-  { title: 'Invitations', short: `${templateLabel} branded designs`, description: `${templateLabel} festival and occasion templates with your branding.`, icon: MailOpen, href: '/marketing/invitations' },
+  { title: 'Social Media', short: 'Create engaging posts', description: 'Generate captions, hooks and hashtags for Instagram, LinkedIn, Twitter and Facebook.', icon: AtSign, href: '/marketing/email' },
+  { title: 'SEO Platform', short: 'Rank higher on Google', description: 'Audit your website, research keywords and track competitor rankings.', icon: SearchCheck, href: '/marketing/seo' },
+  { title: 'Blog & Content', short: 'Publish quality articles', description: 'Write and publish SEO-optimized blog posts with AI assistance.', icon: PenTool, href: '/marketing/blog' },
+  { title: 'Blog Agent', short: 'Automated content creation', description: 'AI researches topics, writes articles and publishes on your schedule.', icon: Bot, href: '/marketing/blog' },
+  { title: 'Invitations', short: 'Professional event designs', description: 'Create branded invitations for festivals, events and special occasions.', icon: MailOpen, href: '/marketing/invitations' },
 ];
 
 export function ToolItem({ tool }: { tool: Tool }) {
