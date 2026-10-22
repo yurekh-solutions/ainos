@@ -32,8 +32,27 @@ export async function POST(req: NextRequest) {
     if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
 
     const body = await req.json();
+    const baseSlug = (body.name || 'product').toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'product';
+    let slug = baseSlug;
+    let n = 1;
+    while (await prisma.ecomProduct.findUnique({ where: { slug } })) slug = `${baseSlug}-${++n}`;
     const product = await prisma.ecomProduct.create({
-      data: { ...body, companyId: user.companyId }
+      data: {
+        name: body.name || 'Unnamed Product',
+        slug,
+        description: body.description || null,
+        shortDesc: body.shortDesc || null,
+        sku: body.sku || null,
+        barcode: body.barcode || null,
+        price: body.price !== undefined && body.price !== '' ? Number(body.price) : 0,
+        comparePrice: body.comparePrice !== undefined && body.comparePrice !== '' ? Number(body.comparePrice) : null,
+        costPrice: body.costPrice !== undefined && body.costPrice !== '' ? Number(body.costPrice) : null,
+        stock: body.stock !== undefined && body.stock !== '' ? Number(body.stock) : 0,
+        status: body.status || 'active',
+        storeId: body.storeId || null,
+        categoryId: body.categoryId || null,
+        companyId: user.companyId,
+      }
     });
     return NextResponse.json(product, { status: 201 });
   } catch (error) {

@@ -37,9 +37,13 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const followUp = await prisma.followUp.create({
       data: {
-        ...body,
+        contactId: body.contactId || null,
+        contactName: body.contactName || body.contact || null,
+        type: body.type || 'call',
+        notes: body.notes || body.message || null,
+        status: body.status || 'pending',
         companyId: user.companyId,
-        dueDate: body.dueDate ? new Date(body.dueDate) : null,
+        dueDate: (body.dueDate || body.scheduledDate) ? new Date(body.dueDate || body.scheduledDate) : null,
       }
     });
     return NextResponse.json(followUp, { status: 201 });

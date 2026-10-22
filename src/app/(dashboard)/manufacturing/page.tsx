@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Search, X, Edit2, Trash2, Package, Layers, Settings, ClipboardCheck, AlertTriangle, FileText } from 'lucide-react';
 
-interface BOM { id: string; name: string; productName?: string; quantity: number; components?: unknown; createdAt: string; }
+interface BOM { id: string; name: string; product?: string; quantity: number; components?: unknown; createdAt: string; }
 
 const TABS = [
   { key: 'boms', label: 'Bills of Materials', icon: Layers },
@@ -51,17 +51,17 @@ export default function ManufacturingPage() {
 
   const resetForm = () => { setForm({}); setEditId(null); setShowForm(false); };
 
-  const getFormFields = () => {
+  const getFormFields = (): { key: string; label: string; type: string; required?: boolean; options?: string[] }[] => {
     switch (activeTab) {
       case 'boms': return [
         { key: 'name', label: 'BOM Name', type: 'text', required: true },
-        { key: 'productName', label: 'Product Name', type: 'text' },
+        { key: 'product', label: 'Product Name', type: 'text' },
         { key: 'quantity', label: 'Quantity', type: 'number' },
       ];
       case 'orders': return [
         { key: 'productName', label: 'Product', type: 'text', required: true },
         { key: 'quantity', label: 'Quantity', type: 'number', required: true },
-        { key: 'scheduledStart', label: 'Scheduled Start', type: 'date' },
+        { key: 'plannedDate', label: 'Planned Start', type: 'date' },
       ];
       case 'workcenters': return [
         { key: 'name', label: 'Name', type: 'text', required: true },
@@ -70,11 +70,10 @@ export default function ManufacturingPage() {
       ];
       case 'quality': return [
         { key: 'productName', label: 'Product', type: 'text', required: true },
-        { key: 'orderNumber', label: 'MO Number', type: 'text' },
         { key: 'checkType', label: 'Check Type', type: 'select', options: ['visual', 'dimensional', 'functional', 'material'] },
       ];
       case 'scrap': return [
-        { key: 'productName', label: 'Product', type: 'text', required: true },
+        { key: 'product', label: 'Product', type: 'text', required: true },
         { key: 'quantity', label: 'Quantity', type: 'number', required: true },
         { key: 'reason', label: 'Reason', type: 'text' },
       ];
@@ -84,7 +83,7 @@ export default function ManufacturingPage() {
 
   const items = (data[activeTab] || []) as Record<string, unknown>[];
   const filtered = items.filter(item => {
-    const name = (item.name || item.productName || item.orderNumber || '') as string;
+    const name = (item.name || item.product || item.title || '') as string;
     return name.toLowerCase().includes(search.toLowerCase());
   });
 
@@ -95,11 +94,11 @@ export default function ManufacturingPage() {
           <motion.tr key={item.id as string} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
             className="border-t" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
             <td className="px-4 py-3 font-medium" style={{ color: 'hsl(var(--foreground))' }}>{item.name as string}</td>
-            <td className="px-4 py-3" style={{ color: 'hsl(var(--muted-foreground))' }}>{(item.productName as string) || '-'}</td>
+            <td className="px-4 py-3" style={{ color: 'hsl(var(--muted-foreground))' }}>{(item.product as string) || '-'}</td>
             <td className="px-4 py-3" style={{ color: 'hsl(var(--foreground))' }}>{item.quantity as number}</td>
             <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{new Date(item.createdAt as string).toLocaleDateString()}</td>
             <td className="px-4 py-3"><div className="flex gap-1">
-              <button onClick={() => { setForm({ name: item.name, productName: item.productName, quantity: item.quantity }); setEditId(item.id as string); setShowForm(true); }} className="p-1 rounded hover:bg-white/10"><Edit2 className="w-4 h-4" style={{ color: '#8B5CF6' }} /></button>
+              <button onClick={() => { setForm({ name: item.name, product: item.product, quantity: item.quantity }); setEditId(item.id as string); setShowForm(true); }} className="p-1 rounded hover:bg-white/10"><Edit2 className="w-4 h-4" style={{ color: '#8B5CF6' }} /></button>
               <button onClick={() => handleDelete(item.id as string)} className="p-1 rounded hover:bg-white/10"><Trash2 className="w-4 h-4" style={{ color: '#ef4444' }} /></button>
             </div></td>
           </motion.tr>))}</>;
@@ -109,8 +108,8 @@ export default function ManufacturingPage() {
           return (
             <motion.tr key={item.id as string} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
               className="border-t" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
-              <td className="px-4 py-3 font-medium" style={{ color: 'hsl(var(--foreground))' }}>{item.orderNumber as string}</td>
-              <td className="px-4 py-3" style={{ color: 'hsl(var(--foreground))' }}>{item.productName as string}</td>
+              <td className="px-4 py-3 font-medium" style={{ color: 'hsl(var(--foreground))' }}>{item.moNumber as string}</td>
+              <td className="px-4 py-3" style={{ color: 'hsl(var(--foreground))' }}>{item.product as string}</td>
               <td className="px-4 py-3" style={{ color: 'hsl(var(--foreground))' }}>{item.quantity as number}</td>
               <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: (statusColors[(item.status as string)] || '#6b7280') + '20', color: statusColors[(item.status as string)] || '#6b7280' }}>{item.status as string}</span></td>
               <td className="px-4 py-3"><div className="flex gap-1">
@@ -136,17 +135,16 @@ export default function ManufacturingPage() {
           return (
             <motion.tr key={item.id as string} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
               className="border-t" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
-              <td className="px-4 py-3" style={{ color: 'hsl(var(--foreground))' }}>{item.productName as string}</td>
-              <td className="px-4 py-3" style={{ color: 'hsl(var(--muted-foreground))' }}>{(item.orderNumber as string) || '-'}</td>
-              <td className="px-4 py-3 capitalize" style={{ color: 'hsl(var(--muted-foreground))' }}>{item.checkType as string}</td>
-              <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: (resultColors[(item.result as string)] || '#6b7280') + '20', color: resultColors[(item.result as string)] || '#6b7280' }}>{item.result as string}</span></td>
+              <td className="px-4 py-3" style={{ color: 'hsl(var(--foreground))' }}>{item.title as string}</td>
+              <td className="px-4 py-3 capitalize" style={{ color: 'hsl(var(--muted-foreground))' }}>{item.type as string}</td>
+              <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: (resultColors[(item.status as string)] || '#6b7280') + '20', color: resultColors[(item.status as string)] || '#6b7280' }}>{item.status as string}</span></td>
               <td className="px-4 py-3"><button onClick={() => handleDelete(item.id as string)} className="p-1 rounded hover:bg-white/10"><Trash2 className="w-4 h-4" style={{ color: '#ef4444' }} /></button></td>
             </motion.tr>);})}</>;
       case 'scrap':
         return <>{filtered.map((item, i) => (
           <motion.tr key={item.id as string} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
             className="border-t" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
-            <td className="px-4 py-3" style={{ color: 'hsl(var(--foreground))' }}>{item.productName as string}</td>
+            <td className="px-4 py-3" style={{ color: 'hsl(var(--foreground))' }}>{item.product as string}</td>
             <td className="px-4 py-3" style={{ color: 'hsl(var(--foreground))' }}>{item.quantity as number}</td>
             <td className="px-4 py-3" style={{ color: 'hsl(var(--muted-foreground))' }}>{(item.reason as string) || '-'}</td>
             <td className="px-4 py-3"><button onClick={() => handleDelete(item.id as string)} className="p-1 rounded hover:bg-white/10"><Trash2 className="w-4 h-4" style={{ color: '#ef4444' }} /></button></td>
@@ -160,7 +158,7 @@ export default function ManufacturingPage() {
       case 'boms': return ['Name', 'Product', 'Qty', 'Created', 'Actions'];
       case 'orders': return ['Order #', 'Product', 'Qty', 'Status', 'Actions'];
       case 'workcenters': return ['Name', 'Capacity', 'Cost/Hour', 'Status', 'Actions'];
-      case 'quality': return ['Product', 'MO #', 'Check Type', 'Result', 'Actions'];
+      case 'quality': return ['Product', 'Check Type', 'Status', 'Actions'];
       case 'scrap': return ['Product', 'Qty', 'Reason', 'Actions'];
       default: return [];
     }

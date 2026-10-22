@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     const stats = {
       total: deals.length,
       byStage: deals.reduce((acc: Record<string, number>, d: { stage: string }) => { acc[d.stage] = (acc[d.stage] || 0) + 1; return acc; }, {}),
-      totalValue: deals.reduce((sum: number, d: any) => sum + (d.value || 0), 0),
+      totalValue: deals.reduce((sum: number, d: { value?: number | null }) => sum + (d.value || 0), 0),
       winRate: deals.length ? Math.round((deals.filter((d: { stage: string }) => d.stage === 'won').length / deals.length) * 100) : 0,
     };
 
@@ -54,7 +54,14 @@ export async function POST(req: NextRequest) {
 
     const deal = await prisma.deal.create({
       data: {
-        ...body,
+        title: body.title || 'Untitled Deal',
+        value: body.value !== undefined && body.value !== null && body.value !== '' ? Number(body.value) : null,
+        currency: body.currency || 'INR',
+        stage: body.stage || 'new',
+        probability: body.probability !== undefined && body.probability !== '' ? Number(body.probability) : 0,
+        expectedClose: (body.expectedClose || body.closeDate) ? new Date(body.expectedClose || body.closeDate) : null,
+        source: body.source || null,
+        notes: [body.notes || null, body.contact ? `Contact: ${body.contact}` : null].filter(Boolean).join(' \u00b7 ') || null,
         companyId: user?.companyId || null,
         ownerId: session.user.id || session.user.email
       }

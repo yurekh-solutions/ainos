@@ -3,8 +3,10 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, X, Calendar, Clock } from 'lucide-react';
 
-interface Leave { id: string; employee: { name: string }; leaveType: string; startDate: string; endDate: string; days: number; reason?: string; status: string; }
+interface Leave { id: string; employeeName?: string | null; leaveType: string; startDate: string; endDate: string; reason?: string | null; status: string; }
 interface Employee { id: string; name: string; }
+
+const leaveDays = (s: string, e: string) => Math.max(1, Math.round((new Date(e).getTime() - new Date(s).getTime()) / 86400000) + 1);
 
 export default function LeavesPage() {
   const [leaves, setLeaves] = useState<Leave[]>([]);
@@ -12,8 +14,6 @@ export default function LeavesPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ employee: '', leaveType: 'casual', startDate: '', endDate: '', reason: '' });
-
-  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     try {
@@ -23,6 +23,8 @@ export default function LeavesPage() {
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
+
+  useEffect(() => { fetchData(); }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +58,7 @@ export default function LeavesPage() {
           {[{ l: 'Total', v: leaves.length, c: 'hsl(252 60% 55%)' },
             { l: 'Pending', v: leaves.filter(l => l.status === 'pending').length, c: '#a78bfa' },
             { l: 'Approved', v: leaves.filter(l => l.status === 'approved').length, c: '#34d399' },
-            { l: 'Total Days', v: leaves.reduce((s, l) => s + l.days, 0), c: '#94a3b8' }].map((s, i) => (
+            { l: 'Total Days', v: leaves.reduce((s, l) => s + leaveDays(l.startDate, l.endDate), 0), c: '#94a3b8' }].map((s, i) => (
             <motion.div key={s.l} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               className="glass-card p-5">
               <p className="text-xs font-medium uppercase tracking-wider" style={{ color: 'hsl(var(--muted-foreground))' }}>{s.l}</p>
@@ -74,13 +76,13 @@ export default function LeavesPage() {
                 <motion.div key={leave.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                   className="glass-card p-5">
                   <div className="flex items-start justify-between mb-3">
-                    <div><h3 className="font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{leave.employee?.name || 'N/A'}</h3>
+                    <div><h3 className="font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{leave.employeeName || 'N/A'}</h3>
                       <p className="text-xs capitalize mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>{leave.leaveType} Leave</p></div>
                     <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold text-white capitalize" style={{ background: statusColors[leave.status] }}>{leave.status}</span>
                   </div>
                   <div className="space-y-1.5">
                     <p className="text-xs flex items-center gap-1" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}><Calendar className="w-3 h-3" />{new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}</p>
-                    <p className="text-xs flex items-center gap-1" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}><Clock className="w-3 h-3" />{leave.days} day(s)</p>
+                    <p className="text-xs flex items-center gap-1" style={{ color: 'hsl(var(--muted-foreground) / 0.6)' }}><Clock className="w-3 h-3" />{leaveDays(leave.startDate, leave.endDate)} day(s)</p>
                     {leave.reason && <p className="text-xs mt-2 italic" style={{ color: 'hsl(var(--muted-foreground))' }}>&ldquo;{leave.reason}&rdquo;</p>}
                   </div>
                 </motion.div>

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, X, Calendar, Users } from 'lucide-react';
 
-interface Attendance { id: string; employee: { name: string }; date: string; checkIn?: string; checkOut?: string; status: string; }
+interface Attendance { id: string; employeeName?: string | null; date: string; checkIn?: string | null; checkOut?: string | null; status: string; }
 interface Employee { id: string; name: string; }
 
 export default function AttendancePage() {
@@ -13,8 +13,6 @@ export default function AttendancePage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ employee: '', date: '', checkIn: '', checkOut: '', status: 'present' });
 
-  useEffect(() => { fetchData(); }, []);
-
   const fetchData = async () => {
     try {
       const [attRes, empRes] = await Promise.all([fetch('/api/attendance'), fetch('/api/employees')]);
@@ -23,6 +21,8 @@ export default function AttendancePage() {
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
+
+  useEffect(() => { fetchData(); }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +36,12 @@ export default function AttendancePage() {
   };
 
   const statusColors: Record<string, string> = { present: '#34d399', absent: '#94a3b8', leave: '#a78bfa', holiday: 'hsl(252 60% 55%)' };
+
+  const fmtTime = (t?: string | null) => {
+    if (!t) return '-';
+    const d = new Date(t);
+    return Number.isNaN(d.getTime()) ? t : d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+  };
 
   return (
     <div className="p-4 md:p-6 h-full overflow-auto" style={{ background: 'var(--page-gradient)' }}>
@@ -80,10 +86,10 @@ export default function AttendancePage() {
                 <tbody>
                   {attendance.map((att) => (
                     <tr key={att.id} className="transition-colors" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                      <td className="px-6 py-4 text-sm" style={{ color: 'hsl(var(--foreground))' }}>{att.employee?.name || 'N/A'}</td>
+                      <td className="px-6 py-4 text-sm" style={{ color: 'hsl(var(--foreground))' }}>{att.employeeName || 'N/A'}</td>
                       <td className="px-6 py-4 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>{new Date(att.date).toLocaleDateString()}</td>
-                      <td className="px-6 py-4 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>{att.checkIn || '-'}</td>
-                      <td className="px-6 py-4 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>{att.checkOut || '-'}</td>
+                      <td className="px-6 py-4 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>{fmtTime(att.checkIn)}</td>
+                      <td className="px-6 py-4 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>{fmtTime(att.checkOut)}</td>
                       <td className="px-6 py-4">
                         <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold text-white capitalize" style={{ background: statusColors[att.status] }}>{att.status}</span>
                       </td>

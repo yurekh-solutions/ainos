@@ -28,7 +28,16 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const coupon = await prisma.couponCode.create({
-      data: { ...body, companyId: user.companyId }
+      data: {
+        code: (body.code || `COUPON${Date.now()}`).toString().toUpperCase(),
+        type: body.type || (body.discountType === 'flat' ? 'fixed' : 'percentage'),
+        value: Number(body.value ?? body.discountValue ?? 0) || 0,
+        minOrder: body.minOrder !== undefined && body.minOrder !== '' ? Number(body.minOrder) : null,
+        maxDiscount: body.maxDiscount !== undefined && body.maxDiscount !== '' ? Number(body.maxDiscount) : null,
+        usageLimit: body.usageLimit !== undefined && body.usageLimit !== '' ? Number(body.usageLimit) : null,
+        isActive: body.isActive !== undefined ? Boolean(body.isActive) : (body.status ? body.status === 'active' : true),
+        companyId: user.companyId,
+      }
     });
     return NextResponse.json(coupon, { status: 201 });
   } catch (error) {

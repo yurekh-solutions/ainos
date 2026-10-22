@@ -30,7 +30,14 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const store = await prisma.onlineStore.create({
-      data: { ...body, companyId: user.companyId }
+      data: {
+        name: body.name || 'New Store',
+        description: body.description || null,
+        currency: body.currency || 'INR',
+        domain: body.domain || null,
+        status: body.status || 'active',
+        companyId: user.companyId,
+      }
     });
     return NextResponse.json(store, { status: 201 });
   } catch (error) {

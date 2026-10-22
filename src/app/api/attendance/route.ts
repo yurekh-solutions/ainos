@@ -44,11 +44,29 @@ export async function POST(req: NextRequest) {
     if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
 
     const body = await req.json();
+    const emp = body.employee ? await prisma.employee.findUnique({ where: { id: body.employee } }) : null;
+    const baseDate = body.date ? new Date(body.date) : new Date();
+    const parseTime = (t: unknown) => {
+      if (typeof t !== 'string' || !t.trim()) return null;
+      const m = t.trim().match(/^(\d{1,2}):(\d{2})$/);
+      if (m) {
+        const d = new Date(baseDate);
+        d.setHours(Number(m[1]), Number(m[2]), 0, 0);
+        return d;
+      }
+      const d = new Date(t);
+      return Number.isNaN(d.getTime()) ? null : d;
+    };
     const record = await prisma.attendance.create({
       data: {
-        ...body,
+        employeeId: emp?.id || body.employeeId || null,
+        employeeName: body.employeeName || emp?.name || body.employee || null,
+        date: baseDate,
+        checkIn: parseTime(body.checkIn),
+        checkOut: parseTime(body.checkOut),
+        status: body.status || 'present',
+        notes: body.notes || null,
         companyId: user.companyId,
-        date: body.date ? new Date(body.date) : new Date(),
       }
     });
     return NextResponse.json(record, { status: 201 });

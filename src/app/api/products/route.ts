@@ -39,7 +39,22 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const product = await prisma.product.create({
-      data: { ...body, companyId: user.companyId }
+      data: {
+        name: body.name || 'Unnamed Product',
+        sku: body.sku || null,
+        description: body.description || null,
+        price: body.price !== undefined && body.price !== '' ? Number(body.price) : null,
+        costPrice: body.costPrice !== undefined && body.costPrice !== '' ? Number(body.costPrice) : null,
+        mrp: body.mrp !== undefined && body.mrp !== '' ? Number(body.mrp) : null,
+        hsnCode: body.hsnCode || null,
+        barcode: body.barcode || null,
+        gstRate: body.gstRate !== undefined && body.gstRate !== '' ? Number(body.gstRate) : null,
+        category: body.category || null,
+        stock: body.stock !== undefined && body.stock !== '' ? Number(body.stock) : 0,
+        unit: body.unit || 'pcs',
+        status: body.status || 'active',
+        companyId: user.companyId,
+      }
     });
     return NextResponse.json(product, { status: 201 });
   } catch (error) {

@@ -36,7 +36,18 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const employee = await prisma.employee.create({
-      data: { ...body, companyId: user.companyId }
+      data: {
+        name: body.name || 'Unnamed Employee',
+        email: body.email || null,
+        phone: body.phone || null,
+        department: body.department || null,
+        position: body.position || null,
+        salary: body.salary !== undefined && body.salary !== '' ? Number(body.salary) : null,
+        joinDate: body.joinDate ? new Date(body.joinDate) : null,
+        status: body.status || 'active',
+        address: body.address || null,
+        companyId: user.companyId,
+      }
     });
     return NextResponse.json(employee, { status: 201 });
   } catch (error) {

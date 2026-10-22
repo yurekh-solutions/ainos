@@ -37,7 +37,17 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const ticketNumber = body.ticketNumber || `TKT-${Date.now()}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
     const ticket = await prisma.helpdeskTicket.create({
-      data: { ...body, ticketNumber, companyId: user.companyId }
+      data: {
+        ticketNumber,
+        subject: body.subject || 'New Ticket',
+        description: body.description || null,
+        priority: body.priority || 'medium',
+        status: body.status || 'open',
+        category: body.category || null,
+        customerId: body.customerId || null,
+        assignedTo: body.assignedTo || null,
+        companyId: user.companyId,
+      }
     });
     return NextResponse.json(ticket, { status: 201 });
   } catch (error) {

@@ -35,12 +35,17 @@ export async function POST(req: NextRequest) {
     if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
 
     const body = await req.json();
+    const emp = body.employee ? await prisma.employee.findUnique({ where: { id: body.employee } }) : null;
     const leave = await prisma.leaveRequest.create({
       data: {
-        ...body,
-        companyId: user.companyId,
+        employeeId: emp?.id || body.employeeId || null,
+        employeeName: body.employeeName || emp?.name || body.employee || null,
+        leaveType: body.leaveType || 'casual',
         startDate: body.startDate ? new Date(body.startDate) : new Date(),
         endDate: body.endDate ? new Date(body.endDate) : new Date(),
+        reason: body.reason || null,
+        status: body.status || 'pending',
+        companyId: user.companyId,
       }
     });
     return NextResponse.json(leave, { status: 201 });

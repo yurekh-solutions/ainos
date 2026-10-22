@@ -55,21 +55,22 @@ export async function POST(req: NextRequest) {
     }
     if (type === 'orders') {
       const count = await prisma.manufacturingOrder.count({ where: { companyId: user.companyId } });
-      const orderNumber = `MO-${String(count + 1).padStart(5, '0')}`;
-      const data = await prisma.manufacturingOrder.create({ data: { orderNumber, productName: body.productName, quantity: body.quantity || 0, bomId: body.bomId || null, status: body.status || 'draft', scheduledStart: body.scheduledStart ? new Date(body.scheduledStart) : null, companyId: user.companyId } });
+      const moNumber = `MO-${String(count + 1).padStart(5, '0')}`;
+      const planned = body.scheduledStart || body.plannedDate;
+      const data = await prisma.manufacturingOrder.create({ data: { moNumber, product: body.productName || body.product, quantity: body.quantity || 0, bomId: body.bomId || null, status: body.status || 'draft', plannedDate: planned ? new Date(planned) : null, companyId: user.companyId } });
       return NextResponse.json(data, { status: 201 });
     }
     if (type === 'quality') {
-      const data = await prisma.qualityCheck.create({ data: { orderNumber: body.orderNumber || '', productName: body.productName || '', checkType: body.checkType || 'visual', result: body.result || 'pending', notes: body.notes || '', companyId: user.companyId } });
+      const data = await prisma.qualityCheck.create({ data: { title: body.productName || body.title || 'Quality Check', type: body.checkType || body.type || 'inspection', status: body.result || body.status || 'pending', notes: body.notes || null, companyId: user.companyId } });
       return NextResponse.json(data, { status: 201 });
     }
     if (type === 'scrap') {
-      const data = await prisma.scrapOrder.create({ data: { productName: body.productName || '', quantity: body.quantity || 0, reason: body.reason || '', status: body.status || 'draft', companyId: user.companyId } });
+      const data = await prisma.scrapOrder.create({ data: { product: body.productName || body.product, quantity: body.quantity || 0, reason: body.reason || null, disposedAt: new Date(), companyId: user.companyId } });
       return NextResponse.json(data, { status: 201 });
     }
 
     // Default: BOM
-    const data = await prisma.bOM.create({ data: { name: body.name, productName: body.productName || body.name, quantity: body.quantity || 1, components: body.components || [], companyId: user.companyId } });
+    const data = await prisma.bOM.create({ data: { name: body.name, product: body.productName || body.product || body.name, quantity: body.quantity || 1, components: body.components || [], companyId: user.companyId } });
     return NextResponse.json(data, { status: 201 });
   } catch (e) {
     console.error('POST /api/manufacturing error:', e);
@@ -109,13 +110,13 @@ export async function PUT(req: NextRequest) {
     }
     if (type === 'quality') {
       if (!(await owned('qualityCheck'))) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-      const data = await prisma.qualityCheck.update({ where: { id }, data: { ...(body.result && { result: body.result }), ...(body.notes && { notes: body.notes }) } });
+      const data = await prisma.qualityCheck.update({ where: { id }, data: { ...(body.result && { status: body.result }), ...(body.status && { status: body.status }), ...(body.notes && { notes: body.notes }) } });
       return NextResponse.json(data);
     }
 
     // Default: BOM
     if (!(await owned('bOM'))) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    const data = await prisma.bOM.update({ where: { id }, data: { ...(body.name && { name: body.name }), ...(body.components !== undefined && { components: body.components }) } });
+    const data = await prisma.bOM.update({ where: { id }, data: { ...(body.name && { name: body.name }), ...(body.product && { product: body.product }), ...(body.quantity !== undefined && { quantity: body.quantity }), ...(body.components !== undefined && { components: body.components }) } });
     return NextResponse.json(data);
   } catch (e) {
     console.error('PUT /api/manufacturing error:', e);

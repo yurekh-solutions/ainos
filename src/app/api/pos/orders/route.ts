@@ -33,8 +33,13 @@ export async function POST(req: NextRequest) {
     if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
 
     const body = await req.json();
-    const count = await prisma.pOSOrder.count({ where: { companyId: user.companyId } });
-    const orderNumber = `POS-${String(count + 1).padStart(5, '0')}`;
+    // Collision-safe numbering (orderNumber is globally unique)
+    let posN = (await prisma.pOSOrder.count({ where: { companyId: user.companyId } })) + 1;
+    let orderNumber = `POS-${String(posN).padStart(5, '0')}`;
+    while (await prisma.pOSOrder.findUnique({ where: { orderNumber } })) {
+      posN += 1;
+      orderNumber = `POS-${String(posN).padStart(5, '0')}`;
+    }
 
     const order = await prisma.pOSOrder.create({
       data: {

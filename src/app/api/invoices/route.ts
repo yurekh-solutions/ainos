@@ -162,11 +162,14 @@ export async function POST(req: NextRequest) {
     const paymentMethod = body.paymentMethod || null;
     const paidAmount = Number(body.paidAmount ?? 0);
 
-    // Generate sequential invoice number
-    const existingCount = await prisma.invoice.count({
-      where: { companyId: user.companyId },
-    });
-    const invoiceNumber = `AIN-${String(existingCount + 1).padStart(4, '0')}-${new Date().getFullYear()}`;
+    // Generate sequential invoice number (collision-safe: invoiceNumber is globally unique)
+    const invYear = new Date().getFullYear();
+    let invN = (await prisma.invoice.count({ where: { companyId: user.companyId } })) + 1;
+    let invoiceNumber = `AIN-${String(invN).padStart(4, '0')}-${invYear}`;
+    while (await prisma.invoice.findUnique({ where: { invoiceNumber } })) {
+      invN += 1;
+      invoiceNumber = `AIN-${String(invN).padStart(4, '0')}-${invYear}`;
+    }
 
     const invoice = await prisma.invoice.create({
       data: {

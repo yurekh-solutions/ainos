@@ -28,9 +28,14 @@ export async function POST(req: NextRequest) {
     const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     const body = await req.json();
 
-    // Auto-generate PO number
-    const count = await prisma.purchaseOrder.count();
-    const poNumber = body.poNumber || `PO-${String(count + 1).padStart(4, '0')}-${new Date().getFullYear()}`;
+    // Auto-generate PO number (collision-safe: poNumber is globally unique)
+    const poYear = new Date().getFullYear();
+    let poN = (await prisma.purchaseOrder.count()) + 1;
+    let poNumber = body.poNumber || `PO-${String(poN).padStart(4, '0')}-${poYear}`;
+    while (await prisma.purchaseOrder.findUnique({ where: { poNumber } })) {
+      poN += 1;
+      poNumber = `PO-${String(poN).padStart(4, '0')}-${poYear}`;
+    }
 
     const order = await prisma.purchaseOrder.create({
       data: {

@@ -1,9 +1,9 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, Clock, Search, Calendar, CheckCircle } from 'lucide-react';
+import { Plus, X, Clock, Search, Calendar } from 'lucide-react';
 
-interface Timesheet { id: string; employee: string; project: string; task: string; date: string; startTime: string; endTime: string; duration: number; billable: boolean; status: string; createdAt: string; }
+interface Timesheet { id: string; employeeName?: string | null; project?: string | null; task?: string | null; date: string; hours: number; status: string; }
 
 const statusColors: Record<string, string> = { draft: '#636e72', submitted: '#0984e3', approved: '#00b894', rejected: '#d63031' };
 
@@ -15,11 +15,11 @@ export default function TimesheetPage() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [form, setForm] = useState({ employee: '', project: '', task: '', date: new Date().toISOString().split('T')[0], startTime: '09:00', endTime: '17:00', billable: true });
 
-  useEffect(() => { fetchTimesheets(); }, []);
-
   const fetchTimesheets = async () => {
     try { const res = await fetch('/api/timesheets'); if (res.ok) setTimesheets(await res.json()); } catch (e) { console.error(e); } finally { setLoading(false); }
   };
+
+  useEffect(() => { fetchTimesheets(); }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,13 +37,12 @@ export default function TimesheetPage() {
   };
 
   const filtered = timesheets.filter(t => {
-    const matchSearch = t.employee.toLowerCase().includes(searchTerm.toLowerCase()) || t.project.toLowerCase().includes(searchTerm.toLowerCase()) || t.task.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = (t.employeeName || '').toLowerCase().includes(searchTerm.toLowerCase()) || (t.project || '').toLowerCase().includes(searchTerm.toLowerCase()) || (t.task || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchStatus = filterStatus === 'all' || t.status === filterStatus;
     return matchSearch && matchStatus;
   });
 
-  const totalHours = timesheets.reduce((s, t) => s + t.duration, 0);
-  const billableHours = timesheets.filter(t => t.billable).reduce((s, t) => s + t.duration, 0);
+  const totalHours = timesheets.reduce((s, t) => s + t.hours, 0);
   const pending = timesheets.filter(t => t.status === 'submitted').length;
   const approved = timesheets.filter(t => t.status === 'approved').length;
 
@@ -65,7 +64,7 @@ export default function TimesheetPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { label: 'Total Hours', value: `${totalHours.toFixed(1)}h`, gradient: 'from-violet-500 to-purple-600' },
-            { label: 'Billable Hours', value: `${billableHours.toFixed(1)}h`, gradient: 'from-emerald-500 to-teal-600' },
+            { label: 'Total Entries', value: timesheets.length, gradient: 'from-emerald-500 to-teal-600' },
             { label: 'Pending Approval', value: pending, gradient: 'from-amber-500 to-orange-600' },
             { label: 'Approved', value: approved, gradient: 'from-blue-500 to-cyan-600' },
           ].map((stat, i) => (
@@ -105,7 +104,6 @@ export default function TimesheetPage() {
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase" style={{ color: 'hsl(var(--muted-foreground))' }}>Task</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase" style={{ color: 'hsl(var(--muted-foreground))' }}>Date</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase" style={{ color: 'hsl(var(--muted-foreground))' }}>Duration</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase" style={{ color: 'hsl(var(--muted-foreground))' }}>Billable</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase" style={{ color: 'hsl(var(--muted-foreground))' }}>Status</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase" style={{ color: 'hsl(var(--muted-foreground))' }}>Action</th>
                   </tr>
@@ -113,12 +111,11 @@ export default function TimesheetPage() {
                 <tbody>
                   {filtered.map((t) => (
                     <tr key={t.id} style={{ borderBottom: '1px solid hsl(var(--border) / 0.3)' }} className="hover:opacity-80 transition-opacity">
-                      <td className="px-4 py-3 text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>{t.employee}</td>
-                      <td className="px-4 py-3 text-sm" style={{ color: 'hsl(var(--foreground))' }}>{t.project}</td>
-                      <td className="px-4 py-3 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>{t.task}</td>
+                      <td className="px-4 py-3 text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>{t.employeeName || '—'}</td>
+                      <td className="px-4 py-3 text-sm" style={{ color: 'hsl(var(--foreground))' }}>{t.project || '—'}</td>
+                      <td className="px-4 py-3 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>{t.task || '—'}</td>
                       <td className="px-4 py-3 text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>{new Date(t.date).toLocaleDateString('en-IN')}</td>
-                      <td className="px-4 py-3 text-sm font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{t.duration.toFixed(1)}h</td>
-                      <td className="px-4 py-3">{t.billable ? <CheckCircle className="w-4 h-4" style={{ color: '#00b894' }} /> : <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>No</span>}</td>
+                      <td className="px-4 py-3 text-sm font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{t.hours.toFixed(1)}h</td>
                       <td className="px-4 py-3"><span className="px-2.5 py-1 rounded-full text-[10px] font-semibold text-white capitalize" style={{ background: statusColors[t.status] }}>{t.status}</span></td>
                       <td className="px-4 py-3">
                         <select value={t.status} onChange={(e) => updateStatus(t.id, e.target.value)}

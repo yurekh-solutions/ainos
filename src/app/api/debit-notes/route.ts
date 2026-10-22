@@ -27,8 +27,14 @@ export async function POST(req: NextRequest) {
     if (!user?.companyId) return NextResponse.json({ error: 'No company' }, { status: 401 });
 
     const body = await req.json();
-    const count = await prisma.debitNote.count({ where: { companyId: user.companyId } });
-    const noteNumber = `DN-${String(count + 1).padStart(4, '0')}-${new Date().getFullYear()}`;
+    // Collision-safe numbering (noteNumber is globally unique)
+    const dnYear = new Date().getFullYear();
+    let dnN = (await prisma.debitNote.count({ where: { companyId: user.companyId } })) + 1;
+    let noteNumber = `DN-${String(dnN).padStart(4, '0')}-${dnYear}`;
+    while (await prisma.debitNote.findUnique({ where: { noteNumber } })) {
+      dnN += 1;
+      noteNumber = `DN-${String(dnN).padStart(4, '0')}-${dnYear}`;
+    }
 
     const note = await prisma.debitNote.create({
       data: {
@@ -42,7 +48,7 @@ export async function POST(req: NextRequest) {
         cgstAmount: body.cgstAmount || 0,
         sgstAmount: body.sgstAmount || 0,
         igstAmount: body.igstAmount || 0,
-        total: body.total || 0,
+        total: body.total || body.amount || 0,
         reason: body.reason || null,
         status: body.status || 'draft',
         companyId: user.companyId,

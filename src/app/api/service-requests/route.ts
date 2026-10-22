@@ -36,7 +36,16 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const request = await prisma.serviceRequest.create({
-      data: { ...body, companyId: user.companyId }
+      data: {
+        title: body.title || 'Service Request',
+        description: body.description || null,
+        category: body.category || body.type || null,
+        priority: body.priority || 'medium',
+        status: body.status || 'open',
+        customerId: body.customerId || null,
+        assignedTo: body.assignedTo || null,
+        companyId: user.companyId,
+      }
     });
     return NextResponse.json(request, { status: 201 });
   } catch (error) {

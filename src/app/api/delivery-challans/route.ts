@@ -80,10 +80,14 @@ export async function POST(req: NextRequest) {
 
     const totalAmount = subtotal + taxTotal;
 
-    const count = await prisma.deliveryChallan.count({
-      where: { companyId: user.companyId },
-    });
-    const challanNumber = `DC-${String(count + 1).padStart(4, '0')}-${new Date().getFullYear()}`;
+    // Collision-safe numbering (challanNumber is globally unique)
+    const dcYear = new Date().getFullYear();
+    let dcN = (await prisma.deliveryChallan.count({ where: { companyId: user.companyId } })) + 1;
+    let challanNumber = `DC-${String(dcN).padStart(4, '0')}-${dcYear}`;
+    while (await prisma.deliveryChallan.findUnique({ where: { challanNumber } })) {
+      dcN += 1;
+      challanNumber = `DC-${String(dcN).padStart(4, '0')}-${dcYear}`;
+    }
 
     const challan = await prisma.deliveryChallan.create({
       data: {
