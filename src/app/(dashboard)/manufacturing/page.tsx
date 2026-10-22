@@ -25,7 +25,10 @@ export default function ManufacturingPage() {
   const fetchData = useCallback(async () => {
     try {
       const res = await fetch(`/api/manufacturing?type=${activeTab}`);
-      if (res.ok) setData(prev => ({ ...prev, [activeTab]: await res.json() }));
+      if (res.ok) {
+        const json = await res.json();
+        setData(prev => ({ ...prev, [activeTab]: json }));
+      }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   }, [activeTab]);
