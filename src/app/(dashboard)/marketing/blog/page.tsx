@@ -1186,7 +1186,7 @@ export default function BlogPage() {
               onClick={e => e.stopPropagation()}
               className="bg-white w-full max-w-4xl my-8 rounded-2xl border border-gray-200 shadow-2xl overflow-hidden mx-4">
             {/* Article Content */}
-            <div className="p-8">
+            <div className="p-5 sm:p-8">
               {/* Title & Meta */}
               <div className="mb-8">
                 {/* Status + Category Badges */}

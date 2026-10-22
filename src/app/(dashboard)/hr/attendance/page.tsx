@@ -67,7 +67,7 @@ export default function AttendancePage() {
             <div className="text-center py-20"><Calendar className="w-12 h-12 mx-auto mb-3" style={{ color: 'hsl(var(--primary) / 0.3)' }} /><p className="text-sm font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>No attendance records</p></div>
           ) : (
             <div className="glass-card overflow-hidden">
-              <table className="w-full">
+              <div className="overflow-x-auto"><table className="w-full">
                 <thead style={{ background: 'hsl(var(--muted))' }}>
                   <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
                     <th className="px-6 py-3 text-left text-xs font-semibold uppercase" style={{ color: 'hsl(var(--muted-foreground))' }}>Employee</th>
@@ -90,7 +90,7 @@ export default function AttendancePage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             </div>
           )}
 

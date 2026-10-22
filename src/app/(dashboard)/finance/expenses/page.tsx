@@ -119,7 +119,7 @@ export default function ExpensesPage() {
             </div>
           ) : (
             <div className="p-5 rounded-2xl" style={{ background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)', border: '1px solid hsl(var(--border) / 0.5)', boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08)' }}>
-              <table className="w-full">
+              <div className="overflow-x-auto"><table className="w-full">
                 <thead>
                   <tr style={{ borderBottom: '1px solid hsl(var(--border) / 0.5)' }}>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase" style={{ color: 'hsl(var(--muted-foreground))' }}>Title</th>
@@ -147,7 +147,7 @@ export default function ExpensesPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             </div>
           )}
         </motion.div>

@@ -161,7 +161,7 @@ export default function NewQuotePage() {
           {/* Totals */}
           <div className="border-t pt-4" style={{ borderColor: 'var(--border)' }}>
             <div className="flex justify-end">
-              <div className="w-64 space-y-2">
+              <div className="w-full sm:w-64 space-y-2">
                 <div className="flex justify-between text-sm"><span style={{ color: 'var(--muted-foreground)' }}>Subtotal</span><span style={{ color: 'var(--foreground)' }}>₹{subtotalAmt.toLocaleString('en-IN')}</span></div>
                 <div className="flex justify-between text-sm"><span style={{ color: 'var(--muted-foreground)' }}>Tax ({taxRate}%)</span><span style={{ color: 'var(--foreground)' }}>₹{taxAmt.toLocaleString('en-IN')}</span></div>
                 {discountAmt > 0 && <div className="flex justify-between text-sm"><span style={{ color: 'var(--muted-foreground)' }}>Discount ({discountRate}%)</span><span style={{ color: '#EF4444' }}>-₹{discountAmt.toLocaleString('en-IN')}</span></div>}

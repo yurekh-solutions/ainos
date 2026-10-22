@@ -414,7 +414,7 @@ export default function BillingPage() {
         </button>
         {showToolCosts && (
           <div className="rounded-xl border overflow-hidden" style={{ borderColor: 'hsl(var(--border))' }}>
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full text-sm">
               <thead>
                 <tr style={{ background: 'hsl(var(--card))' }}>
                   <th className="text-left px-4 py-3 font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Tool</th>
@@ -437,7 +437,7 @@ export default function BillingPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </div>
         )}
       </div>
