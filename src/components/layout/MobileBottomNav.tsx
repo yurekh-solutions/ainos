@@ -11,8 +11,12 @@ const itemClass = (active: boolean) =>
     active ? 'text-[#5b21b6]' : 'text-neutral-500 hover:text-neutral-800'
   }`;
 
+// Bottom nav shows only the most-used groups; everything else lives in the sidebar via "More"
+const BOTTOM_GROUP_KEYS = ['finance', 'ecommerce', 'pos'] as const;
+
 export function MobileBottomNav() {
   const pathname = usePathname() || '';
+  const bottomGroups = NAV_GROUPS.filter(g => (BOTTOM_GROUP_KEYS as readonly string[]).includes(g.key));
 
   return (
     <nav
@@ -24,12 +28,12 @@ export function MobileBottomNav() {
           <Home className="w-5 h-5" />
           Home
         </Link>
-        {NAV_GROUPS.map(group => {
+        {bottomGroups.map(group => {
           const Icon = group.icon;
           return (
             <Link key={group.key} href={group.href} className={itemClass(isGroupActive(pathname, group))}>
               <Icon className="w-5 h-5" />
-              {group.title}
+              {group.shortTitle || group.title}
             </Link>
           );
         })}

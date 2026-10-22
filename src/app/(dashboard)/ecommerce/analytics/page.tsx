@@ -32,7 +32,7 @@ export default function EcomAnalyticsPage() {
     <div className="p-4 md:p-6 h-full overflow-auto" style={{ background: 'var(--page-gradient)' }}>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-7xl mx-auto space-y-6">
         <div><h1 className="text-2xl font-bold tracking-tight" style={{ color: 'hsl(var(--foreground))' }}>Analytics</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>eCommerce performance overview</p></div>
+          <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>See what sells, what earns, and what needs restocking</p></div>
 
         {loading ? <p className="text-center py-8" style={{ color: 'hsl(var(--muted-foreground))' }}>Loading...</p> : (
           <>

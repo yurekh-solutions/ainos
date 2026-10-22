@@ -16,6 +16,8 @@ export interface NavItem {
 export interface NavGroup {
   key: 'finance' | 'marketing' | 'ecommerce' | 'pos' | 'manufacturing';
   title: string;
+  /** Compact label for the mobile bottom nav (max ~9 chars) */
+  shortTitle?: string;
   icon: React.ElementType;
   /** Overview page for the whole group */
   href: string;
@@ -28,6 +30,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     key: 'finance',
     title: 'Finance',
+    shortTitle: 'Money',
     icon: Landmark,
     href: '/dashboard/finance',
     items: [
@@ -59,6 +62,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     key: 'ecommerce',
     title: 'eCommerce',
+    shortTitle: 'Store',
     icon: ShoppingBag,
     href: '/ecommerce/stores',
     items: [
@@ -75,6 +79,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     key: 'pos',
     title: 'Point of Sale',
+    shortTitle: 'Billing',
     icon: Terminal,
     href: '/pos/sessions',
     items: [
