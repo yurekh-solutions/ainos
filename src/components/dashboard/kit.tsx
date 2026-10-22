@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   ScrollText, Contact2, Boxes, Coins, FileBarChart, PackageCheck, Sheet, BellRing, Paintbrush,
-  AtSign, SearchCheck, PenTool, Bot, MailOpen,
+  AtSign, SearchCheck, PenTool, Bot, MailOpen, Send,
   Receipt, CalendarClock, CheckCircle2, Circle, ChevronRight, ArrowRight, Plus,
 } from 'lucide-react';
 
