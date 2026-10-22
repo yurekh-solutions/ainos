@@ -38,10 +38,10 @@ export default function FinanceOverviewPage() {
                 <Link
                   key={tool.title}
                   href={tool.href}
-                  className={`group flex flex-col items-center justify-center gap-2 py-3 sm:py-5 px-1 rounded-xl text-center transition-colors min-w-0 ${
+                  className={`group flex flex-col items-center justify-center gap-2 py-3 sm:py-5 px-1 rounded-xl text-center transition-all duration-200 min-w-0 ${
                     primary
                       ? 'bg-gradient-to-br from-[#7c3aed] to-[#5b21b6] text-white shadow-[0_8px_18px_-8px_rgba(109,40,217,0.8)]'
-                      : 'hover:bg-[#f7f5fb] text-neutral-700'
+                      : 'bg-[#faf9fc] hover:bg-white hover:shadow-[0_10px_22px_-10px_rgba(76,29,149,0.25)] hover:-translate-y-0.5 text-neutral-700'
                   }`}
                 >
                   {primary ? (
@@ -49,7 +49,7 @@ export default function FinanceOverviewPage() {
                       <tool.icon className="w-[18px] h-[18px]" />
                     </span>
                   ) : (
-                    <IconCircle icon={tool.icon} />
+                    <IconCircle icon={tool.icon} tone={tool.tone} variant="gradient" />
                   )}
                   <span className="text-[11px] sm:text-[13px] font-medium truncate max-w-full">{tool.title}</span>
                 </Link>

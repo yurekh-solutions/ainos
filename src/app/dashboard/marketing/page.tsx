@@ -73,18 +73,18 @@ export default function MarketingOverviewPage() {
         <PageHeader title="Marketing" subtitle="Grow your brand with powerful tools and automation." />
 
         {/* Tools */}
-        <motion.section {...fadeUp(0.04)} className={`${CARD} p-2 sm:p-3`}>
-          <div className="grid grid-cols-3 gap-1 sm:gap-2">
+        <motion.section {...fadeUp(0.04)} className={`${CARD} p-3 sm:p-4`}>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
             {tools.map(tool => (
               <Link
                 key={tool.title}
                 href={tool.href}
-                className="group flex flex-col items-start gap-2.5 sm:gap-3 p-3 sm:p-5 rounded-xl hover:bg-[#f7f5fb] transition-colors min-w-0"
+                className="group flex flex-col items-start gap-3 p-3.5 sm:p-5 rounded-2xl bg-[#faf9fc] hover:bg-white hover:shadow-[0_14px_30px_-12px_rgba(76,29,149,0.28)] hover:-translate-y-0.5 transition-all duration-200 min-w-0"
               >
-                <IconCircle icon={tool.icon} />
+                <IconCircle icon={tool.icon} tone={tool.tone} variant="gradient" size="lg" />
                 <div className="min-w-0 w-full">
-                  <p className="text-[12px] sm:text-sm font-medium text-neutral-900 group-hover:text-[#6d28d9] transition-colors leading-snug">{tool.title}</p>
-                  <p className="hidden sm:block text-xs text-neutral-500 font-light mt-0.5 truncate">{tool.short}</p>
+                  <p className="text-[13px] sm:text-sm font-semibold text-neutral-900 group-hover:text-[#6d28d9] transition-colors leading-snug">{tool.title}</p>
+                  <p className="text-[11px] sm:text-xs text-neutral-500 font-light mt-1 leading-relaxed line-clamp-2">{tool.short}</p>
                 </div>
               </Link>
             ))}
@@ -114,7 +114,7 @@ export default function MarketingOverviewPage() {
               </div>
             ) : items.length === 0 ? (
               <div className="px-6 pt-4 pb-8 text-center">
-                <div className="flex justify-center"><IconCircle icon={Megaphone} size="lg" /></div>
+                <div className="flex justify-center"><IconCircle icon={Megaphone} size="lg" variant="gradient" /></div>
                 <p className="text-sm font-medium text-neutral-900 mt-4">No campaigns yet</p>
                 <p className="text-sm text-neutral-500 font-light mt-1">Email campaigns and published blogs will show up here.</p>
                 <Link

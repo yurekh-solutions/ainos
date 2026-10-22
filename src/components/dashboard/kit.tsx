@@ -22,7 +22,7 @@ export const fadeUp = (delay = 0) => ({
 });
 
 // ── Soft tinted circles for icons ──
-export type Tone = 'purple' | 'green' | 'orange' | 'blue' | 'red' | 'grey';
+export type Tone = 'purple' | 'green' | 'orange' | 'blue' | 'red' | 'grey' | 'cyan' | 'pink' | 'indigo';
 const TONES: Record<Tone, string> = {
   purple: 'bg-violet-50 text-[#6d28d9]',
   green: 'bg-emerald-50 text-emerald-600',
@@ -30,13 +30,30 @@ const TONES: Record<Tone, string> = {
   blue: 'bg-blue-50 text-blue-600',
   red: 'bg-rose-50 text-rose-500',
   grey: 'bg-neutral-100 text-neutral-500',
+  cyan: 'bg-cyan-50 text-cyan-600',
+  pink: 'bg-pink-50 text-pink-600',
+  indigo: 'bg-indigo-50 text-indigo-600',
 };
 
-export function IconCircle({ icon: Icon, tone = 'purple', size = 'md' }: { icon: React.ElementType; tone?: Tone; size?: 'sm' | 'md' | 'lg' }) {
+// Rich gradient faces — used for tool tiles, matching the sidebar icon style
+const GRADIENTS: Record<Tone, string> = {
+  purple: 'from-violet-500 to-purple-600',
+  green: 'from-emerald-500 to-teal-600',
+  orange: 'from-orange-500 to-red-500',
+  blue: 'from-blue-500 to-indigo-600',
+  red: 'from-rose-500 to-pink-600',
+  grey: 'from-neutral-400 to-neutral-500',
+  cyan: 'from-cyan-500 to-sky-600',
+  pink: 'from-pink-500 to-rose-600',
+  indigo: 'from-indigo-500 to-violet-600',
+};
+
+export function IconCircle({ icon: Icon, tone = 'purple', size = 'md', variant = 'soft' }: { icon: React.ElementType; tone?: Tone; size?: 'sm' | 'md' | 'lg'; variant?: 'soft' | 'gradient' }) {
   const box = size === 'sm' ? 'w-9 h-9' : size === 'lg' ? 'w-12 h-12' : 'w-10 h-10';
   const glyph = size === 'lg' ? 'w-[22px] h-[22px]' : size === 'sm' ? 'w-4 h-4' : 'w-[18px] h-[18px]';
+  const face = variant === 'gradient' ? `bg-gradient-to-br text-white shadow-[0_4px_10px_-2px_rgba(16,24,40,0.25)] ${GRADIENTS[tone]}` : TONES[tone];
   return (
-    <span className={`${box} ${TONES[tone]} rounded-full inline-flex items-center justify-center flex-shrink-0`}>
+    <span className={`${box} ${face} rounded-full inline-flex items-center justify-center flex-shrink-0`}>
       <Icon className={glyph} />
     </span>
   );
@@ -50,6 +67,9 @@ const PILL_TONES: Record<Tone, string> = {
   blue: 'bg-blue-50 text-blue-600',
   red: 'bg-rose-50 text-rose-600',
   grey: 'bg-neutral-100 text-neutral-500',
+  cyan: 'bg-cyan-50 text-cyan-600',
+  pink: 'bg-pink-50 text-pink-600',
+  indigo: 'bg-indigo-50 text-indigo-600',
 };
 
 const STATUS_TONE: Record<string, Tone> = {
@@ -124,32 +144,34 @@ export interface Tool {
   short: string;
   icon: React.ElementType;
   href: string;
+  tone?: Tone;
 }
 
 export const FINANCE_TOOLS: Tool[] = [
-  { title: 'Invoices', short: 'Professional billing', description: 'Create GST-compliant invoices with automatic tax calculations and payment tracking.', icon: ScrollText, href: '/invoices' },
-  { title: 'Customers', short: 'Manage your clients', description: 'Store customer details with GSTIN, PAN and billing addresses for quick invoicing.', icon: Contact2, href: '/customers' },
-  { title: 'Products', short: 'Your product catalog', description: 'Manage products with HSN codes, GST rates, pricing and inventory tracking.', icon: Boxes, href: '/products' },
-  { title: 'Expenses', short: 'Track business spending', description: 'Record and categorize expenses for software, salaries, marketing and operations.', icon: Coins, href: '/finance/expenses' },
-  { title: 'Quotations', short: 'Win more deals', description: 'Send professional quotes and convert approved quotes to invoices instantly.', icon: FileBarChart, href: '/finance/quotes' },
-  { title: 'Delivery Challans', short: 'Shipping documents', description: 'Generate delivery challans for goods transport with sequential numbering.', icon: PackageCheck, href: '/finance/challans' },
-  { title: 'Tally / Excel', short: 'Data import & export', description: 'Import existing data or export reports in Tally-compatible Excel format.', icon: Sheet, href: '/finance/tally' },
-  { title: 'Payment Reminders', short: 'Collect payments faster', description: 'Send automated WhatsApp reminders for overdue invoices.', icon: BellRing, href: '/finance/reminders' },
-  { title: 'Template Designer', short: 'Custom invoice layouts', description: 'Design professional invoice templates with your brand colors and fonts.', icon: Paintbrush, href: '/finance/templates' },
+  { title: 'Invoices', short: 'Professional billing', description: 'Create GST-compliant invoices with automatic tax calculations and payment tracking.', icon: ScrollText, href: '/invoices', tone: 'purple' },
+  { title: 'Customers', short: 'Manage your clients', description: 'Store customer details with GSTIN, PAN and billing addresses for quick invoicing.', icon: Contact2, href: '/customers', tone: 'blue' },
+  { title: 'Products', short: 'Your product catalog', description: 'Manage products with HSN codes, GST rates, pricing and inventory tracking.', icon: Boxes, href: '/products', tone: 'green' },
+  { title: 'Expenses', short: 'Track business spending', description: 'Record and categorize expenses for software, salaries, marketing and operations.', icon: Coins, href: '/finance/expenses', tone: 'orange' },
+  { title: 'Quotations', short: 'Win more deals', description: 'Send professional quotes and convert approved quotes to invoices instantly.', icon: FileBarChart, href: '/finance/quotes', tone: 'red' },
+  { title: 'Delivery Challans', short: 'Shipping documents', description: 'Generate delivery challans for goods transport with sequential numbering.', icon: PackageCheck, href: '/finance/challans', tone: 'cyan' },
+  { title: 'Tally / Excel', short: 'Data import & export', description: 'Import existing data or export reports in Tally-compatible Excel format.', icon: Sheet, href: '/finance/tally', tone: 'indigo' },
+  { title: 'Payment Reminders', short: 'Collect payments faster', description: 'Send automated WhatsApp reminders for overdue invoices.', icon: BellRing, href: '/finance/reminders', tone: 'pink' },
+  { title: 'Template Designer', short: 'Custom invoice layouts', description: 'Design professional invoice templates with your brand colors and fonts.', icon: Paintbrush, href: '/finance/templates', tone: 'purple' },
 ];
 
 export const marketingTools = (templateLabel: string): Tool[] => [
-  { title: 'Social Media', short: 'Create engaging posts', description: 'Generate captions, hooks and hashtags for Instagram, LinkedIn, Twitter and Facebook.', icon: AtSign, href: '/marketing/email' },
-  { title: 'SEO Platform', short: 'Rank higher on Google', description: 'Audit your website, research keywords and track competitor rankings.', icon: SearchCheck, href: '/marketing/seo' },
-  { title: 'Blog & Content', short: 'Publish quality articles', description: 'Write and publish SEO-optimized blog posts with AI assistance.', icon: PenTool, href: '/marketing/blog' },
-  { title: 'Blog Agent', short: 'Automated content creation', description: 'AI researches topics, writes articles and publishes on your schedule.', icon: Bot, href: '/marketing/blog' },
-  { title: 'Invitations', short: 'Professional event designs', description: 'Create branded invitations for festivals, events and special occasions.', icon: MailOpen, href: '/marketing/invitations' },
+  { title: 'Email Campaigns', short: 'Send bulk emails that convert', description: 'Design, send and track email campaigns with open and click analytics.', icon: Send, href: '/marketing/campaigns', tone: 'blue' },
+  { title: 'Social Media', short: 'Create engaging posts', description: 'Generate captions, hooks and hashtags for Instagram, LinkedIn, Twitter and Facebook.', icon: AtSign, href: '/marketing/email', tone: 'purple' },
+  { title: 'SEO Platform', short: 'Rank higher on Google', description: 'Audit your website, research keywords and track competitor rankings.', icon: SearchCheck, href: '/marketing/seo', tone: 'indigo' },
+  { title: 'Blog & Content', short: 'Publish quality articles', description: 'Write and publish SEO-optimized blog posts with AI assistance.', icon: PenTool, href: '/marketing/blog', tone: 'orange' },
+  { title: 'Blog Agent', short: 'Automated content creation', description: 'AI researches topics, writes articles and publishes on your schedule.', icon: Bot, href: '/marketing/blog', tone: 'green' },
+  { title: 'Invitations', short: `Professional event designs`, description: `Create branded invitations for festivals, events and special occasions.`, icon: MailOpen, href: '/marketing/invitations', tone: 'pink' },
 ];
 
 export function ToolItem({ tool }: { tool: Tool }) {
   return (
     <Link href={tool.href} className="group flex items-start gap-3.5 p-4 rounded-xl hover:bg-[#f7f5fb] transition-colors">
-      <IconCircle icon={tool.icon} />
+      <IconCircle icon={tool.icon} tone={tool.tone} variant="gradient" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-neutral-900 group-hover:text-[#6d28d9] transition-colors">{tool.title}</p>
         <p className="text-[13px] text-neutral-500 font-light leading-relaxed mt-0.5 line-clamp-2">{tool.description}</p>
