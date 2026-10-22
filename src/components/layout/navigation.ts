@@ -2,9 +2,9 @@ import {
   LayoutDashboard, Landmark, Radio,
   ScrollText, Contact2, Boxes, Coins, FileBarChart, ShoppingCart, PackageCheck, Sheet, BellRing, Paintbrush,
   Send, AtSign, SearchCheck, PenTool, MailOpen,
-  Store, Package, ClipboardList, BarChart3, Tag, MessageSquare,
-  Monitor, CreditCard, Receipt,
-  Layers, Settings, Wrench,
+  ShoppingBag, Store, Package, ClipboardList, TrendingUp, Tag, MessageSquare, Users,
+  Terminal, CreditCard, Receipt, UtensilsCrossed, Clock,
+  Layers, Settings, Wrench, BarChart2,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -59,14 +59,14 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     key: 'ecommerce',
     title: 'eCommerce',
-    icon: Store,
+    icon: ShoppingBag,
     href: '/ecommerce/stores',
     items: [
       { icon: Store, label: 'Stores', href: '/ecommerce/stores' },
       { icon: Package, label: 'Products', href: '/ecommerce/products' },
       { icon: ClipboardList, label: 'Orders', href: '/ecommerce/orders' },
-      { icon: Contact2, label: 'Customers', href: '/ecommerce/customers' },
-      { icon: BarChart3, label: 'Analytics', href: '/ecommerce/analytics' },
+      { icon: Users, label: 'Customers', href: '/ecommerce/customers' },
+      { icon: TrendingUp, label: 'Analytics', href: '/ecommerce/analytics' },
       { icon: Tag, label: 'Coupons', href: '/ecommerce/coupons' },
       { icon: MessageSquare, label: 'Reviews', href: '/ecommerce/reviews' },
       { icon: Settings, label: 'Settings', href: '/ecommerce/settings' },
@@ -75,14 +75,14 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     key: 'pos',
     title: 'Point of Sale',
-    icon: Monitor,
+    icon: Terminal,
     href: '/pos/sessions',
     items: [
-      { icon: Monitor, label: 'Sessions', href: '/pos/sessions' },
+      { icon: Clock, label: 'Sessions', href: '/pos/sessions' },
       { icon: CreditCard, label: 'Register', href: '/pos/register' },
       { icon: Receipt, label: 'Orders', href: '/pos/orders' },
-      { icon: Package, label: 'Products', href: '/pos/products' },
-      { icon: BarChart3, label: 'Reports', href: '/pos/reports' },
+      { icon: UtensilsCrossed, label: 'Products', href: '/pos/products' },
+      { icon: BarChart2, label: 'Reports', href: '/pos/reports' },
     ],
   },
   {

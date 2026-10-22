@@ -16,6 +16,20 @@ const ROW = 'flex items-center gap-3 px-3 h-11 rounded-xl text-sm transition-col
 const ROW_ACTIVE = 'bg-[#6d28d9] text-white font-medium shadow-[0_8px_18px_-8px_rgba(124,58,237,0.8)]';
 const ROW_IDLE = 'text-white/70 hover:bg-white/[0.06] hover:text-white';
 
+// Premium icon backgrounds with gradient circles
+const ICON_BG_COLORS = [
+  'bg-gradient-to-br from-violet-500 to-purple-600',
+  'bg-gradient-to-br from-blue-500 to-indigo-600',
+  'bg-gradient-to-br from-emerald-500 to-teal-600',
+  'bg-gradient-to-br from-orange-500 to-red-600',
+  'bg-gradient-to-br from-pink-500 to-rose-600',
+  'bg-gradient-to-br from-cyan-500 to-blue-600',
+];
+
+function getIconBg(index: number) {
+  return ICON_BG_COLORS[index % ICON_BG_COLORS.length];
+}
+
 const subscribeNoop = () => () => {};
 
 function initialsOf(name?: string | null, email?: string | null) {
@@ -38,7 +52,9 @@ function GroupNav({ group, collapsed, pathname }: { group: NavGroup; collapsed: 
   if (collapsed) {
     return (
       <Link href={group.href} title={group.title} className={`${ROW} justify-center ${active ? ROW_ACTIVE : ROW_IDLE}`}>
-        <Icon className="w-5 h-5 flex-shrink-0" />
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${active ? 'bg-white/20' : getIconBg(0)}`}>
+          <Icon className="w-4 h-4 text-white" />
+        </div>
       </Link>
     );
   }
@@ -47,7 +63,9 @@ function GroupNav({ group, collapsed, pathname }: { group: NavGroup; collapsed: 
     <div>
       <div className={`flex items-center rounded-xl transition-colors ${onOverview ? ROW_ACTIVE : active ? 'bg-white/[0.06] text-white' : ROW_IDLE}`}>
         <Link href={group.href} className="flex-1 flex items-center gap-3 pl-3 h-11 text-sm font-medium min-w-0">
-          <Icon className="w-5 h-5 flex-shrink-0" />
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${onOverview || active ? 'bg-white/20' : getIconBg(0)}`}>
+            <Icon className="w-4 h-4 text-white" />
+          </div>
           <span className="truncate">{group.title}</span>
         </Link>
         <button
@@ -71,7 +89,7 @@ function GroupNav({ group, collapsed, pathname }: { group: NavGroup; collapsed: 
             className="overflow-hidden"
           >
             <div className="ml-5 pl-3 my-1 border-l border-white/10 space-y-0.5">
-              {group.items.map(item => {
+              {group.items.map((item, idx) => {
                 const ItemIcon = item.icon;
                 const itemActive = matchesPath(pathname, item.href);
                 return (
@@ -82,7 +100,9 @@ function GroupNav({ group, collapsed, pathname }: { group: NavGroup; collapsed: 
                       itemActive ? 'bg-white/10 text-white font-medium' : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
                     }`}
                   >
-                    <ItemIcon className="w-4 h-4 flex-shrink-0" />
+                    <div className={`w-6 h-6 rounded-md flex items-center justify-center ${itemActive ? 'bg-white/20' : getIconBg(idx + 1)}`}>
+                      <ItemIcon className="w-3.5 h-3.5 text-white" />
+                    </div>
                     <span className="truncate">{item.label}</span>
                   </Link>
                 );
