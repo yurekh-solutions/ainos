@@ -4,6 +4,7 @@ import GoogleProvider from 'next-auth/providers/google';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { isAdmin } from '@/lib/admin';
+import { findUserByEmail } from '@/lib/identity';
 
 export const authOptions: NextAuthOptions = {
   secret:
@@ -21,9 +22,9 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Email and password are required');
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
+        // Case-insensitive: accounts are stored lowercase, but users type
+        // their address however they remember it.
+        const user = await findUserByEmail(credentials.email);
 
         if (!user || !user.password) {
           throw new Error('Invalid email or password');
@@ -65,9 +66,7 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       if (account?.provider === 'google') {
         try {
-          const existingUser = await prisma.user.findUnique({
-            where: { email: user.email! },
-          });
+          const existingUser = await findUserByEmail(user.email!);
 
           // Google sign-in is only allowed for emails that already have a
           // registered AINOS account — never auto-create one from Google.
@@ -137,9 +136,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user?.email) {
         try {
-          const dbUser = await prisma.user.findUnique({
-            where: { email: session.user.email },
-          });
+          const dbUser = await findUserByEmail(session.user.email);
           if (dbUser) {
             session.user.id = dbUser.id;
             session.user.role = dbUser.role;

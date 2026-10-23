@@ -3,13 +3,17 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { sendEmail, welcomeEmailTemplate } from '@/lib/email';
+import { findUserByEmail, normalizeEmail, normalizePhone } from '@/lib/identity';
+import { readVerificationProof } from '@/lib/verification';
+import { smsConfigured } from '@/lib/sms';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
       name,
-      email,
       phone,
       password,
       companyName,
@@ -20,98 +24,144 @@ export async function POST(req: NextRequest) {
       country,
       gstNumber,
       documents,
+      emailProof,
+      phoneProof,
     } = body;
 
-    // Validate required user fields
+    const email = normalizeEmail(String(body.email || ''));
+    const normalizedPhone = normalizePhone(String(phone || ''));
+
     if (!name || !email || !password || !companyName) {
       return NextResponse.json(
         { error: 'Name, email, password, and company name are required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // Validate password length
     if (password.length < 6) {
+      return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
+    }
+
+    if (!EMAIL_REGEX.test(email)) {
+      return NextResponse.json({ error: 'Please enter a valid email address' }, { status: 400 });
+    }
+
+    // ── Verification gate ────────────────────────────────────────────────────
+    // Every account must prove it owns the email address. A phone number is
+    // required only when an SMS provider is actually configured, so the flow
+    // never dead-ends on an unconfigured integration.
+    const emailVerification = readVerificationProof(emailProof);
+    if (
+      !emailVerification ||
+      emailVerification.channel !== 'email' ||
+      emailVerification.purpose !== 'signup_email' ||
+      emailVerification.target !== email
+    ) {
       return NextResponse.json(
-        { error: 'Password must be at least 6 characters' },
-        { status: 400 }
+        {
+          error: 'Please verify your email address before submitting the application.',
+          code: 'EMAIL_NOT_VERIFIED',
+        },
+        { status: 400 },
       );
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    const phoneRequired = smsConfigured() && process.env.OTP_REQUIRE_PHONE !== 'false';
+    const phoneVerification = readVerificationProof(phoneProof);
+    const phoneVerified =
+      !!phoneVerification &&
+      phoneVerification.channel === 'phone' &&
+      phoneVerification.purpose === 'signup_phone' &&
+      phoneVerification.target === normalizedPhone;
+
+    if (phoneRequired && !phoneVerified) {
       return NextResponse.json(
-        { error: 'Please enter a valid email address' },
-        { status: 400 }
+        {
+          error: 'Please verify your phone number before submitting the application.',
+          code: 'PHONE_NOT_VERIFIED',
+        },
+        { status: 400 },
       );
     }
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
+    const existingUser = await findUserByEmail(email);
+    if (existingUser?.password) {
       return NextResponse.json(
-        { error: 'An account with this email already exists' },
-        { status: 409 }
+        { error: 'An account with this email already exists. Please sign in instead.' },
+        { status: 409 },
       );
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
+    const verifiedAt = new Date();
 
-    // Create company with all details
-    const company = await prisma.company.create({
-      data: {
-        name: companyName,
-        email: companyEmail || email,
-        phone: companyPhone,
-        address: companyAddress,
-        country: country || 'India',
-        companyType: companyType || null,
-        gstNumber: gstNumber || null,
-        uploadedDocs: documents && Object.keys(documents).length > 0 ? documents : null,
-        createdBy: email,
-        // All tools locked by default (0=locked, 1=basic, 2=subscribed, 3=premium)
-        autoBlog: 0,
-        invoiceGen: 0,
-        crmAccess: 0,
-        inventoryMgmt: 0,
-        hrPayroll: 0,
-        emailMarketing: 0,
-        aiAssistant: 0,
-        websiteGen: 0,
-        // Subscription status
-        subscriptionStatus: 'inactive',
-        // One-time token so the pre-approval document upload works without a session
-        uploadToken: crypto.randomUUID(),
-      },
+    const result = await prisma.$transaction(async (tx) => {
+      const company = await tx.company.create({
+        data: {
+          name: companyName,
+          email: companyEmail ? normalizeEmail(String(companyEmail)) : email,
+          phone: companyPhone || normalizedPhone || null,
+          address: companyAddress,
+          country: country || 'India',
+          companyType: companyType || null,
+          gstNumber: gstNumber || null,
+          uploadedDocs: documents && Object.keys(documents).length > 0 ? documents : null,
+          createdBy: email,
+          // All tools locked by default (0=locked, 1=basic, 2=subscribed, 3=premium)
+          autoBlog: 0,
+          invoiceGen: 0,
+          crmAccess: 0,
+          inventoryMgmt: 0,
+          hrPayroll: 0,
+          emailMarketing: 0,
+          aiAssistant: 0,
+          websiteGen: 0,
+          subscriptionStatus: 'inactive',
+          onboardingStatus: 'pending',
+          // One-time token so the pre-approval document upload works without a session
+          uploadToken: crypto.randomUUID(),
+        },
+      });
+
+      const user = existingUser
+        ? await tx.user.update({
+            where: { id: existingUser.id },
+            data: {
+              name: existingUser.name || name,
+              email,
+              phone: normalizedPhone || null,
+              password: hashedPassword,
+              role: 'owner',
+              companyId: company.id,
+              country: country || 'India',
+              emailVerifiedAt: verifiedAt,
+              phoneVerifiedAt: phoneVerified ? verifiedAt : null,
+            },
+          })
+        : await tx.user.create({
+            data: {
+              name,
+              email,
+              phone: normalizedPhone || null,
+              password: hashedPassword,
+              role: 'owner',
+              companyId: company.id,
+              country: country || 'India',
+              emailVerifiedAt: verifiedAt,
+              phoneVerifiedAt: phoneVerified ? verifiedAt : null,
+            },
+          });
+
+      await tx.creditBalance.create({
+        data: { companyId: company.id, balance: 100 },
+      });
+
+      return { company, user };
     });
 
-    // Create user with owner role, linked to company
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        phone: phone || null,
-        password: hashedPassword,
-        role: 'owner',
-        companyId: company.id,
-        country: country || 'India',
-      },
-    });
+    const { company, user } = result;
 
-    // Create initial credit balance for the company
-    await prisma.creditBalance.create({
-      data: {
-        companyId: company.id,
-        balance: 100, // Welcome credits
-      },
-    });
-
-    // Send welcome email
+    // Welcome email is best-effort — a mail failure must not fail signup.
     try {
       await sendEmail({
         to: email,
@@ -121,7 +171,6 @@ export async function POST(req: NextRequest) {
       console.log(`[Auth] Welcome email sent to: ${email}`);
     } catch (emailError) {
       console.error('[Auth] Welcome email failed:', emailError);
-      // Don't fail registration if email fails
     }
 
     return NextResponse.json(
@@ -135,6 +184,7 @@ export async function POST(req: NextRequest) {
           companyType: company.companyType,
           country: company.country,
           subscriptionStatus: company.subscriptionStatus,
+          onboardingStatus: company.onboardingStatus,
           tools: {
             autoBlog: company.autoBlog,
             invoiceGen: company.invoiceGen,
@@ -154,13 +204,10 @@ export async function POST(req: NextRequest) {
           companyId: user.companyId,
         },
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error('Register-company error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

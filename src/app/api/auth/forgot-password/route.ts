@@ -1,9 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendEmail, passwordResetEmailTemplate } from '@/lib/email';
+import { findUserByEmail, normalizeEmail } from '@/lib/identity';
+import { isResetThrottled, markResetRequested } from '@/lib/verification';
 import { randomBytes, createHash } from 'crypto';
 
-const BASE_URL = process.env.NEXTAUTH_URL_BASE || 'https://ainos-ywu0.onrender.com';
+/**
+ * Reset links must point at the host the user is actually on. The old code
+ * hard-coded the Render URL, so links opened on any other host (localhost,
+ * custom domain, preview deploy) either 404'd or stitched the wrong session.
+ */
+function requestOrigin(req: NextRequest): string {
+  const proto = req.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http');
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
+  if (host) return `${proto}://${host}`;
+  const fallback = process.env.NEXTAUTH_URL_BASE || process.env.NEXTAUTH_URL || 'https://ainos-ywu0.onrender.com';
+  return fallback.replace(/\/+$/, '');
+}
+
+const GENERIC_MESSAGE = 'If an account exists with that email, a reset link has been sent.';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,64 +28,63 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 });
     }
 
-    // Case-insensitive lookup: PostgreSQL is case-sensitive, so use findFirst
-    // with mode: 'insensitive' to match emails regardless of casing.
-    const user = await prisma.user.findFirst({
-      where: { email: { equals: email.toLowerCase().trim(), mode: 'insensitive' } },
-    });
+    const target = normalizeEmail(email);
+    const user = await findUserByEmail(target);
 
+    // Enumeration-safe: same response whether or not the account exists.
     if (!user) {
-      // Enumeration-safe: always return success even if user doesn't exist
-      return NextResponse.json({ message: 'If an account exists with that email, a reset link has been sent.' });
+      return NextResponse.json({ message: GENERIC_MESSAGE });
     }
 
     if (!user.password) {
-      return NextResponse.json({ error: 'This account uses Google sign-in. Please sign in with Google.' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'This account uses Google sign-in. Please continue with Google.' },
+        { status: 400 },
+      );
     }
 
-    // Generate secure reset token
+    if (await isResetThrottled(target)) {
+      return NextResponse.json(
+        { error: 'Too many reset requests. Please wait 15 minutes and try again.' },
+        { status: 429 },
+      );
+    }
+
     const resetToken = randomBytes(32).toString('hex');
     const resetTokenHash = createHash('sha256').update(resetToken).digest('hex');
     const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    // Store hashed token in database
     await prisma.user.update({
       where: { id: user.id },
-      data: {
-        resetToken: resetTokenHash,
-        resetTokenExpiry,
-      },
+      data: { resetToken: resetTokenHash, resetTokenExpiry },
     });
 
-    // Build reset URL
-    const resetUrl = `${BASE_URL}/auth/reset-password?token=${resetToken}`;
+    const resetUrl = `${requestOrigin(req)}/auth/reset-password?token=${resetToken}`;
 
-    // Send email via Brevo
     try {
       await sendEmail({
         to: user.email,
-        subject: 'Reset Your AINOS Password',
+        subject: 'Reset your AINOS password',
         html: passwordResetEmailTemplate(resetUrl),
       });
-      console.log('[Auth] Reset email sent via Brevo to:', user.email);
+      console.log('[Auth] Reset email accepted for:', user.email);
     } catch (err) {
-      const errMsg = (err as Error)?.message || 'Unknown error';
-      console.error('[Auth] Brevo email failed:', errMsg);
-      // Clear the token if email fails
+      console.error('[Auth] Reset email failed:', (err as Error)?.message);
       await prisma.user.update({
         where: { id: user.id },
         data: { resetToken: null, resetTokenExpiry: null },
       });
       return NextResponse.json(
-        { error: 'Could not send the reset email. Please try again later.' },
-        { status: 500 }
+        { error: 'We could not send the reset email. Please try again in a few minutes.' },
+        { status: 502 },
       );
     }
 
-    return NextResponse.json({
-      message: 'If an account exists with that email, a reset link has been sent.',
-    });
-  } catch {
+    await markResetRequested(target);
+
+    return NextResponse.json({ message: GENERIC_MESSAGE });
+  } catch (err) {
+    console.error('[Auth] forgot-password error:', err);
     return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });
   }
 }

@@ -150,9 +150,31 @@ model User {
   password  String?
   resetToken String? @map("reset_token")
   resetTokenExpiry DateTime? @map("reset_token_expiry")
+  emailVerifiedAt DateTime? @map("email_verified_at")
+  phoneVerifiedAt DateTime? @map("phone_verified_at")
   company   Company? @relation(fields: [companyId], references: [id])
 
   @@map("users")
+}
+
+// ── OTP / verification ledger ──────────────────────────────────────────────
+// One row per code issued. Codes are stored hashed, never in plain text.
+// purpose: signup_email | signup_phone | reset_email | reset_request
+model VerificationCode {
+  id         String    @id @default(uuid())
+  channel    String    // email | phone
+  target     String    // normalised email address or E.164 phone number
+  purpose    String
+  codeHash   String    @map("code_hash")
+  expiresAt  DateTime  @map("expires_at")
+  attempts   Int       @default(0)
+  consumedAt DateTime? @map("consumed_at")
+  ipAddress  String?   @map("ip_address")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([channel, target, purpose])
+  @@index([expiresAt])
+  @@map("verification_codes")
 }
 
 model Contact {

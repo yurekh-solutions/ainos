@@ -2,11 +2,11 @@
 
 import { motion } from 'framer-motion';
 import { ArrowLeft, Lock, Loader2, AlertCircle, CheckCircle, KeyRound, Eye, EyeOff, LinkIcon } from 'lucide-react';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token') || '';
   const isValidLink = token.length > 0;
@@ -202,5 +202,21 @@ export default function ResetPasswordPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+// useSearchParams() must sit inside a Suspense boundary, otherwise the page
+// cannot be prerendered and the production build fails.
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#f8f7fc] flex items-center justify-center px-4 py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-purple-700" />
+        </div>
+      }
+    >
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
