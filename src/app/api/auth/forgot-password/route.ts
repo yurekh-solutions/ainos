@@ -36,13 +36,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: GENERIC_MESSAGE });
     }
 
-    if (!user.password) {
-      return NextResponse.json(
-        { error: 'This account uses Google sign-in. Please continue with Google.' },
-        { status: 400 },
-      );
-    }
-
+    // Every account may reset, including password-less rows created by an
+    // earlier Google sign-in: opening the link proves the owner controls the
+    // inbox, and new signups claim such rows the same way. Refusing here used
+    // to dead-end those accounts, since Google sign-in is gated to registered
+    // emails and they had no password to fall back on.
     if (await isResetThrottled(target)) {
       return NextResponse.json(
         { error: 'Too many reset requests. Please wait 15 minutes and try again.' },

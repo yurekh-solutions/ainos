@@ -46,19 +46,30 @@ function senderEmail(from: string): string {
 }
 
 /**
- * Mail clients have no site context, so the brand mark needs an absolute URL.
- * Callers that already know the host (the reset link) pass it in; otherwise we
- * fall back to the configured app URL and finally to production.
+ * Mail clients fetch images from their own servers, so a loopback host can
+ * never be used — Gmail shows a broken-image icon instead. Pick the first
+ * configured base that a mail client can actually reach.
  */
-function brandLogoUrl(origin?: string): string {
-  const base = (
-    origin ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.NEXTAUTH_URL_BASE ||
-    process.env.NEXTAUTH_URL ||
-    'https://ainos-ywu0.onrender.com'
-  ).replace(/\/+$/, '');
-  return `${base}/ainos-wordmark.png`;
+function publicBaseUrl(preferred?: string): string {
+  const candidates = [
+    preferred,
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.NEXTAUTH_URL_BASE,
+    process.env.NEXTAUTH_URL,
+    'https://ainos-ywu0.onrender.com',
+  ];
+
+  for (const raw of candidates) {
+    if (!raw) continue;
+    const base = raw.replace(/\/+$/, '');
+    if (/^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?$/i.test(base)) continue;
+    return base;
+  }
+  return 'https://ainos-ywu0.onrender.com';
+}
+
+function brandLogoUrl(preferred?: string): string {
+  return `${publicBaseUrl(preferred)}/ainos-alpha.png`;
 }
 
 async function sendViaSmtp({ to, subject, html, from }: SendEmailOptions): Promise<void> {
@@ -135,7 +146,7 @@ export function otpEmailTemplate({ code, heading, intro, expiryMinutes }: {
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 24px; background: #f8f7fc;">
       <div style="background: white; border-radius: 16px; padding: 40px 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
         <div style="text-align: center; margin-bottom: 28px;">
-          <img src="${brandLogoUrl()}" width="140" alt="AINOS" style="display: block; width: 140px; height: auto; margin: 0 auto 16px; border: 0; outline: none; text-decoration: none;">
+          <img src="${brandLogoUrl()}" width="68" alt="AINOS" style="display: block; width: 68px; height: auto; margin: 0 auto 16px; border: 0; outline: none; text-decoration: none;">
           <h1 style="margin: 0; font-size: 22px; font-weight: 700; color: #111827;">${heading}</h1>
           <p style="margin: 8px 0 0; font-size: 14px; color: #6b7280; line-height: 1.6;">${intro}</p>
         </div>
@@ -168,8 +179,8 @@ export function otpEmailTemplate({ code, heading, intro, expiryMinutes }: {
  * Password reset email template.
  */
 export function passwordResetEmailTemplate(resetUrl: string): string {
-  // Reuse the reset link's host so the logo always loads from the deployment
-  // the user is actually on (localhost, Render, custom domain, preview).
+  // The reset link may live on localhost during development; the logo is
+  // filtered to a public host above so the mail still renders correctly.
   let origin: string | undefined;
   try { origin = new URL(resetUrl).origin; } catch { origin = undefined; }
 
@@ -177,13 +188,15 @@ export function passwordResetEmailTemplate(resetUrl: string): string {
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 24px; background: #f8f7fc;">
       <div style="background: white; border-radius: 16px; padding: 40px 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
         <div style="text-align: center; margin-bottom: 32px;">
-          <img src="${brandLogoUrl(origin)}" width="148" alt="AINOS" style="display: block; width: 148px; height: auto; margin: 0 auto 18px; border: 0; outline: none; text-decoration: none;">
+          <img src="${brandLogoUrl(origin)}" width="68" alt="AINOS" style="display: block; width: 68px; height: auto; margin: 0 auto 18px; border: 0; outline: none; text-decoration: none;">
           <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #111827;">Reset Your Password</h1>
           <p style="margin: 8px 0 0; font-size: 14px; color: #6b7280;">You requested a password reset for your AINOS account.</p>
         </div>
 
         <div style="text-align: center; margin: 32px 0;">
           <a href="${resetUrl}" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 15px;">Reset Password</a>
+          <p style="margin: 16px 0 4px; font-size: 11px; color: #9ca3af;">Button not working? Paste this link into your browser:</p>
+          <p style="margin: 0; font-size: 11px; color: #6d28d9; line-height: 1.5; word-break: break-all;">${resetUrl}</p>
         </div>
 
         <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; margin: 24px 0;">

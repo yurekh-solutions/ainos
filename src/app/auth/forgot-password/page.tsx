@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowLeft, Mail, Loader2, AlertCircle, CheckCircle, KeyRound } from 'lucide-react';
+import { ArrowLeft, Mail, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { useState } from 'react';
 import Link from 'next/link';
 
@@ -61,9 +61,8 @@ export default function ForgotPasswordPage() {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden">
           {/* Header */}
           <div className="px-8 pt-8 pb-6 text-center border-b border-gray-50">
-            <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%)' }}>
-              <KeyRound className="w-7 h-7 text-white" />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/ainos-alpha.png" alt="AINOS" className="w-16 h-auto mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-1.5">Forgot Password?</h2>
             <p className="text-sm text-gray-500">Enter your email to receive a reset link</p>
           </div>

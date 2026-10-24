@@ -14,9 +14,24 @@ export type SmsProvider = 'msg91' | 'fast2sms' | 'twilio';
 
 export function smsProvider(): SmsProvider | null {
   const configured = (process.env.SMS_PROVIDER || '').toLowerCase();
+
+  const ready: Record<SmsProvider, boolean> = {
+    msg91: Boolean(process.env.MSG91_AUTH_KEY && process.env.MSG91_TEMPLATE_ID),
+    fast2sms: Boolean(process.env.FAST2SMS_API_KEY),
+    twilio: Boolean(
+      process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM,
+    ),
+  };
+
   if (configured === 'msg91' && process.env.MSG91_AUTH_KEY) return 'msg91';
   if (configured === 'fast2sms' && process.env.FAST2SMS_API_KEY) return 'fast2sms';
   if (configured === 'twilio' && process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) return 'twilio';
+
+  // No explicit choice: use whichever provider actually has credentials, so
+  // pasting a key is enough to switch phone OTP on.
+  if (ready.msg91) return 'msg91';
+  if (ready.fast2sms) return 'fast2sms';
+  if (ready.twilio) return 'twilio';
   return null;
 }
 

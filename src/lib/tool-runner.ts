@@ -30,11 +30,18 @@ async function fetchImageAsBase64(url: string): Promise<string> {
   }
 }
 
-async function aiText(prompt: string): Promise<string> {
+async function aiText(prompt: string, attempt = 0): Promise<string> {
   const res = await fetch('https://text.pollinations.ai/' + encodeURIComponent(prompt), {
     signal: AbortSignal.timeout(60000),
   })
-  if (!res.ok) throw new Error('AI provider error (status ' + res.status + ')')
+  if (!res.ok) {
+    // The public text endpoint rejects bursts with 402/429; one paced retry clears it.
+    if ((res.status === 402 || res.status === 429) && attempt < 2) {
+      await new Promise(resolve => setTimeout(resolve, 1500 * (attempt + 1)))
+      return aiText(prompt, attempt + 1)
+    }
+    throw new Error('AI provider error (status ' + res.status + ')')
+  }
   return (await res.text()).trim()
 }
 
@@ -73,15 +80,22 @@ const socialGenerator: ToolHandler = async input => {
     Instagram: 'casual and friendly, use emojis, end with exactly 5 relevant hashtags',
     Facebook: 'warm community tone, 1-2 emojis, ask a question at the end to drive comments',
   }
-  const posts = await Promise.all(
-    Object.entries(rules).map(async ([platform, rule]) => {
+  const posts: { platform: string; content: string }[] = []
+  const failed: { platform: string; error: string }[] = []
+  // The text provider rejects concurrent bursts, so the calls are paced one at a
+  // time. A platform that still fails is reported instead of sinking the batch.
+  for (const [platform, rule] of Object.entries(rules)) {
+    try {
       const content = await aiText(
         `Write ONE ${platform} post about: ${topic}. Rule: ${rule}. Return ONLY the post text, nothing else.`
       )
-      return { platform, content }
-    })
-  )
-  return { topic, posts }
+      posts.push({ platform, content })
+    } catch (err) {
+      failed.push({ platform, error: err instanceof Error ? err.message : 'generation failed' })
+    }
+  }
+  if (!posts.length) throw new Error(failed[0]?.error || 'Post generation failed')
+  return { topic, posts, ...(failed.length ? { failed } : {}) }
 }
 
 const leadScoring: ToolHandler = async (input, ctx) => {

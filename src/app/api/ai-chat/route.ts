@@ -57,6 +57,9 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { message, sessionId } = await req.json();
+    if (typeof message !== 'string' || !message.trim()) {
+      return NextResponse.json({ error: 'Message is required' }, { status: 400 });
+    }
     const userId = session.user.id || session.user.email;
 
     const user = await prisma.user.findUnique({ where: { email: session.user.email } });
@@ -85,7 +88,7 @@ export async function POST(req: NextRequest) {
         model: 'openai',
         messages: [
           { role: 'system', content: context },
-          { role: 'user', content: message },
+          { role: 'user', content: message.trim() },
         ],
       }),
     });
