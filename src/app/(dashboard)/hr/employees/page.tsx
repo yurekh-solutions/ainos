@@ -1,27 +1,24 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, Users, Search, Mail, Phone, CheckCircle2, AlertCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Plus, X, Users, Search, Mail, Phone } from 'lucide-react';
+import { useToast } from '@/lib/toast';
 
 interface Employee { id: string; name: string; email?: string; phone?: string; department: string; position: string; joinDate: string; salary: number; status: string; }
 
 export default function EmployeesPage() {
+  const { toast } = useToast();
+  const { error: toastError } = toast;
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', phone: '', department: '', position: '', joinDate: '', salary: '' });
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   const fetchEmployees = useCallback(async () => {
-    try { const res = await fetch('/api/employees'); if (res.ok) setEmployees(await res.json()); else showToast('Failed to load employees', 'error'); } catch (e) { console.error(e); showToast('Failed to load employees', 'error'); }
+    try { const res = await fetch('/api/employees'); if (res.ok) setEmployees(await res.json()); else toastError('Failed to load employees'); } catch (e) { console.error(e); toastError('Failed to load employees'); }
     finally { setLoading(false); }
-  }, []);
+  }, [toastError]);
 
   useEffect(() => { fetchEmployees(); }, [fetchEmployees]);
 
@@ -29,9 +26,9 @@ export default function EmployeesPage() {
     e.preventDefault();
     try {
       const res = await fetch('/api/employees', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, salary: Number(form.salary) }) });
-      if (res.ok) { setForm({ name: '', email: '', phone: '', department: '', position: '', joinDate: '', salary: '' }); setShowForm(false); fetchEmployees(); showToast('Employee added successfully'); }
-      else { showToast('Failed to add employee', 'error'); }
-    } catch (e) { console.error(e); showToast('Failed to add employee', 'error'); }
+      if (res.ok) { setForm({ name: '', email: '', phone: '', department: '', position: '', joinDate: '', salary: '' }); setShowForm(false); fetchEmployees(); toast.success('Employee added successfully'); }
+      else { toast.error('Failed to add employee'); }
+    } catch (e) { console.error(e); toast.error('Failed to add employee'); }
   };
 
   const filtered = employees.filter(e => e.name.toLowerCase().includes(search.toLowerCase()) || e.department.toLowerCase().includes(search.toLowerCase()));
@@ -126,17 +123,6 @@ export default function EmployeesPage() {
           </div>
         )}
 
-        {/* Toast Notification */}
-        <AnimatePresence>
-          {toast && (
-            <motion.div initial={{ opacity: 0, y: 50, x: '-50%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
-              className="fixed bottom-6 left-1/2 z-[100] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl"
-              style={{ background: toast.type === 'success' ? 'hsl(142 76% 36%)' : 'hsl(0 72% 51%)', color: 'white' }}>
-              {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-              <span className="text-sm font-medium">{toast.message}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </div>
   );

@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft, Zap, Coins, Play, Loader2, CheckCircle, AlertCircle,
+  ArrowLeft, ArrowRight, Zap, Coins, Play, Loader2, CheckCircle, AlertCircle,
   Copy, Check, Download, Plus, Trash2, FileText, Mail, Users, BarChart3, Share2, PenLine, Table2, Upload,
+  Sparkles, Palette, Search, Megaphone, Rocket, ImageIcon, QrCode, Presentation, ShoppingBag,
+  Briefcase, Scale, MessageCircle, BookOpen, Bot, Globe, Package, UserCog, ExternalLink,
 } from 'lucide-react';
 
 interface Tool {
@@ -64,6 +66,28 @@ interface ToolOutput {
     amountPaid?: number;
     balance?: number;
   };
+  // AI Studio deliverables (src/lib/ai-tools.ts)
+  headline?: string;
+  sections?: { title: string; body: string }[];
+  images?: { label: string; url: string }[];
+  palette?: { hex: string; name: string }[];
+  aiUsed?: boolean;
+  creditsUsed?: number;
+  creditsBalance?: number;
+  // Auto Blog
+  title?: string;
+  body?: string;
+  metaDescription?: string;
+  // AI Assistant
+  question?: string;
+  answer?: string;
+  // Website Generator
+  html?: string;
+  businessName?: string;
+  pageCount?: number;
+  // Subscription redirect
+  redirect?: string;
+  moduleName?: string;
 }
 
 interface ToolResult {
@@ -81,7 +105,215 @@ const SLUG_ICONS: Record<string, typeof Zap> = {
   'invoice-extractor': Upload,
   'email-campaign-sender': Mail,
   'data-export': Table2,
+  // AI Studio deliverables (src/lib/ai-tools.ts)
+  logo: Palette,
+  brandkit: Sparkles,
+  social: Share2,
+  content: PenLine,
+  seo: Search,
+  email: Mail,
+  pr: Megaphone,
+  launch: Rocket,
+  poster: ImageIcon,
+  qr: QrCode,
+  pitchdeck: Presentation,
+  listing: ShoppingBag,
+  bizplan: Briefcase,
+  legal: Scale,
+  chatbot: MessageCircle,
+  // Subscription / company modules
+  autoBlog: BookOpen,
+  aiAssistant: Bot,
+  websiteGen: Globe,
+  invoiceGen: FileText,
+  crmAccess: Users,
+  inventoryMgmt: Package,
+  hrPayroll: UserCog,
+  emailMarketing: Mail,
 };
+
+// ─── Input forms for the AI Studio tools ────────────────────────────────────
+// One config per slug drives both the form and the payload, so a new tool is a
+// config entry rather than new markup.
+
+type FieldType = 'text' | 'textarea' | 'select' | 'color' | 'number';
+
+interface FieldConfig {
+  key: string;
+  label: string;
+  type: FieldType;
+  placeholder?: string;
+  required?: boolean;
+  options?: { value: string; label: string }[]; // for select
+}
+
+const TOOL_FIELDS: Record<string, FieldConfig[]> = {
+  logo: [
+    { key: 'businessName', label: 'Business Name', type: 'text', placeholder: 'e.g. Yurekh Solutions', required: true },
+    { key: 'industry', label: 'Industry', type: 'text', placeholder: 'e.g. Technology, Restaurant, Fashion' },
+    { key: 'colors', label: 'Preferred Colors', type: 'text', placeholder: 'e.g. blue and gold, earth tones' },
+  ],
+  brandkit: [
+    { key: 'businessName', label: 'Business Name', type: 'text', placeholder: 'e.g. Yurekh Solutions', required: true },
+    { key: 'industry', label: 'Industry', type: 'text', placeholder: 'e.g. Technology' },
+    { key: 'primaryColor', label: 'Primary Color', type: 'color' },
+  ],
+  social: [
+    { key: 'businessName', label: 'Business Name', type: 'text', placeholder: 'e.g. Yurekh Solutions', required: true },
+    { key: 'industry', label: 'Industry', type: 'text', placeholder: 'e.g. Fashion' },
+    { key: 'platform', label: 'Platform', type: 'select', options: [
+      { value: 'Instagram', label: 'Instagram' }, { value: 'LinkedIn', label: 'LinkedIn' },
+      { value: 'Twitter', label: 'Twitter/X' }, { value: 'Facebook', label: 'Facebook' },
+    ] },
+    { key: 'topic', label: 'Topic / Theme', type: 'text', placeholder: 'e.g. Diwali sale, new collection launch' },
+  ],
+  content: [
+    { key: 'businessName', label: 'Business Name', type: 'text', placeholder: 'e.g. Yurekh Solutions', required: true },
+    { key: 'industry', label: 'Industry', type: 'text', placeholder: 'e.g. Technology' },
+    { key: 'topic', label: 'Topic', type: 'text', placeholder: 'e.g. Benefits of GST compliance', required: true },
+    { key: 'contentType', label: 'Content Type', type: 'select', options: [
+      { value: 'blog', label: 'Blog Post' }, { value: 'ad', label: 'Ad Copy' },
+    ] },
+    { key: 'keywords', label: 'Keywords', type: 'text', placeholder: 'e.g. GST, compliance, small business' },
+  ],
+  seo: [
+    { key: 'businessName', label: 'Business Name', type: 'text', placeholder: 'e.g. Yurekh Solutions', required: true },
+    { key: 'industry', label: 'Industry', type: 'text', placeholder: 'e.g. Technology' },
+    { key: 'pageTopic', label: 'Page Topic', type: 'text', placeholder: 'e.g. web development services', required: true },
+    { key: 'location', label: 'Location', type: 'text', placeholder: 'e.g. Mumbai, Delhi NCR' },
+    { key: 'keywords', label: 'Extra Keywords', type: 'text', placeholder: 'Comma-separated keywords' },
+  ],
+  email: [
+    { key: 'businessName', label: 'Business Name', type: 'text', placeholder: 'e.g. Yurekh Solutions', required: true },
+    { key: 'industry', label: 'Industry', type: 'text', placeholder: 'e.g. Technology' },
+    { key: 'goal', label: 'Campaign Goal', type: 'select', options: [
+      { value: 'promotion', label: 'Promotion' }, { value: 'announcement', label: 'Announcement' },
+      { value: 'nurture', label: 'Nurture / Follow-up' }, { value: 'reactivation', label: 'Re-activation' },
+    ] },
+    { key: 'audience', label: 'Target Audience', type: 'text', placeholder: 'e.g. existing customers, new leads' },
+    { key: 'offer', label: 'Offer / Message', type: 'text', placeholder: 'e.g. 20% off annual plans' },
+  ],
+  pr: [
+    { key: 'businessName', label: 'Business Name', type: 'text', placeholder: 'e.g. Yurekh Solutions', required: true },
+    { key: 'announcement', label: 'Announcement', type: 'text', placeholder: 'e.g. Yurekh launches AI-powered business suite', required: true },
+    { key: 'spokesperson', label: 'Spokesperson', type: 'text', placeholder: 'e.g. John Doe, CEO' },
+    { key: 'city', label: 'City', type: 'text', placeholder: 'e.g. Mumbai' },
+  ],
+  launch: [
+    { key: 'businessName', label: 'Business Name', type: 'text', placeholder: 'e.g. Yurekh Solutions', required: true },
+    { key: 'productName', label: 'Product / Service Name', type: 'text', placeholder: 'e.g. AINOS Business Suite', required: true },
+    { key: 'budgetLevel', label: 'Budget Level', type: 'select', options: [
+      { value: 'lean', label: 'Lean (organic only)' }, { value: 'standard', label: 'Standard' }, { value: 'premium', label: 'Premium' },
+    ] },
+  ],
+  poster: [
+    { key: 'businessName', label: 'Business Name', type: 'text', placeholder: 'e.g. Yurekh Solutions', required: true },
+    { key: 'industry', label: 'Industry', type: 'text', placeholder: 'e.g. Restaurant' },
+    { key: 'message', label: 'Poster Message', type: 'text', placeholder: 'e.g. Grand Opening — 50% off this weekend', required: true },
+    { key: 'style', label: 'Style', type: 'select', options: [
+      { value: 'modern', label: 'Modern' }, { value: 'vintage', label: 'Vintage' },
+      { value: 'minimal', label: 'Minimal' }, { value: 'bold', label: 'Bold & Colorful' },
+    ] },
+  ],
+  qr: [
+    { key: 'qrData', label: 'URL or Text to Encode', type: 'text', placeholder: 'e.g. https://yurekh.com', required: true },
+    { key: 'qrColor', label: 'QR Color', type: 'color' },
+  ],
+  pitchdeck: [
+    { key: 'businessName', label: 'Business Name', type: 'text', placeholder: 'e.g. Yurekh Solutions', required: true },
+    { key: 'industry', label: 'Industry', type: 'text', placeholder: 'e.g. SaaS, EdTech' },
+    { key: 'problem', label: 'Problem You Solve', type: 'textarea', placeholder: 'What pain point does your product address?' },
+    { key: 'product', label: 'Your Product / Solution', type: 'text', placeholder: 'Brief product description' },
+    { key: 'askAmount', label: 'Funding Ask', type: 'text', placeholder: 'e.g. ₹50 lakh, $100K' },
+    { key: 'traction', label: 'Traction (optional)', type: 'textarea', placeholder: 'Revenue, users, growth rate...' },
+  ],
+  listing: [
+    { key: 'businessName', label: 'Brand Name', type: 'text', placeholder: 'e.g. Yurekh', required: true },
+    { key: 'productName', label: 'Product Name', type: 'text', placeholder: 'e.g. Wireless Earbuds Pro', required: true },
+    { key: 'category', label: 'Category', type: 'text', placeholder: 'e.g. Electronics, Fashion' },
+    { key: 'platform', label: 'Platform', type: 'select', options: [
+      { value: 'Amazon', label: 'Amazon' }, { value: 'Flipkart', label: 'Flipkart' },
+      { value: 'Meesho', label: 'Meesho' }, { value: 'Shopify', label: 'Shopify' },
+    ] },
+    { key: 'features', label: 'Key Features', type: 'text', placeholder: 'Comma-separated: Noise cancelling, 24hr battery, IPX5' },
+    { key: 'price', label: 'Price', type: 'text', placeholder: 'e.g. ₹1,999' },
+  ],
+  bizplan: [
+    { key: 'businessName', label: 'Business Name', type: 'text', placeholder: 'e.g. Yurekh Solutions', required: true },
+    { key: 'industry', label: 'Industry', type: 'text', placeholder: 'e.g. Technology' },
+    { key: 'description', label: 'Business Description', type: 'textarea', placeholder: 'What does your business do?', required: true },
+    { key: 'startupCost', label: 'Startup Cost (₹)', type: 'number', placeholder: 'e.g. 200000' },
+    { key: 'monthlyPrice', label: 'Monthly Price per Customer (₹)', type: 'number', placeholder: 'e.g. 1000' },
+    { key: 'targetCustomers', label: 'Year-1 Target Customers', type: 'number', placeholder: 'e.g. 100' },
+  ],
+  legal: [
+    { key: 'businessName', label: 'Business Name', type: 'text', placeholder: 'e.g. Yurekh Solutions', required: true },
+    { key: 'websiteUrl', label: 'Website URL', type: 'text', placeholder: 'e.g. https://yurekh.com' },
+    { key: 'contactEmail', label: 'Contact Email', type: 'text', placeholder: 'e.g. hello@yurekh.com' },
+    { key: 'country', label: 'Country', type: 'text', placeholder: 'e.g. India' },
+    { key: 'collectsPayments', label: 'Collects Payments Online?', type: 'select', options: [
+      { value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' },
+    ] },
+  ],
+  chatbot: [
+    { key: 'businessName', label: 'Business Name', type: 'text', placeholder: 'e.g. Yurekh Solutions', required: true },
+    { key: 'industry', label: 'Industry', type: 'text', placeholder: 'e.g. Technology' },
+    { key: 'websiteUrl', label: 'Website URL', type: 'text', placeholder: 'https://yoursite.com' },
+    { key: 'whatsapp', label: 'WhatsApp Number', type: 'text', placeholder: 'e.g. 919876543210' },
+    { key: 'brandColor', label: 'Brand Color', type: 'color' },
+    { key: 'faqs', label: 'FAQs (Q: ... A: ... per line)', type: 'textarea', placeholder: 'Q: What do you offer?\nA: We offer...' },
+  ],
+  autoBlog: [
+    { key: 'topic', label: 'Blog Topic', type: 'text', placeholder: 'e.g. Top 10 business trends in 2025', required: true },
+    { key: 'tone', label: 'Tone', type: 'select', options: [
+      { value: 'professional', label: 'Professional' }, { value: 'casual', label: 'Casual' },
+      { value: 'educational', label: 'Educational' }, { value: 'persuasive', label: 'Persuasive' },
+    ] },
+    { key: 'targetAudience', label: 'Target Audience', type: 'text', placeholder: 'e.g. Small business owners' },
+  ],
+  aiAssistant: [
+    { key: 'question', label: 'Your Question', type: 'textarea', placeholder: 'Ask anything about business, marketing, finance...', required: true },
+    { key: 'context', label: 'Business Context (optional)', type: 'textarea', placeholder: 'Brief background about your business for more relevant answers' },
+  ],
+  websiteGen: [
+    { key: 'businessName', label: 'Business Name', type: 'text', placeholder: 'e.g. Yurekh Solutions', required: true },
+    { key: 'industry', label: 'Industry', type: 'text', placeholder: 'e.g. Technology, Restaurant' },
+    { key: 'description', label: 'Business Description', type: 'textarea', placeholder: 'What does your business do? What services/products?', required: true },
+    { key: 'primaryColor', label: 'Primary Color', type: 'color' },
+  ],
+};
+
+// Tools that ship with a subscription — the work happens inside the app itself
+const SUBSCRIPTION_REDIRECTS: Record<string, string> = {
+  invoiceGen: '/invoices',
+  crmAccess: '/crm',
+  inventoryMgmt: '/inventory',
+  hrPayroll: '/hr',
+  emailMarketing: '/marketing',
+};
+
+// Per-tool primary action label — everything else falls back to the shape of
+// the form (deliverable generators vs. data tools).
+const ACTION_LABELS: Record<string, string> = {
+  'lead-scoring-ai': 'Score My Leads',
+  autoBlog: 'Write Article',
+  aiAssistant: 'Ask AINOS',
+  websiteGen: 'Generate Website',
+};
+
+function defaultFieldValue(f: FieldConfig): string {
+  if (f.type === 'color') return f.key === 'qrColor' ? '#000000' : '#6d5df6';
+  if (f.type === 'select' && f.options?.length) return f.options[0].value;
+  return '';
+}
+
+// Defaults are derived, not stored: the form is correct on first paint and after
+// switching tools, with no reset effect and no cascading renders.
+function collectFieldValues(fields: FieldConfig[] | undefined, values: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const f of fields || []) out[f.key] = (values[f.key] ?? defaultFieldValue(f)).trim();
+  return out;
+}
 
 const inputCls =
   'w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all';
@@ -95,6 +327,14 @@ export default function ToolExecutePage() {
   const [executing, setExecuting] = useState(false);
   const [result, setResult] = useState<ToolResult | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  // Config-driven fields for the AI Studio tools (one state object, not 60)
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
+
+  const fields = TOOL_FIELDS[slug];
+  const subscriptionTarget = SUBSCRIPTION_REDIRECTS[slug];
+  const missingRequired = (fields || [])
+    .filter(f => f.required && !(formValues[f.key] ?? defaultFieldValue(f)).trim())
+    .map(f => f.label);
 
   // generic fields
   const [topic, setTopic] = useState('');
@@ -122,6 +362,8 @@ export default function ToolExecutePage() {
   }, [slug]);
 
   const buildInput = (): Record<string, unknown> => {
+    // AI Studio tools submit the configured fields verbatim
+    if (fields) return collectFieldValues(fields, formValues);
     switch (slug) {
       case 'invoice-generator':
         return {
@@ -152,6 +394,8 @@ export default function ToolExecutePage() {
     setResult(null);
     setCopied(null);
     try {
+      // Every tool — AI Studio, original and Business Suite — runs through one
+      // registry: POST /api/tools/execute with { toolSlug, input }.
       const res = await fetch('/api/tools/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -198,6 +442,44 @@ export default function ToolExecutePage() {
 
   const Icon = SLUG_ICONS[slug] || Zap;
   const out = result?.output;
+
+  // Subscription tools have no form — point the user at the live feature
+  if (subscriptionTarget) {
+    return (
+      <div className="p-4 md:p-6 max-w-4xl mx-auto">
+        <button
+          onClick={() => router.push('/tools')}
+          className="flex items-center gap-2 text-gray-500 hover:text-gray-900 mb-6 transition-colors text-sm font-medium"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Tools
+        </button>
+
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+              <Icon className="w-6 h-6 text-white" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{tool.name}</h1>
+              <p className="text-gray-500 text-sm">{tool.description}</p>
+            </div>
+          </div>
+          <div className="text-center py-8">
+            <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Included in Your Subscription</h3>
+            <p className="text-gray-500 mb-4">This feature is already available in your dashboard.</p>
+            <button
+              onClick={() => router.push(subscriptionTarget)}
+              className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-sm"
+            >
+              Go to {tool.name}
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto">
@@ -390,13 +672,86 @@ export default function ToolExecutePage() {
           </div>
         )}
 
+        {fields && (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-purple-50 border border-purple-100 px-4 py-3 text-sm text-purple-700 flex items-start gap-2">
+              <Sparkles className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              Fill this in once — AINOS generates the finished deliverable, ready to copy, download or print.
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {fields.map(f => {
+                const value = formValues[f.key] ?? defaultFieldValue(f);
+                return (
+                  <div key={f.key} className={f.type === 'textarea' ? 'sm:col-span-2' : ''}>
+                    <label className={labelCls}>
+                      {f.label}{f.required && <span className="text-purple-500"> *</span>}
+                    </label>
+                    {f.type === 'textarea' ? (
+                      <textarea
+                        rows={4}
+                        value={value}
+                        placeholder={f.placeholder}
+                        onChange={e => setFormValues(v => ({ ...v, [f.key]: e.target.value }))}
+                        className={inputCls + ' resize-y'}
+                      />
+                    ) : f.type === 'select' ? (
+                      <select
+                        value={value}
+                        onChange={e => setFormValues(v => ({ ...v, [f.key]: e.target.value }))}
+                        className={inputCls}
+                      >
+                        {(f.options || []).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                    ) : f.type === 'color' ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={/^#[0-9a-fA-F]{6}$/.test(value) ? value : '#000000'}
+                          aria-label={f.label}
+                          onChange={e => setFormValues(v => ({ ...v, [f.key]: e.target.value }))}
+                          className="w-11 h-11 p-1 bg-white border border-gray-200 rounded-xl cursor-pointer flex-shrink-0"
+                        />
+                        <input
+                          type="text"
+                          value={value}
+                          placeholder="#6d5df6"
+                          onChange={e => setFormValues(v => ({ ...v, [f.key]: e.target.value }))}
+                          className={inputCls + ' font-mono uppercase'}
+                        />
+                      </div>
+                    ) : (
+                      <input
+                        type={f.type === 'number' ? 'number' : 'text'}
+                        value={value}
+                        placeholder={f.placeholder}
+                        onChange={e => setFormValues(v => ({ ...v, [f.key]: e.target.value }))}
+                        className={inputCls}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {fields && missingRequired.length > 0 && (
+          <p className="mt-4 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+            Still needed: {missingRequired.join(', ')}
+          </p>
+        )}
+
         <button
           onClick={handleExecute}
-          disabled={executing}
+          disabled={executing || missingRequired.length > 0}
           className="mt-6 w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
         >
-          {executing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5" />}
-          {executing ? 'Working...' : slug === 'lead-scoring-ai' ? 'Score My Leads' : 'Run Tool'}
+          {executing
+            ? <Loader2 className="w-5 h-5 animate-spin" />
+            : fields ? <Sparkles className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+          {executing
+            ? 'Working...'
+            : ACTION_LABELS[slug] || (fields ? 'Generate Deliverable' : 'Run Tool')}
         </button>
       </motion.div>
 
@@ -414,7 +769,85 @@ export default function ToolExecutePage() {
             )}
           </div>
 
-          {result.error && <p className="text-red-600 text-sm">{result.error}</p>}
+          {result.error && (
+            <div className="text-sm text-red-600 whitespace-pre-wrap">{result.error}</div>
+          )}
+
+          {/* Subscription tools answer with a pointer into the live module */}
+          {result.success && out?.redirect && (
+            <div className="text-center py-4">
+              <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" />
+              <p className="text-sm text-gray-600 mb-4">{out.message}</p>
+              <button onClick={() => router.push(String(out.redirect))}
+                className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all">
+                Open {out.moduleName}
+              </button>
+            </div>
+          )}
+
+          {/* AI Studio deliverables — headline, palette, assets and copy-ready sections */}
+          {result.success && out?.headline && <StudioOutput out={out} copied={copied} onCopy={copyText} />}
+
+          {/* Auto Blog — finished article with meta description */}
+          {result.success && slug === 'autoBlog' && out?.body && (
+            <div className="space-y-4">
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">{out.title}</h3>
+                <p className="text-xs text-gray-500 mb-3">{out.wordCount} words | Meta: {out.metaDescription}</p>
+                <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto">{out.body}</div>
+              </div>
+              <button onClick={() => copyText('blog', `${String(out.title || '')}\n\n${String(out.body || '')}`)} className="flex items-center gap-1.5 text-sm font-medium text-purple-600 hover:text-purple-700">
+                {copied === 'blog' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} {copied === 'blog' ? 'Copied' : 'Copy Article'}
+              </button>
+            </div>
+          )}
+
+          {/* AI Assistant — question plus answer */}
+          {result.success && slug === 'aiAssistant' && out?.answer && (
+            <div className="space-y-3">
+              <div className="p-3 bg-purple-50 rounded-xl text-sm text-purple-800">
+                <span className="font-medium">Q:</span> {out.question}
+              </div>
+              <div className="p-4 bg-gray-50 rounded-xl text-sm text-gray-700 leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto">
+                {out.answer}
+              </div>
+              <button onClick={() => copyText('answer', String(out.answer || ''))} className="flex items-center gap-1.5 text-sm font-medium text-purple-600 hover:text-purple-700">
+                {copied === 'answer' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} {copied === 'answer' ? 'Copied' : 'Copy Answer'}
+              </button>
+            </div>
+          )}
+
+          {/* Website Generator — download or preview the generated site */}
+          {result.success && slug === 'websiteGen' && out?.html && (
+            <div className="space-y-4">
+              <div className="p-4 bg-green-50 border border-green-100 rounded-xl">
+                <p className="text-sm text-gray-600">Website generated for <span className="font-semibold">{out.businessName}</span></p>
+                <p className="text-xs text-gray-500 mt-1">{String(out.html).length.toLocaleString()} characters, {out.pageCount || 1} page(s)</p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => {
+                  const blob = new Blob([String(out.html)], { type: 'text/html' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url; a.download = `${String(out.businessName || 'website').replace(/\s+/g, '-').toLowerCase()}.html`;
+                  a.click(); URL.revokeObjectURL(url);
+                }} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 transition-colors">
+                  <Download className="w-4 h-4" /> Download HTML
+                </button>
+                <button onClick={() => {
+                  const blob = new Blob([String(out.html)], { type: 'text/html' });
+                  const url = URL.createObjectURL(blob);
+                  window.open(url, '_blank');
+                }} className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 transition-colors">
+                  <ExternalLink className="w-4 h-4" /> Preview
+                </button>
+              </div>
+              <details className="group">
+                <summary className="text-xs text-gray-500 cursor-pointer hover:text-purple-600">View HTML source</summary>
+                <pre className="mt-2 p-4 bg-gray-50 rounded-xl text-xs text-gray-600 overflow-auto max-h-64 whitespace-pre-wrap">{String(out.html).slice(0, 5000)}</pre>
+              </details>
+            </div>
+          )}
 
           {/* Content writer */}
           {result.success && slug === 'ai-content-writer' && out?.content && (
@@ -626,13 +1059,123 @@ export default function ToolExecutePage() {
           )}
 
           {/* Fallback for unstyled tools */}
-          {result.success && !SLUG_ICONS[slug] && out != null && (
+          {result.success && !SLUG_ICONS[slug] && !out?.headline && out != null && (
             <pre className="p-4 bg-gray-50 rounded-xl text-sm text-gray-700 overflow-auto max-h-64 whitespace-pre-wrap">
               {typeof out === 'string' ? out : JSON.stringify(out, null, 2)}
             </pre>
           )}
         </motion.div>
       )}
+    </div>
+  );
+}
+
+// ─── Unified AI Studio output renderer ──────────────────────────────────────
+// Every AI Studio tool answers with the same shape, so one renderer covers
+// logos, brand kits, SEO packs, legal pages and the rest.
+
+function StudioOutput({ out, copied, onCopy }: {
+  out: ToolOutput;
+  copied: string | null;
+  onCopy: (key: string, text: string) => void;
+}) {
+  const sections = out.sections || [];
+  const images = out.images || [];
+  const palette = out.palette || [];
+  const fullText = [out.headline || '', ...sections.map(s => `${s.title}\n${s.body}`)].join('\n\n');
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="flex-1 min-w-0 text-lg font-bold text-gray-900">{out.headline}</h2>
+        {out.aiUsed && (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 border border-purple-100 text-purple-700 text-[11px] font-semibold">
+            <Sparkles className="w-3 h-3" /> AI Enhanced
+          </span>
+        )}
+        {sections.length > 0 && (
+          <button
+            onClick={() => onCopy('studio-all', fullText)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-medium hover:bg-gray-200 transition-colors"
+          >
+            {copied === 'studio-all' ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied === 'studio-all' ? 'Copied' : 'Copy all'}
+          </button>
+        )}
+      </div>
+
+      {/* Brand palette — click a swatch to copy its hex */}
+      {palette.length > 0 && (
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2">Palette — click to copy hex</p>
+          <div className="flex flex-wrap gap-3">
+            {palette.map((c, i) => {
+              const key = `studio-hex-${i}`;
+              return (
+                <button key={key} onClick={() => onCopy(key, c.hex)} className="text-center group" title={`Copy ${c.hex}`}>
+                  <div
+                    className="w-16 h-16 rounded-xl border border-black/5 shadow-sm mb-1.5 group-hover:scale-105 transition-transform"
+                    style={{ background: c.hex }}
+                  />
+                  <p className="text-[11px] font-semibold text-gray-800">{c.name}</p>
+                  <p className="text-[10px] font-mono text-gray-400 flex items-center justify-center gap-1">
+                    {copied === key ? <><Check className="w-2.5 h-2.5 text-green-500" /> Copied</> : c.hex.toUpperCase()}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Rendered assets — open full size, then save */}
+      {images.length > 0 && (
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2">
+            Assets — click to open full size, then right-click → Save Image
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {images.map((im, i) => (
+              <a
+                key={`${im.label}-${i}`}
+                href={im.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group block rounded-xl overflow-hidden border border-gray-200 bg-gray-50 hover:border-purple-300 hover:shadow-md transition-all"
+              >
+                <div className="relative aspect-square">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={im.url} alt={im.label} loading="lazy" className="w-full h-full object-cover" />
+                  <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[10px] font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ExternalLink className="w-3 h-3" /> Save Image
+                  </span>
+                </div>
+                <p className="px-3 py-2 text-xs font-semibold text-gray-800 truncate">{im.label}</p>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Copy-ready sections */}
+      {sections.map((s, i) => {
+        const key = `studio-sec-${i}`;
+        return (
+          <div key={key} className="rounded-xl border border-gray-100 bg-gray-50 overflow-hidden">
+            <div className="flex items-start justify-between gap-3 px-4 pt-3.5">
+              <h3 className="text-sm font-bold text-gray-900">{s.title}</h3>
+              <button
+                onClick={() => onCopy(key, `${s.title}\n${s.body}`)}
+                className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-purple-600 flex-shrink-0"
+              >
+                {copied === key ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied === key ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+            <p className="px-4 pb-4 pt-2 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-words">{s.body}</p>
+          </div>
+        );
+      })}
     </div>
   );
 }

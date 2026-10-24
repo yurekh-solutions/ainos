@@ -23,7 +23,6 @@ const TOOLS = [
   
   // Business Suite Tools (mapped to Company tool levels)
   { slug: 'autoBlog', name: 'Auto Blog', category: 'content', creditCost: 5, description: 'AI blog post generator' },
-  { slug: 'invoiceGen', name: 'Invoice Generator', category: 'finance', creditCost: 0, description: 'GST invoice generator (included with subscription)' },
   { slug: 'crmAccess', name: 'CRM', category: 'sales', creditCost: 0, description: 'Customer relationship management (included with subscription)' },
   { slug: 'inventoryMgmt', name: 'Inventory Management', category: 'operations', creditCost: 0, description: 'Stock and inventory tracking (included with subscription)' },
   { slug: 'hrPayroll', name: 'HR & Payroll', category: 'hr', creditCost: 0, description: 'Employee and payroll management (included with subscription)' },

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Coins, Zap, ArrowRight, Search } from 'lucide-react';
+import { Coins, Zap, ArrowRight, Search, Sparkles, Megaphone, Users, Timer, Wallet, Palette, Brush, Briefcase, ShoppingBag, LifeBuoy, BookOpen, Globe, TrendingUp, Package, UserCog } from 'lucide-react';
 
 interface Tool {
   id: string;
@@ -21,7 +21,40 @@ const categoryColors: Record<string, string> = {
   crm: 'from-green-500 to-emerald-500',
   productivity: 'from-orange-500 to-yellow-500',
   finance: 'from-indigo-500 to-purple-500',
+  branding: 'from-violet-500 to-fuchsia-500',
+  design: 'from-pink-500 to-rose-500',
+  business: 'from-teal-500 to-emerald-500',
+  ecommerce: 'from-amber-500 to-orange-500',
+  support: 'from-cyan-500 to-blue-500',
+  content: 'from-emerald-500 to-teal-500',
+  web: 'from-indigo-500 to-violet-500',
+  sales: 'from-green-500 to-emerald-500',
+  operations: 'from-slate-500 to-gray-500',
+  hr: 'from-rose-500 to-pink-500',
 };
+
+const categoryIcons: Record<string, typeof Zap> = {
+  ai: Sparkles,
+  marketing: Megaphone,
+  crm: Users,
+  productivity: Timer,
+  finance: Wallet,
+  branding: Palette,
+  design: Brush,
+  business: Briefcase,
+  ecommerce: ShoppingBag,
+  support: LifeBuoy,
+  content: BookOpen,
+  web: Globe,
+  sales: TrendingUp,
+  operations: Package,
+  hr: UserCog,
+};
+
+function ToolIcon({ category, className }: { category?: string; className?: string }) {
+  const Icon = categoryIcons[category || ''] || Zap;
+  return <Icon className={className} />;
+}
 
 export default function ToolsPage() {
   const [tools, setTools] = useState<Tool[]>([]);
@@ -104,7 +137,7 @@ export default function ToolsPage() {
             >
               <div className="flex items-start justify-between mb-3">
                 <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${categoryColors[tool.category] || 'from-gray-500 to-gray-600'} flex items-center justify-center`}>
-                  <Zap className="w-5 h-5 text-white" />
+                  <ToolIcon category={tool.category} className="w-5 h-5 text-white" />
                 </div>
                 <span className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-xs text-gray-600">
                   <Coins className="w-3 h-3 text-yellow-400" />

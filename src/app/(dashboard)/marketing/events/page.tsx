@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CalendarDays, IndianRupee, Link2, Loader2, MapPin, Pencil, Plus, Search, Ticket, Trash2, Users } from 'lucide-react';
+import { useToast } from '@/lib/toast';
 
 interface EventRow {
   id: string;
@@ -51,6 +52,8 @@ const when = (value: string) => {
 
 export default function EventsPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const { error: toastError } = toast;
   const [rows, setRows] = useState<EventRow[]>([]);
   const [summary, setSummary] = useState<Summary>({ upcoming: 0, published: 0, seatsSold: 0, revenueMonth: 0 });
   const [canManage, setCanManage] = useState(false);
@@ -59,7 +62,6 @@ export default function EventsPage() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState('');
   const [confirmId, setConfirmId] = useState('');
-  const [toast, setToast] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -73,22 +75,16 @@ export default function EventsPage() {
       setSummary(data.summary || { upcoming: 0, published: 0, seatsSold: 0, revenueMonth: 0 });
       setCanManage(Boolean(data.canManage));
     } catch (error) {
-      setToast(error instanceof Error ? error.message : 'Could not load events');
+      toastError(error instanceof Error ? error.message : 'Could not load events');
     } finally {
       setLoading(false);
     }
-  }, [tab, search]);
+  }, [tab, search, toastError]);
 
   useEffect(() => {
     const timer = setTimeout(load, 0);
     return () => clearTimeout(timer);
   }, [load]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(''), 3200);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   const remove = async (id: string) => {
     setBusyId(id);
@@ -96,11 +92,11 @@ export default function EventsPage() {
       const res = await fetch(`/api/events?id=${id}`, { method: 'DELETE' });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Could not delete this event');
-      setToast('Event deleted');
+      toast.success('Event deleted');
       setConfirmId('');
       await load();
     } catch (error) {
-      setToast(error instanceof Error ? error.message : 'Could not delete this event');
+      toast.error(error instanceof Error ? error.message : 'Could not delete this event');
     } finally {
       setBusyId('');
     }
@@ -110,9 +106,9 @@ export default function EventsPage() {
     const url = `${window.location.origin}/e/${id}`;
     try {
       await navigator.clipboard.writeText(url);
-      setToast('Public registration link copied');
+      toast.success('Public registration link copied');
     } catch {
-      setToast(url);
+      toast.info(url);
     }
   };
 
@@ -329,11 +325,6 @@ export default function EventsPage() {
         )}
       </motion.div>
 
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-lg" style={{ background: 'hsl(var(--foreground))' }}>
-          {toast}
-        </div>
-      )}
     </div>
   );
 }

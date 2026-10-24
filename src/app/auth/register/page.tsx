@@ -7,10 +7,12 @@ import {
   Eye, EyeOff, Building2, FolderCheck, Upload,
   Phone, MapPin, Mail, Lock, User, Briefcase, Building,
   BarChart3, Users, ShieldCheck, LogIn, Globe, UserPlus, Shield,
-  RefreshCw, MailCheck, Smartphone,
+  RefreshCw, MailCheck,
 } from 'lucide-react';
 import { useCallback, useEffect, useState, type ChangeEvent, type ElementType } from 'react';
 import Link from 'next/link';
+import { useToast } from '@/lib/toast';
+import { validateEmail, validatePhone, validatePassword, cleanPhone, PHONE_REGEX } from '@/lib/validation';
 
 const COMPANY_TYPES = [
   { value: 'proprietorship', label: 'Proprietorship', icon: User },
@@ -109,7 +111,7 @@ const DOCUMENT_REQUIREMENTS: Record<string, { name: string; optional?: boolean }
 };
 
 const leftFeatures = [
-  { icon: ShieldCheck, title: 'Verified onboarding', desc: 'Email and phone confirmed before review' },
+  { icon: ShieldCheck, title: 'Verified onboarding', desc: 'Email confirmed before review' },
   { icon: BarChart3, title: 'Real-time dashboard', desc: 'Live analytics the moment you are approved' },
   { icon: FileText, title: 'Smart invoicing & GST', desc: 'Automated billing and compliance' },
 ];
@@ -124,9 +126,7 @@ const primaryButton =
 
 const primaryStyle = { background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%)' };
 
-type Channel = 'email' | 'phone';
-
-function Field({ icon: Icon, label, type = 'text', value, onChange, placeholder, className = '', ...rest }: {
+function Field({ icon: Icon, label, type = 'text', value, onChange, placeholder, className = '', error, ...rest }: {
   icon?: ElementType;
   label: string;
   type?: string;
@@ -134,6 +134,7 @@ function Field({ icon: Icon, label, type = 'text', value, onChange, placeholder,
   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
   className?: string;
+  error?: string;
   [k: string]: unknown;
 }) {
   return (
@@ -150,10 +151,12 @@ function Field({ icon: Icon, label, type = 'text', value, onChange, placeholder,
           value={value}
           onChange={onChange}
           placeholder={placeholder}
-          className={`${inputBase} ${Icon ? 'pl-11' : 'pl-3'} pr-3`}
+          aria-invalid={Boolean(error)}
+          className={`${inputBase} ${Icon ? 'pl-11' : 'pl-3'} pr-3 ${error ? 'border-red-400 ring-1 ring-red-400' : 'border-gray-200'}`}
           {...rest}
         />
       </div>
+      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
     </div>
   );
 }
@@ -195,13 +198,14 @@ function Steps({ step }: { step: number }) {
 }
 
 export default function RegisterPage() {
+  const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [toast, setToast] = useState<{ msg: string; type: 'error' | 'success' } | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Step 1 — applicant
   const [name, setName] = useState('');
@@ -214,26 +218,16 @@ export default function RegisterPage() {
   // Such users must sign in (or reset) rather than apply a second time.
   const [emailTaken, setEmailTaken] = useState(false);
 
-  // Step 2 — verification
+  // Step 2 — email verification
   const [emailCode, setEmailCode] = useState('');
-  const [phoneCode, setPhoneCode] = useState('');
   const [emailProof, setEmailProof] = useState('');
-  const [phoneProof, setPhoneProof] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
-  const [phoneVerified, setPhoneVerified] = useState(false);
   const [emailSending, setEmailSending] = useState(false);
-  const [phoneSending, setPhoneSending] = useState(false);
   const [emailVerifying, setEmailVerifying] = useState(false);
-  const [phoneVerifying, setPhoneVerifying] = useState(false);
   const [emailSentAt, setEmailSentAt] = useState(0);
-  const [phoneSentAt, setPhoneSentAt] = useState(0);
   const [emailNotice, setEmailNotice] = useState<string | null>(null);
-  const [phoneNotice, setPhoneNotice] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
-  const [phoneError, setPhoneError] = useState<string | null>(null);
-  const [smsUnavailable, setSmsUnavailable] = useState(false);
   const [devEmailCode, setDevEmailCode] = useState<string | null>(null);
-  const [devPhoneCode, setDevPhoneCode] = useState<string | null>(null);
   // Clock kept in state so countdowns stay pure during render.
   const [now, setNow] = useState(0);
 
@@ -267,118 +261,83 @@ export default function RegisterPage() {
     return () => clearInterval(id);
   }, []);
 
-  const showToast = (msg: string, type: 'error' | 'success') => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 4500);
+  const emailTarget = userEmail.trim().toLowerCase();
+  const phoneDigits = cleanPhone(userPhone);
+
+  const clearFieldError = (field: string) => {
+    setFieldErrors(prev => prev[field] ? { ...prev, [field]: '' } : prev);
   };
 
-  const emailTarget = userEmail.trim().toLowerCase();
-  const phoneDigits = userPhone.replace(/[^\d]/g, '');
+  // ── Email OTP: send ──────────────────────────────────────────────────────
+  const sendCode = useCallback(async () => {
+    const target = emailTarget;
 
-  // ── OTP: send ────────────────────────────────────────────────────────────
-  const sendCode = useCallback(async (channel: Channel) => {
-    const isEmail = channel === 'email';
-    const target = isEmail ? emailTarget : phoneDigits;
-
-    if (isEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target)) {
       setEmailError('Enter a valid email address first');
       return;
     }
-    if (!isEmail && target.length < 10) {
-      setPhoneError('Enter a valid phone number first');
-      return;
-    }
 
-    if (isEmail) { setEmailSending(true); setEmailError(null); setEmailNotice(null); }
-    else { setPhoneSending(true); setPhoneError(null); setPhoneNotice(null); }
+    setEmailSending(true);
+    setEmailError(null);
+    setEmailNotice(null);
 
     try {
       const res = await fetch('/api/auth/otp/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channel, target, purpose: 'signup' }),
+        body: JSON.stringify({ channel: 'email', target, purpose: 'signup' }),
       });
       const data = await res.json();
 
       if (!res.ok) {
-        // A deployment without an SMS provider must not block the applicant.
-        if (!isEmail && (data?.code === 'SMS_NOT_CONFIGURED' || res.status === 503)) {
-          setSmsUnavailable(true);
-          setDevPhoneCode(null);
-          return;
-        }
-        if (isEmail && res.status === 409) setEmailTaken(true);
-        const message = data?.error || 'Could not send the code';
-        if (isEmail) setEmailError(message); else setPhoneError(message);
+        if (res.status === 409) setEmailTaken(true);
+        setEmailError(data?.error || 'Could not send the code');
         return;
       }
 
-      if (isEmail) {
-        setNow(Date.now());
-        setEmailSentAt(Date.now());
-        setEmailNotice(`Code sent to ${target}. It expires in 10 minutes.`);
-        setDevEmailCode(data.devCode || null);
-      } else {
-        setNow(Date.now());
-        setPhoneSentAt(Date.now());
-        if (data.delivered === false) {
-          setSmsUnavailable(true);
-          setDevPhoneCode(null);
-        } else {
-          setPhoneNotice(`Code sent to +${target}. It expires in 10 minutes.`);
-        }
-        if (data.delivered !== false) setDevPhoneCode(data.devCode || null);
-      }
+      setNow(Date.now());
+      setEmailSentAt(Date.now());
+      setEmailNotice(`Code sent to ${target}. It expires in 10 minutes.`);
+      setDevEmailCode(data.devCode || null);
     } catch {
-      if (isEmail) setEmailError('Could not send the code. Please try again.');
-      else setPhoneError('Could not send the code. Please try again.');
+      setEmailError('Could not send the code. Please try again.');
     } finally {
-      if (isEmail) setEmailSending(false); else setPhoneSending(false);
+      setEmailSending(false);
     }
-  }, [emailTarget, phoneDigits]);
+  }, [emailTarget]);
 
-  // ── OTP: verify ──────────────────────────────────────────────────────────
-  const verifyCode = async (channel: Channel) => {
-    const isEmail = channel === 'email';
-    const target = isEmail ? emailTarget : phoneDigits;
-    const code = (isEmail ? emailCode : phoneCode).replace(/[^\d]/g, '');
+  // ── Email OTP: verify ────────────────────────────────────────────────────
+  const verifyCode = async () => {
+    const code = emailCode.replace(/[^\d]/g, '');
 
     if (code.length !== 6) {
-      if (isEmail) setEmailError('Enter the 6-digit code'); else setPhoneError('Enter the 6-digit code');
+      setEmailError('Enter the 6-digit code');
       return;
     }
 
-    if (isEmail) { setEmailVerifying(true); setEmailError(null); }
-    else { setPhoneVerifying(true); setPhoneError(null); }
+    setEmailVerifying(true);
+    setEmailError(null);
 
     try {
       const res = await fetch('/api/auth/otp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channel, target, purpose: 'signup', code }),
+        body: JSON.stringify({ channel: 'email', target: emailTarget, purpose: 'signup', code }),
       });
       const data = await res.json();
 
       if (!res.ok) {
-        const message = data?.error || 'Verification failed';
-        if (isEmail) setEmailError(message); else setPhoneError(message);
+        setEmailError(data?.error || 'Verification failed');
         return;
       }
 
-      if (isEmail) {
-        setEmailProof(data.proof);
-        setEmailVerified(true);
-        setEmailNotice('Email verified');
-      } else {
-        setPhoneProof(data.proof);
-        setPhoneVerified(true);
-        setPhoneNotice('Phone verified');
-      }
+      setEmailProof(data.proof);
+      setEmailVerified(true);
+      setEmailNotice('Email verified');
     } catch {
-      if (isEmail) setEmailError('Verification failed. Please try again.');
-      else setPhoneError('Verification failed. Please try again.');
+      setEmailError('Verification failed. Please try again.');
     } finally {
-      if (isEmail) setEmailVerifying(false); else setPhoneVerifying(false);
+      setEmailVerifying(false);
     }
   };
 
@@ -500,11 +459,11 @@ export default function RegisterPage() {
   const handleFile = (doc: string, f: File | null) => {
     if (!f) return;
     if (!/\.pdf$/i.test(f.name)) {
-      showToast('Only PDF files are allowed', 'error');
+      toast.error('Only PDF files are allowed');
       return;
     }
     if (f.size > 1024 * 1024) {
-      showToast('File size must be less than 1MB', 'error');
+      toast.error('File size must be less than 1MB');
       return;
     }
     const blobUrl = URL.createObjectURL(f);
@@ -515,19 +474,59 @@ export default function RegisterPage() {
   const docs = companyType ? (DOCUMENT_REQUIREMENTS[companyType] || []) : [];
   const ctLabel = COMPANY_TYPES.find(c => c.value === companyType)?.label;
 
+  const validateStep1 = () => {
+    const errors: Record<string, string> = {};
+
+    if (!name.trim()) errors.name = 'Full name is required';
+
+    const emailErr = validateEmail(userEmail);
+    if (emailErr) errors.email = emailErr;
+
+    const phoneErr = validatePhone(userPhone);
+    if (phoneErr) errors.phone = phoneErr;
+
+    const passErr = validatePassword(password);
+    if (passErr) errors.password = passErr;
+
+    if (password !== confirmPassword) errors.confirmPassword = 'Passwords do not match';
+
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      toast.error('Please fix the errors below');
+      return false;
+    }
+    return true;
+  };
+
+  const validateStep3 = () => {
+    const errors: Record<string, string> = {};
+
+    if (!companyName.trim()) errors.companyName = 'Company name is required';
+    if (companyEmail.trim()) {
+      const emailErr = validateEmail(companyEmail);
+      if (emailErr) errors.companyEmail = emailErr;
+    }
+    if (companyPhone.trim()) {
+      const phoneErr = validatePhone(companyPhone);
+      if (phoneErr) errors.companyPhone = phoneErr;
+    }
+    if (!companyAddress.trim()) errors.companyAddress = 'Registered address is required';
+    if (!companyType) errors.companyType = 'Company type is required';
+
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      toast.error('Please fix the errors below');
+      return false;
+    }
+    return true;
+  };
+
   // ── Navigation ───────────────────────────────────────────────────────────
   const goNext = async () => {
     setError(null);
 
     if (step === 1) {
-      if (!name.trim() || !userEmail.trim() || !userPhone.trim() || !password || !confirmPassword) {
-        setError('All fields are required');
-        return;
-      }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTarget)) { setError('Please enter a valid email'); return; }
-      if (phoneDigits.length < 10) { setError('Please enter a valid phone number'); return; }
-      if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
-      if (password !== confirmPassword) { setError('Passwords do not match'); return; }
+      if (!validateStep1()) return;
 
       // Catch an already-registered address here rather than on the Verify
       // step, where the OTP endpoint would refuse and leave the form stranded.
@@ -551,34 +550,28 @@ export default function RegisterPage() {
         setCheckingEmail(false);
       }
 
+      setFieldErrors({});
       setStep(2);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      // Send both codes on arrival. Requesting the phone code here is what
-      // reveals an unconfigured SMS provider, so the user is never stuck on a
-      // verification card they cannot complete.
-      if (!emailVerified && !emailSentAt) void sendCode('email');
-      if (!phoneVerified && !phoneSentAt) void sendCode('phone');
+      // Send the email verification code on arrival.
+      if (!emailVerified && !emailSentAt) void sendCode();
       return;
     }
 
     if (step === 2) {
       if (!emailVerified) { setError('Verify your email address to continue'); return; }
-      if (!phoneVerified && !smsUnavailable) { setError('Verify your phone number to continue'); return; }
     }
 
-    if (step === 3) {
-      if (!companyName || !companyType || !companyEmail || !companyPhone || !companyAddress) {
-        setError('All required company fields must be filled');
-        return;
-      }
-    }
+    if (step === 3 && !validateStep3()) return;
 
+    setFieldErrors({});
     setStep(s => Math.min(s + 1, 4));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const goBack = () => {
     setError(null);
+    setFieldErrors({});
     setStep(s => Math.max(s - 1, 1));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -586,12 +579,12 @@ export default function RegisterPage() {
   const submit = async () => {
     setError(null);
 
-    if (!emailProof) { setError('Email verification expired — please verify again'); setStep(2); return; }
+    if (!emailProof) { setError('Email verification expired — please verify again'); setFieldErrors({}); setStep(2); return; }
 
     const mandatoryDocs = docs.filter(d => !d.optional);
     const missingMandatory = mandatoryDocs.filter(d => !documents[d.name]);
     if (missingMandatory.length > 0) {
-      showToast(`Please upload: ${missingMandatory.map(d => d.name).join(', ')}`, 'error');
+      toast.error(`Please upload: ${missingMandatory.map(d => d.name).join(', ')}`);
       return;
     }
 
@@ -614,13 +607,12 @@ export default function RegisterPage() {
           gstNumber: gstNumber || undefined,
           documents: {},
           emailProof,
-          phoneProof: phoneProof || undefined,
         }),
       });
       const data = await res.json();
 
       if (!res.ok) {
-        if (data?.code === 'EMAIL_NOT_VERIFIED') { setStep(2); }
+        if (data?.code === 'EMAIL_NOT_VERIFIED') { setFieldErrors({}); setStep(2); }
         setError(data.error || 'Registration failed');
         setLoading(false);
         return;
@@ -658,7 +650,7 @@ export default function RegisterPage() {
       }
 
       if (failedDocs.length > 0) {
-        showToast(`Failed to upload: ${failedDocs.join(', ')} — admin may ask for these again.`, 'error');
+        toast.error(`Failed to upload: ${failedDocs.join(', ')} — admin may ask for these again.`);
       }
 
       if (Object.keys(uploadedDocs).length > 0) {
@@ -679,88 +671,70 @@ export default function RegisterPage() {
 
   const cardShell = 'bg-white rounded-2xl border border-gray-100 shadow-sm';
 
-  const verificationCard = (channel: Channel) => {
-    const isEmail = channel === 'email';
-    const verified = isEmail ? emailVerified : phoneVerified;
-    const sending = isEmail ? emailSending : phoneSending;
-    const verifying = isEmail ? emailVerifying : phoneVerifying;
-    const notice = isEmail ? emailNotice : phoneNotice;
-    const err = isEmail ? emailError : phoneError;
-    const code = isEmail ? emailCode : phoneCode;
-    const setCode = isEmail ? setEmailCode : setPhoneCode;
-    const sentAt = isEmail ? emailSentAt : phoneSentAt;
-    const devCode = isEmail ? devEmailCode : devPhoneCode;
-    const Icon = isEmail ? MailCheck : Smartphone;
-    const seconds = resendIn(sentAt);
-    const disabled = !isEmail && smsUnavailable;
+  const verificationCard = () => {
+    const seconds = resendIn(emailSentAt);
 
     return (
-      <div className={`rounded-xl border p-4 sm:p-5 ${verified ? 'border-green-200 bg-green-50/50' : 'border-gray-200 bg-white'}`}>
+      <div className={`rounded-xl border p-4 sm:p-5 ${emailVerified ? 'border-green-200 bg-green-50/50' : 'border-gray-200 bg-white'}`}>
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: verified ? '#16a34a' : '#4c1d95' }}>
-              {verified ? <Check className="w-4 h-4 text-white" /> : <Icon className="w-4 h-4 text-white" />}
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: emailVerified ? '#16a34a' : '#4c1d95' }}>
+              {emailVerified ? <Check className="w-4 h-4 text-white" /> : <MailCheck className="w-4 h-4 text-white" />}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">{isEmail ? 'Email verification' : 'Phone verification'}</p>
-              <p className="text-[11px] text-gray-500 truncate">{isEmail ? emailTarget || '—' : (phoneDigits ? `+${phoneDigits}` : '—')}</p>
+              <p className="text-sm font-semibold text-gray-900 truncate">Email verification</p>
+              <p className="text-[11px] text-gray-500 truncate">{emailTarget || '—'}</p>
             </div>
           </div>
-          {verified && <span className="text-[10px] font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full flex-shrink-0">Verified</span>}
+          {emailVerified && <span className="text-[10px] font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full flex-shrink-0">Verified</span>}
         </div>
 
-        {!verified && !disabled && (
+        {!emailVerified && (
           <>
             <div className="flex flex-col sm:flex-row gap-2">
               <input
                 inputMode="numeric"
                 maxLength={6}
-                value={code}
-                onChange={e => setCode(e.target.value.replace(/[^\d]/g, ''))}
-                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void verifyCode(channel); } }}
+                value={emailCode}
+                onChange={e => setEmailCode(e.target.value.replace(/[^\d]/g, ''))}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void verifyCode(); } }}
                 placeholder="6-digit code"
                 className={`${inputBase} px-3 text-center tracking-[0.3em] font-mono`}
               />
               <button
                 type="button"
-                onClick={() => verifyCode(channel)}
-                disabled={verifying || code.length !== 6}
+                onClick={() => verifyCode()}
+                disabled={emailVerifying || emailCode.length !== 6}
                 className={`${primaryButton} sm:w-28 flex-shrink-0`}
                 style={primaryStyle}
               >
-                {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Verify'}
+                {emailVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Verify'}
               </button>
             </div>
 
             <div className="flex items-center justify-between mt-2.5 gap-2">
               <button
                 type="button"
-                onClick={() => sendCode(channel)}
-                disabled={sending || seconds > 0}
+                onClick={() => sendCode()}
+                disabled={emailSending || seconds > 0}
                 className="text-[12px] font-medium inline-flex items-center gap-1.5 disabled:text-gray-400"
-                style={sending || seconds > 0 ? {} : { color: '#6d28d9' }}
+                style={emailSending || seconds > 0 ? {} : { color: '#6d28d9' }}
               >
-                {sending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                {sentAt ? (seconds > 0 ? `Resend in ${seconds}s` : 'Resend code') : 'Send code'}
+                {emailSending ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                {emailSentAt ? (seconds > 0 ? `Resend in ${seconds}s` : 'Resend code') : 'Send code'}
               </button>
               <span className="text-[10px] text-gray-400">Valid 10 min</span>
             </div>
           </>
         )}
 
-        {disabled && !verified && (
-          <p className="text-[12px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            SMS delivery is unavailable right now. Our team will verify this number during review.
-          </p>
-        )}
-
-        {notice && !err && !disabled && <p className="mt-2 text-[12px] text-gray-600">{notice}</p>}
-        {err && (
+        {emailNotice && !emailError && <p className="mt-2 text-[12px] text-gray-600">{emailNotice}</p>}
+        {emailError && (
           <div className="mt-2 flex items-start gap-1.5 p-2 rounded-lg bg-red-50 border border-red-100">
             <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />
             <div className="min-w-0">
-              <p className="text-[12px] text-red-700">{err}</p>
-              {isEmail && emailTaken && (
+              <p className="text-[12px] text-red-700">{emailError}</p>
+              {emailTaken && (
                 <Link
                   href="/auth/signin"
                   className="mt-1.5 inline-flex items-center gap-1 text-[12px] font-semibold hover:underline"
@@ -772,8 +746,8 @@ export default function RegisterPage() {
             </div>
           </div>
         )}
-        {devCode && !verified && !disabled && (
-          <p className="mt-2 text-[11px] text-amber-700">Dev mode code: <span className="font-mono font-semibold">{devCode}</span></p>
+        {devEmailCode && !emailVerified && (
+          <p className="mt-2 text-[11px] text-amber-700">Dev mode code: <span className="font-mono font-semibold">{devEmailCode}</span></p>
         )}
       </div>
     );
@@ -781,26 +755,6 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen w-full max-w-[100vw] bg-[#f8f7fc] overflow-x-hidden overflow-y-auto">
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="fixed top-4 left-4 right-4 z-50 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:max-w-md"
-          >
-            <div className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border ${
-              toast.type === 'error'
-                ? 'bg-red-50 border-red-200 text-red-800'
-                : 'bg-green-50 border-green-200 text-green-800'
-            }`}>
-              {toast.type === 'error' ? <AlertCircle className="w-4 h-4 flex-shrink-0" /> : <Check className="w-4 h-4 flex-shrink-0" />}
-              <p className="text-sm font-medium leading-snug">{toast.msg}</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <AnimatePresence>
         {success && (
           <motion.div
@@ -866,7 +820,7 @@ export default function RegisterPage() {
                 <div className="flex-1">
                   <h3 className="text-base font-bold text-gray-900 mb-1">New business?</h3>
                   <p className="text-sm text-gray-500 mb-4 leading-relaxed">
-                    Verify your email and phone, upload your registration documents, and our team reviews the application within one business day.
+                    Verify your email, upload your registration documents, and our team reviews the application within one business day.
                   </p>
                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium text-white" style={{ background: '#4c1d95' }}>
                     <ShieldCheck className="w-3.5 h-3.5" /> Verified onboarding
@@ -934,9 +888,32 @@ export default function RegisterPage() {
                       </div>
 
                       <div className="space-y-4">
-                        <Field icon={User} label="Full name" value={name} onChange={e => setName(e.target.value)} placeholder="John Doe" />
-                        <Field icon={Mail} label="Email address" type="email" value={userEmail} onChange={e => { setUserEmail(e.target.value); setEmailTaken(false); setError(null); }} placeholder="john@company.com" />
-                        <Field icon={Phone} label="Mobile number" type="tel" value={userPhone} onChange={e => setUserPhone(e.target.value)} placeholder="+91 98765 43210" />
+                        <Field icon={User} label="Full name" value={name} error={fieldErrors.name} onChange={e => { setName(e.target.value); clearFieldError('name'); }} placeholder="John Doe" />
+                        <Field icon={Mail} label="Email address" type="email" value={userEmail} error={fieldErrors.email} onChange={e => { setUserEmail(e.target.value); clearFieldError('email'); setEmailTaken(false); setError(null); }} placeholder="john@company.com" />
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1.5">Mobile number</label>
+                          <div className="relative">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(76,29,149,0.08)' }}>
+                              <Phone className="w-3.5 h-3.5" style={{ color: '#4c1d95' }} />
+                            </div>
+                            <span className="absolute left-11 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">+91</span>
+                            <input
+                              type="tel"
+                              inputMode="numeric"
+                              maxLength={10}
+                              pattern={PHONE_REGEX.source}
+                              value={userPhone}
+                              onChange={e => {
+                                setUserPhone(cleanPhone(e.target.value).slice(0, 10));
+                                clearFieldError('phone');
+                              }}
+                              placeholder="98765 43210"
+                              aria-invalid={Boolean(fieldErrors.phone)}
+                              className={`${inputBase} pl-[4.75rem] pr-3 ${fieldErrors.phone ? 'border-red-400 ring-1 ring-red-400' : 'border-gray-200'}`}
+                            />
+                          </div>
+                          {fieldErrors.phone && <p className="text-red-500 text-xs mt-1">{fieldErrors.phone}</p>}
+                        </div>
 
                         <div>
                           <label className="block text-xs font-semibold text-gray-700 mb-1.5">Password</label>
@@ -944,12 +921,14 @@ export default function RegisterPage() {
                             <div className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(76,29,149,0.08)' }}>
                               <Lock className="w-3.5 h-3.5" style={{ color: '#4c1d95' }} />
                             </div>
-                            <input type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Min 6 characters"
-                              className={`${inputBase} pl-11 pr-10`} />
+                            <input type={showPw ? 'text' : 'password'} value={password} onChange={e => { setPassword(e.target.value); clearFieldError('password'); }} placeholder="Min 8 characters"
+                              aria-invalid={Boolean(fieldErrors.password)}
+                              className={`${inputBase} pl-11 pr-10 ${fieldErrors.password ? 'border-red-400 ring-1 ring-red-400' : 'border-gray-200'}`} />
                             <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" aria-label={showPw ? 'Hide password' : 'Show password'}>
                               {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </button>
                           </div>
+                          {fieldErrors.password && <p className="text-red-500 text-xs mt-1">{fieldErrors.password}</p>}
                         </div>
 
                         <div>
@@ -958,12 +937,14 @@ export default function RegisterPage() {
                             <div className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(76,29,149,0.08)' }}>
                               <Lock className="w-3.5 h-3.5" style={{ color: '#4c1d95' }} />
                             </div>
-                            <input type={showPw2 ? 'text' : 'password'} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Re-enter password"
-                              className={`${inputBase} pl-11 pr-10`} />
+                            <input type={showPw2 ? 'text' : 'password'} value={confirmPassword} onChange={e => { setConfirmPassword(e.target.value); clearFieldError('confirmPassword'); }} placeholder="Re-enter password"
+                              aria-invalid={Boolean(fieldErrors.confirmPassword)}
+                              className={`${inputBase} pl-11 pr-10 ${fieldErrors.confirmPassword ? 'border-red-400 ring-1 ring-red-400' : 'border-gray-200'}`} />
                             <button type="button" onClick={() => setShowPw2(!showPw2)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" aria-label={showPw2 ? 'Hide password' : 'Show password'}>
                               {showPw2 ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </button>
                           </div>
+                          {fieldErrors.confirmPassword && <p className="text-red-500 text-xs mt-1">{fieldErrors.confirmPassword}</p>}
                         </div>
 
                         {error && (
@@ -1005,13 +986,12 @@ export default function RegisterPage() {
                   {step === 2 && (
                     <motion.div key="s2" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.2 }}>
                       <div className="mb-4">
-                        <h3 className="text-base sm:text-lg font-bold text-gray-900">Verify your contact details</h3>
-                        <p className="text-xs text-gray-500 mt-0.5">We send a 6-digit code to confirm both channels</p>
+                        <h3 className="text-base sm:text-lg font-bold text-gray-900">Verify your email address</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Enter the 6-digit code sent to your email</p>
                       </div>
 
                       <div className="space-y-3">
-                        {verificationCard('email')}
-                        {verificationCard('phone')}
+                        {verificationCard()}
 
                         {error && (
                           <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-100">
@@ -1103,11 +1083,11 @@ export default function RegisterPage() {
                           </motion.div>
                         )}
 
-                        <Field icon={Briefcase} label="Company name" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Yurekh Solutions Private Limited" />
+                        <Field icon={Briefcase} label="Company name" value={companyName} error={fieldErrors.companyName} onChange={e => { setCompanyName(e.target.value); clearFieldError('companyName'); }} placeholder="Yurekh Solutions Private Limited" />
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <Field icon={Mail} label="Company email" value={companyEmail} onChange={e => setCompanyEmail(e.target.value)} placeholder="info@acme.com" />
-                          <Field icon={Phone} label="Company phone" value={companyPhone} onChange={e => setCompanyPhone(e.target.value)} placeholder="+91 11 2345 6789" />
+                          <Field icon={Mail} label="Company email (optional)" type="email" value={companyEmail} error={fieldErrors.companyEmail} onChange={e => { setCompanyEmail(e.target.value); clearFieldError('companyEmail'); }} placeholder="info@acme.com" />
+                          <Field icon={Phone} label="Company phone (optional)" type="tel" inputMode="numeric" maxLength={10} pattern={PHONE_REGEX.source} value={companyPhone} error={fieldErrors.companyPhone} onChange={e => { setCompanyPhone(cleanPhone(e.target.value).slice(0, 10)); clearFieldError('companyPhone'); }} placeholder="9876543210" />
                         </div>
 
                         <div>
@@ -1116,9 +1096,11 @@ export default function RegisterPage() {
                             <div className="absolute left-3 top-3 w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(76,29,149,0.08)' }}>
                               <MapPin className="w-3.5 h-3.5" style={{ color: '#4c1d95' }} />
                             </div>
-                            <textarea value={companyAddress} onChange={e => setCompanyAddress(e.target.value)} placeholder="123 Business Park, Sector 5, Gurugram" rows={2}
-                              className="w-full min-w-0 max-w-full pl-11 pr-3 py-2.5 rounded-xl bg-white border border-gray-200 text-sm text-gray-800 placeholder:text-gray-400 outline-none transition resize-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100" />
+                            <textarea value={companyAddress} onChange={e => { setCompanyAddress(e.target.value); clearFieldError('companyAddress'); }} placeholder="123 Business Park, Sector 5, Gurugram" rows={2}
+                              aria-invalid={Boolean(fieldErrors.companyAddress)}
+                              className={`w-full min-w-0 max-w-full pl-11 pr-3 py-2.5 rounded-xl bg-white border text-sm text-gray-800 placeholder:text-gray-400 outline-none transition resize-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 ${fieldErrors.companyAddress ? 'border-red-400 ring-1 ring-red-400' : 'border-gray-200'}`} />
                           </div>
+                          {fieldErrors.companyAddress && <p className="text-red-500 text-xs mt-1">{fieldErrors.companyAddress}</p>}
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1142,7 +1124,7 @@ export default function RegisterPage() {
                             const Icon = ct.icon;
                             const selected = companyType === ct.value;
                             return (
-                              <button key={ct.value} type="button" onClick={() => { setCompanyType(ct.value); setDocuments({}); setDocPreviews({}); setPreviewDoc(null); }}
+                              <button key={ct.value} type="button" onClick={() => { setCompanyType(ct.value); clearFieldError('companyType'); setDocuments({}); setDocPreviews({}); setPreviewDoc(null); }}
                                 className={`h-auto py-2 px-1 rounded-xl border text-[10px] sm:text-[11px] font-medium transition-all text-center flex flex-col items-center justify-center gap-1 leading-tight min-h-[56px] sm:min-h-[64px] lg:min-h-[72px] ${selected ? 'text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300'}`}
                                 style={selected ? { background: '#4c1d95', borderColor: '#4c1d95' } : {}}>
                                 <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
@@ -1151,6 +1133,7 @@ export default function RegisterPage() {
                             );
                           })}
                         </div>
+                        {fieldErrors.companyType && <p className="text-red-500 text-xs mt-1">{fieldErrors.companyType}</p>}
 
                         {error && (
                           <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-100">
@@ -1239,16 +1222,14 @@ export default function RegisterPage() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 text-[13px]">
                             <div className="min-w-0"><span className="text-gray-500">Name:</span> <span className="ml-1.5 font-medium text-gray-900">{name}</span></div>
                             <div className="min-w-0"><span className="text-gray-500">Email:</span> <span className="ml-1.5 font-medium text-gray-900 break-all">{emailTarget}</span></div>
-                            <div className="min-w-0"><span className="text-gray-500">Phone:</span> <span className="ml-1.5 font-medium text-gray-900">{phoneDigits ? `+${phoneDigits}` : '—'}</span></div>
+                            <div className="min-w-0"><span className="text-gray-500">Phone:</span> <span className="ml-1.5 font-medium text-gray-900">{phoneDigits ? `+91 ${phoneDigits.slice(0, 5)} ${phoneDigits.slice(5)}` : '—'}</span></div>
                             <div className="min-w-0"><span className="text-gray-500">Company:</span> <span className="ml-1.5 font-medium text-gray-900">{companyName}</span></div>
                             <div className="min-w-0"><span className="text-gray-500">Type:</span> <span className="ml-1.5 font-medium text-gray-900">{ctLabel || '—'}</span></div>
                             <div className="min-w-0"><span className="text-gray-500">Country:</span> <span className="ml-1.5 font-medium text-gray-900">{country}</span></div>
                             <div className="min-w-0"><span className="text-gray-500">GST:</span> <span className="ml-1.5 font-medium text-gray-900 font-mono">{gstNumber || '—'}</span></div>
                             <div className="min-w-0">
-                              <span className="text-gray-500">Verified:</span>{' '}
-                              <span className="ml-1.5 font-medium text-gray-900">
-                                email {emailVerified ? '✓' : '—'} · phone {phoneVerified ? '✓' : (smsUnavailable ? 'pending' : '—')}
-                              </span>
+                              <span className="text-gray-500">Email verified:</span>{' '}
+                              <span className="ml-1.5 font-medium text-gray-900">{emailVerified ? 'Yes' : '—'}</span>
                             </div>
                           </div>
                         </div>

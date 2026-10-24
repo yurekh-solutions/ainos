@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, Users, Mail, Phone, Building2, TrendingUp, Filter, Search, Download, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, X, Users, Mail, Phone, Building2, TrendingUp, Filter, Search, Download, Trash2 } from 'lucide-react';
+import { useToast } from '@/lib/toast';
 
 interface Lead { id: string; name: string; email: string; phone?: string; company?: string; designation?: string; source: string; status: string; score?: number; estimatedValue?: number; notes?: string; tags?: string[]; createdAt: string; }
 
@@ -9,27 +10,23 @@ const statusColors: Record<string, string> = { new: '#6c5ce7', contacted: '#0984
 const sourceIcons: Record<string, string> = { website: '🌐', referral: '', social: '📱', email: '📧', cold_call: '📞', event: '🎪', other: '' };
 
 export default function LeadsPage() {
+  const { toast } = useToast();
+  const { error: toastError } = toast;
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', designation: '', source: 'website', status: 'new', estimatedValue: '', notes: '' });
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   const fetchLeads = useCallback(async () => {
     try {
       const res = await fetch('/api/leads');
       if (res.ok) setLeads(await res.json());
-    } catch (e) { console.error(e); showToast('Failed to load leads', 'error'); }
+    } catch (e) { console.error(e); toastError('Failed to load leads'); }
     finally { setLoading(false); }
-  }, []);
+  }, [toastError]);
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
@@ -56,11 +53,11 @@ export default function LeadsPage() {
         setFormErrors({});
         setShowForm(false);
         fetchLeads();
-        showToast('Lead created successfully');
+        toast.success('Lead created successfully');
       } else {
-        showToast('Failed to create lead', 'error');
+        toast.error('Failed to create lead');
       }
-    } catch (e) { console.error(e); showToast('Failed to create lead', 'error'); }
+    } catch (e) { console.error(e); toast.error('Failed to create lead'); }
   };
 
   const updateStatus = async (id: string, status: string) => {
@@ -68,11 +65,11 @@ export default function LeadsPage() {
       const res = await fetch('/api/leads', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status }) });
       if (res.ok) {
         fetchLeads();
-        showToast('Status updated');
+        toast.success('Status updated');
       } else {
-        showToast('Failed to update status', 'error');
+        toast.error('Failed to update status');
       }
-    } catch (e) { console.error(e); showToast('Failed to update status', 'error'); }
+    } catch (e) { console.error(e); toast.error('Failed to update status'); }
   };
 
   const deleteLead = async (id: string) => {
@@ -81,11 +78,11 @@ export default function LeadsPage() {
       const res = await fetch(`/api/leads?id=${id}`, { method: 'DELETE' });
       if (res.ok) {
         fetchLeads();
-        showToast('Lead deleted');
+        toast.success('Lead deleted');
       } else {
-        showToast('Failed to delete lead', 'error');
+        toast.error('Failed to delete lead');
       }
-    } catch (e) { console.error(e); showToast('Failed to delete lead', 'error'); }
+    } catch (e) { console.error(e); toast.error('Failed to delete lead'); }
   };
 
   const exportToCSV = () => {
@@ -102,7 +99,7 @@ export default function LeadsPage() {
     a.download = `leads_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast('Exported to CSV');
+    toast.success('Exported to CSV');
   };
 
   const filteredLeads = leads.filter(l => {
@@ -293,17 +290,6 @@ export default function LeadsPage() {
           )}
         </AnimatePresence>
 
-        {/* Toast Notification */}
-        <AnimatePresence>
-          {toast && (
-            <motion.div initial={{ opacity: 0, y: 50, x: '-50%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
-              className="fixed bottom-6 left-1/2 z-[100] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl"
-              style={{ background: toast.type === 'success' ? 'hsl(142 76% 36%)' : 'hsl(0 72% 51%)', color: 'white' }}>
-              {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-              <span className="text-sm font-medium">{toast.message}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </motion.div>
     </div>
   );

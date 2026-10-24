@@ -3,9 +3,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Package, Search, X, DollarSign, Tag, TrendingUp, Grid3X3, List, Edit2, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Plus, Package, Search, X, DollarSign, Tag, TrendingUp, Grid3X3, List, Edit2, Trash2, AlertCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { Product } from '@/types/product';
+import { useToast } from '@/lib/toast';
 
 const chartData = [
   { category: 'Electronics', sales: 45 },
@@ -17,6 +18,8 @@ const chartData = [
 
 export default function ProductsPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const { error: toastError } = toast;
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,12 +31,6 @@ export default function ProductsPage() {
     name: '', description: '', price: '', taxRate: '0', sku: '',
     hsnCode: '', gstRate: '18', costPrice: '', mrp: '', barcode: '',
   });
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -42,15 +39,15 @@ export default function ProductsPage() {
         const data = await res.json();
         setProducts(data);
       } else {
-        showToast('Failed to load products', 'error');
+        toastError('Failed to load products');
       }
     } catch (error) {
       console.error('Error fetching products:', error);
-      showToast('Failed to load products', 'error');
+      toastError('Failed to load products');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toastError]);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
@@ -75,13 +72,13 @@ export default function ProductsPage() {
       if (res.ok) {
         resetForm();
         fetchProducts();
-        showToast(editingProduct ? 'Product updated successfully' : 'Product created successfully');
+        toast.success(editingProduct ? 'Product updated successfully' : 'Product created successfully');
       } else {
-        showToast('Failed to save product', 'error');
+        toast.error('Failed to save product');
       }
     } catch (error) {
       console.error('Error saving product:', error);
-      showToast('Failed to save product', 'error');
+      toast.error('Failed to save product');
     }
   };
 
@@ -91,13 +88,13 @@ export default function ProductsPage() {
       if (res.ok) {
         setShowDeleteConfirm(null);
         fetchProducts();
-        showToast('Product deleted');
+        toast.success('Product deleted');
       } else {
-        showToast('Failed to delete product', 'error');
+        toast.error('Failed to delete product');
       }
     } catch (error) {
       console.error('Error deleting product:', error);
-      showToast('Failed to delete product', 'error');
+      toast.error('Failed to delete product');
     }
   };
 
@@ -504,17 +501,6 @@ export default function ProductsPage() {
           </div>
         )}
 
-        {/* Toast Notification */}
-        <AnimatePresence>
-          {toast && (
-            <motion.div initial={{ opacity: 0, y: 50, x: '-50%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
-              className="fixed bottom-6 left-1/2 z-[100] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl"
-              style={{ background: toast.type === 'success' ? 'hsl(142 76% 36%)' : 'hsl(0 72% 51%)', color: 'white' }}>
-              {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-              <span className="text-sm font-medium">{toast.message}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </motion.div>
     </div>
   );

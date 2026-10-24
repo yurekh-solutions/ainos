@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2, CheckCircle2, AlertCircle, TrendingUp, Bell, Mail, MessageCircle, CheckCircle, Upload, Zap, Loader2, Check } from 'lucide-react';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
+import { useToast } from '@/lib/toast';
 
 interface Invoice {
   id: string;
@@ -140,13 +141,14 @@ interface InvoiceTemplate {
 }
 
 export default function InvoicesPage() {
+  const { toast } = useToast();
+  const { error: toastError } = toast;
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
   const [template, setTemplate] = useState<InvoiceTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   
   // Invoice extraction state
   const [showExtractModal, setShowExtractModal] = useState(false);
@@ -154,11 +156,6 @@ export default function InvoicesPage() {
   const [extractedData, setExtractedData] = useState<ExtractedTemplate | null>(null);
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [templateLogo, setTemplateLogo] = useState('');
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   const handleInvoiceExtract = async () => {
     if (!invoiceFile) return;
@@ -177,14 +174,14 @@ export default function InvoicesPage() {
 
       if (data.success && data.template) {
         setExtractedData(data.template);
-        showToast('Template design extracted successfully');
+        toast.success('Template design extracted successfully');
       } else {
-        showToast(data.error || 'Failed to extract template', 'error');
+        toast.error(data.error || 'Failed to extract template');
       }
       setExtracting(false);
     } catch (error) {
       console.error('Extraction error:', error);
-      showToast('Failed to extract template', 'error');
+      toast.error('Failed to extract template');
       setExtracting(false);
     }
   };
@@ -195,7 +192,7 @@ export default function InvoicesPage() {
       // Auto-create company if user doesn't have one
       let currentCompany = company;
       if (!currentCompany?.id) {
-        showToast('Setting up company profile...');
+        toast.info('Setting up company profile...');
         const createRes = await fetch('/api/company', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -211,10 +208,10 @@ export default function InvoicesPage() {
         if (createRes.ok) {
           currentCompany = await createRes.json();
           setCompany(currentCompany);
-          showToast('Company profile created!');
+          toast.success('Company profile created!');
         } else {
           const errData = await createRes.json().catch(() => ({}));
-          showToast(errData.error || 'Failed to create company profile', 'error');
+          toast.error(errData.error || 'Failed to create company profile');
           return;
         }
       }
@@ -304,17 +301,17 @@ export default function InvoicesPage() {
         }),
       });
       if (res.ok) {
-        showToast('Template saved! New invoices will use this design.');
+        toast.success('Template saved! New invoices will use this design.');
         setShowExtractModal(false);
         setExtractedData(null);
         setInvoiceFile(null);
         setTemplateLogo('');
         fetchData(); // Refresh company (logo) + template
       } else {
-        showToast('Failed to save template', 'error');
+        toast.error('Failed to save template');
       }
     } catch {
-      showToast('Failed to save template', 'error');
+      toast.error('Failed to save template');
     }
   };
 
@@ -330,7 +327,7 @@ export default function InvoicesPage() {
         const invoicesData = await invoicesRes.json();
         setInvoices(invoicesData);
       } else {
-        showToast('Failed to load invoices', 'error');
+        toastError('Failed to load invoices');
       }
       
       if (companyRes.ok) {
@@ -345,11 +342,11 @@ export default function InvoicesPage() {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      showToast('Failed to load data', 'error');
+      toastError('Failed to load data');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toastError]);
 
   useEffect(() => {
     fetchData();
@@ -812,15 +809,15 @@ export default function InvoicesPage() {
         body: JSON.stringify({ id: invoice.id, status: isFullyPaid ? 'paid' : 'sent', paidAmount: paidAmt }),
       });
       if (res.ok) {
-        showToast(isFullyPaid ? `Invoice ${invoice.invoiceNumber} marked as paid!` : `Payment of Rs.${paidAmt.toLocaleString('en-IN')} recorded!`, 'success');
+        toast.success(isFullyPaid ? `Invoice ${invoice.invoiceNumber} marked as paid!` : `Payment of Rs.${paidAmt.toLocaleString('en-IN')} recorded!`);
         setPayInvoice(null);
         setPayAmount('');
         fetchData();
       } else {
-        showToast('Failed to update invoice', 'error');
+        toast.error('Failed to update invoice');
       }
     } catch {
-      showToast('Network error', 'error');
+      toast.error('Network error');
     }
   };
 
@@ -1221,18 +1218,6 @@ export default function InvoicesPage() {
             </div>
           )}
         </div>
-
-        {/* Toast Notification */}
-        <AnimatePresence>
-          {toast && (
-            <motion.div initial={{ opacity: 0, y: 50, x: '-50%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
-              className="fixed bottom-6 left-1/2 z-[100] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl"
-              style={{ background: toast.type === 'success' ? 'hsl(142 76% 36%)' : 'hsl(0 72% 51%)', color: 'white' }}>
-              {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-              <span className="text-sm font-medium">{toast.message}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Invoice Extraction Modal */}
         <AnimatePresence>

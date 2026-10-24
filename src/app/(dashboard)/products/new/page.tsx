@@ -2,22 +2,17 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Package, Save, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Package, Save } from 'lucide-react';
+import { useToast } from '@/lib/toast';
 
 export default function NewProductPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [formData, setFormData] = useState({
     name: '', sku: '', hsnCode: '', price: '', costPrice: '', mrp: '',
     gstRate: '18', barcode: '', description: '', category: '',
   });
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,13 +37,13 @@ export default function NewProductPage() {
         }),
       });
       if (res.ok) {
-        showToast('Product created successfully!');
+        toast.success('Product created successfully!');
         setTimeout(() => router.push('/products'), 1000);
       } else {
-        showToast('Failed to save product', 'error');
+        toast.error('Failed to save product');
       }
     } catch {
-      showToast('Failed to save product', 'error');
+      toast.error('Failed to save product');
     } finally {
       setSaving(false);
     }
@@ -156,15 +151,6 @@ export default function NewProductPage() {
         </div>
       </form>
 
-      {/* Toast */}
-      {toast && (
-        <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl"
-          style={{ background: toast.type === 'success' ? '#10B981' : '#EF4444', color: 'white' }}>
-          {toast.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-          <span className="text-sm font-medium">{toast.message}</span>
-        </motion.div>
-      )}
     </div>
   );
 }

@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import { sendEmail, welcomeEmailTemplate } from '@/lib/email';
 import { findUserByEmail, normalizeEmail, normalizePhone } from '@/lib/identity';
 import { readVerificationProof } from '@/lib/verification';
-import { smsConfigured } from '@/lib/sms';
+import { startTrial } from '@/lib/billing';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -25,7 +25,6 @@ export async function POST(req: NextRequest) {
       gstNumber,
       documents,
       emailProof,
-      phoneProof,
     } = body;
 
     const email = normalizeEmail(String(body.email || ''));
@@ -47,9 +46,8 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Verification gate ────────────────────────────────────────────────────
-    // Every account must prove it owns the email address. A phone number is
-    // required only when an SMS provider is actually configured, so the flow
-    // never dead-ends on an unconfigured integration.
+    // Every account must prove it owns the email address. The phone number is
+    // collected for contact purposes but does not require OTP verification.
     const emailVerification = readVerificationProof(emailProof);
     if (
       !emailVerification ||
@@ -61,24 +59,6 @@ export async function POST(req: NextRequest) {
         {
           error: 'Please verify your email address before submitting the application.',
           code: 'EMAIL_NOT_VERIFIED',
-        },
-        { status: 400 },
-      );
-    }
-
-    const phoneRequired = smsConfigured() && process.env.OTP_REQUIRE_PHONE !== 'false';
-    const phoneVerification = readVerificationProof(phoneProof);
-    const phoneVerified =
-      !!phoneVerification &&
-      phoneVerification.channel === 'phone' &&
-      phoneVerification.purpose === 'signup_phone' &&
-      phoneVerification.target === normalizedPhone;
-
-    if (phoneRequired && !phoneVerified) {
-      return NextResponse.json(
-        {
-          error: 'Please verify your phone number before submitting the application.',
-          code: 'PHONE_NOT_VERIFIED',
         },
         { status: 400 },
       );
@@ -107,16 +87,16 @@ export async function POST(req: NextRequest) {
           gstNumber: gstNumber || null,
           uploadedDocs: documents && Object.keys(documents).length > 0 ? documents : null,
           createdBy: email,
-          // All tools locked by default (0=locked, 1=basic, 2=subscribed, 3=premium)
-          autoBlog: 0,
-          invoiceGen: 0,
-          crmAccess: 0,
-          inventoryMgmt: 0,
-          hrPayroll: 0,
-          emailMarketing: 0,
-          aiAssistant: 0,
-          websiteGen: 0,
-          subscriptionStatus: 'inactive',
+          // Trial access by default (0=locked, 1=basic, 2=subscribed, 3=premium)
+          autoBlog: 1,
+          invoiceGen: 1,
+          crmAccess: 1,
+          inventoryMgmt: 1,
+          hrPayroll: 1,
+          emailMarketing: 1,
+          aiAssistant: 1,
+          websiteGen: 1,
+          subscriptionStatus: 'trialing',
           onboardingStatus: 'pending',
           // One-time token so the pre-approval document upload works without a session
           uploadToken: crypto.randomUUID(),
@@ -135,7 +115,7 @@ export async function POST(req: NextRequest) {
               companyId: company.id,
               country: country || 'India',
               emailVerifiedAt: verifiedAt,
-              phoneVerifiedAt: phoneVerified ? verifiedAt : null,
+              phoneVerifiedAt: null,
             },
           })
         : await tx.user.create({
@@ -148,7 +128,7 @@ export async function POST(req: NextRequest) {
               companyId: company.id,
               country: country || 'India',
               emailVerifiedAt: verifiedAt,
-              phoneVerifiedAt: phoneVerified ? verifiedAt : null,
+              phoneVerifiedAt: null,
             },
           });
 
@@ -160,6 +140,13 @@ export async function POST(req: NextRequest) {
     });
 
     const { company, user } = result;
+
+    // Subscription creation is best-effort — tool levels remain the primary access gate.
+    try {
+      await startTrial(company.id, user.id);
+    } catch (trialError) {
+      console.error('Trial creation failed (non-blocking):', trialError);
+    }
 
     // Welcome email is best-effort — a mail failure must not fail signup.
     try {

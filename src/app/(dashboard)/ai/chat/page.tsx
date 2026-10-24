@@ -1,26 +1,30 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Send, Bot, User, Sparkles } from 'lucide-react';
+import { useToast } from '@/lib/toast';
 
 interface Message { role: 'user' | 'assistant'; content: string; }
 interface ChatSession { id: string; messages: Array<{ role: string; content: string }>; createdAt: string; }
 
 export default function AIChatPage() {
+  const { toast } = useToast();
+  const { error: toastError } = toast;
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentMessages, setCurrentMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   const fetchSessions = useCallback(async () => {
-    try { const res = await fetch('/api/ai-chat'); if (res.ok) setSessions(await res.json()); } catch (e) { console.error(e); }
-  }, []);
+    try {
+      const res = await fetch('/api/ai-chat');
+      if (res.ok) setSessions(await res.json());
+      else toastError('Failed to load chat history');
+    } catch (e) {
+      console.error(e);
+      toastError('Failed to load chat history');
+    }
+  }, [toastError]);
 
   // eslint-disable-next-line react-hooks/require-effect-dependencies
   useEffect(() => { fetchSessions(); }, [fetchSessions]);
@@ -43,9 +47,9 @@ export default function AIChatPage() {
         const assistantMessage: Message = { role: 'assistant', content: data.response };
         setCurrentMessages(prev => [...prev, assistantMessage]);
       } else {
-        showToast('Failed to get response', 'error');
+        toast.error('Failed to get response');
       }
-    } catch (e) { console.error(e); showToast('Failed to get response', 'error'); }
+    } catch (e) { console.error(e); toast.error('Failed to get response'); }
     finally { setLoading(false); }
   };
 
@@ -137,17 +141,6 @@ export default function AIChatPage() {
           </div>
         </div>
 
-        {/* Toast Notification */}
-        <AnimatePresence>
-          {toast && (
-            <motion.div initial={{ opacity: 0, y: 50, x: '-50%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
-              className="fixed bottom-6 left-1/2 z-[100] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl"
-              style={{ background: toast.type === 'success' ? 'hsl(142 76% 36%)' : 'hsl(0 72% 51%)', color: 'white' }}>
-              {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-              <span className="text-sm font-medium">{toast.message}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </div>
   );

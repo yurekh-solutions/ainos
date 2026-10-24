@@ -5,10 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Users, Search, Mail, Phone, MapPin, X, TrendingUp, UserPlus, Building2 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import type { Customer } from '@/types/customer';
+import { useToast } from '@/lib/toast';
 
 const COLORS = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6'];
 
 export default function CustomersPage() {
+  const { toast } = useToast();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,6 +28,7 @@ export default function CustomersPage() {
       }
     } catch (error) {
       console.error('Error fetching customers:', error);
+      toast.error('Failed to load customers');
     } finally {
       setLoading(false);
     }
@@ -46,6 +49,7 @@ export default function CustomersPage() {
       }
     } catch (error) {
       console.error('Error creating customer:', error);
+      toast.error('Failed to create customer');
     }
   };
 

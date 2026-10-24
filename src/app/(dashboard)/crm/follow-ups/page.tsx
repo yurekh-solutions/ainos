@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useToast } from '@/lib/toast';
 import {
   AlertTriangle,
   CalendarClock,
@@ -57,10 +58,10 @@ function isOverdue(row: FollowUpRow): boolean {
 }
 
 export default function FollowUpsPage() {
+  const { toast } = useToast();
   const [rows, setRows] = useState<FollowUpRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [toast, setToast] = useState('');
   const [busyId, setBusyId] = useState('');
   const [deletingId, setDeletingId] = useState('');
   const [status, setStatus] = useState('all');
@@ -90,12 +91,6 @@ export default function FollowUpsPage() {
     return () => clearTimeout(timer);
   }, [load]);
 
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(''), 3000);
-    return () => clearTimeout(timer);
-  }, [toast]);
-
   const markDone = async (id: string) => {
     setBusyId(id);
     try {
@@ -108,10 +103,10 @@ export default function FollowUpsPage() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'Update failed');
       }
-      setToast('Follow-up completed');
+      toast.success('Follow-up completed');
       await load();
     } catch (err) {
-      setToast(err instanceof Error ? err.message : 'Update failed');
+      toast.error(err instanceof Error ? err.message : 'Update failed');
     } finally {
       setBusyId('');
     }
@@ -125,11 +120,11 @@ export default function FollowUpsPage() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'Delete failed');
       }
-      setToast('Follow-up deleted');
+      toast.success('Follow-up deleted');
       setDeletingId('');
       await load();
     } catch (err) {
-      setToast(err instanceof Error ? err.message : 'Delete failed');
+      toast.error(err instanceof Error ? err.message : 'Delete failed');
     } finally {
       setBusyId('');
     }
@@ -440,11 +435,6 @@ export default function FollowUpsPage() {
         </div>
       </div>
 
-      {toast && (
-        <div className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white shadow-lg">
-          {toast}
-        </div>
-      )}
     </div>
   );
 }
