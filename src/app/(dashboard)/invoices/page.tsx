@@ -806,10 +806,10 @@ export default function InvoicesPage() {
     try {
       const paidAmt = amount ?? invoice.totalAmount;
       const isFullyPaid = paidAmt >= invoice.totalAmount;
-      const res = await fetch(`/api/invoices/${invoice.id}`, {
+      const res = await fetch('/api/invoices', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: isFullyPaid ? 'paid' : 'sent', paidAmount: paidAmt }),
+        body: JSON.stringify({ id: invoice.id, status: isFullyPaid ? 'paid' : 'sent', paidAmount: paidAmt }),
       });
       if (res.ok) {
         showToast(isFullyPaid ? `Invoice ${invoice.invoiceNumber} marked as paid!` : `Payment of Rs.${paidAmt.toLocaleString('en-IN')} recorded!`, 'success');
@@ -895,6 +895,36 @@ export default function InvoicesPage() {
   const totalRevenue = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + (i.totalAmount || 0), 0);
   const totalPending = invoices.filter(i => i.status !== 'paid' && i.status !== 'cancelled').reduce((s, i) => s + (i.totalAmount || 0), 0);
   const totalProfit = invoices.reduce((s, i) => s + (i.profitAmount || 0), 0);
+
+  // Row actions are shared by the desktop table and the mobile cards.
+  const renderActions = (invoice: Invoice) => (
+    <div className="flex items-center gap-1">
+      {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
+        <button onClick={() => { setPayInvoice(invoice); setPayAmount(String(invoice.totalAmount - (invoice.paidAmount || 0))); }}
+          className="p-1.5 rounded-lg transition-colors hover:bg-green-50"
+          title={invoice.paidAmount ? 'Record Payment' : 'Mark as Paid'}>
+          <CheckCircle className="w-3.5 h-3.5 text-green-600" />
+        </button>
+      )}
+      <button onClick={() => handleSendEmail(invoice)}
+        className="p-1.5 rounded-lg transition-colors hover:bg-blue-50"
+        title="Send via Email">
+        <Mail className="w-3.5 h-3.5 text-blue-600" />
+      </button>
+      {invoice.customerPhone && invoice.status !== 'paid' && (
+        <button onClick={() => handleWhatsApp(invoice)}
+          className="p-1.5 rounded-lg transition-colors hover:bg-green-50"
+          title="WhatsApp Reminder">
+          <MessageCircle className="w-3.5 h-3.5 text-green-600" />
+        </button>
+      )}
+      <button onClick={() => downloadPDF(invoice)}
+        className="p-1.5 rounded-lg transition-colors hover:bg-[hsl(var(--primary)/0.1)]"
+        title="Download PDF">
+        <Download className="w-3.5 h-3.5" style={{ color: 'hsl(var(--primary))' }} />
+      </button>
+    </div>
+  );
 
   return (
     <>
@@ -1058,7 +1088,8 @@ export default function InvoicesPage() {
                 style={{ borderColor: 'hsl(var(--border))', borderTopColor: 'hsl(var(--primary))' }} />
             </div>
           ) : filteredInvoices.length > 0 ? (
-            <div className="overflow-x-auto">
+            <>
+            <div className="hidden overflow-x-auto lg:block">
               <table className="w-full">
                 <thead>
                   <tr style={{ background: 'hsl(var(--muted))' }}>
@@ -1137,40 +1168,47 @@ export default function InvoicesPage() {
                         <td className="py-3 px-4 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
                           {new Date(invoice.createdAt).toLocaleDateString('en-IN')}
                         </td>
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-1">
-                            {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
-                              <button onClick={() => { setPayInvoice(invoice); setPayAmount(String(invoice.totalAmount - (invoice.paidAmount || 0))); }}
-                                className="p-1.5 rounded-lg transition-colors hover:bg-green-50"
-                                title={invoice.paidAmount ? 'Record Payment' : 'Mark as Paid'}>
-                                <CheckCircle className="w-3.5 h-3.5 text-green-600" />
-                              </button>
-                            )}
-                            <button onClick={() => handleSendEmail(invoice)}
-                              className="p-1.5 rounded-lg transition-colors hover:bg-blue-50"
-                              title="Send via Email">
-                              <Mail className="w-3.5 h-3.5 text-blue-600" />
-                            </button>
-                            {invoice.customerPhone && invoice.status !== 'paid' && (
-                              <button onClick={() => handleWhatsApp(invoice)}
-                                className="p-1.5 rounded-lg transition-colors hover:bg-green-50"
-                                title="WhatsApp Reminder">
-                                <MessageCircle className="w-3.5 h-3.5 text-green-600" />
-                              </button>
-                            )}
-                            <button onClick={() => downloadPDF(invoice)}
-                              className="p-1.5 rounded-lg transition-colors hover:bg-[hsl(var(--primary)/0.1)]"
-                              title="Download PDF">
-                              <Download className="w-3.5 h-3.5" style={{ color: 'hsl(var(--primary))' }} />
-                            </button>
-                          </div>
-                        </td>
+                        <td className="py-3 px-4">{renderActions(invoice)}</td>
                       </motion.tr>
                     );
                   })}
                 </tbody>
               </table>
             </div>
+
+            {/* Eight columns never fit below lg, so phones and tablets get cards */}
+            <div className="space-y-3 p-3 lg:hidden">
+              {filteredInvoices.map(invoice => (
+                <div key={invoice.id} className="rounded-2xl border p-4"
+                  style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold break-words" style={{ color: 'hsl(var(--foreground))' }}>
+                        {invoice.invoiceNumber}
+                      </p>
+                      <p className="text-xs break-words mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                        {invoice.customerName || 'N/A'}
+                      </p>
+                    </div>
+                    <span className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-medium capitalize border ${getStatusColor(invoice.status)}`}>
+                      {invoice.status}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                      <p className="text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
+                        ₹{invoice.totalAmount?.toLocaleString('en-IN') || '0'}
+                      </p>
+                      <p className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                        {new Date(invoice.createdAt).toLocaleDateString('en-IN')}
+                      </p>
+                    </div>
+                    {renderActions(invoice)}
+                  </div>
+                </div>
+              ))}
+            </div>
+            </>
           ) : (
             <div className="p-12 text-center">
               <FileText className="w-16 h-16 mx-auto mb-4" style={{ color: 'hsl(var(--muted-foreground))' }} />

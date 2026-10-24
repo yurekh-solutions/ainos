@@ -324,9 +324,9 @@ export default function AinosLandingPage() {
         <div className="absolute -top-32 -right-24 w-[440px] h-[440px] rounded-full bg-purple-200/50 blur-3xl" />
         <div className="absolute top-48 -left-28 w-[360px] h-[360px] rounded-full bg-indigo-200/40 blur-3xl" />
 
-        <div className="relative w-full md:px-12 lg:px-20 xl:px-28 mx-auto flex flex-col md:flex-row items-center justify-between gap-8 py-10 md:py-14">
+        <div className="relative w-full md:px-12 lg:px-20 xl:px-28 mx-auto flex flex-col lg:flex-row items-center justify-between gap-8 py-10 md:py-14">
           {/* Left */}
-          <div className="flex flex-col items-center md:items-start max-w-xl w-full">
+          <div className="flex flex-col items-center lg:items-start max-w-xl w-full lg:w-auto lg:flex-1 lg:min-w-0">
             <Link href="/auth/register" className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-full px-4 py-1.5 text-sm hover:bg-purple-100 transition-colors">
               <span className="flex items-center gap-2 text-purple-700">
                 <span className="text-sm font-medium">Introducing AINOS OS</span>
@@ -338,7 +338,7 @@ export default function AinosLandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.6 }}
-              className="text-center md:text-left text-neutral-900 text-3xl sm:text-4xl md:text-5xl lg:text-[52px] leading-[1.2] font-bold max-w-[610px] mt-5 tracking-tight text-balance"
+              className="text-center lg:text-left text-neutral-900 text-3xl sm:text-4xl md:text-5xl lg:text-[52px] leading-[1.2] font-bold max-w-[610px] mt-5 tracking-tight text-balance"
             >
               One platform to run your{' '}
               <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">entire business</span>
@@ -348,7 +348,7 @@ export default function AinosLandingPage() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="text-center md:text-left text-base sm:text-lg text-neutral-600 max-w-md mt-4 font-light leading-relaxed"
+              className="text-center lg:text-left text-base sm:text-lg text-neutral-600 max-w-md mt-4 font-light leading-relaxed"
             >
               CRM, Finance, HR, Inventory, Marketing and AI — unified in a single dashboard. Compliance-ready, built to scale worldwide.
             </motion.p>
@@ -377,8 +377,8 @@ export default function AinosLandingPage() {
               transition={{ delay: 0.4, duration: 0.5 }}
               className="mt-8 w-full"
             >
-              {/* Mobile: stacked cards - full width */}
-              <div className="flex md:hidden flex-col gap-3 w-full">
+              {/* Mobile + tablet: stacked cards - full width */}
+              <div className="flex lg:hidden flex-col gap-3 w-full">
                 {[
                   { icon: Shield, title: 'Secure & Reliable', desc: 'Your data, our priority' },
                   { icon: Timer, title: 'Quick Setup', desc: 'Get started in minutes' },
@@ -396,7 +396,7 @@ export default function AinosLandingPage() {
                 ))}
               </div>
               {/* Desktop: inline row */}
-              <div className="hidden md:flex flex-wrap items-center gap-x-7 gap-y-4">
+              <div className="hidden lg:flex flex-wrap items-center gap-x-7 gap-y-4">
                 {[
                   { icon: Shield, title: 'Secure & Reliable', desc: 'Your data, our priority' },
                   { icon: Timer, title: 'Quick Setup', desc: 'Get started in minutes' },
@@ -421,7 +421,7 @@ export default function AinosLandingPage() {
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2, duration: 0.7 }}
-            className="relative w-full max-w-[420px] sm:max-w-[480px] lg:max-w-[520px] flex-shrink-0 mx-auto md:mx-0"
+            className="relative w-full max-w-[420px] sm:max-w-[480px] lg:max-w-[420px] xl:max-w-[520px] flex-shrink-0 mx-auto lg:mx-0"
           >
             <div className="relative aspect-square w-full">
               {/* Orbital rings — perfect circles, viewBox matches container */}
@@ -432,12 +432,14 @@ export default function AinosLandingPage() {
                 <circle cx="50" cy="50" r="48" stroke="#e5e0f0" strokeWidth="0.4" />
               </svg>
 
-              {/* Center — AINOS logo, upscaled */}
+              {/* Center — AINOS logo, upscaled.
+                  Framer owns the inline transform here, so the centering comes
+                  from the flex overlay instead of translate(-50%,-50%). */}
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
-                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
+                className="absolute inset-0 z-10 flex items-center justify-center"
               >
                 <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-white shadow-2xl shadow-purple-500/20 ring-1 ring-gray-100 overflow-hidden flex items-center justify-center p-4">
                   <Image src="/ainos-wordmark.png" alt="AINOS" width={220} height={80} className="w-full h-auto object-contain" priority />
@@ -489,7 +491,7 @@ export default function AinosLandingPage() {
                       transform: 'translate(-50%, -50%)',
                     }}
                   >
-                    <div className="flex flex-col items-center gap-1.5">
+                    <div className="flex flex-col items-center gap-1.5 -translate-x-1/2 -translate-y-1/2">
                       {/* White circle with soft shadow */}
                       <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white shadow-lg shadow-purple-900/10 ring-1 ring-gray-100 flex items-center justify-center hover:scale-110 transition-transform duration-300 cursor-default">
                         {/* Colored icon background */}
