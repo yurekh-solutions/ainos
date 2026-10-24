@@ -1,6 +1,7 @@
 // AINOS full E2E module test — register, approve, login, CRUD every module.
 // Run: node --env-file=.env scripts/_fullTest.cjs
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 const BASE = 'http://localhost:3000';
 const results = [];
@@ -45,20 +46,37 @@ const TEST_EMAIL = `aitest${stamp}@example.com`;
 const P = { name: 'Test Item', title: 'Test Item', email: `t${stamp}@example.com`, phone: '9876500000', description: 'test', notes: 'test', quantity: 2, price: 100, amount: 200, rate: 18, status: 'draft', type: 'product', date: today, address: 'Test Address', city: 'Indore', state: 'MP', gstin: '', category: 'general' };
 
 async function main() {
-  // 1. Register company
-  const reg = await req('POST', '/api/auth/register-company', {
-    name: 'AI Test Owner', email: TEST_EMAIL, phone: '9876500000', password: 'testpass123',
-    companyName: `AITEST Co ${stamp}`, companyType: 'Private Limited', companyEmail: TEST_EMAIL,
-    companyPhone: '9876500000', companyAddress: 'Test Address', country: 'India',
-  }, 60000);
-  log('auth/register-company', reg, [200, 201]);
-  if (reg.status !== 200 && reg.status !== 201) return console.log('ABORT: registration failed');
-
-  // 2. Approve company (admin gate bypass for test)
-  const user = await prisma.user.findUnique({ where: { email: TEST_EMAIL } });
-  if (!user?.companyId) return console.log('ABORT: no companyId on user');
-  await prisma.company.update({ where: { id: user.companyId }, data: { onboardingStatus: 'approved' } });
-  console.log('Company approved:', user.companyId);
+  // 1. Seed an approved tenant + owner directly. Registration now requires an
+  //    emailed OTP, which is unrelated to the API surface under test here.
+  const passwordHash = await bcrypt.hash('testpass123', 10);
+  const company = await prisma.company.create({
+    data: {
+      name: `AITEST Co ${stamp}`,
+      companyType: 'Private Limited',
+      email: TEST_EMAIL,
+      phone: '9876500000',
+      address: 'Test Address',
+      country: 'India',
+      createdBy: 'AITEST',
+      onboardingStatus: 'approved',
+    },
+  });
+  const user = await prisma.user.create({
+    data: {
+      email: TEST_EMAIL,
+      name: 'AI Test Owner',
+      password: passwordHash,
+      role: 'owner',
+      companyId: company.id,
+      emailVerifiedAt: new Date(),
+    },
+  });
+  // A new tenant starts with no credits, which would make every marketplace tool
+  // return "Insufficient credits" instead of exercising its handler.
+  await prisma.creditBalance.create({ data: { companyId: company.id, balance: 200 } });
+  results.push({ name: 'auth/seed-tenant', status: 200, pass: true, ms: 0, note: '' });
+  console.log(`[PASS] auth/seed-tenant -> ${company.id}`);
+  if (!user.companyId) return console.log('ABORT: no companyId on user');
 
   // 3. Login via NextAuth credentials
   const csrfRes = await fetch(BASE + '/api/auth/csrf');
@@ -113,7 +131,7 @@ async function main() {
   r = await req('POST', '/api/purchase-orders', { vendorId, vendorName: 'Test Vendor', items: [{ name: 'Test Product', quantity: 1, price: 100 }], subtotal: 100, tax: 18, total: 118, orderDate: today, status: 'draft' });
   const poId = pickId(r);
   log('purchase-orders POST', r);
-  r = await req('POST', '/api/expenses', { description: 'Test Expense', amount: 500, category: 'office', date: today, vendor: 'Test Vendor', paymentMethod: 'cash' });
+  r = await req('POST', '/api/expenses', { title: 'Test Expense', description: 'Test Expense', amount: 500, category: 'office', date: today, vendor: 'Test Vendor', paymentMethod: 'cash' });
   const expenseId = pickId(r);
   if (log('expenses POST', r) && expenseId) log('expenses PUT', await req('PUT', '/api/expenses', { id: expenseId, amount: 600 }));
   r = await req('POST', '/api/delivery-challans', { customerId, customerName: 'Test Customer', items: [{ name: 'Test Product', quantity: 1 }], challanDate: today });
