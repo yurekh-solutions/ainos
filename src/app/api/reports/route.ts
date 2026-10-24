@@ -22,7 +22,10 @@ export async function GET(req: NextRequest) {
       const revenue = await prisma.invoice.findMany({ where: { ...where, status: { in: ['sent', 'paid'] } } });
       const totalRevenue = revenue.reduce((s, i) => s + (i.totalAmount || 0), 0);
       const totalProfit = revenue.reduce((s, i) => s + (i.profitAmount || 0), 0);
-      const expenses = await prisma.expense.findMany({ where });
+      // Only decided, non-rejected claims are real spend; pending ones are still claims.
+      const expenses = await prisma.expense.findMany({
+        where: { ...where, status: { in: ['approved', 'reimbursed'] } },
+      });
       const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
       return NextResponse.json({ type: 'Profit & Loss', totalRevenue, totalExpenses, netProfit: totalProfit - totalExpenses, revenue, expenses });
     }
@@ -37,8 +40,10 @@ export async function GET(req: NextRequest) {
     if (reportType === 'cash-flow') {
       const invoices = await prisma.invoice.findMany({ where: { ...where, status: 'paid' } });
       const cashIn = invoices.reduce((s, i) => s + (i.paidAmount || i.totalAmount || 0), 0);
-      const expenses = await prisma.expense.findMany({ where });
-      const cashOut = expenses.reduce((s, e) => s + e.amount, 0);
+      const expenses = await prisma.expense.findMany({
+        where: { ...where, status: { in: ['approved', 'reimbursed'] } },
+      });
+      const cashOut = expenses.reduce((s, e) => s + e.amount + (e.taxAmount || 0), 0);
       return NextResponse.json({ type: 'Cash Flow', cashIn, cashOut, netCashFlow: cashIn - cashOut });
     }
 

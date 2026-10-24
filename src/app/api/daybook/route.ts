@@ -14,8 +14,8 @@ export async function GET(req: NextRequest) {
       select: { id: true, invoiceNumber: true, totalAmount: true, status: true, createdAt: true, customerName: true },
     });
     const expenses = await prisma.expense.findMany({
-      where: { companyId: user.companyId },
-      select: { id: true, amount: true, category: true, date: true, description: true },
+      where: { companyId: user.companyId, status: { not: 'rejected' } },
+      select: { id: true, title: true, amount: true, taxAmount: true, category: true, date: true, description: true, status: true },
     });
 
     return NextResponse.json({ invoices, expenses });

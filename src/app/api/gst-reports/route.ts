@@ -34,7 +34,10 @@ export async function GET(req: NextRequest) {
       const invoices = await prisma.invoice.findMany({ where: { ...where, status: { in: ['sent', 'paid'] } } });
       const totalRevenue = invoices.reduce((s, i) => s + (i.totalAmount || 0), 0);
       const totalTax = invoices.reduce((s, i) => s + (i.cgstAmount || 0) + (i.sgstAmount || 0) + (i.igstAmount || 0), 0);
-      const expenses = await prisma.expense.findMany({ where });
+      // Pending claims are not spend yet, and rejected ones never are.
+      const expenses = await prisma.expense.findMany({
+        where: { ...where, status: { in: ['approved', 'reimbursed'] } },
+      });
       const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
       return NextResponse.json({ type: 'GSTR-3B', totalRevenue, totalTax, totalExpenses, netTax: totalTax });
     }
