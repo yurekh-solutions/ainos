@@ -6,6 +6,7 @@ import { getVerifiedBlogImage } from '@/lib/blog-images';
 import { generateScheduleNow } from '@/lib/schedule-generator';
 import { isAdmin } from '@/lib/admin';
 import { tidyBlogContent, blogQualityIssue, blogExcerpt, cleanBlogTags } from '@/lib/blog-quality';
+import { assertToolCredits, chargeToolRun } from '@/lib/tool-charge';
 
 // POST /api/blog-posts/regenerate?id=xxx
 // Regenerates content + featured image for an existing blog post (fresh angle,
@@ -25,6 +26,14 @@ export async function POST(req: NextRequest) {
     const postId = searchParams.get('id') || bodyId;
     if (!postId) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
+    const affordable = await assertToolCredits(user.companyId, 'ai-blog-generate');
+    if (!affordable.ok) {
+      return NextResponse.json(
+        { error: affordable.error, creditsRequired: affordable.cost, balance: affordable.balance },
+        { status: 402 }
+      );
+    }
+
     const post = await prisma.blogPost.findFirst({ where: { id: postId, ...scope } });
     if (!post) {
       // Queued blogs are BlogSchedule rows — write the full article right now
@@ -34,7 +43,14 @@ export async function POST(req: NextRequest) {
       if (result.status !== 'published') {
         return NextResponse.json({ error: 'The AI is busy right now — please try again in a moment.' }, { status: 502 });
       }
-      return NextResponse.json({ ok: true, status: result.status, liveAt: result.liveAt });
+      const charge = await chargeToolRun(user.companyId, 'ai-blog-generate', 'AI blog regeneration');
+      return NextResponse.json({
+        ok: true,
+        status: result.status,
+        liveAt: result.liveAt,
+        creditsUsed: charge.cost,
+        creditsBalance: charge.balance,
+      });
     }
 
     const systemPrompt = `You are an expert SEO content writer. Completely rewrite the given blog post with a fresh angle, practical examples and better structure. Keep the same title. Write at least 700 words with at least 4 substantive H2 sections, H3 subsections, an engaging intro, a 5-question FAQ and a useful CTA. Write in markdown; no duplicate H1 or inline images. Never invent citations, statistics, testimonials, company facts or case studies; label hypothetical scenarios clearly.
@@ -81,7 +97,8 @@ Write a completely new, publish-ready version of this post.`;
       },
     });
 
-    return NextResponse.json(updated);
+    const charge = await chargeToolRun(user.companyId, 'ai-blog-generate', 'AI blog regeneration');
+    return NextResponse.json({ ...updated, creditsUsed: charge.cost, creditsBalance: charge.balance });
   } catch (error) {
     console.error('Error regenerating blog post:', error);
     return NextResponse.json({ error: 'The AI is busy right now — please try again in a moment.' }, { status: 502 });

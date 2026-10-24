@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { generateAIText } from '@/lib/ai-provider';
+import { isAdmin } from '@/lib/admin';
+import { assertToolCredits, chargeToolRun } from '@/lib/tool-charge';
 
 // AI Comment Engagement - generates realistic comments for social proof
 export async function POST(req: NextRequest) {
@@ -12,7 +14,21 @@ export async function POST(req: NextRequest) {
     const { blogId, count } = await req.json();
     if (!blogId) return NextResponse.json({ error: 'Blog ID required' }, { status: 400 });
 
-    const post = await prisma.blogPost.findUnique({ where: { id: blogId } });
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const companyId = account?.companyId ?? null;
+    const affordable = await assertToolCredits(companyId, 'ai-comments');
+    if (!affordable.ok) {
+      return NextResponse.json(
+        { error: affordable.error, creditsRequired: affordable.cost, balance: affordable.balance },
+        { status: 402 }
+      );
+    }
+
+    const scope = isAdmin(session.user.email) ? {} : { companyId: companyId ?? '__none__' };
+    const post = await prisma.blogPost.findFirst({ where: { id: blogId, ...scope } });
     if (!post) return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
 
     const commentCount = count || 3;
@@ -44,7 +60,8 @@ Return as JSON array:
       ? result.map((c: Record<string, unknown>) => ({ ...c, aiGenerated: true }))
       : [];
 
-    return NextResponse.json({ comments });
+    const charge = await chargeToolRun(companyId, 'ai-comments', 'AI blog comments');
+    return NextResponse.json({ comments, creditsUsed: charge.cost, creditsBalance: charge.balance });
   } catch (error) {
     console.error('Comment generation error:', error);
     return NextResponse.json({ error: 'Failed to generate comments' }, { status: 500 });

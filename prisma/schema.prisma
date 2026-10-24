@@ -67,6 +67,7 @@ model Company {
   contacts           Contact[]
   creditBalance      CreditBalance?
   creditTransactions CreditTransaction[]
+  creditPurchases    CreditPurchase[]
   customers          Customer[]
   deals              Deal[]
   documents          Document[]
@@ -128,6 +129,18 @@ model Company {
   workOrders         WorkOrder[]
   qualityChecks      QualityCheck[]
   scrapOrders        ScrapOrder[]
+  serviceJobs        ServiceJob[]
+  assets             Asset[]
+  maintenanceTasks   MaintenanceTask[]
+  vehicles           Vehicle[]
+  vehicleLogs        VehicleLog[]
+  repairOrders       RepairOrder[]
+  rentalOrders       RentalOrder[]
+  approvalRequests   ApprovalRequest[]
+  shifts             Shift[]
+  surveys            Survey[]
+  events             Event[]
+  auditLogs          AuditLog[]
 
   @@map("companies")
 }
@@ -477,20 +490,30 @@ model Project {
 }
 
 model Expense {
-  id          String   @id @default(uuid())
-  category    String
-  description String?
-  amount      Float
-  date        DateTime
-  receipt     String?
-  status      String   @default("pending")
-  approvedBy  String?  @map("approved_by")
-  companyId   String?  @map("company_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  company     Company? @relation(fields: [companyId], references: [id])
+  id              String    @id @default(uuid())
+  title           String?
+  category        String
+  description     String?
+  vendor          String?
+  amount          Float
+  taxAmount       Float     @default(0) @map("tax_amount")
+  paymentMethod   String    @default("cash") @map("payment_method") // cash | upi | card | bank | cheque | credit
+  date            DateTime
+  receipt         String?
+  status          String    @default("pending") // pending | approved | rejected | reimbursed
+  submittedBy     String?   @map("submitted_by")
+  approvedBy      String?   @map("approved_by")
+  approvedAt      DateTime? @map("approved_at")
+  rejectionReason String?   @map("rejection_reason")
+  reimbursedAt    DateTime? @map("reimbursed_at")
+  companyId       String?   @map("company_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  company         Company?  @relation(fields: [companyId], references: [id])
 
   @@index([companyId])
+  @@index([companyId, date])
+  @@index([companyId, status])
   @@map("expenses")
 }
 
@@ -661,6 +684,8 @@ model Document {
   size            Int?
   category        String?
   tags            Json?
+  notes           String?
+  expiryDate      DateTime? @map("expiry_date")
   uploadedBy      String?   @map("uploaded_by")
   companyId       String?   @map("company_id")
   createdAt       DateTime  @default(now()) @map("created_at")
@@ -683,6 +708,7 @@ model Document {
 
   @@index([companyId])
   @@index([verificationStatus])
+  @@index([expiryDate])
   @@map("documents")
 }
 
@@ -996,6 +1022,28 @@ model CreditTransaction {
   @@index([companyId])
   @@index([createdAt])
   @@map("credit_transactions")
+}
+
+// A credit top-up attempt. The razorpay order id is written before the customer
+// pays, so the webhook can settle by order (never by amount) and a replayed
+// delivery finds status=paid and grants nothing twice.
+model CreditPurchase {
+  id          String    @id @default(uuid())
+  orderId     String    @unique @map("order_id")
+  paymentId   String?   @unique @map("payment_id")
+  companyId   String    @map("company_id")
+  credits     Int
+  amountMinor Int       @map("amount_minor")
+  currency    String    @default("INR")
+  displayUsd  Float     @map("display_usd")
+  status      String    @default("created")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  paidAt      DateTime? @map("paid_at")
+  company     Company   @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([status])
+  @@map("credit_purchases")
 }
 
 model ConnectedWebsite {
@@ -1895,4 +1943,346 @@ model ScrapOrder {
 
   @@index([companyId])
   @@map("scrap_orders")
+}
+
+// ── Field service ────────────────────────
+// One row per on-site job. status: scheduled | in_progress | completed | cancelled
+model ServiceJob {
+  id             String    @id @default(uuid())
+  jobNumber      String?   @map("job_number")
+  title          String
+  customerName   String?   @map("customer_name")
+  contactPhone   String?   @map("contact_phone")
+  address        String?
+  technician     String?
+  priority       String    @default("normal") // low | normal | high | urgent
+  status         String    @default("scheduled")
+  scheduledFor   DateTime? @map("scheduled_for")
+  completedAt    DateTime? @map("completed_at")
+  estimatedHours Float?    @map("estimated_hours")
+  labourCost     Float     @default(0) @map("labour_cost")
+  partsCost      Float     @default(0) @map("parts_cost")
+  description    String?
+  notes          String?
+  companyId      String?   @map("company_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  company        Company?  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([companyId, status])
+  @@index([companyId, scheduledFor])
+  @@map("service_jobs")
+}
+
+// ── Maintenance ──────────────────────────
+// Assets are the things that need upkeep; tasks are the scheduled services.
+model Asset {
+  id            String            @id @default(uuid())
+  name          String
+  code          String?
+  category      String? // equipment | hvac | electrical | it | other
+  location      String?
+  serialNumber  String?           @map("serial_number")
+  assignedTo    String?           @map("assigned_to")
+  purchasedAt   DateTime?         @map("purchased_at")
+  warrantyUntil DateTime?         @map("warranty_until")
+  status        String            @default("active") // active | under_maintenance | retired
+  notes         String?
+  companyId     String?           @map("company_id")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+  company       Company?          @relation(fields: [companyId], references: [id])
+  tasks         MaintenanceTask[]
+
+  @@index([companyId])
+  @@map("assets")
+}
+
+model MaintenanceTask {
+  id          String    @id @default(uuid())
+  assetId     String    @map("asset_id")
+  title       String
+  type        String    @default("preventive") // preventive | corrective | inspection
+  status      String    @default("planned") // planned | in_progress | done | skipped
+  dueAt       DateTime? @map("due_at")
+  completedAt DateTime? @map("completed_at")
+  technician  String?
+  cost        Float     @default(0)
+  notes       String?
+  companyId   String?   @map("company_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  asset       Asset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  company     Company?  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([assetId])
+  @@index([companyId, status])
+  @@map("maintenance_tasks")
+}
+
+// ── Fleet ────────────────────────────────
+model Vehicle {
+  id             String       @id @default(uuid())
+  name           String
+  registration   String?
+  type           String       @default("car") // car | van | truck | bike
+  driver         String?
+  odometer       Float?
+  insuranceUntil DateTime?    @map("insurance_until")
+  fitnessUntil   DateTime?    @map("fitness_until")
+  status         String       @default("active") // active | in_service | retired
+  notes          String?
+  companyId      String?      @map("company_id")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  company        Company?     @relation(fields: [companyId], references: [id])
+  logs           VehicleLog[]
+
+  @@index([companyId])
+  @@map("vehicles")
+}
+
+model VehicleLog {
+  id        String   @id @default(uuid())
+  vehicleId String   @map("vehicle_id")
+  type      String   @default("fuel") // fuel | service | repair | insurance | other
+  date      DateTime
+  litres    Float?
+  cost      Float    @default(0)
+  odometer  Float?
+  vendor    String?
+  notes     String?
+  companyId String?  @map("company_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  company   Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([vehicleId])
+  @@map("vehicle_logs")
+}
+
+model RepairOrder {
+  id            String    @id @default(uuid())
+  orderNumber   String    @unique @map("order_number")
+  customerId    String?   @map("customer_id")
+  customerName  String    @map("customer_name")
+  customerPhone String?   @map("customer_phone")
+  customerEmail String?   @map("customer_email")
+  deviceName    String    @map("device_name")
+  serialNumber  String?   @map("serial_number")
+  underWarranty Boolean   @default(false) @map("under_warranty")
+  issue         String?
+  diagnosis     String?
+  resolution    String?
+  status        String    @default("received") // received | diagnosed | in_progress | awaiting_parts | ready | delivered | cancelled
+  priority      String    @default("normal") // low | normal | high | urgent
+  technician    String?
+  laborCost     Float     @default(0) @map("labor_cost")
+  partsCost     Float     @default(0) @map("parts_cost")
+  totalCost     Float     @default(0) @map("total_cost")
+  receivedAt    DateTime  @default(now()) @map("received_at")
+  promisedAt    DateTime? @map("promised_at")
+  completedAt   DateTime? @map("completed_at")
+  deliveredAt   DateTime? @map("delivered_at")
+  notes         String?
+  companyId     String?   @map("company_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  lines         RepairLine[]
+  company       Company?  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([status])
+  @@map("repair_orders")
+}
+
+model RepairLine {
+  id          String      @id @default(uuid())
+  repairId    String      @map("repair_id")
+  kind        String      @default("part") // part | labor | service
+  description String
+  quantity    Float       @default(1)
+  unitPrice   Float       @default(0) @map("unit_price")
+  amount      Float       @default(0)
+  repair      RepairOrder @relation(fields: [repairId], references: [id], onDelete: Cascade)
+
+  @@index([repairId])
+  @@map("repair_lines")
+}
+
+model RentalOrder {
+  id            String    @id @default(uuid())
+  orderNumber   String    @unique @map("order_number")
+  customerName  String    @map("customer_name")
+  customerEmail String?   @map("customer_email")
+  customerPhone String?   @map("customer_phone")
+  itemName      String    @map("item_name")
+  itemRef       String?   @map("item_ref")
+  quantity      Decimal   @default(1) @db.Decimal(10, 2)
+  period        String    @default("day") // hour | day | week | month
+  unitPrice     Decimal   @default(0) @map("unit_price") @db.Decimal(14, 2)
+  startDate     DateTime  @map("start_date")
+  endDate       DateTime  @map("end_date")
+  rentalFee     Decimal   @default(0) @map("rental_fee") @db.Decimal(14, 2)
+  deposit       Decimal   @default(0) @db.Decimal(14, 2)
+  lateFee       Decimal   @default(0) @map("late_fee") @db.Decimal(14, 2)
+  total         Decimal   @default(0) @db.Decimal(14, 2)
+  status        String    @default("draft") // draft | confirmed | out | returned | cancelled
+  returnedAt    DateTime? @map("returned_at")
+  notes         String?
+  companyId     String?   @map("company_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  company       Company?  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([status])
+  @@map("rental_orders")
+}
+
+model ApprovalRequest {
+  id            String    @id @default(uuid())
+  title         String
+  category      String    @default("purchase") // purchase | expense | leave | budget | other
+  amount        Decimal   @default(0) @db.Decimal(14, 2)
+  requesterName String    @map("requester_name")
+  approverName  String?   @map("approver_name")
+  description   String?
+  status        String    @default("pending") // pending | approved | refused | cancelled
+  decidedAt     DateTime? @map("decided_at")
+  decisionNote  String?   @map("decision_note")
+  createdById   String?   @map("created_by_id")
+  decidedById   String?   @map("decided_by_id")
+  companyId     String?   @map("company_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  company       Company?  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([status])
+  @@map("approval_requests")
+}
+
+model Shift {
+  id           String    @id @default(uuid())
+  employeeName String    @map("employee_name")
+  role         String?
+  startAt      DateTime  @map("start_at")
+  endAt        DateTime  @map("end_at")
+  location     String?
+  status       String    @default("planned") // planned | confirmed | done | absent | cancelled
+  notes        String?
+  companyId    String?   @map("company_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  company      Company?  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([startAt])
+  @@map("shifts")
+}
+
+model Survey {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  audience    String?   // customers | employees | vendors
+  status      String    @default("draft") // draft | live | closed
+  companyId   String?   @map("company_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  questions   SurveyQuestion[]
+  responses   SurveyResponse[]
+  company     Company?  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@map("surveys")
+}
+
+model SurveyQuestion {
+  id       String  @id @default(uuid())
+  surveyId String  @map("survey_id")
+  prompt   String
+  kind     String  @default("rating") // rating | text | choice | yesno
+  options  Json?
+  required Boolean @default(true)
+  position Int     @default(0)
+  survey   Survey  @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+
+  @@index([surveyId])
+  @@map("survey_questions")
+}
+
+model SurveyResponse {
+  id             String   @id @default(uuid())
+  surveyId       String   @map("survey_id")
+  respondentName String?  @map("respondent_name")
+  answers        Json?
+  score          Float?
+  submittedAt    DateTime @default(now()) @map("submitted_at")
+  survey         Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+
+  @@index([surveyId])
+  @@map("survey_responses")
+}
+
+model Event {
+  id            String    @id @default(uuid())
+  title         String
+  category      String    @default("conference")
+  description   String?
+  startAt       DateTime  @map("start_at")
+  endAt         DateTime? @map("end_at")
+  location      String?
+  capacity      Int       @default(0)
+  ticketPrice   Decimal   @default(0) @map("ticket_price") @db.Decimal(14, 2)
+  status        String    @default("draft") // draft | published | closed | cancelled
+  companyId     String?   @map("company_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  registrations EventRegistration[]
+  company       Company?  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([startAt])
+  @@map("events")
+}
+
+model EventRegistration {
+  id            String   @id @default(uuid())
+  eventId       String   @map("event_id")
+  attendeeName  String   @map("attendee_name")
+  attendeeEmail String?  @map("attendee_email")
+  seats         Int      @default(1)
+  amount        Decimal  @default(0) @db.Decimal(14, 2)
+  status        String   @default("confirmed") // confirmed | cancelled
+  registeredAt  DateTime @default(now()) @map("registered_at")
+  event         Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("event_registrations")
+}
+
+/// Append-only trail of who changed what, for every operational record.
+/// Actor identity is stored as plain values (no FK) so the history survives
+/// user deletion and stays readable years later.
+model AuditLog {
+  id         String   @id @default(uuid())
+  companyId  String?  @map("company_id")
+  entity     String // rental | approval | shift | survey | event | registration
+  entityId   String   @map("entity_id")
+  action     String // created | updated | deleted | approved | refused | returned | handover
+  actorId    String?  @map("actor_id")
+  actorEmail String?  @map("actor_email")
+  summary    String?
+  changes    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+  company    Company? @relation(fields: [companyId], references: [id])
+
+  @@index([companyId, entity, entityId])
+  @@index([companyId, createdAt])
+  @@map("audit_logs")
 }

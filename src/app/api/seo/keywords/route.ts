@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { generateAIText } from '@/lib/ai-provider';
+import { prisma } from '@/lib/prisma';
+import { assertToolCredits, chargeToolRun } from '@/lib/tool-charge';
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,6 +11,19 @@ export async function POST(req: NextRequest) {
 
     const { keyword, niche } = await req.json();
     if (!keyword) return NextResponse.json({ error: 'Keyword is required' }, { status: 400 });
+
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const companyId = account?.companyId ?? null;
+    const affordable = await assertToolCredits(companyId, 'seo-keyword-research');
+    if (!affordable.ok) {
+      return NextResponse.json(
+        { error: affordable.error, creditsRequired: affordable.cost, balance: affordable.balance },
+        { status: 402 }
+      );
+    }
 
     const systemPrompt = `You are an expert SEO keyword researcher. Generate high-value keyword suggestions based on a seed keyword and niche.
 
@@ -51,7 +66,8 @@ Make them realistic and valuable for SEO content strategy.`;
     }
 
     const keywords = Array.isArray(data.keywords) ? data.keywords.slice(0, 20) : [];
-    return NextResponse.json({ keywords });
+    const charge = await chargeToolRun(companyId, 'seo-keyword-research', 'SEO keyword research');
+    return NextResponse.json({ keywords, creditsUsed: charge.cost, creditsBalance: charge.balance });
   } catch (error) {
     console.error('Keyword research error:', error);
     const message = error instanceof Error ? error.message : 'Keyword research failed';

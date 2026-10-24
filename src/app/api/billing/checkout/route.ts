@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { createOrder, CREDIT_PACKS } from '@/lib/razorpay';
+import { createOrder, CREDIT_PACKS, packAmountMinor, isRazorpayConfigured } from '@/lib/razorpay';
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,6 +10,13 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { creditPackId } = body;
+
+    if (!isRazorpayConfigured) {
+      return NextResponse.json(
+        { error: 'Payments are not configured yet — please try again later or contact support.' },
+        { status: 503 }
+      );
+    }
 
     const pack = CREDIT_PACKS.find(p => p.credits === creditPackId);
     if (!pack) {
@@ -22,11 +29,27 @@ export async function POST(req: NextRequest) {
     }
 
     const receipt = `credits_${user.companyId}_${Date.now()}`;
-    const order = await createOrder(pack.price, receipt);
+    const amountMinor = packAmountMinor(pack);
+    const order = await createOrder(amountMinor, receipt);
+
+    // Recorded before the customer pays: the webhook settles by order id, so a
+    // retried delivery can never credit the wallet twice.
+    await prisma.creditPurchase.create({
+      data: {
+        orderId: order.id,
+        companyId: user.companyId,
+        credits: pack.credits,
+        amountMinor,
+        currency: 'INR',
+        displayUsd: pack.price,
+      },
+    });
 
     return NextResponse.json({
       orderId: order.id,
-      amount: pack.price,
+      amount: amountMinor,
+      currency: 'INR',
+      displayUsd: pack.price,
       credits: pack.credits,
       keyId: process.env.RAZORPAY_KEY_ID,
       companyId: user.companyId
@@ -38,5 +61,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
-  return NextResponse.json(CREDIT_PACKS);
+  // The catalogue is quoted in USD but charged in INR, so the rupee figure is
+  // published alongside it rather than computed only at payment time.
+  return NextResponse.json(
+    CREDIT_PACKS.map((pack) => ({ ...pack, amountInr: packAmountMinor(pack) / 100 }))
+  );
 }

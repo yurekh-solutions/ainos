@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { generateAIText } from '@/lib/ai-provider';
+import { isAdmin } from '@/lib/admin';
+import { assertToolCredits, chargeToolRun } from '@/lib/tool-charge';
 
 // AI Lead Magnet Generator - converts blog into checklist/cheatsheet/template
 export async function POST(req: NextRequest) {
@@ -14,6 +16,22 @@ export async function POST(req: NextRequest) {
 
     const post = await prisma.blogPost.findUnique({ where: { id: blogId } });
     if (!post) return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
+
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const companyId = account?.companyId ?? null;
+    if (!isAdmin(session.user.email) && post.companyId !== companyId) {
+      return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
+    }
+    const affordable = await assertToolCredits(companyId, 'lead-magnet');
+    if (!affordable.ok) {
+      return NextResponse.json(
+        { error: affordable.error, creditsRequired: affordable.cost, balance: affordable.balance },
+        { status: 402 }
+      );
+    }
 
     const magnetType = type || 'checklist';
     const content = post.content || '';
@@ -58,10 +76,13 @@ Return as JSON: { "title": "...", "description": "...", "fields": [{ "label": ".
 
     const result = await generateAIText(systemPrompt, userPrompt, { json: true });
 
+    const charge = await chargeToolRun(companyId, 'lead-magnet', `Lead magnet (${magnetType})`);
     return NextResponse.json({
       type: magnetType,
       blogTitle: post.title,
-      content: result
+      content: result,
+      creditsUsed: charge.cost,
+      creditsBalance: charge.balance
     });
   } catch (error) {
     console.error('Lead magnet error:', error);

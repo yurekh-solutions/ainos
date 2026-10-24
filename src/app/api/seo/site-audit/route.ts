@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { scrapePage } from '@/lib/website-scraper';
 import { generateAIText } from '@/lib/ai-provider';
+import { prisma } from '@/lib/prisma';
+import { assertToolCredits, chargeToolRun } from '@/lib/tool-charge';
 
 // Real on-page SEO audit: fetches the live site and inspects actual HTML signals,
 // then Gemini ranks the top 3 fixes a founder should do first.
@@ -42,6 +44,19 @@ export async function POST(req: NextRequest) {
       origin = new URL(normalizedUrl).origin;
     } catch {
       return NextResponse.json({ error: 'Please enter a valid website URL' }, { status: 400 });
+    }
+
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const companyId = account?.companyId ?? null;
+    const affordable = await assertToolCredits(companyId, 'seo-site-audit');
+    if (!affordable.ok) {
+      return NextResponse.json(
+        { error: affordable.error, creditsRequired: affordable.cost, balance: affordable.balance },
+        { status: 402 }
+      );
     }
 
     const data = await scrapePage(normalizedUrl);
@@ -172,6 +187,7 @@ export async function POST(req: NextRequest) {
       aiSummary = null; // audit still fully useful without AI
     }
 
+    const charge = await chargeToolRun(companyId, 'seo-site-audit', 'SEO site audit');
     return NextResponse.json({
       url: normalizedUrl,
       score,
@@ -180,6 +196,8 @@ export async function POST(req: NextRequest) {
       pageTitle: data.titleRaw,
       wordCount: data.wordCount,
       aiSummary,
+      creditsUsed: charge.cost,
+      creditsBalance: charge.balance,
     });
   } catch (error) {
     console.error('Site audit error:', error);

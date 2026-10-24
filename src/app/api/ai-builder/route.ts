@@ -3,6 +3,7 @@ import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { generateSite } from '@/lib/site-generator';
 import { checkQuota } from '@/lib/billing';
+import { assertToolCredits, chargeToolRun } from '@/lib/tool-charge';
 
 export async function GET(req: NextRequest) {
   try {
@@ -43,6 +44,19 @@ export async function POST(req: NextRequest) {
     if (!quota.allowed) {
       return NextResponse.json({ error: quota.message, upgrade: true, plan: quota.plan, used: quota.used, limit: quota.limit }, { status: 402 });
     }
+
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const companyId = account?.companyId ?? null;
+    const affordable = await assertToolCredits(companyId, 'ai-website-builder');
+    if (!affordable.ok) {
+      return NextResponse.json(
+        { error: affordable.error, creditsRequired: affordable.cost, balance: affordable.balance },
+        { status: 402 }
+      );
+    }
     const brief = {
       businessName: String(body.businessName).slice(0, 80),
       industry: String(body.industry).slice(0, 80),
@@ -68,7 +82,11 @@ export async function POST(req: NextRequest) {
         createdBy: session.user.id || session.user.email,
       },
     });
-    return NextResponse.json({ id: site.id, html, aiUsed }, { status: 201 });
+    const charge = await chargeToolRun(companyId, 'ai-website-builder', 'AI website build');
+    return NextResponse.json(
+      { id: site.id, html, aiUsed, creditsUsed: charge.cost, creditsBalance: charge.balance },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Error generating site:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

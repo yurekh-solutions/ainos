@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { addCredits } from '@/lib/credits';
-import { verifyWebhookSignature, CREDIT_PACKS } from '@/lib/razorpay';
+import { verifyWebhookSignature } from '@/lib/razorpay';
+import { settleCreditPurchase } from '@/lib/credit-purchases';
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,29 +14,32 @@ export async function POST(req: NextRequest) {
 
     const event = JSON.parse(body);
 
-    // Handle payment captured event
-    if (event.event === 'payment.captured') {
-      const payment = event.payload.payment.entity;
-      const receipt = payment.receipt; // credits_{companyId}_{timestamp}
-
-      // Extract companyId from receipt
-      const parts = receipt.split('_');
-      const companyId = parts[1];
-
-      if (!companyId) {
-        return NextResponse.json({ error: 'Invalid receipt' }, { status: 400 });
-      }
-
-      // Find the credit pack from amount
-      const amountInRupees = payment.amount / 100;
-      const pack = CREDIT_PACKS.find(p => p.price === amountInRupees);
-
-      if (pack) {
-        await addCredits(companyId, pack.credits, `Payment: ${payment.id}`);
-      }
+    if (event.event !== 'payment.captured') {
+      return NextResponse.json({ status: 'ignored', event: event.event });
     }
 
-    return NextResponse.json({ status: 'ok' });
+    const payment = event.payload?.payment?.entity || {};
+    const orderId = payment.order_id;
+    if (!orderId) {
+      console.error('[razorpay-webhook] payment without order_id', payment.id);
+      return NextResponse.json({ status: 'ignored', reason: 'missing_order' });
+    }
+
+    const result = await settleCreditPurchase(orderId, payment.id, payment.amount);
+
+    if (!result.ok) {
+      // A 2xx stops Razorpay retrying a delivery we can never settle; the log
+      // line is what an operator needs to reconcile by hand.
+      console.error(`[razorpay-webhook] ${result.reason} for order ${orderId} payment ${payment.id}`);
+      return NextResponse.json({ status: 'ignored', reason: result.reason });
+    }
+
+    return NextResponse.json({
+      status: 'ok',
+      credited: result.credits,
+      alreadyPaid: result.alreadyPaid,
+      balance: result.balance,
+    });
   } catch (error) {
     console.error('Webhook error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

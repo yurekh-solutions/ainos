@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { analyzeMedia } from '@/lib/ai-provider';
+import { prisma } from '@/lib/prisma';
+import { assertToolCredits, chargeToolRun } from '@/lib/tool-charge';
 
 // AI Media Scanner — auto-fills topic + description from an uploaded image or video frame
 // Gemini (GEMINI_API_KEY) primary + Pollinations vision fallback via ai-provider
@@ -16,6 +18,19 @@ export async function POST(req: NextRequest) {
 
     const isVideo = mediaType === 'video';
     const label = isVideo ? 'video reel frame' : 'image';
+
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const companyId = account?.companyId ?? null;
+    const affordable = await assertToolCredits(companyId, 'social-caption-analyze');
+    if (!affordable.ok) {
+      return NextResponse.json(
+        { error: affordable.error, creditsRequired: affordable.cost, balance: affordable.balance },
+        { status: 402 }
+      );
+    }
 
     const instruction = `You are analyzing a ${label} that a creator wants to post on social media.
 
@@ -58,12 +73,15 @@ Rules:
       }
     }
 
+    const charge = await chargeToolRun(companyId, 'social-caption-analyze', 'AI media scan');
     return NextResponse.json({
       topic: typeof result.topic === 'string' ? result.topic : '',
       description: typeof result.description === 'string' ? result.description : '',
       niche: typeof result.niche === 'string' ? result.niche : '',
       mood: typeof result.mood === 'string' ? result.mood : '',
       detectedObjects: Array.isArray(result.detectedObjects) ? result.detectedObjects : [],
+      creditsUsed: charge.cost,
+      creditsBalance: charge.balance,
     });
   } catch (error) {
     console.error('Media analyze error:', error);

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { generateAIText } from '@/lib/ai-provider';
+import { prisma } from '@/lib/prisma';
+import { assertToolCredits, chargeToolRun } from '@/lib/tool-charge';
 
 // AI Content Optimization - Real-time SEO score and suggestions
 export async function POST(req: NextRequest) {
@@ -11,6 +13,19 @@ export async function POST(req: NextRequest) {
     const { title, content, keywords, category } = await req.json();
     if (!title || !content) {
       return NextResponse.json({ error: 'Title and content are required' }, { status: 400 });
+    }
+
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const companyId = account?.companyId ?? null;
+    const affordable = await assertToolCredits(companyId, 'ai-blog-seo');
+    if (!affordable.ok) {
+      return NextResponse.json(
+        { error: affordable.error, creditsRequired: affordable.cost, balance: affordable.balance },
+        { status: 402 }
+      );
     }
 
     const wordCount = content.split(/\s+/).length;
@@ -101,7 +116,8 @@ Provide specific, actionable recommendations to improve SEO score from current l
       }
     }
 
-    return NextResponse.json(result);
+    const charge = await chargeToolRun(companyId, 'ai-blog-seo', 'SEO content optimisation');
+    return NextResponse.json({ ...result, creditsUsed: charge.cost, creditsBalance: charge.balance });
   } catch (error) {
     console.error('Content optimization error:', error);
     return NextResponse.json({ error: 'Failed to analyze content' }, { status: 500 });

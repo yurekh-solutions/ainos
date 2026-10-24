@@ -3,6 +3,8 @@ import { getServerSession } from '@/lib/auth';
 import { generateAIText } from '@/lib/ai-provider';
 import { getVerifiedBlogImage } from '@/lib/blog-images';
 import { tidyBlogContent, blogQualityIssue, blogExcerpt, cleanBlogTags } from '@/lib/blog-quality';
+import { prisma } from '@/lib/prisma';
+import { assertToolCredits, chargeToolRun } from '@/lib/tool-charge';
 
 // AI Blog Agent - generates SEO-friendly blog posts with high-quality featured images
 // (Pexels → Unsplash → Pollinations fallback) via unified AI provider (Gemini first)
@@ -13,6 +15,19 @@ export async function POST(req: NextRequest) {
 
     const { topic, keywords, tone, length, industry, language } = await req.json();
     if (typeof topic !== 'string' || !topic.trim()) return NextResponse.json({ error: 'Topic is required' }, { status: 400 });
+
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const companyId = account?.companyId ?? null;
+    const affordable = await assertToolCredits(companyId, 'ai-blog-generate');
+    if (!affordable.ok) {
+      return NextResponse.json(
+        { error: affordable.error, creditsRequired: affordable.cost, balance: affordable.balance },
+        { status: 402 }
+      );
+    }
 
     const langName = language === 'hi' ? 'Hindi' : language === 'mr' ? 'Marathi' : 'English';
     const wordCount = length === 'short' ? '400-500' : length === 'long' ? '1200-1500' : length === 'extra-long' ? '2800-3200' : '700-900';
@@ -152,7 +167,8 @@ QUALITY CHECKS:
     // A failed image check is an error, never a successful blog with a broken URL.
     result.featuredImage = await getVerifiedBlogImage(topic, industry);
 
-    return NextResponse.json(result);
+    const charge = await chargeToolRun(companyId, 'ai-blog-generate', 'AI blog article');
+    return NextResponse.json({ ...result, creditsUsed: charge.cost, creditsBalance: charge.balance });
   } catch (error) {
     console.error('Error generating blog post:', error);
     return NextResponse.json({ error: 'Could not prepare a complete article and featured image. Please try again.' }, { status: 502 });

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { generateAIText } from '@/lib/ai-provider';
+import { isAdmin } from '@/lib/admin';
+import { chargeToolRun } from '@/lib/tool-charge';
 
 // Blog Health Score - checks broken links, outdated content, SEO decay
 export async function POST(req: NextRequest) {
@@ -14,6 +16,15 @@ export async function POST(req: NextRequest) {
 
     const post = await prisma.blogPost.findUnique({ where: { id: blogId } });
     if (!post) return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
+
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const companyId = account?.companyId ?? null;
+    if (!isAdmin(session.user.email) && post.companyId !== companyId) {
+      return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
+    }
 
     const content = post.content || '';
     const currentYear = new Date().getFullYear();
@@ -115,8 +126,9 @@ export async function POST(req: NextRequest) {
     const passedChecks = totalChecks - issues.filter(i => i.severity === 'high').length - (issues.filter(i => i.severity === 'medium').length * 0.5);
     const healthScore = Math.max(0, Math.min(100, Math.round((passedChecks / totalChecks) * 100)));
 
-    // AI suggestion for improvement
+    // AI suggestion for improvement (the only paid step; the checks above are local)
     let aiSuggestion = '';
+    let creditsUsed = 0;
     if (issues.length > 0) {
       try {
         const prompt = `This blog post has these issues: ${issues.map(i => i.message).join('; ')}.
@@ -125,6 +137,8 @@ export async function POST(req: NextRequest) {
           'You are an SEO content auditor. Provide concise, actionable suggestions.',
           prompt
         );
+        const charge = await chargeToolRun(companyId, 'blog-health', 'Blog health suggestions');
+        if (charge.ok) creditsUsed = charge.cost;
       } catch {
         aiSuggestion = 'Fix broken links, update outdated content, and add FAQ section.';
       }
@@ -134,6 +148,7 @@ export async function POST(req: NextRequest) {
       healthScore,
       issues,
       aiSuggestion,
+      creditsUsed,
       stats: {
         wordCount,
         linkCount: uniqueUrls.length,

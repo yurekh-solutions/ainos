@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { generateAIText, analyzeMedia } from '@/lib/ai-provider';
+import { prisma } from '@/lib/prisma';
+import { assertToolCredits, chargeToolRun } from '@/lib/tool-charge';
 
 // AI Social Media Caption Generator with Image/Video Analysis
 // Gemini (GEMINI_API_KEY) primary + Pollinations.ai fallback via ai-provider.
@@ -120,6 +122,22 @@ export async function POST(req: NextRequest) {
 
     // Handle both single image and multiple video frames
     const frames: string[] = Array.isArray(imageBase64) ? imageBase64 : (imageBase64 ? [imageBase64] : []);
+
+    // Vision runs are charged more than text-only ones, and only a successful
+    // generation is billed.
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const companyId = account?.companyId ?? null;
+    const costKey = frames.length > 0 ? 'social-caption-image' : 'social-caption';
+    const affordable = await assertToolCredits(companyId, costKey);
+    if (!affordable.ok) {
+      return NextResponse.json(
+        { error: affordable.error, creditsRequired: affordable.cost, balance: affordable.balance },
+        { status: 402 }
+      );
+    }
 
     // Guard against an empty platform selection silently meaning "no platforms"
     const selectedPlatforms: KnownPlatform[] = Array.isArray(platforms) && platforms.length > 0
@@ -329,6 +347,8 @@ CRITICAL RULES:
       throw new Error('The AI returned no usable captions — please regenerate');
     }
 
+    const charge = await chargeToolRun(companyId, costKey, 'Social captions');
+
     const generalTips = Array.isArray(result.generalTips)
       ? result.generalTips.map((t) => String(t ?? '').trim()).filter(Boolean).slice(0, 6)
       : [];
@@ -340,6 +360,8 @@ CRITICAL RULES:
       visionFailed: imageBase64 ? visionFailed : undefined,
       platforms: sanitized,
       generalTips,
+      creditsUsed: charge.cost,
+      creditsBalance: charge.balance,
     });
   } catch (error) {
     console.error('Social caption generation error:', error);

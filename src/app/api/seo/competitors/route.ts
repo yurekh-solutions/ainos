@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { scrapePage, type ScrapedData } from '@/lib/website-scraper';
 import { generateAIText } from '@/lib/ai-provider';
+import { prisma } from '@/lib/prisma';
+import { assertToolCredits, chargeToolRun } from '@/lib/tool-charge';
 
 // Competitor analysis: scrapes BOTH websites for real on-page signals,
 // then Gemini compares them with specific, actionable recommendations.
@@ -30,6 +32,19 @@ export async function POST(req: NextRequest) {
 
     const { competitorUrl, yourUrl } = await req.json();
     if (!competitorUrl || !yourUrl) return NextResponse.json({ error: 'Both URLs are required' }, { status: 400 });
+
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const companyId = account?.companyId ?? null;
+    const affordable = await assertToolCredits(companyId, 'seo-competitor');
+    if (!affordable.ok) {
+      return NextResponse.json(
+        { error: affordable.error, creditsRequired: affordable.cost, balance: affordable.balance },
+        { status: 402 }
+      );
+    }
 
     const norm = (u: string) => (String(u).startsWith('http') ? String(u) : `https://${String(u)}`);
     const yours = norm(yourUrl);
@@ -66,10 +81,13 @@ You must respond in this exact JSON format (no other text):
       else throw new Error('Could not parse competitor data');
     }
 
+    const charge = await chargeToolRun(companyId, 'seo-competitor', 'SEO competitor analysis');
     return NextResponse.json({
       ...data,
       scrapedYours: Boolean(yourData),
       scrapedTheirs: Boolean(theirData),
+      creditsUsed: charge.cost,
+      creditsBalance: charge.balance,
     });
   } catch (error) {
     console.error('Competitor analysis error:', error);

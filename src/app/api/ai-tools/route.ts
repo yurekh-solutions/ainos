@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { runTool, TOOL_IDS, ToolId } from '@/lib/ai-tools';
-import { checkQuota } from '@/lib/billing';
+import { assertToolCredits, chargeToolRun } from '@/lib/tool-charge';
 import { prisma } from '@/lib/prisma';
 
 // GET — list my deliverables (without full output), or ?id= for one full deliverable
@@ -46,13 +46,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'businessName is required' }, { status: 400 });
     }
 
-    // Plan quota — free: 3 runs/month, paid plans get more
-    const quota = await checkQuota(userId, 'toolRun');
-    if (!quota.allowed) {
-      return NextResponse.json({ error: quota.message, upgrade: true, plan: quota.plan, used: quota.used, limit: quota.limit }, { status: 402 });
+    // Credits are the meter here: a customer who pays per run is never blocked by
+    // the monthly free-taste cap, and a new tenant's welcome credits are the taste.
+    // Checked before the provider call, charged only once the deliverable exists,
+    // so a failed generation costs the customer nothing.
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const companyId = account?.companyId ?? null;
+    const costKey = `ai-studio-${tool}`;
+    const affordable = await assertToolCredits(companyId, costKey);
+    if (!affordable.ok) {
+      return NextResponse.json(
+        { error: affordable.error, creditsRequired: affordable.cost, balance: affordable.balance, upgrade: true },
+        { status: 402 }
+      );
     }
 
     const output = await runTool(tool, inputs);
+
+    const charge = await chargeToolRun(companyId, costKey, `AI Studio: ${tool}`);
 
     // Save as a deliverable (also drives usage metering)
     try {
@@ -73,7 +87,7 @@ export async function POST(req: NextRequest) {
       console.error('Failed to save tool run:', e);
     }
 
-    return NextResponse.json(output);
+    return NextResponse.json({ ...output, creditsUsed: charge.cost, creditsBalance: charge.balance });
   } catch (error) {
     console.error('Error running AI tool:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

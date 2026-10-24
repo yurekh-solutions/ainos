@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { generateAIText } from '@/lib/ai-provider';
+import { prisma } from '@/lib/prisma';
+import { assertToolCredits, chargeToolRun } from '@/lib/tool-charge';
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,6 +11,19 @@ export async function POST(req: NextRequest) {
 
     const { niche, keyword } = await req.json();
     if (!niche) return NextResponse.json({ error: 'Niche is required' }, { status: 400 });
+
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const companyId = account?.companyId ?? null;
+    const affordable = await assertToolCredits(companyId, 'seo-content-ideas');
+    if (!affordable.ok) {
+      return NextResponse.json(
+        { error: affordable.error, creditsRequired: affordable.cost, balance: affordable.balance },
+        { status: 402 }
+      );
+    }
 
     const systemPrompt = `You are an expert content strategist. Generate high-quality SEO/AEO content ideas for a niche.
 
@@ -49,7 +64,8 @@ Make ideas:
     }
 
     const ideas = Array.isArray(data.ideas) ? data.ideas.slice(0, 10) : [];
-    return NextResponse.json({ ideas });
+    const charge = await chargeToolRun(companyId, 'seo-content-ideas', 'SEO content ideas');
+    return NextResponse.json({ ideas, creditsUsed: charge.cost, creditsBalance: charge.balance });
   } catch (error) {
     console.error('Content ideas error:', error);
     const message = error instanceof Error ? error.message : 'Content ideas failed';

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { generateAIText } from '@/lib/ai-provider';
 import { prisma } from '@/lib/prisma';
+import { assertToolCredits, chargeToolRun } from '@/lib/tool-charge';
 
 // AI Content Repurposing - Convert blog into multiple social media formats
 export async function POST(req: NextRequest) {
@@ -11,6 +12,19 @@ export async function POST(req: NextRequest) {
 
     const { slug, formats } = await req.json();
     if (!slug) return NextResponse.json({ error: 'Slug is required' }, { status: 400 });
+
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const companyId = account?.companyId ?? null;
+    const affordable = await assertToolCredits(companyId, 'content-repurpose');
+    if (!affordable.ok) {
+      return NextResponse.json(
+        { error: affordable.error, creditsRequired: affordable.cost, balance: affordable.balance },
+        { status: 402 }
+      );
+    }
 
     const post = await prisma.blogPost.findFirst({
       where: { slug, status: 'published' },
@@ -174,11 +188,14 @@ Format as JSON:
       }
     }
 
+    const charge = await chargeToolRun(companyId, 'content-repurpose', 'Content repurposing');
     return NextResponse.json({
       success: true,
       postTitle: post.title,
       postSlug: post.slug,
       repurposed: results,
+      creditsUsed: charge.cost,
+      creditsBalance: charge.balance,
     });
   } catch (error) {
     console.error('Content repurposing error:', error);

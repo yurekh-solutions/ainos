@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { generateAIText } from '@/lib/ai-provider';
+import { assertToolCredits, chargeToolRun } from '@/lib/tool-charge';
 
 // Multi-Language Blog Translation - translates blogs to Hindi, Marathi, Spanish, etc.
 export async function POST(req: NextRequest) {
@@ -16,6 +17,19 @@ export async function POST(req: NextRequest) {
 
     const post = await prisma.blogPost.findUnique({ where: { id: blogId } });
     if (!post) return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
+
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const companyId = account?.companyId ?? null;
+    const affordable = await assertToolCredits(companyId, 'ai-blog-translate');
+    if (!affordable.ok) {
+      return NextResponse.json(
+        { error: affordable.error, creditsRequired: affordable.cost, balance: affordable.balance },
+        { status: 402 }
+      );
+    }
 
     const langMap: Record<string, string> = {
       'hi': 'Hindi',
@@ -50,6 +64,7 @@ Content:
 ${content}`;
 
     const translated = await generateAIText(systemPrompt, userPrompt);
+    const charge = await chargeToolRun(companyId, 'ai-blog-translate', 'Blog translation');
 
     // Check if translation already exists
     const existingSlug = `${post.slug}-${targetLang}`;
@@ -61,7 +76,13 @@ ${content}`;
         where: { id: existing.id },
         data: { content: translated, publishedAt: new Date() }
       });
-      return NextResponse.json({ success: true, slug: existingSlug, updated: true });
+      return NextResponse.json({
+        success: true,
+        slug: existingSlug,
+        updated: true,
+        creditsUsed: charge.cost,
+        creditsBalance: charge.balance,
+      });
     }
 
     // Create new translation
@@ -81,7 +102,13 @@ ${content}`;
       }
     });
 
-    return NextResponse.json({ success: true, slug: existingSlug, updated: false });
+    return NextResponse.json({
+      success: true,
+      slug: existingSlug,
+      updated: false,
+      creditsUsed: charge.cost,
+      creditsBalance: charge.balance,
+    });
   } catch (error) {
     console.error('Translation error:', error);
     return NextResponse.json({ error: 'Failed to translate blog' }, { status: 500 });

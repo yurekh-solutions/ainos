@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { generateAIText } from '@/lib/ai-provider';
+import { prisma } from '@/lib/prisma';
+import { assertToolCredits, chargeToolRun } from '@/lib/tool-charge';
 
 // Content Gap Analyzer - finds topics competitors are missing
 export async function POST(req: NextRequest) {
@@ -10,6 +12,19 @@ export async function POST(req: NextRequest) {
 
     const { niche, competitorUrls } = await req.json();
     if (!niche) return NextResponse.json({ error: 'Niche required' }, { status: 400 });
+
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const companyId = account?.companyId ?? null;
+    const affordable = await assertToolCredits(companyId, 'content-gap');
+    if (!affordable.ok) {
+      return NextResponse.json(
+        { error: affordable.error, creditsRequired: affordable.cost, balance: affordable.balance },
+        { status: 402 }
+      );
+    }
 
     // Scrape competitor headings (lightweight)
     const competitorTopics: string[] = [];
@@ -48,10 +63,13 @@ Return as JSON array:
 
     const gaps = Array.isArray(result) ? result : [];
 
+    const charge = await chargeToolRun(companyId, 'content-gap', 'Content gap analysis');
     return NextResponse.json({ 
       niche,
       competitorCount: competitorUrls?.length || 0,
-      gaps 
+      gaps,
+      creditsUsed: charge.cost,
+      creditsBalance: charge.balance
     });
   } catch (error) {
     console.error('Content gap error:', error);

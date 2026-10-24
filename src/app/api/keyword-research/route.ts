@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { generateAIText } from '@/lib/ai-provider';
+import { prisma } from '@/lib/prisma';
+import { assertToolCredits, chargeToolRun } from '@/lib/tool-charge';
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,6 +11,19 @@ export async function POST(req: NextRequest) {
 
     const { topic, industry, count } = await req.json();
     if (!topic) return NextResponse.json({ error: 'Topic is required' }, { status: 400 });
+
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const companyId = account?.companyId ?? null;
+    const affordable = await assertToolCredits(companyId, 'seo-keyword-research');
+    if (!affordable.ok) {
+      return NextResponse.json(
+        { error: affordable.error, creditsRequired: affordable.cost, balance: affordable.balance },
+        { status: 402 }
+      );
+    }
 
     const keywordCount = count || 20;
 
@@ -61,7 +76,8 @@ Include:
       }
     }
 
-    return NextResponse.json(result);
+    const charge = await chargeToolRun(companyId, 'seo-keyword-research', 'SEO keyword research');
+    return NextResponse.json({ ...result, creditsUsed: charge.cost, creditsBalance: charge.balance });
   } catch (error) {
     console.error('Error researching keywords:', error);
     return NextResponse.json({ error: 'Failed to research keywords' }, { status: 500 });
