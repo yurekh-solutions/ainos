@@ -4,7 +4,9 @@ import {
   Send, AtSign, SearchCheck, PenTool, MailOpen,
   ShoppingBag, Store, Package, ClipboardList, TrendingUp, Tag, MessageSquare, Users,
   Terminal, CreditCard, Receipt, UtensilsCrossed, Clock,
-  Layers, Settings, Wrench, BarChart2,
+  Layers, Settings, Wrench, BarChart2, Truck, PackageSearch, Car,
+  Warehouse, ShieldCheck, UserCheck, LifeBuoy, CalendarDays, Target, Hammer,
+  KeyRound, CheckSquare, CalendarClock, Ticket,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -14,7 +16,8 @@ export interface NavItem {
 }
 
 export interface NavGroup {
-  key: 'finance' | 'marketing' | 'ecommerce' | 'pos' | 'manufacturing';
+  key: 'finance' | 'billing' | 'marketing' | 'ecommerce' | 'pos' | 'manufacturing' | 'operations' |
+    'crm' | 'supply' | 'people' | 'support' | 'workspace';
   title: string;
   /** Compact label for the mobile bottom nav (max ~9 chars) */
   shortTitle?: string;
@@ -27,6 +30,77 @@ export interface NavGroup {
 export const DASHBOARD_NAV: NavItem = { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' };
 
 export const NAV_GROUPS: NavGroup[] = [
+  {
+    key: 'crm',
+    title: 'CRM',
+    shortTitle: 'CRM',
+    icon: Target,
+    href: '/crm/leads',
+    items: [
+      { icon: TrendingUp, label: 'Leads', href: '/crm/leads' },
+      { icon: Target, label: 'Deals', href: '/crm/deals' },
+      { icon: Contact2, label: 'Contacts', href: '/crm/contacts' },
+      { icon: MessageSquare, label: 'Follow-ups', href: '/crm/follow-ups' },
+    ],
+  },
+  {
+    key: 'supply',
+    title: 'Supply Chain',
+    shortTitle: 'Stock',
+    icon: Warehouse,
+    href: '/inventory/stock',
+    items: [
+      { icon: Boxes, label: 'Stock', href: '/inventory/stock' },
+      { icon: ClipboardList, label: 'Purchase Orders', href: '/inventory/orders' },
+      { icon: TrendingUp, label: 'Sales Orders', href: '/inventory/sales-orders' },
+      { icon: ShoppingCart, label: 'Vendors', href: '/inventory/vendors' },
+      { icon: Warehouse, label: 'Warehouses', href: '/inventory/warehouses' },
+      { icon: Layers, label: 'Manufacturing', href: '/manufacturing' },
+    ],
+  },
+  {
+    key: 'people',
+    title: 'People',
+    shortTitle: 'Team',
+    icon: UserCheck,
+    href: '/hr/employees',
+    items: [
+      { icon: Users, label: 'Employees', href: '/hr/employees' },
+      { icon: Clock, label: 'Attendance', href: '/hr/attendance' },
+      { icon: CalendarClock, label: 'Planning', href: '/planning' },
+      { icon: CalendarDays, label: 'Time Off', href: '/hr/leaves' },
+      { icon: CreditCard, label: 'Payroll', href: '/hr/payroll' },
+      { icon: UserCheck, label: 'Recruitment', href: '/hr/recruitment' },
+      { icon: FileBarChart, label: 'Timesheets', href: '/hr/timesheet' },
+    ],
+  },
+  {
+    key: 'support',
+    title: 'Support',
+    shortTitle: 'Help',
+    icon: LifeBuoy,
+    href: '/support/helpdesk',
+    items: [
+      { icon: LifeBuoy, label: 'Helpdesk', href: '/support/helpdesk' },
+      { icon: FileBarChart, label: 'Knowledge Base', href: '/support/knowledge-base' },
+    ],
+  },
+  {
+    key: 'workspace',
+    title: 'Workspace',
+    shortTitle: 'Work',
+    icon: Layers,
+    href: '/projects',
+    items: [
+      { icon: Layers, label: 'Projects', href: '/projects' },
+      { icon: CalendarDays, label: 'Calendar', href: '/calendar' },
+      { icon: Users, label: 'Team', href: '/team' },
+      { icon: Terminal, label: 'Automations', href: '/automations' },
+      { icon: BarChart2, label: 'Reports', href: '/reports' },
+      { icon: CheckSquare, label: 'Approvals', href: '/approvals' },
+      { icon: ShieldCheck, label: 'Compliance', href: '/compliance/documents' },
+    ],
+  },
   {
     key: 'finance',
     title: 'Finance',
@@ -47,6 +121,22 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    key: 'billing',
+    title: 'Accounting',
+    shortTitle: 'Books',
+    icon: Receipt,
+    href: '/finance/daybook',
+    items: [
+      { icon: Receipt, label: 'Recurring Invoices', href: '/finance/recurring-invoices' },
+      { icon: FileBarChart, label: 'Debit Notes', href: '/finance/debit-notes' },
+      { icon: ScrollText, label: 'Credit Notes', href: '/finance/credit-notes' },
+      { icon: Landmark, label: 'Bank Accounts', href: '/finance/bank-accounts' },
+      { icon: Sheet, label: 'Daybook', href: '/finance/daybook' },
+      { icon: FileBarChart, label: 'GST Reports', href: '/finance/gst-reports' },
+      { icon: BarChart2, label: 'Finance Reports', href: '/finance/reports' },
+    ],
+  },
+  {
     key: 'marketing',
     title: 'Marketing',
     icon: Radio,
@@ -57,6 +147,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { icon: SearchCheck, label: 'SEO Platform', href: '/marketing/seo' },
       { icon: PenTool, label: 'Blog & Content', href: '/marketing/blog' },
       { icon: MailOpen, label: 'Invitations', href: '/marketing/invitations' },
+      { icon: ClipboardList, label: 'Surveys', href: '/marketing/surveys' },
+      { icon: Ticket, label: 'Events', href: '/marketing/events' },
     ],
   },
   {
@@ -97,6 +189,21 @@ export const NAV_GROUPS: NavGroup[] = [
     href: '/manufacturing',
     items: [
       { icon: Layers, label: 'All Modules', href: '/manufacturing' },
+    ],
+  },
+  {
+    key: 'operations',
+    title: 'Operations',
+    shortTitle: 'Ops',
+    icon: Truck,
+    href: '/operations/field-service',
+    items: [
+      { icon: Wrench, label: 'Field Service', href: '/operations/field-service' },
+      { icon: PackageSearch, label: 'Maintenance', href: '/operations/maintenance' },
+      { icon: Car, label: 'Fleet', href: '/operations/fleet' },
+      { icon: ShieldCheck, label: 'Quality', href: '/operations/quality' },
+      { icon: Hammer, label: 'Repair', href: '/operations/repair' },
+      { icon: KeyRound, label: 'Rental', href: '/rental' },
     ],
   },
 ];
