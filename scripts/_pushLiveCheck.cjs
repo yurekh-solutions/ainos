@@ -1,13 +1,24 @@
-// Check whether commit 64634f0 (15 new API routes, Oct 24) is live on Render.
-// 401/405 = route exists => deployed. 404 = stale deploy.
+// Poll the 4 previously-404 pages until they flip to 307 (deployed) or timeout.
+// 404 = still old build; 307 = new build live (auth-gated); 200 = live public.
 (async () => {
-  const eps = ['/api/attendance', '/api/deals', '/api/credit-notes', '/api/warehouses', '/api/helpdesk', '/api/stock', '/api/bank-accounts', '/api/leaves'];
-  for (const ep of eps) {
-    try {
-      const r = await fetch('https://ainos-ywu0.onrender.com' + ep, { redirect: 'manual', signal: AbortSignal.timeout(60000) });
-      console.log(ep, '->', r.status);
-    } catch (e) {
-      console.log(ep, '-> ERR', e.message);
+  const base = 'https://ainos-ywu0.onrender.com';
+  const probes = ['/marketing/events', '/marketing/surveys', '/ecommerce', '/point-of-sale'];
+  const deadline = Date.now() + 8 * 60 * 1000; // 8 min
+  let attempt = 0;
+  while (Date.now() < deadline) {
+    attempt++;
+    const results = [];
+    let allLive = true;
+    for (const p of probes) {
+      try {
+        const r = await fetch(base + p, { redirect: 'manual', signal: AbortSignal.timeout(60000) });
+        results.push(`${p}=${r.status}`);
+        if (r.status === 404) allLive = false;
+      } catch (e) { results.push(`${p}=ERR`); allLive = false; }
     }
+    console.log(`[attempt ${attempt}] ${new Date().toLocaleTimeString()} :: ${results.join('  ')}`);
+    if (allLive) { console.log('\n>>> DEPLOYED: no more 404s. Latest code is live.'); break; }
+    await new Promise(res => setTimeout(res, 45000));
   }
+  console.log('\nDone polling.');
 })();
