@@ -15,12 +15,13 @@ import {
   Loader2, ArrowDownRight, Quote,
   ChevronLeft, ChevronRight, ChevronDown,
   Sparkles, Palette, Search, PenLine, Presentation,
-  MessageSquare, QrCode, ShoppingBag
+  MessageSquare, QrCode, ShoppingBag,
+  Wallet, UserCog, Boxes, LineChart
 } from 'lucide-react';
 
 const MODULES = [
   {
-    icon: ScrollText,
+    icon: Wallet,
     title: 'Finance & Billing',
     desc: 'GST-compliant invoicing, quotations and expense tracking.',
     bg: 'from-violet-500 to-purple-600',
@@ -44,7 +45,7 @@ const MODULES = [
     points: ['AI blogs, captions & creatives', 'Email campaign management', 'Social media management', 'AI Media Studio'],
   },
   {
-    icon: Users,
+    icon: UserCog,
     title: 'HR & Payroll',
     desc: 'People, attendance, leave and payroll without spreadsheets.',
     bg: 'from-emerald-500 to-teal-600',
@@ -52,7 +53,7 @@ const MODULES = [
     points: ['Employee records', 'Attendance tracking', 'Leave management', 'Payroll processing'],
   },
   {
-    icon: Package,
+    icon: Boxes,
     title: 'Inventory Control',
     desc: 'Real-time stock across warehouses, barcode ready.',
     bg: 'from-amber-500 to-orange-600',
@@ -76,7 +77,7 @@ const MODULES = [
     points: ['Contract management', 'Compliance tracking', 'Document vault', 'Legal workflow tracking'],
   },
   {
-    icon: BarChart3,
+    icon: LineChart,
     title: 'Analytics',
     desc: 'Live dashboards and reports behind every module.',
     bg: 'from-cyan-500 to-blue-600',
@@ -965,8 +966,8 @@ export default function AinosLandingPage() {
               <div className="grid grid-cols-2 gap-3">
                 {MODULES.map((m) => (
                   <div key={m.title} className="flex items-center gap-2.5 rounded-2xl bg-white border border-purple-100/70 p-3 sm:p-4">
-                    <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-purple-50 ring-1 ring-purple-100 flex items-center justify-center flex-shrink-0">
-                      <m.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600" />
+                    <span className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br ${m.bg} ${m.shadow} shadow-md flex items-center justify-center flex-shrink-0`}>
+                      <m.icon className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-white" strokeWidth={2.2} />
                     </span>
                     <span className="text-xs sm:text-sm font-medium text-gray-800 leading-snug min-w-0">{m.title}</span>
                   </div>
@@ -1029,8 +1030,8 @@ export default function AinosLandingPage() {
                       transition={{ delay: 0.15 + i * 0.05 }}
                       className="flex items-center gap-2.5 rounded-xl bg-white/10 ring-1 ring-white/15 px-3 py-2.5 transition-colors hover:bg-white/15"
                     >
-                      <span className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
-                        <t.icon className="w-3.5 h-3.5 text-white" />
+                      <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-white/25 to-white/10 ring-1 ring-white/20 flex items-center justify-center flex-shrink-0">
+                        <t.icon className="w-4 h-4 text-white" strokeWidth={2.2} />
                       </span>
                       <span className="text-xs sm:text-sm font-medium truncate">{t.name}</span>
                     </motion.div>

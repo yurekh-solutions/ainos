@@ -54,7 +54,7 @@ export async function middleware(request: NextRequest) {
   const toolRouteMap: Record<string, string> = {
     '/marketing/blog': 'autoBlog',
     '/marketing/blog-agent': 'autoBlog',
-    '/marketing/email': 'emailMarketing',
+    '/marketing/social-media': 'emailMarketing',
     '/finance/invoices': 'invoiceGen',
     '/finance/quotes': 'invoiceGen',
     '/finance/sales-orders': 'invoiceGen',

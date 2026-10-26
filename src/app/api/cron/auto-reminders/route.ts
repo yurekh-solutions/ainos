@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { sendEmail } from '@/lib/email';
 
 export async function GET() {
   try {
@@ -17,7 +18,6 @@ export async function GET() {
 
     let remindersSent = 0;
     let errors = 0;
-    const apiKey = process.env.RESEND_API_KEY;
 
     for (const inv of overdue) {
       try {
@@ -27,9 +27,8 @@ export async function GET() {
         const customerName = inv.customerName || 'Customer';
         const customerEmail = inv.customerEmail;
 
-        // Send email reminder if Resend configured and customer has email
-        if (apiKey && customerEmail && /\S+@\S+\.\S+/.test(customerEmail)) {
-          const from = process.env.RESEND_FROM || 'AINOS <onboarding@resend.dev>';
+        // Send email reminder via the shared sendEmail util if customer has email
+        if (customerEmail && /\S+@\S+\.\S+/.test(customerEmail)) {
           const subject = `Payment Reminder: Invoice ${invoiceNumber} is ${daysOverdue} days overdue`;
           const html = `
             <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">
@@ -42,15 +41,12 @@ export async function GET() {
             </div>
           `;
 
-          const res = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ from, to: [customerEmail], subject, html }),
-            signal: AbortSignal.timeout(15000),
-          });
-
-          if (res.ok) remindersSent++;
-          else errors++;
+          try {
+            await sendEmail({ to: customerEmail, subject, html });
+            remindersSent++;
+          } catch {
+            errors++;
+          }
         } else {
           // No email, just count as processed
           remindersSent++;

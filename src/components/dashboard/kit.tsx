@@ -161,7 +161,7 @@ export const FINANCE_TOOLS: Tool[] = [
 
 export const marketingTools = (templateLabel: string): Tool[] => [
   { title: 'Email Campaigns', short: 'Send bulk emails that convert', description: 'Design, send and track email campaigns with open and click analytics.', icon: Send, href: '/marketing/campaigns', tone: 'blue' },
-  { title: 'Social Media', short: 'Create engaging posts', description: 'Generate captions, hooks and hashtags for Instagram, LinkedIn, Twitter and Facebook.', icon: AtSign, href: '/marketing/email', tone: 'purple' },
+  { title: 'Social Media', short: 'Create engaging posts', description: 'Generate captions, hooks and hashtags for Instagram, LinkedIn, Twitter and Facebook.', icon: AtSign, href: '/marketing/social-media', tone: 'purple' },
   { title: 'SEO Platform', short: 'Rank higher on Google', description: 'Audit your website, research keywords and track competitor rankings.', icon: SearchCheck, href: '/marketing/seo', tone: 'indigo' },
   { title: 'Blog & Content', short: 'Publish quality articles', description: 'Write and publish SEO-optimized blog posts with AI assistance.', icon: PenTool, href: '/marketing/blog', tone: 'orange' },
   { title: 'Blog Agent', short: 'Automated content creation', description: 'AI researches topics, writes articles and publishes on your schedule.', icon: Bot, href: '/marketing/blog', tone: 'green' },

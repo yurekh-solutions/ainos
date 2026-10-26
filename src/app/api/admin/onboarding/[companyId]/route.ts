@@ -2,31 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { isAdmin } from '@/lib/admin';
+import { sendEmail } from '@/lib/email';
 
-// Send onboarding notification email via Resend
+// Send onboarding notification email via the shared sendEmail util (Brevo / SMTP)
 async function sendOnboardingEmail(params: {
   to: string[];
   subject: string;
   html: string;
 }) {
   try {
-    const apiKey = process.env.RESEND_API_KEY;
-    if (!apiKey) { console.warn('[Email] RESEND_API_KEY not set'); return; }
-
-    await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'AINOS <onboarding@resend.dev>',
-        to: params.to,
-        cc: ['info.ainosio@gmail.com'],
-        subject: params.subject,
-        html: params.html,
-      }),
-    });
+    const recipients = Array.from(new Set([...params.to, 'info.ainosio@gmail.com']));
+    for (const to of recipients) {
+      await sendEmail({ to, subject: params.subject, html: params.html });
+    }
   } catch (err) {
     console.error('[Email] Failed to send:', err);
   }

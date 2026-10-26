@@ -1,6 +1,9 @@
 import { prisma } from './prisma'
-import { deductCredits } from './credits'
+import { deductCredits, getCreditBalance } from './credits'
+import { resolveToolAccess } from './tool-guard'
 import { runTool as runAiTool, type ToolId } from './ai-tools'
+import { sendCampaignEmails } from './campaign-email'
+import { isEmailConfigured } from './email'
 
 export interface ToolExecutionResult {
   success: boolean
@@ -8,6 +11,8 @@ export interface ToolExecutionResult {
   error?: string
   creditsUsed: number
   newBalance: number
+  requiredTool?: string
+  requiredPlan?: string
 }
 
 interface ToolContext {
@@ -230,8 +235,7 @@ const emailCampaign: ToolHandler = async (input, ctx) => {
   const body = String(input.body || input.details || '').trim()
   if (!subject) throw new Error('Subject is required')
   if (!body) throw new Error('Message is required')
-  const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) throw new Error('Email service is not configured')
+  if (!isEmailConfigured()) throw new Error('Email service is not configured')
 
   const customers = await ctx.prisma.customer.findMany({
     where: { companyId: ctx.companyId, email: { not: null } },
@@ -245,14 +249,6 @@ const emailCampaign: ToolHandler = async (input, ctx) => {
     }
   }
 
-  const from = process.env.RESEND_FROM || 'AINOS <onboarding@resend.dev>'
-  const html =
-    `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px 24px">` +
-    `<h2 style="color:#111827">${escapeHtml(subject)}</h2>` +
-    `<p style="white-space:pre-wrap;line-height:1.6;color:#374151">${escapeHtml(body)}</p>` +
-    `<hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0" />` +
-    `<p style="font-size:12px;color:#9ca3af">Sent via AINOS Business Suite</p></div>`
-
   const campaign = await ctx.prisma.emailCampaign.create({
     data: {
       name: subject.slice(0, 80),
@@ -264,54 +260,27 @@ const emailCampaign: ToolHandler = async (input, ctx) => {
     },
   })
 
-  let sent = 0
-  let failed = 0
-  const failures: string[] = []
-  let domainHint = false
-
-  await Promise.all(
-    recipients.map(async r => {
-      try {
-        const res = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ from, to: [r.email], subject, html }),
-          signal: AbortSignal.timeout(15000),
-        })
-        if (res.ok) {
-          sent++
-        } else {
-          failed++
-          if (res.status === 403) domainHint = true
-          failures.push(`${r.email} (HTTP ${res.status})`)
-        }
-      } catch {
-        failed++
-        failures.push(`${r.email} (network error)`)
-      }
-    })
-  )
+  const result = await sendCampaignEmails({
+    subject,
+    content: body,
+    recipients: recipients.map(r => r.email as string),
+  })
 
   await ctx.prisma.emailCampaign.update({
     where: { id: campaign.id },
     data: {
-      status: sent > 0 ? 'sent' : 'failed',
-      sentCount: sent,
-      sentAt: sent > 0 ? new Date() : null,
+      status: result.sent > 0 ? 'sent' : 'failed',
+      sentCount: result.sent,
+      sentAt: result.sent > 0 ? new Date() : null,
     },
   })
 
   return {
     campaignId: campaign.id,
-    total: recipients.length,
-    sent,
-    failed,
-    failures: failures.slice(0, 5),
-    ...(domainHint
-      ? {
-          hint: 'Some emails were rejected (403). Verify your own sending domain at resend.com/domains — until then Resend only delivers to the account owner email.',
-        }
-      : {}),
+    total: result.total,
+    sent: result.sent,
+    failed: result.failed,
+    failures: result.failures.slice(0, 5),
   }
 }
 
@@ -1013,7 +982,8 @@ export async function executeTool(
   companyId: string,
   userId: string,
   toolSlug: string,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
+  email?: string
 ): Promise<ToolExecutionResult> {
   // Find the tool
   const tool = await prisma.tool.findUnique({ where: { slug: toolSlug } })
@@ -1021,14 +991,31 @@ export async function executeTool(
     return { success: false, error: 'Tool not found or inactive', creditsUsed: 0, newBalance: 0 }
   }
 
-  // Check credits
-  const currentBalance = await prisma.creditBalance.findUnique({ where: { companyId } })
-  if (!currentBalance || currentBalance.balance < tool.creditCost) {
+  // 1) Access gate — the subscription decides WHETHER this tool can run.
+  const access = await resolveToolAccess(companyId, userId, tool.slug, tool.creditCost, email)
+  if (!access.allowed) {
     return {
       success: false,
-      error: 'Insufficient credits',
+      error: access.blockedReason || 'Tool locked',
+      requiredTool: access.requiredTool,
+      requiredPlan: access.requiredPlan,
       creditsUsed: 0,
-      newBalance: currentBalance?.balance ?? 0
+      newBalance: await getCreditBalance(companyId),
+    }
+  }
+
+  // 2) Credit gate — usage decides HOW OFTEN. Charged only when the level requires it.
+  const cost = access.creditsRequired
+  if (cost > 0) {
+    const balance = await getCreditBalance(companyId)
+    if (balance < cost) {
+      return {
+        success: false,
+        error: 'Insufficient credits',
+        requiredPlan: 'credits',
+        creditsUsed: 0,
+        newBalance: balance,
+      }
     }
   }
 
@@ -1043,18 +1030,22 @@ export async function executeTool(
         success: false,
         error: 'No handler implemented for this tool yet',
         creditsUsed: 0,
-        newBalance: currentBalance.balance
+        newBalance: await getCreditBalance(companyId)
       }
     }
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : 'Tool execution failed'
-    return { success: false, error: errorMessage, creditsUsed: 0, newBalance: currentBalance.balance }
+    return { success: false, error: errorMessage, creditsUsed: 0, newBalance: await getCreditBalance(companyId) }
   }
 
-  // Deduct credits
-  const result = await deductCredits(companyId, tool.creditCost, `Tool: ${tool.name}`)
-  if (!result.success) {
-    return { success: false, error: result.error, creditsUsed: 0, newBalance: result.balance }
+  // Deduct credits only when this access level requires it (level 2).
+  let newBalance = await getCreditBalance(companyId)
+  if (cost > 0) {
+    const result = await deductCredits(companyId, cost, `Tool: ${tool.name}`)
+    if (!result.success) {
+      return { success: false, error: result.error, creditsUsed: 0, newBalance: result.balance }
+    }
+    newBalance = result.balance
   }
 
   // Log the tool run
@@ -1075,8 +1066,8 @@ export async function executeTool(
   return {
     success: true,
     output,
-    creditsUsed: tool.creditCost,
-    newBalance: result.balance
+    creditsUsed: cost,
+    newBalance
   }
 }
 

@@ -2,19 +2,35 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/auth-options';
 import { prisma } from '@/lib/prisma';
+import { addCredits } from '@/lib/credits';
 import type { ToolName } from '@/lib/tool-guard';
 
-// Plan definitions with included tools
-const PLANS: Record<string, { name: string; amount: number; tools: ToolName[] }> = {
+// Plan definitions with included tools.
+// `level` is the Company access level granted to each included tool
+// (2 = subscribed / credits deduct, 3 = premium / free). `creditGrant` is the
+// monthly credit pool topped up on activation and by the refresh cron.
+interface PlanConfig {
+  name: string;
+  amount: number;
+  tools: ToolName[];
+  level?: number;
+  creditGrant?: number;
+}
+
+const PLANS: Record<string, PlanConfig> = {
   starter: {
     name: 'Starter Plan',
     amount: 749,
     tools: ['autoBlog', 'invoiceGen', 'crmAccess'],
+    level: 2,
+    creditGrant: 300,
   },
   growth: {
     name: 'Growth Plan',
     amount: 2499,
     tools: ['autoBlog', 'invoiceGen', 'crmAccess', 'inventoryMgmt', 'hrPayroll', 'emailMarketing'],
+    level: 2,
+    creditGrant: 1500,
   },
   enterprise: {
     name: 'Enterprise Plan',
@@ -29,6 +45,30 @@ const PLANS: Record<string, { name: string; amount: number; tools: ToolName[] }>
       'aiAssistant',
       'websiteGen',
     ],
+    level: 3,
+    creditGrant: 8000,
+  },
+  // Marketing vertical — ONE plan unlocks the whole marketing toolset (category-level).
+  marketing_starter: {
+    name: 'Marketing Starter',
+    amount: 1999,
+    tools: ['autoBlog', 'emailMarketing'],
+    level: 2,
+    creditGrant: 300,
+  },
+  marketing_growth: {
+    name: 'Marketing Growth',
+    amount: 4999,
+    tools: ['autoBlog', 'emailMarketing'],
+    level: 2,
+    creditGrant: 1500,
+  },
+  marketing_pro: {
+    name: 'Marketing Pro',
+    amount: 9999,
+    tools: ['autoBlog', 'emailMarketing'],
+    level: 3,
+    creditGrant: 8000,
   },
 };
 
@@ -57,6 +97,8 @@ export async function POST(req: NextRequest) {
 
     // Use plan tools or custom tools (for flexible billing)
     const toolsToActivate: ToolName[] = customTools || planConfig.tools;
+    const grantLevel = planConfig.level ?? 2;
+    const creditGrant = planConfig.creditGrant ?? 0;
 
     // Verify payment (Razorpay integration)
     const paymentVerified = await verifyPayment(paymentId, planConfig.amount);
@@ -68,10 +110,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Build company update data
-    const toolUpdates: Record<string, boolean> = {};
-    toolsToActivate.forEach((tool: string) => {
-      toolUpdates[tool] = true;
+    // Build company update data — grant the plan's access level to each tool.
+    const toolUpdates: Record<string, number> = {};
+    toolsToActivate.forEach((tool: ToolName) => {
+      toolUpdates[tool] = grantLevel;
     });
 
     // Calculate subscription end date (1 month from now)
@@ -88,7 +130,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Create subscription record
+    // Create subscription record with the monthly credit grant wired in.
     const subscription = await prisma.subscription.create({
       data: {
         companyId: session.user.companyId,
@@ -100,11 +142,19 @@ export async function POST(req: NextRequest) {
         status: 'active',
         startDate: new Date(),
         endDate: endDate,
+        currentPeriodEnd: endDate,
         toolsIncluded: toolsToActivate,
+        monthlyCreditGrant: creditGrant,
+        creditsRefreshedAt: new Date(),
         paymentId: paymentId,
         paymentMethod: 'razorpay',
       },
     });
+
+    // Top up the monthly credit pool so the plan grants both access AND usage.
+    if (creditGrant > 0) {
+      await addCredits(session.user.companyId, creditGrant, `${planConfig.name}: monthly credit grant`);
+    }
 
     // Log tool activations in audit trail
     for (const tool of toolsToActivate) {

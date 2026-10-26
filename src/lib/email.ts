@@ -72,6 +72,13 @@ function brandLogoUrl(preferred?: string): string {
   return `${publicBaseUrl(preferred)}/ainos-alpha.png`;
 }
 
+/** True when at least one email transport (SMTP or Brevo) is configured. */
+export function isEmailConfigured(): boolean {
+  return Boolean(smtpCredentials() || process.env.BREVO_API_KEY);
+}
+
+export { brandLogoUrl };
+
 async function sendViaSmtp({ to, subject, html, from }: SendEmailOptions): Promise<void> {
   const credentials = smtpCredentials();
   if (!credentials) throw new Error('SMTP credentials missing');
@@ -225,12 +232,7 @@ export function welcomeEmailTemplate(userName: string, companyName: string): str
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 24px; background: #f8f7fc;">
       <div style="background: white; border-radius: 16px; padding: 40px 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
         <div style="text-align: center; margin-bottom: 32px;">
-          <div style="width: 64px; height: 64px; margin: 0 auto 16px; background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-              <polyline points="22 4 12 14.01 9 11.01"></polyline>
-            </svg>
-          </div>
+          <img src="${brandLogoUrl()}" width="68" alt="AINOS" style="display: block; width: 68px; height: auto; margin: 0 auto 16px; border: 0; outline: none; text-decoration: none;">
           <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #111827;">Welcome to AINOS!</h1>
           <p style="margin: 8px 0 0; font-size: 14px; color: #6b7280;">Your account has been created successfully.</p>
         </div>

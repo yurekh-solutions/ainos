@@ -114,7 +114,7 @@ export default function PrivacyPolicy() {
               We do not sell or share your personal information with third parties except in the following limited circumstances:
             </p>
             <ul className="list-disc list-inside text-sm text-gray-600 leading-relaxed mt-3 space-y-1.5">
-              <li><strong>Service Providers:</strong> Cloud hosting (Render, Aiven), document storage (Cloudinary), email delivery (Resend), and AI processing (Google Gemini, Groq) — each bound by their own privacy commitments.</li>
+              <li><strong>Service Providers:</strong> Cloud hosting (Render, Aiven), document storage (Cloudinary), email delivery (Brevo), and AI processing (Google Gemini, Groq) — each bound by their own privacy commitments.</li>
               <li><strong>Legal Requirements:</strong> If required by law, regulation, or valid legal process.</li>
               <li><strong>Business Transfers:</strong> In connection with a merger, acquisition, or sale of assets, with prior notice.</li>
               <li><strong>With Your Consent:</strong> When you explicitly authorize sharing.</li>

@@ -164,6 +164,50 @@ export default function BillingPage() {
   const [showToolCosts, setShowToolCosts] = useState(false);
   const [creditPacks, setCreditPacks] = useState<CreditPack[]>([]);
   const [creditBalance, setCreditBalance] = useState(0);
+  const [busyPlan, setBusyPlan] = useState<string | null>(null);
+
+  // Marketing UI tiers map to the activate-tools plan keys (category-level plan).
+  const MARKETING_PLAN_KEYS: Record<string, string> = {
+    starter: 'marketing_starter',
+    professional: 'marketing_growth',
+    enterprise: 'marketing_pro',
+  };
+
+  const loadSnapshot = async () => {
+    const [billData, credData] = await Promise.all([
+      fetch('/api/billing').then(r => r.ok ? r.json() : Promise.resolve({})),
+      fetch('/api/billing/credits').then(r => r.ok ? r.json() : Promise.resolve({})),
+    ]);
+    setSubscription((billData as { subscription?: SubscriptionInfo }).subscription || null);
+    setCreditBalance((credData as { balance?: number }).balance || 0);
+  };
+
+  const subscribeMarketing = async (tier: string) => {
+    const planKey = MARKETING_PLAN_KEYS[tier];
+    if (!planKey) return;
+    setBusyPlan(tier);
+    try {
+      // NOTE: Razorpay merchant account is not connected yet, so paymentId is a
+      // placeholder — the backend verifyPayment() stub accepts it. Replace this
+      // call with a real Razorpay checkout order once the account is live.
+      const res = await fetch('/api/billing/activate-tools', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: planKey, paymentId: `pay_pending_${Date.now()}` }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        await loadSnapshot();
+        alert(`${data.subscription?.planName || 'Marketing plan'} activated — tools unlocked and monthly credits granted.`);
+      } else {
+        alert(data.error || 'Activation failed');
+      }
+    } catch {
+      alert('Activation failed');
+    } finally {
+      setBusyPlan(null);
+    }
+  };
 
   useEffect(() => {
     Promise.all([
@@ -326,13 +370,20 @@ export default function BillingPage() {
                     </li>
                   ))}
                 </ul>
-                <button className="w-full py-2.5 rounded-lg text-sm font-semibold transition-colors bg-purple-600 text-white hover:bg-purple-700">
-                  Get Started
+                <button
+                  onClick={() => subscribeMarketing(plan.tier)}
+                  disabled={busyPlan === plan.tier}
+                  className="w-full py-2.5 rounded-lg text-sm font-semibold transition-colors bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-60"
+                >
+                  {busyPlan === plan.tier ? 'Activating…' : 'Get Started'}
                 </button>
               </div>
             );
           })}
         </div>
+        <p className="mt-3 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          Checkout is stubbed until the payment account is connected — activating grants access + credits immediately.
+        </p>
       </div>
 
       {/* ── COMBO PLANS (Best Value) ──────────────────────── */}

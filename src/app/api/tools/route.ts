@@ -3,11 +3,38 @@ import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getAllTools, getToolBySlug } from '@/lib/tool-runner';
 import { isAdmin } from '@/lib/admin';
+import { summarizeAccess, levelForSlug, isMarketingSlug, type AccessSummary } from '@/lib/tool-guard';
+
+// Annotate each tool with whether the caller's company can actually run it,
+// so the marketplace can show 🔒 + an upgrade CTA instead of letting users
+// hit a 402 at run time. Locked tools stay listed for discovery.
+function withAccess<T extends { slug: string; category: string | null }>(
+  tools: T[],
+  summary: AccessSummary | null
+) {
+  return tools.map((tool) => {
+    const level = summary ? levelForSlug(tool.slug, summary) : 2;
+    return {
+      ...tool,
+      level,
+      accessible: level > 0,
+      requiredPlan: isMarketingSlug(tool.slug) ? 'marketing' : undefined,
+    };
+  });
+}
 
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // This session helper only exposes email; resolve the company from the user row.
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const companyId = user?.companyId ?? null;
+    const summary = await summarizeAccess(companyId, session.user.email);
 
     const { searchParams } = new URL(req.url);
     const category = searchParams.get('category');
@@ -15,7 +42,9 @@ export async function GET(req: NextRequest) {
 
     if (slug) {
       const tool = await getToolBySlug(slug);
-      return NextResponse.json(tool);
+      if (!tool) return NextResponse.json(tool);
+      const [annotated] = withAccess([tool as { slug: string; category: string | null }], summary);
+      return NextResponse.json(annotated);
     }
 
     if (category) {
@@ -23,11 +52,11 @@ export async function GET(req: NextRequest) {
         where: { isActive: true, category },
         orderBy: { name: 'asc' }
       });
-      return NextResponse.json(tools);
+      return NextResponse.json(withAccess(tools, summary));
     }
 
     const tools = await getAllTools();
-    return NextResponse.json(tools);
+    return NextResponse.json(withAccess(tools, summary));
   } catch (error) {
     console.error('Error fetching tools:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

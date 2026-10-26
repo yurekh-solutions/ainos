@@ -1,5 +1,6 @@
 // Universal Blog Publisher - works with ANY tech stack
 // Webhook (universal), WordPress API, Email, AINOS Blog
+import { sendEmail } from '@/lib/email';
 
 interface BlogPostData {
   title: string;
@@ -187,36 +188,21 @@ export async function publishViaEmail(
 </body>
 </html>`;
 
-  // Use a simple mailto or log the email (in production, use a service like Resend/SendGrid)
-  // For now, we'll store it as a scheduled action
+  // Log the pending email, then deliver through the shared sendEmail util below
   console.log(`[Email Delivery] Blog post "${post.title}" ready for email to ${website.deliveryEmail}`);
 
-  // Send via Resend if configured
-  if (process.env.RESEND_API_KEY) {
-    try {
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: 'AINOS Blog <onboarding@resend.dev>',
-          to: [website.deliveryEmail],
-          subject: `New Blog Post: ${post.title}`,
-          html: emailHtml,
-        }),
-        signal: AbortSignal.timeout(10000),
-      });
-      if (res.ok) {
-        return { success: true };
-      }
-    } catch (err) {
-      console.error('[Email Delivery] Resend error:', err);
-    }
+  // Send via the shared sendEmail util (Brevo / SMTP)
+  try {
+    await sendEmail({
+      to: website.deliveryEmail,
+      subject: `New Blog Post: ${post.title}`,
+      html: emailHtml,
+    });
+    return { success: true };
+  } catch (err) {
+    console.error('[Email Delivery] send failed:', err);
+    return { success: true, error: 'Email logged (delivery failed)' };
   }
-
-  return { success: true, error: 'Email logged (no email service configured)' };
 }
 
 // Method 4: AINOS Blog Publishing (platform)

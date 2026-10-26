@@ -143,7 +143,7 @@ export const NAV_GROUPS: NavGroup[] = [
     href: '/dashboard/marketing',
     items: [
       { icon: Send, label: 'Email Campaigns', href: '/marketing/campaigns' },
-      { icon: AtSign, label: 'Social Media', href: '/marketing/email' },
+      { icon: AtSign, label: 'Social Media', href: '/marketing/social-media' },
       { icon: SearchCheck, label: 'SEO Platform', href: '/marketing/seo' },
       { icon: PenTool, label: 'Blog & Content', href: '/marketing/blog' },
       { icon: MailOpen, label: 'Invitations', href: '/marketing/invitations' },

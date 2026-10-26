@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import NextImage from 'next/image';
 import {
   Upload, Sparkles, Copy, Check, CheckCircle2, AlertCircle, Share2, MessageCircle,
   Instagram, Youtube, Linkedin, Twitter, Facebook, Video,
@@ -399,13 +400,13 @@ export default function SocialMediaPage() {
   ];
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 h-full overflow-auto bg-gray-50">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
       <div className="max-w-[1400px] mx-auto">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-4 sm:mb-8">
-          <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0">
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          <div className="flex items-center gap-3 mb-1 sm:mb-2">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-violet-100 to-purple-100 ring-1 ring-violet-200 flex items-center justify-center shrink-0">
+              <NextImage src="/ainos-alpha.png" alt="AINOS" width={28} height={28} className="w-6 h-6 sm:w-7 sm:h-7" priority />
             </div>
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 leading-tight">Social Media Caption Generator</h1>
@@ -438,7 +439,7 @@ export default function SocialMediaPage() {
                     className={`relative border-2 border-dashed rounded-xl p-4 sm:p-6 text-center cursor-pointer transition-all outline-none focus-visible:ring-2 focus-visible:ring-purple-500 ${
                       dragOver
                         ? 'border-purple-500 bg-purple-50'
-                        : 'border-gray-300 hover:border-purple-400:border-purple-600 bg-gray-50'
+                        : 'border-gray-300 hover:border-purple-400 bg-gray-50'
                     }`}
                   >
                     <input
@@ -544,7 +545,7 @@ export default function SocialMediaPage() {
                     <button key={t.value} onClick={() => setTone(t.value)}
                       aria-pressed={tone === t.value}
                       className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                        tone === t.value ? 'bg-purple-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200:bg-gray-700'
+                        tone === t.value ? 'bg-purple-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}>
                       {t.label}
                     </button>
@@ -562,7 +563,7 @@ export default function SocialMediaPage() {
                     <button key={l.value} onClick={() => setLanguage(l.value)}
                       aria-pressed={language === l.value}
                       className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                        language === l.value ? 'bg-pink-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200:bg-gray-700'
+                        language === l.value ? 'bg-purple-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}>
                       {l.label}
                     </button>
@@ -586,10 +587,10 @@ export default function SocialMediaPage() {
                       className={`flex items-center gap-2 sm:gap-2.5 p-2.5 sm:p-3 rounded-xl border text-left transition-all ${
                         isSelected ? `${config.bgColor} border-2` : 'bg-gray-50 border-gray-200 opacity-50'
                       }`}>
-                      <Icon className={`w-5 h-5 ${config.color}`} />
-                      <div>
-                        <p className={`text-xs font-semibold ${config.color}`}>{config.label}</p>
-                        <p className="text-[10px] text-gray-400">{config.label}</p>
+                      <Icon className={`w-5 h-5 shrink-0 ${config.color}`} />
+                      <div className="min-w-0">
+                        <p className={`text-xs font-semibold truncate ${config.color}`}>{config.label}</p>
+                        <p className="text-[10px] text-gray-400">≤ {config.maxChars.toLocaleString()} chars</p>
                       </div>
                       {isSelected && <Check className="w-4 h-4 ml-auto text-emerald-500" />}
                     </button>
@@ -598,7 +599,7 @@ export default function SocialMediaPage() {
               </div>
 
               {/* Global Reach Info */}
-              <div className="mt-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+              <div className="mt-4 bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl p-4 border border-purple-200">
                 <div className="flex items-center gap-2 mb-2">
                   <Globe className="w-4 h-4 text-purple-600" />
                   <p className="text-xs font-semibold text-purple-700">Global Reach Optimized</p>
@@ -615,7 +616,7 @@ export default function SocialMediaPage() {
             <button onClick={handleGenerate}
               aria-busy={generating || analyzing}
               disabled={generating || analyzing || selectedPlatforms.length === 0 || (!topic.trim() && !videoDescription.trim() && !uploadedMedia)}
-              className="w-full py-3 sm:py-3.5 rounded-xl text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-purple-600/20">
+              className="w-full py-3 sm:py-3.5 rounded-xl text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-purple-600/20">
               {analyzing ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -646,7 +647,7 @@ export default function SocialMediaPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 mb-4 sm:mb-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-purple-600/25 flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white animate-pulse" />
               </div>
               <div>
@@ -732,7 +733,7 @@ export default function SocialMediaPage() {
                         </div>
                         <div className="flex items-center gap-1.5">
                           <button onClick={() => handleCopy(p.platform, fullCaption)}
-                            className="p-1.5 rounded-lg bg-white hover:bg-gray-100:bg-gray-700 transition-colors"
+                            className="p-1.5 rounded-lg bg-white hover:bg-gray-100 transition-colors"
                             aria-label={`Copy full ${config.label} caption`} title="Copy full caption">
                             {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-gray-500" />}
                           </button>
@@ -749,7 +750,7 @@ export default function SocialMediaPage() {
                                 className={`w-full text-left text-xs rounded-lg px-3 py-1.5 transition-all border ${
                                   selectedHookIdx === j
                                     ? 'bg-purple-50 border-purple-300 text-purple-700 font-semibold'
-                                    : 'bg-white/50 border-transparent text-gray-700 hover:border-purple-200:border-purple-800'
+                                    : 'bg-white/50 border-transparent text-gray-700 hover:border-purple-200'
                                 }`}>
                                 {hook}
                               </button>
@@ -764,7 +765,7 @@ export default function SocialMediaPage() {
                           <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Caption</p>
                           {p.caption && (
                             <button onClick={() => handleCopy(`${p.platform}-caption`, p.caption)}
-                              className="p-1 rounded-md hover:bg-white/70:bg-gray-800 transition-colors"
+                              className="p-1 rounded-md hover:bg-white/70 transition-colors"
                               aria-label={`Copy ${config.label} caption only`} title="Copy caption only">
                               {copiedPlatform === `${p.platform}-caption` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-gray-400" />}
                             </button>
@@ -779,7 +780,7 @@ export default function SocialMediaPage() {
                           <div className="flex items-center justify-between mb-1.5">
                             <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Global Hashtags</p>
                             <button onClick={() => handleCopy(`${p.platform}-hashtags`, hashtags.join(' '))}
-                              className="p-1 rounded-md hover:bg-white/70:bg-gray-800 transition-colors"
+                              className="p-1 rounded-md hover:bg-white/70 transition-colors"
                               aria-label={`Copy ${config.label} hashtags only`} title="Copy hashtags only">
                               {copiedPlatform === `${p.platform}-hashtags` ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-gray-400" />}
                             </button>
@@ -796,7 +797,7 @@ export default function SocialMediaPage() {
                           platform with the caption copied, ready to paste */}
                       <div className="mt-4 flex items-center gap-2">
                         <button onClick={() => shareCaption(p.platform, fullCaption)}
-                          className="flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-white hover:bg-gray-50:bg-gray-700 border border-gray-200 text-gray-700 transition-colors"
+                          className="flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 transition-colors"
                           aria-label={`Share ${config.label} caption`}>
                           <Share2 className="w-3.5 h-3.5" /> Share caption
                         </button>
@@ -814,7 +815,7 @@ export default function SocialMediaPage() {
               {/* Regenerate */}
               <div className="mt-6 flex justify-center">
                 <button onClick={handleGenerate}
-                  className="flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100:bg-purple-900/30 transition-colors">
+                  className="flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors">
                   <RefreshCw className="w-4 h-4" /> Regenerate Captions
                 </button>
               </div>
@@ -826,8 +827,8 @@ export default function SocialMediaPage() {
         {!generated && !generating && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             className="text-center py-10 sm:py-16 bg-white rounded-2xl border border-gray-200">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-8 h-8 text-purple-400" />
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-100 to-purple-100 ring-1 ring-violet-200 flex items-center justify-center mx-auto mb-4">
+              <NextImage src="/ainos-alpha.png" alt="AINOS" width={40} height={40} className="w-9 h-9" />
             </div>
             <p className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Ready to go viral?</p>
             <p className="text-xs sm:text-sm text-gray-500 max-w-md mx-auto px-4">

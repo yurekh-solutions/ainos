@@ -21,10 +21,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
 
-    const result = await executeTool(user.companyId, user.id, toolSlug, input || {});
+    const result = await executeTool(user.companyId, user.id, toolSlug, input || {}, session.user.email);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error, balance: result.newBalance }, { status: 400 });
+      // Locked by subscription (402) vs out of credits (402) vs other errors (400).
+      // Preserve the required-plan hints so the run screen can show the right CTA.
+      const status = result.requiredPlan ? 402 : 400;
+      return NextResponse.json(
+        {
+          success: false,
+          error: result.error,
+          newBalance: result.newBalance,
+          requiredTool: result.requiredTool,
+          requiredPlan: result.requiredPlan,
+        },
+        { status }
+      );
     }
 
     return NextResponse.json(result);

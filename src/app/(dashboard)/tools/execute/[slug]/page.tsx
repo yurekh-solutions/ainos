@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft, ArrowRight, Zap, Coins, Play, Loader2, CheckCircle, AlertCircle,
+  ArrowLeft, ArrowRight, Zap, Coins, Play, Loader2, CheckCircle, AlertCircle, Lock, Send,
   Copy, Check, Download, Plus, Trash2, FileText, Mail, Users, BarChart3, Share2, PenLine, Table2, Upload,
   Sparkles, Palette, Search, Megaphone, Rocket, ImageIcon, QrCode, Presentation, ShoppingBag,
   Briefcase, Scale, MessageCircle, BookOpen, Bot, Globe, Package, UserCog, ExternalLink,
@@ -17,6 +17,9 @@ interface Tool {
   description: string;
   category: string;
   creditCost: number;
+  accessible?: boolean;
+  level?: number;
+  requiredPlan?: string;
 }
 
 interface InvoiceItem {
@@ -95,6 +98,8 @@ interface ToolResult {
   output?: ToolOutput | null;
   error?: string;
   newBalance?: number;
+  requiredTool?: string;
+  requiredPlan?: string;
 }
 
 const SLUG_ICONS: Record<string, typeof Zap> = {
@@ -296,6 +301,7 @@ const SUBSCRIPTION_REDIRECTS: Record<string, string> = {
 // the form (deliverable generators vs. data tools).
 const ACTION_LABELS: Record<string, string> = {
   'lead-scoring-ai': 'Score My Leads',
+  'email-campaign-sender': 'Send Email',
   autoBlog: 'Write Article',
   aiAssistant: 'Ask AINOS',
   websiteGen: 'Generate Website',
@@ -347,6 +353,8 @@ export default function ToolExecutePage() {
   // email fields
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  // email campaign audience (loaded once, shown before send)
+  const [audience, setAudience] = useState<number | null>(null);
   // export fields
   const [dataset, setDataset] = useState('customers');
   const [format, setFormat] = useState('csv');
@@ -359,6 +367,15 @@ export default function ToolExecutePage() {
       .then(res => res.json())
       .then(data => { setTool(data); setLoading(false); })
       .catch(() => setLoading(false));
+  }, [slug]);
+
+  // Fetch the recipient count for the email campaign tool only, on mount.
+  useEffect(() => {
+    if (slug !== 'email-campaign-sender') return;
+    fetch('/api/tools/audience')
+      .then(res => res.ok ? res.json() : { recipients: 0 })
+      .then(d => setAudience(typeof d.recipients === 'number' ? d.recipients : 0))
+      .catch(() => setAudience(0));
   }, [slug]);
 
   const buildInput = (): Record<string, unknown> => {
@@ -505,6 +522,28 @@ export default function ToolExecutePage() {
           <Coins className="w-4 h-4 text-yellow-500" />
           Cost: <span className="font-semibold text-gray-700">{tool.creditCost} credits</span> per run
         </div>
+
+        {tool.accessible === false && (
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-purple-200 bg-purple-50 p-4">
+            <div className="flex items-start gap-2 flex-1">
+              <Lock className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-gray-900">
+                  This tool needs the {tool.requiredPlan === 'marketing' ? 'Marketing' : 'relevant'} plan
+                </p>
+                <p className="text-xs text-gray-500">
+                  You only pay for the tools you use. Subscribe to unlock and get monthly credits.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => router.push(`/billing${tool.requiredPlan ? `?plan=${tool.requiredPlan}` : ''}`)}
+              className="px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition-colors whitespace-nowrap"
+            >
+              View plans
+            </button>
+          </div>
+        )}
       </motion.div>
 
       {/* Input form — per tool */}
@@ -615,33 +654,70 @@ export default function ToolExecutePage() {
         )}
 
         {slug === 'email-campaign-sender' && (
-          <div className="space-y-4">
-            <div className="rounded-xl bg-purple-50 border border-purple-100 px-4 py-3 text-sm text-purple-700 flex items-start gap-2">
-              <Users className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              This sends a real email to every customer in your CRM that has an email address.
-            </div>
-            <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800 flex items-start gap-2">
-              <Mail className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-medium mb-1">Domain verification required for full delivery</p>
-                <p className="text-xs text-amber-700 mb-2">Without a verified domain, emails only deliver to your own account. Verify your domain at <a href="https://resend.com/domains" target="_blank" rel="noopener" className="underline font-medium">resend.com/domains</a> (5 min setup).</p>
-                <ol className="text-xs text-amber-700 list-decimal list-inside space-y-1">
-                  <li>Go to resend.com/domains → Add Domain</li>
-                  <li>Add the DNS records shown (SPF, DKIM, DMARC)</li>
-                  <li>Wait 5-10 minutes for verification</li>
-                  <li>Set RESEND_FROM in your .env to your verified email</li>
-                </ol>
+          <div className="space-y-5">
+            {/* Who receives it — resolved before send, not after */}
+            <div className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3">
+              <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                <Users className="w-5 h-5 text-purple-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-gray-900">
+                  {audience === null ? 'Counting your contacts…' : `Will reach ${audience} customer${audience === 1 ? '' : 's'}`}
+                </p>
+                <p className="text-xs text-gray-500">Everyone in your CRM with an email address</p>
               </div>
             </div>
+
+            {audience === 0 && (
+              <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800">
+                No customer emails yet.{' '}
+                <a href="/crm" className="font-semibold underline">Add customers</a>{' '}
+                with email addresses, then come back to send.
+              </div>
+            )}
+
             <div>
-              <label className={labelCls}>Subject *</label>
-              <input type="text" value={subject} onChange={e => setSubject(e.target.value)} placeholder="e.g. New collection is live!" className={inputCls} />
+              <label className={labelCls}>Subject</label>
+              <input
+                type="text"
+                value={subject}
+                onChange={e => setSubject(e.target.value)}
+                maxLength={150}
+                placeholder="e.g. New collection is live!"
+                className={inputCls + ' text-base'}
+              />
             </div>
+
             <div>
-              <label className={labelCls}>Message *</label>
-              <textarea value={message} onChange={e => setMessage(e.target.value)} rows={6}
-                placeholder="Write your email. It will be wrapped in a clean branded template." className={inputCls + ' resize-none'} />
+              <label className={labelCls}>Message</label>
+              <textarea
+                value={message}
+                onChange={e => setMessage(e.target.value)}
+                rows={6}
+                placeholder="Write your message. We'll format it into a clean, branded email."
+                className={inputCls + ' resize-none text-base'}
+              />
             </div>
+
+            {/* Live preview mirrors the exact email the backend sends */}
+            {(subject.trim() || message.trim()) && (
+              <div className="rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Preview</span>
+                  <span className="text-xs text-gray-400">To your customers</span>
+                </div>
+                <div className="p-5 bg-white">
+                  <h2 className="text-base font-bold text-gray-900 mb-2 break-words">
+                    {subject.trim() || <span className="text-gray-300">(your subject line)</span>}
+                  </h2>
+                  <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-words">
+                    {message.trim() || <span className="text-gray-300">(your message body)</span>}
+                  </p>
+                  <hr className="my-5 border-gray-200" />
+                  <p className="text-xs text-gray-400">Sent via AINOS Business Suite</p>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -741,18 +817,26 @@ export default function ToolExecutePage() {
           </p>
         )}
 
-        <button
-          onClick={handleExecute}
-          disabled={executing || missingRequired.length > 0}
-          className="mt-6 w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
-        >
-          {executing
-            ? <Loader2 className="w-5 h-5 animate-spin" />
-            : fields ? <Sparkles className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-          {executing
-            ? 'Working...'
-            : ACTION_LABELS[slug] || (fields ? 'Generate Deliverable' : 'Run Tool')}
-        </button>
+        <div className="mt-6 sticky bottom-3 z-10 -mx-2 px-2 py-2">
+          <button
+            onClick={handleExecute}
+            disabled={executing || missingRequired.length > 0 || tool.accessible === false || (slug === 'email-campaign-sender' && (!subject.trim() || !message.trim()))}
+            className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg"
+          >
+            {executing
+              ? <Loader2 className="w-5 h-5 animate-spin" />
+              : tool.accessible === false
+                ? <Lock className="w-5 h-5" />
+                : slug === 'email-campaign-sender'
+                  ? <Send className="w-5 h-5" />
+                  : fields ? <Sparkles className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+            {executing
+              ? 'Sending…'
+              : tool.accessible === false
+                ? 'Locked — subscribe to unlock'
+                : ACTION_LABELS[slug] || (fields ? 'Generate Deliverable' : 'Run Tool')}
+          </button>
+        </div>
       </motion.div>
 
       {/* Result — human readable per tool */}
@@ -770,7 +854,25 @@ export default function ToolExecutePage() {
           </div>
 
           {result.error && (
-            <div className="text-sm text-red-600 whitespace-pre-wrap">{result.error}</div>
+            <div className="text-sm text-red-600 whitespace-pre-wrap">
+              {result.error}
+              {result.requiredPlan && result.requiredPlan !== 'credits' && (
+                <button
+                  onClick={() => router.push(`/billing?plan=${result.requiredPlan}`)}
+                  className="mt-3 flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"
+                >
+                  <Lock className="w-4 h-4" /> View {result.requiredPlan === 'marketing' ? 'Marketing' : ''} plans
+                </button>
+              )}
+              {result.requiredPlan === 'credits' && (
+                <button
+                  onClick={() => router.push('/billing')}
+                  className="mt-3 flex items-center gap-1.5 text-sm font-semibold text-purple-600 hover:text-purple-700"
+                >
+                  <Coins className="w-4 h-4" /> Buy more credits
+                </button>
+              )}
+            </div>
           )}
 
           {/* Subscription tools answer with a pointer into the live module */}

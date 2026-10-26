@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1280" viewBox="0 0 720 1280">
+<defs>
+  <linearGradient id="bgdecoarchpeacocklagoon" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#063A48"/><stop offset="1" stop-color="#0B5567"/>
+  </linearGradient>
+</defs>
+<rect width="720" height="1280" fill="url(#bgdecoarchpeacocklagoon)"/>
+<rect x="22" y="22" width="676" height="1236" fill="none" stroke="#E0B94A" stroke-width="2.5"/>
+<rect x="30" y="30" width="660" height="1220" fill="none" stroke="#E0B94A" stroke-width="1" opacity="0.6"/>
+<path d="M 96 182 Q 360 44 624 182" fill="none" stroke="#E0B94A" stroke-width="2" opacity="0.85"/><path d="M 96 1098 Q 360 1236 624 1098" fill="none" stroke="#E0B94A" stroke-width="2" opacity="0.85"/><path d="M 124 182 Q 360 64 596 182" fill="none" stroke="#E0B94A" stroke-width="2" opacity="0.74"/><path d="M 124 1098 Q 360 1216 596 1098" fill="none" stroke="#E0B94A" stroke-width="2" opacity="0.74"/><path d="M 152 182 Q 360 84 568 182" fill="none" stroke="#E0B94A" stroke-width="2" opacity="0.63"/><path d="M 152 1098 Q 360 1196 568 1098" fill="none" stroke="#E0B94A" stroke-width="2" opacity="0.63"/><path d="M 180 182 Q 360 104 540 182" fill="none" stroke="#E0B94A" stroke-width="2" opacity="0.52"/><path d="M 180 1098 Q 360 1176 540 1098" fill="none" stroke="#E0B94A" stroke-width="2" opacity="0.52"/><path d="M 208 182 Q 360 124 512 182" fill="none" stroke="#E0B94A" stroke-width="2" opacity="0.41"/><path d="M 208 1098 Q 360 1156 512 1098" fill="none" stroke="#E0B94A" stroke-width="2" opacity="0.41"/><circle cx="96" cy="182" r="4" fill="#7FD6C2"/><circle cx="96" cy="1098" r="4" fill="#7FD6C2"/><circle cx="624" cy="182" r="4" fill="#7FD6C2"/><circle cx="624" cy="1098" r="4" fill="#7FD6C2"/>
+</svg>

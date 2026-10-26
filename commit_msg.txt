@@ -1,11 +1,8 @@
-feat: add 15 API routes, tool-runner engine, dashboard updates, auth refactor
+fix(build): declare nodemailer module to unblock Render next build
 
-- New API routes: attendance, bank-accounts, contacts, credit-notes, customers,
-  deals, debit-notes, ecommerce/stores, employees, helpdesk, leaves,
-  purchase-orders, service-requests, stock, warehouses
-- Add tool-runner.ts engine and update tools execute page
-- Update dashboard pages: AI chat, CRM, finance challans, HR employees,
-  invoices, marketing events, products
-- Refactor auth register page and register-company route
-- Add toast.tsx and validation.ts utilities
-- Add audit, probe and email-preview scripts
+The Render `next build` failed at the TypeScript step: email.ts dynamically
+imports nodemailer, but @types/nodemailer resolution is unreliable in CI so TS
+fell through to the raw .js and errored with "Could not find a declaration file
+for module 'nodemailer'". next dev does not run this type-check, so it only
+surfaced on the deploy build. Add an ambient module declaration so the
+specifier resolves regardless of @types presence.

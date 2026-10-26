@@ -1,8 +1,9 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import NextImage from 'next/image';
 import {
-  Search, Globe, Users, BarChart3, Zap,
+  Search, Globe, Users, BarChart3,
   CheckCircle, AlertCircle, Loader2, Sparkles,
   FileText, Clock, Copy,
   Shield, Lightbulb
@@ -128,16 +129,16 @@ export default function SEODashboardPage() {
   const auditAI = (result?.aiSummary ?? null) as { summary?: string; priorities?: Array<{ title: string; why: string; how: string }> } | null;
 
   return (
-    <div className="p-4 md:p-6 h-full overflow-auto bg-gray-50">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
       <div className="max-w-[1400px] mx-auto">
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-4 sm:mb-6">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0">
               <Globe className="w-5 h-5 text-white" />
             </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">SEO & Content Marketing Platform</h1>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 leading-tight">SEO &amp; Content Marketing Platform</h1>
               <p className="text-sm mt-0.5 text-gray-600">Site audits, keyword research, competitor analysis & AI content ideas.</p>
             </div>
           </div>
@@ -151,7 +152,7 @@ export default function SEODashboardPage() {
               <button key={tab.id} onClick={() => switchTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                   activeTab === tab.id
-                    ? 'bg-purple-600 text-white shadow-md'
+                    ? 'bg-[#5b21b6] text-white shadow-md'
                     : 'bg-white text-gray-600 border border-gray-200 hover:border-purple-300'
                 }`}>
                 <Icon className="w-4 h-4" /> {tab.label}
@@ -186,7 +187,10 @@ export default function SEODashboardPage() {
                 </div>
                 <div className="bg-white rounded-2xl border border-gray-200 p-6">
                   <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-purple-500" /> Quick Actions
+                    <span className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 ring-1 ring-violet-200 flex items-center justify-center shrink-0">
+                      <NextImage src="/ainos-alpha.png" alt="AINOS" width={18} height={18} className="w-[18px] h-[18px]" />
+                    </span>
+                    Quick Actions
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {[
@@ -198,7 +202,7 @@ export default function SEODashboardPage() {
                       const Icon = a.icon;
                       return (
                         <button key={i} onClick={a.action}
-                          className="text-left p-4 rounded-xl bg-gray-50 hover:bg-purple-50:bg-purple-900/20 border border-gray-200 transition-all">
+                          className="text-left p-4 rounded-xl bg-gray-50 hover:bg-purple-50 border border-gray-200 transition-all">
                           <Icon className="w-5 h-5 text-purple-500 mb-2" />
                           <p className="text-sm font-semibold text-gray-900">{a.label}</p>
                           <p className="text-xs text-gray-500">{a.desc}</p>
@@ -214,11 +218,11 @@ export default function SEODashboardPage() {
             {activeTab === 'audit' && (
               <div className="bg-white rounded-2xl border border-gray-200 p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Site Audit</h3>
-                <div className="flex gap-2 mb-6">
+                <div className="flex flex-col sm:flex-row gap-2 mb-6">
                   <input value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} placeholder="https://yourwebsite.com"
-                    className="flex-1 px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900" />
+                    className="w-full min-w-0 px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5b21b6]/40 focus:border-[#5b21b6] transition-colors" />
                   <button onClick={runAudit} disabled={loading || !websiteUrl.trim()}
-                    className="px-5 py-3 rounded-xl text-white text-sm font-semibold bg-purple-600 hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
+                    className="w-full sm:w-auto shrink-0 justify-center px-5 py-3 rounded-xl text-white text-sm font-semibold bg-[#5b21b6] hover:bg-[#4c1d95] shadow-lg shadow-[#4c1d95]/25 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5b21b6]/50 transition-colors flex items-center gap-2">
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                     Run Audit
                   </button>
@@ -283,12 +287,12 @@ export default function SEODashboardPage() {
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Keyword Research</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
                   <input value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="Enter seed keyword e.g. digital marketing"
-                    className="px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900" />
+                    className="w-full px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5b21b6]/40 focus:border-[#5b21b6] transition-colors" />
                   <input value={niche} onChange={e => setNiche(e.target.value)} placeholder="Your niche e.g. SaaS, Fashion, Healthcare"
-                    className="px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900" />
+                    className="w-full px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5b21b6]/40 focus:border-[#5b21b6] transition-colors" />
                 </div>
                 <button onClick={researchKeywords} disabled={loading || !keyword.trim()}
-                  className="w-full py-3 rounded-xl text-white text-sm font-semibold bg-purple-600 hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2 mb-6">
+                  className="w-full py-3 px-4 rounded-xl text-white text-sm font-semibold bg-[#5b21b6] hover:bg-[#4c1d95] shadow-lg shadow-[#4c1d95]/25 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5b21b6]/50 transition-colors flex items-center justify-center gap-2 mb-6">
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                   Find High-Value Keywords
                 </button>
@@ -297,7 +301,7 @@ export default function SEODashboardPage() {
                     {(result.keywords as Array<{ keyword: string; difficulty: string; volume: string; intent: string; cpc?: string; trend?: string }>).map((k, i) => (
                       <div key={i} className="p-4 rounded-xl bg-gray-50 border border-gray-100">
                         <div className="flex items-center justify-between mb-2">
-                          <p className="text-sm font-semibold text-gray-900">{k.keyword}</p>
+                          <p className="text-sm font-semibold text-gray-900 min-w-0 break-words">{k.keyword}</p>
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
                             k.difficulty === 'Low' ? 'bg-emerald-100 text-emerald-700' : k.difficulty === 'Medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
                           }`}>{k.difficulty}</span>
@@ -325,12 +329,12 @@ export default function SEODashboardPage() {
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Competitor Analysis</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
                   <input value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} placeholder="Your website URL"
-                    className="px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900" />
+                    className="w-full px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5b21b6]/40 focus:border-[#5b21b6] transition-colors" />
                   <input value={competitor} onChange={e => setCompetitor(e.target.value)} placeholder="Competitor website URL"
-                    className="px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900" />
+                    className="w-full px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5b21b6]/40 focus:border-[#5b21b6] transition-colors" />
                 </div>
                 <button onClick={analyzeCompetitor} disabled={loading || !competitor.trim() || !websiteUrl.trim()}
-                  className="w-full py-3 rounded-xl text-white text-sm font-semibold bg-purple-600 hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2 mb-6">
+                  className="w-full py-3 px-4 rounded-xl text-white text-sm font-semibold bg-[#5b21b6] hover:bg-[#4c1d95] shadow-lg shadow-[#4c1d95]/25 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5b21b6]/50 transition-colors flex items-center justify-center gap-2 mb-6">
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />}
                   Analyze Competitor
                 </button>
@@ -369,12 +373,12 @@ export default function SEODashboardPage() {
                 <h3 className="text-lg font-bold text-gray-900 mb-4">AI Content Ideas</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
                   <input value={niche} onChange={e => setNiche(e.target.value)} placeholder="Your niche"
-                    className="px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900" />
+                    className="w-full px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5b21b6]/40 focus:border-[#5b21b6] transition-colors" />
                   <input value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="Target keyword (optional)"
-                    className="px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900" />
+                    className="w-full px-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5b21b6]/40 focus:border-[#5b21b6] transition-colors" />
                 </div>
                 <button onClick={generateContentIdeas} disabled={loading || !niche.trim()}
-                  className="w-full py-3 rounded-xl text-white text-sm font-semibold bg-purple-600 hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2 mb-6">
+                  className="w-full py-3 px-4 rounded-xl text-white text-sm font-semibold bg-[#5b21b6] hover:bg-[#4c1d95] shadow-lg shadow-[#4c1d95]/25 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5b21b6]/50 transition-colors flex items-center justify-center gap-2 mb-6">
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lightbulb className="w-4 h-4" />}
                   Generate Content Ideas
                 </button>
@@ -383,7 +387,7 @@ export default function SEODashboardPage() {
                     {(result.ideas as Array<{ title: string; type: string; keywords?: string[]; outline?: string[]; searchIntent?: string; estimatedReadTime?: string }>).map((idea, i) => (
                       <div key={i} className="p-4 rounded-xl bg-gray-50 border border-gray-100">
                         <div className="flex items-center justify-between mb-2">
-                          <p className="text-sm font-semibold text-gray-900">{idea.title}</p>
+                          <p className="text-sm font-semibold text-gray-900 min-w-0 break-words">{idea.title}</p>
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">{idea.type}</span>
                         </div>
                         <p className="text-xs text-gray-500 mb-2">{(idea.keywords ?? []).join(', ')}</p>

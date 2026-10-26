@@ -4,6 +4,7 @@ import { publishBlog } from '@/lib/blog-publisher';
 import { generateAIText } from '@/lib/ai-provider';
 import { getVerifiedBlogImage } from '@/lib/blog-images';
 import { tidyBlogContent, blogQualityIssue, blogExcerpt, cleanBlogTags } from '@/lib/blog-quality';
+import { sendEmail } from '@/lib/email';
 
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 90);
 
@@ -358,39 +359,26 @@ WRITING INSTRUCTIONS:
         });
       }
 
-      // Send email notification to all company users (if Resend is configured)
-      if (process.env.RESEND_API_KEY) {
-        try {
-          const emailRecipients = companyUsers.map(u => u.email).filter(Boolean);
-          if (emailRecipients.length > 0) {
-            const emailHtml = `
-              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #7c3aed;">${notice.title}</h2>
-                <p>${notice.text.replace(/</g, '&lt;')}</p>
-                <p style="color: #666;">Category: ${blogPost.category}</p>
-                <a href="/blog/${blogPost.slug}" style="display: inline-block; background: #7c3aed; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; margin-top: 16px;">Read Blog</a>
-                <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
-                <p style="color: #999; font-size: 12px;">You're receiving this because you're registered on AINOS.</p>
-              </div>
-            `;
-            await fetch('https://api.resend.com/emails', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                from: 'AINOS Blog <onboarding@resend.dev>',
-                to: emailRecipients,
-                subject: `${notice.title}: ${blogPost.title}`,
-                html: emailHtml,
-              }),
-              signal: AbortSignal.timeout(10000),
-            });
+      // Send email notification to all company users via the shared sendEmail util
+      try {
+        const emailRecipients = companyUsers.map(u => u.email).filter(Boolean) as string[];
+        if (emailRecipients.length > 0) {
+          const emailHtml = `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #7c3aed;">${notice.title}</h2>
+              <p>${notice.text.replace(/</g, '&lt;')}</p>
+              <p style="color: #666;">Category: ${blogPost.category}</p>
+              <a href="/blog/${blogPost.slug}" style="display: inline-block; background: #7c3aed; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; margin-top: 16px;">Read Blog</a>
+              <hr style="margin: 24px 0; border: none; border-top: 1px solid #eee;" />
+              <p style="color: #999; font-size: 12px;">You're receiving this because you're registered on AINOS.</p>
+            </div>
+          `;
+          for (const to of emailRecipients) {
+            await sendEmail({ to, subject: `${notice.title}: ${blogPost.title}`, html: emailHtml });
           }
-        } catch (emailErr) {
-          console.error('[Email Notification] Failed to send:', emailErr);
         }
+      } catch (emailErr) {
+        console.error('[Email Notification] Failed to send:', emailErr);
       }
     }
 

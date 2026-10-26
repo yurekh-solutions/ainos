@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Newsletter subscription API - integrates with ConvertKit, Beehiiv, or Resend
+// Newsletter subscription API - integrates with ConvertKit, Beehiiv, or Brevo
 export async function POST(req: NextRequest) {
   try {
     const { email, name, source } = await req.json();
@@ -59,25 +59,28 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Try Resend (if configured)
-    if (process.env.RESEND_API_KEY) {
+    // Try Brevo (if configured) — add/update the contact in Brevo
+    if (process.env.BREVO_API_KEY) {
       try {
-        // First, add to contacts (if you have a Resend audience)
-        const res = await fetch('https://api.resend.com/audiences/' + (process.env.RESEND_AUDIENCE_ID || 'default') + '/contacts', {
+        const res = await fetch('https://api.brevo.com/v3/contacts', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + process.env.RESEND_API_KEY,
+            'api-key': process.env.BREVO_API_KEY,
           },
-          body: JSON.stringify({ email, name }),
+          body: JSON.stringify({
+            email,
+            attributes: name ? { FNAME: name } : undefined,
+            includeEmptyContacts: true,
+          }),
           signal: AbortSignal.timeout(10000),
         });
 
-        if (res.ok) {
-          return NextResponse.json({ success: true, provider: 'resend' });
+        if (res.ok || res.status === 204) {
+          return NextResponse.json({ success: true, provider: 'brevo' });
         }
       } catch (err) {
-        console.error('Resend error:', err);
+        console.error('Brevo error:', err);
       }
     }
 

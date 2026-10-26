@@ -147,7 +147,7 @@ export default function DashboardPage() {
       title: 'Social Media',
       description: 'AI-powered captions, hooks & hashtags for every platform.',
       icon: Hash,
-      href: '/marketing/email',
+      href: '/marketing/social-media',
       stat: '6 platforms ready',
       gradient: 'from-violet-500 to-purple-600',
       accent: '#6c5ce7',
@@ -455,7 +455,7 @@ export default function DashboardPage() {
           {[
             { icon: Plus, label: 'New Invoice', href: '/invoices', gradient: 'from-violet-500 to-purple-600' },
             { icon: Users, label: 'Add Customer', href: '/customers', gradient: 'from-cyan-500 to-blue-600' },
-            { icon: Megaphone, label: 'Create Caption', href: '/marketing/email', gradient: 'from-pink-500 to-rose-600' },
+            { icon: Megaphone, label: 'Create Caption', href: '/marketing/social-media', gradient: 'from-violet-500 to-purple-600' },
             { icon: Sparkles, label: 'AI Blog Post', href: '/marketing/blog', gradient: 'from-amber-500 to-orange-600' },
           ].map((action, i) => (
             <motion.div
@@ -496,7 +496,7 @@ export default function DashboardPage() {
               { label: 'Create your first invoice', href: '/invoices', done: financeStats.invoices > 0 },
               { label: 'Add a customer profile', href: '/customers', done: false },
               { label: 'Set up your company details', href: '/company', done: false },
-              { label: 'Generate a social media caption', href: '/marketing/email', done: false },
+              { label: 'Generate a social media caption', href: '/marketing/social-media', done: false },
             ].map((item, i) => (
               <Link key={item.label} href={item.href} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors group">
                 {item.done ? (
