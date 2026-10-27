@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import NextImage from 'next/image';
 import {
-  Search, Globe, Users, BarChart3, CheckCircle, AlertCircle, Loader2, Star, FileText, Clock, Copy, Shield, Lightbulb } from 'lucide-react';
+  Search, Store, Users, BarChart3, CheckCircle, AlertCircle, Loader2, Star, FileText, Clock, Copy, Shield, Lightbulb, ChevronRight, TrendingUp } from 'lucide-react';
 
 const tabs = [
   { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -125,33 +125,52 @@ export default function SEODashboardPage() {
   const auditAI = (result?.aiSummary ?? null) as { summary?: string; priorities?: Array<{ title: string; why: string; how: string }> } | null;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 -mt-4 px-4 pt-0 pb-4 md:px-6 md:pb-6 lg:px-8 lg:pb-8">
       <div className="max-w-[1400px] mx-auto">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-4 sm:mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0">
-              <Globe className="w-5 h-5 text-white" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 leading-tight">SEO &amp; Content Marketing Platform</h1>
-              <p className="text-sm mt-0.5 text-gray-600">Site audits, keyword research, competitor analysis & AI content ideas.</p>
+          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-purple-100 bg-gradient-to-br from-violet-600 via-purple-600 to-purple-700 sm:from-white sm:via-white sm:to-purple-50 p-5 sm:p-6 shadow-sm">
+            <div className="relative flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-violet-100 to-purple-100 ring-1 ring-violet-200 flex items-center justify-center shrink-0 shadow-sm">
+                  <NextImage src="/ainos-alpha.png" alt="AINOS" width={28} height={28} className="w-6 h-6 sm:w-7 sm:h-7" />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-base sm:text-2xl md:text-[26px] font-bold leading-tight text-white sm:text-gray-900">SEO &amp; Content Marketing Platform</h1>
+                  <p className="text-xs sm:text-sm mt-1 text-purple-100 sm:text-gray-500">Site audits, keyword research, competitor analysis &amp; AI content ideas.</p>
+                </div>
+              </div>
+              {/* Right-side growth motif */}
+              <div className="hidden md:flex items-center gap-3 shrink-0">
+                <div className="flex items-end gap-1.5 h-12">
+                  <span className="w-2.5 rounded-full bg-violet-200" style={{ height: '42%' }} />
+                  <span className="w-2.5 rounded-full bg-violet-300" style={{ height: '60%' }} />
+                  <span className="w-2.5 rounded-full bg-violet-400" style={{ height: '80%' }} />
+                  <span className="w-2.5 rounded-full bg-violet-600" style={{ height: '100%' }} />
+                </div>
+                <span className="grid place-items-center w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
+                  <TrendingUp className="w-5 h-5" />
+                </span>
+              </div>
             </div>
           </div>
         </motion.div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-1 mb-6 sm:overflow-x-auto sm:pb-2 lg:ml-4 scrollbar-hide">
           {tabs.map(tab => {
             const Icon = tab.icon;
+            const active = activeTab === tab.id;
             return (
               <button key={tab.id} onClick={() => switchTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-                  activeTab === tab.id
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl sm:rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                  active
                     ? 'bg-[#5b21b6] text-white shadow-md'
                     : 'bg-white text-gray-600 border border-gray-200 hover:border-purple-300'
                 }`}>
-                <Icon className="w-4 h-4" /> {tab.label}
+                <Icon className="w-4 h-4" />
+                <span className="flex-1 sm:flex-none text-left">{tab.label}</span>
+                <ChevronRight className="w-4 h-4 sm:hidden opacity-60" />
               </button>
             );
           })}
@@ -163,45 +182,58 @@ export default function SEODashboardPage() {
             {/* OVERVIEW */}
             {activeTab === 'overview' && (
               <div className="space-y-4">
+                {/* Stat cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[
-                    { l: 'Connected Websites', v: result?.websites ?? '0', i: Globe, c: 'text-emerald-600' },
-                    { l: 'Blog Posts', v: result?.posts ?? '0', i: FileText, c: 'text-blue-600' },
-                    { l: 'Scheduled Posts', v: result?.schedules ?? '0', i: Clock, c: 'text-violet-600' },
+                    { l: 'Connected Websites', sub: 'Add your website to get started', v: result?.websites ?? 0, i: Store, ring: 'bg-emerald-50 text-emerald-600 ring-emerald-100' },
+                    { l: 'Blog Posts', sub: 'Create and manage your blog content', v: result?.posts ?? 0, i: FileText, ring: 'bg-blue-50 text-blue-600 ring-blue-100' },
+                    { l: 'Scheduled Posts', sub: 'Plan your social media content', v: result?.schedules ?? 0, i: Clock, ring: 'bg-violet-50 text-violet-600 ring-violet-100' },
                   ].map((s, i) => {
                     const Icon = s.i;
                     return (
-                      <div key={i} className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Icon className={`w-4 h-4 ${s.c}`} />
-                          <p className="text-xs font-medium uppercase tracking-wider text-gray-500">{s.l}</p>
+                      <div key={i} className="flex items-center gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-gray-200 shadow-sm">
+                        <div className={`w-11 h-11 rounded-full ring-1 ${s.ring} flex items-center justify-center shrink-0`}>
+                          <Icon className="w-5 h-5" />
                         </div>
-                        <p className={`text-2xl font-bold ${s.c}`}>{String(s.v)}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 truncate">{s.l}</p>
+                          <p className="text-2xl font-bold text-gray-900 leading-tight">{String(s.v)}</p>
+                          <p className="text-xs text-gray-500 truncate">{s.sub}</p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
                       </div>
                     );
                   })}
                 </div>
-                <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+
+                {/* Quick Actions */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-6">
+                  <div className="flex items-center gap-2 mb-1">
                     <span className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 ring-1 ring-violet-200 flex items-center justify-center shrink-0">
                       <NextImage src="/ainos-alpha.png" alt="AINOS" width={18} height={18} className="w-[18px] h-[18px]" />
                     </span>
-                    Quick Actions
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <h3 className="text-lg font-bold text-gray-900">Quick Actions</h3>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-4">Get started with essential SEO and content tools.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {[
-                      { label: 'Run Site Audit', desc: 'Analyze on-page SEO issues', icon: Shield, action: () => setActiveTab('audit') },
-                      { label: 'Research Keywords', desc: 'Find high-value keywords', icon: Search, action: () => setActiveTab('keywords') },
-                      { label: 'Analyze Competitor', desc: 'Compare with competitors', icon: Users, action: () => setActiveTab('competitors') },
-                      { label: 'Get Content Ideas', desc: 'AI-generated blog topics', icon: Lightbulb, action: () => setActiveTab('content') },
+                      { label: 'Run Site Audit', desc: 'Analyze on-page SEO issues', icon: Shield, ring: 'bg-violet-50 text-violet-600 ring-violet-100', action: () => setActiveTab('audit') },
+                      { label: 'Research Keywords', desc: 'Find high-value keywords', icon: Search, ring: 'bg-indigo-50 text-indigo-600 ring-indigo-100', action: () => setActiveTab('keywords') },
+                      { label: 'Analyze Competitor', desc: 'Compare with competitors', icon: Users, ring: 'bg-purple-50 text-purple-600 ring-purple-100', action: () => setActiveTab('competitors') },
+                      { label: 'Get Content Ideas', desc: 'AI-generated blog topics', icon: Lightbulb, ring: 'bg-fuchsia-50 text-fuchsia-600 ring-fuchsia-100', action: () => setActiveTab('content') },
                     ].map((a, i) => {
                       const Icon = a.icon;
                       return (
                         <button key={i} onClick={a.action}
-                          className="text-left p-4 rounded-xl bg-gray-50 hover:bg-purple-50 border border-gray-200 transition-all">
-                          <Icon className="w-5 h-5 text-purple-500 mb-2" />
-                          <p className="text-sm font-semibold text-gray-900">{a.label}</p>
-                          <p className="text-xs text-gray-500">{a.desc}</p>
+                          className="group flex items-center gap-3 text-left p-4 rounded-2xl bg-gray-50 hover:bg-purple-50 border border-gray-100 hover:border-purple-200 transition-all">
+                          <div className={`w-10 h-10 rounded-full ring-1 ${a.ring} flex items-center justify-center shrink-0`}>
+                            <Icon className="w-5 h-5" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-gray-900 truncate">{a.label}</p>
+                            <p className="text-xs text-gray-500 truncate">{a.desc}</p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-purple-500 shrink-0 transition-colors" />
                         </button>
                       );
                     })}
