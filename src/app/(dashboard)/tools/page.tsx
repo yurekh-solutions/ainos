@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Coins, Zap, ArrowRight, Search, Sparkles, Megaphone, Users, Timer, Wallet, Palette, Brush, Briefcase, ShoppingBag, LifeBuoy, BookOpen, Globe, TrendingUp, Package, UserCog, Lock } from 'lucide-react';
+import { Coins, Workflow, ArrowRight, Search, Star, Megaphone, Users, Timer, Wallet, Palette, Brush, Briefcase, ShoppingBag, LifeBuoy, BookOpen, Globe, TrendingUp, Package, UserCog, Lock } from 'lucide-react';
 
 interface Tool {
   id: string;
@@ -36,8 +36,8 @@ const categoryColors: Record<string, string> = {
   hr: 'from-rose-500 to-pink-500',
 };
 
-const categoryIcons: Record<string, typeof Zap> = {
-  ai: Sparkles,
+const categoryIcons: Record<string, typeof Workflow> = {
+  ai: Star,
   marketing: Megaphone,
   crm: Users,
   productivity: Timer,
@@ -55,7 +55,7 @@ const categoryIcons: Record<string, typeof Zap> = {
 };
 
 function ToolIcon({ category, className }: { category?: string; className?: string }) {
-  const Icon = categoryIcons[category || ''] || Zap;
+  const Icon = categoryIcons[category || ''] || Workflow;
   return <Icon className={className} />;
 }
 
@@ -123,7 +123,7 @@ export default function ToolsPage() {
         </div>
       ) : filteredTools.length === 0 ? (
         <div className="text-center py-16">
-          <Zap className="w-12 h-12 mx-auto text-gray-600 mb-4" />
+          <Workflow className="w-12 h-12 mx-auto text-gray-600 mb-4" />
           <h3 className="text-lg font-semibold mb-2 text-gray-700">No tools found</h3>
           <p className="text-gray-400">Tools will appear here once added by the platform.</p>
         </div>

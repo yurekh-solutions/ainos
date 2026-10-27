@@ -3,9 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Palette, Type, Layout, FileText, Save, Check, Trash2, Copy,
-  Eye, ChevronDown, ChevronUp, Star, Plus
-} from 'lucide-react';
+  Palette, Type, Layout, FileText, Save, Check, Trash2, Copy, Eye, ChevronDown, ChevronUp, Star, Plus } from 'lucide-react';
 
 interface TableColumn {
   label: string;

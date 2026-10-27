@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Calendar, Clock, ArrowLeft, Sparkles, BookOpen, Tag, Layers, ArrowRight, Share2, Linkedin, Twitter, Facebook, Copy, Check, List, ChevronRight, Mail, X, Volume2, VolumeX } from 'lucide-react';
+import { Calendar, Clock, ArrowLeft, Star, BookOpen, Tag, Layers, ArrowRight, Share2, Linkedin, Twitter, Facebook, Copy, Check, List, ChevronRight, Mail, X, Volume2, VolumeX } from 'lucide-react';
 
 interface BlogPost {
   id: string; title: string; slug: string; content: string; excerpt: string | null;
@@ -187,7 +187,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
           <div className="flex items-center justify-between h-16">
             <a href="/blog/" className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white" />
+                <Star className="w-4 h-4 text-white" />
               </div>
               <span className="text-lg font-bold text-gray-900">AINOS Blog</span>
             </a>
@@ -401,7 +401,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
         <div className="mt-10 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-6 border border-purple-100">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-6 h-6 text-white" />
+              <Star className="w-6 h-6 text-white" />
             </div>
             <div>
               <h3 className="font-bold text-gray-900 mb-1">Powered by AINOS AI Blog Agent</h3>
@@ -463,7 +463,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-3">
             <div className="w-6 h-6 rounded bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
-              <Sparkles className="w-3 h-3 text-white" />
+              <Star className="w-3 h-3 text-white" />
             </div>
             <span className="text-sm font-semibold text-white">AINOS</span>
           </div>

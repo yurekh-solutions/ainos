@@ -2,7 +2,7 @@
 
 import { signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, FileText, ArrowRight, Globe, Loader2, AlertCircle, Eye, EyeOff, LogIn, Zap, BarChart3, Lock, UserPlus, Clock, XCircle } from 'lucide-react';
+import { Shield, FileText, ArrowRight, Globe, Loader2, AlertCircle, Eye, EyeOff, LogIn, Workflow, BarChart3, Lock, UserPlus, Clock, XCircle } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -29,7 +29,7 @@ const errorMessages: Record<string, string> = {
 
 const leftFeatures = [
   { icon: Shield, title: 'Secure & Encrypted Login', desc: 'Bank-grade security for your data' },
-  { icon: Zap, title: 'AI-Powered Automation', desc: 'Smart workflows that save hours' },
+  { icon: Workflow, title: 'AI-Powered Automation', desc: 'Smart workflows that save hours' },
   { icon: BarChart3, title: 'Real-time Dashboard Access', desc: 'Live analytics at your fingertips' },
   { icon: FileText, title: 'Smart Invoicing & GST', desc: 'Automated billing and compliance' },
 ];

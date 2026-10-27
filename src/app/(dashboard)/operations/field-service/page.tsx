@@ -4,20 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  AlertTriangle,
-  ArrowRight,
-  CalendarClock,
-  CheckCircle2,
-  Loader2,
-  Pencil,
-  PlayCircle,
-  Plus,
-  Search,
-  Trash2,
-  Users,
-  Wrench,
-  XCircle,
-} from 'lucide-react';
+  AlertTriangle, ArrowRight, CalendarClock, CheckCircle2, Loader2, Pencil, PlayCircle, Plus, Search, Trash2, Users, Wrench, XCircle } from 'lucide-react';
 
 interface Job {
   id: string;

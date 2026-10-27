@@ -4,9 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, Download, Video, Volume2, VolumeX, Heart,
-  ChevronLeft, ChevronRight, Check, X,
-} from 'lucide-react';
+  ArrowLeft, Download, Video, Volume2, VolumeX, Heart, ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
 import { TEMPLATES } from '@/data/invitations/templates';
 import FieldEditor from '../../components/FieldEditor';
 import {

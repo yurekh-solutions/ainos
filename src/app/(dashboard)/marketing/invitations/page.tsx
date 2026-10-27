@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Video, Sparkles, Search, X, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Video, Star, Search, X, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import CategoryFilter from './components/CategoryFilter';
 import TemplateCard from './components/TemplateCard';
 import { TEMPLATES, CATEGORIES, getGroup, getGroupIds, LANGUAGES } from '@/data/invitations/templates';
@@ -116,7 +116,7 @@ export default function InvitationsPage() {
               transition={{ duration: 0.7 }}
             >
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#800020]/10 text-[#800020] text-xs md:text-sm font-medium mb-6 border border-[#800020]/20">
-                <Sparkles className="w-4 h-4" />
+                <Star className="w-4 h-4" />
                 <span>{totalTemplates}+ Premium Templates · Video + Audio</span>
               </div>
 

@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { Search, Calendar, Clock, ArrowRight, Sparkles, BookOpen, Layers, ExternalLink, Rss } from 'lucide-react';
+import { Search, Calendar, Clock, ArrowRight, Star, BookOpen, Layers, ExternalLink, Rss } from 'lucide-react';
 
 interface BlogPost {
   id: string; title: string; slug: string; content: string; excerpt: string | null;
@@ -44,7 +44,7 @@ export default function PublicBlogPage() {
           <div className="flex items-center justify-between h-16">
             <a href="/blog/" className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white" />
+                <Star className="w-4 h-4 text-white" />
               </div>
               <span className="text-lg font-bold text-gray-900">AINOS Blog</span>
             </a>
@@ -275,7 +275,7 @@ export default function PublicBlogPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-3">
             <div className="w-6 h-6 rounded bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
-              <Sparkles className="w-3 h-3 text-white" />
+              <Star className="w-3 h-3 text-white" />
             </div>
             <span className="text-sm font-semibold text-white">AINOS</span>
           </div>

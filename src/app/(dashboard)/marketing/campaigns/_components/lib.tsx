@@ -53,6 +53,12 @@ export function formatDate(dateStr: string | null) {
   });
 }
 
+// Compact date (no time) for tight spaces like the mobile campaign-card meta row.
+export function formatDateShort(dateStr: string | null) {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 /** Small top-center toast reused by every campaigns sub-page. */
 export function Toast({ toast }: { toast: ToastMsg | null }) {
   return (

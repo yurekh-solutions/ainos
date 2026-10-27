@@ -3,11 +3,7 @@ import { useCallback, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import NextImage from 'next/image';
 import {
-  Upload, Sparkles, Copy, Check, CheckCircle2, AlertCircle, Share2, MessageCircle,
-  Instagram, Youtube, Linkedin, Twitter, Facebook, Video,
-  Hash, Zap, TrendingUp, Loader2, X, RefreshCw, Image as ImageIcon,
-  Camera, Film, Globe, Eye
-} from 'lucide-react';
+  Upload, Star, Copy, Check, CheckCircle2, AlertCircle, Share2, MessageCircle, Instagram, Youtube, Linkedin, Twitter, Facebook, Video, Hash, Workflow, TrendingUp, Loader2, X, RefreshCw, Image as ImageIcon, Camera, Film, Globe, Eye } from 'lucide-react';
 
 // Resize an image File down to max 768px on the long edge and re-encode as JPEG
 // at quality 0.7. Without this, big phone photos (3-8 MB) blow past Groq's
@@ -538,7 +534,7 @@ export default function SocialMediaPage() {
               {/* Tone */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-purple-500" /> Tone
+                  <Workflow className="w-3.5 h-3.5 text-purple-500" /> Tone
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {tones.map(t => (
@@ -630,7 +626,7 @@ export default function SocialMediaPage() {
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4 shrink-0" />
+                  <Star className="w-4 h-4 shrink-0" />
                   <span className="truncate sm:hidden">Generate Viral Captions</span>
                   <span className="hidden sm:inline">Generate Viral Captions with Global Hashtags</span>
                 </>
@@ -648,7 +644,7 @@ export default function SocialMediaPage() {
             className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 mb-4 sm:mb-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-purple-600/25 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-white animate-pulse" />
+                <Star className="w-5 h-5 text-white animate-pulse" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-gray-900">AI is working its magic...</p>

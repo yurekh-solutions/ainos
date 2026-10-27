@@ -2,10 +2,7 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Sparkles, Image, Video, Palette, Download, RefreshCw,
-  CheckCircle, AlertCircle, Upload, Camera, Clapperboard,
-  X, ChevronDown,
-} from 'lucide-react';
+  Star, Image, Video, Palette, Download, RefreshCw, CheckCircle, AlertCircle, Upload, Camera, Clapperboard, X, ChevronDown } from 'lucide-react';
 import {
   POLLINATIONS_MODELS, STYLE_MODEL_MAP, CINEMA_CONTROLS,
   generateImage, generateVideo, buildCinemaPrompt,
@@ -164,7 +161,7 @@ export default function AIMediaPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, hsl(252 60% 55%), hsl(252 55% 45%))' }}>
-                <Sparkles className="w-5 h-5 text-white" />
+                <Star className="w-5 h-5 text-white" />
               </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-white">AI Media Studio</h1>
@@ -311,7 +308,7 @@ export default function AIMediaPage() {
               <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} onClick={handleGenerate} disabled={generating || !prompt.trim()}
                 className="w-full py-3 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, hsl(252 60% 55%) 0%, hsl(252 55% 45%) 100%)', boxShadow: '0 8px 24px -6px hsl(252 60% 55% / 0.4)' }}>
-                {generating ? <><RefreshCw className="w-4 h-4 animate-spin" /> Generating...</> : <><Sparkles className="w-4 h-4" /> Generate</>}
+                {generating ? <><RefreshCw className="w-4 h-4 animate-spin" /> Generating...</> : <><Star className="w-4 h-4" /> Generate</>}
               </motion.button>
             </motion.div>
 
@@ -326,7 +323,7 @@ export default function AIMediaPage() {
 
               {tabResults.length === 0 ? (
                 <div className="text-center py-12">
-                  <Sparkles className="w-12 h-12 text-[hsl(252_60%_55%)]/20 mx-auto mb-3" />
+                  <Star className="w-12 h-12 text-[hsl(252_60%_55%)]/20 mx-auto mb-3" />
                   <p className="text-sm font-medium text-white/60">No results yet</p>
                   <p className="text-xs text-white/40 mt-1">Start by describing what you want to create</p>
                 </div>

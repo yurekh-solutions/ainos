@@ -4,10 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  ScrollText, Contact2, Boxes, Coins, FileBarChart, PackageCheck, Sheet, BellRing, Paintbrush,
-  AtSign, SearchCheck, PenTool, Bot, MailOpen, Send,
-  Receipt, CalendarClock, CheckCircle2, Circle, ChevronRight, ArrowRight, Plus,
-} from 'lucide-react';
+  ScrollText, Contact2, Boxes, Coins, FileBarChart, PackageCheck, Sheet, BellRing, Paintbrush, AtSign, SearchCheck, PenTool, MessageSquareText, MailOpen, Send, Receipt, CalendarClock, CheckCircle2, Circle, ChevronRight, ArrowRight, Plus } from 'lucide-react';
 
 // ── Surfaces ──
 export const CARD = 'bg-white rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04),0_2px_8px_-2px_rgba(16,24,40,0.06)]';
@@ -164,7 +161,7 @@ export const marketingTools = (templateLabel: string): Tool[] => [
   { title: 'Social Media', short: 'Create engaging posts', description: 'Generate captions, hooks and hashtags for Instagram, LinkedIn, Twitter and Facebook.', icon: AtSign, href: '/marketing/social-media', tone: 'purple' },
   { title: 'SEO Platform', short: 'Rank higher on Google', description: 'Audit your website, research keywords and track competitor rankings.', icon: SearchCheck, href: '/marketing/seo', tone: 'indigo' },
   { title: 'Blog & Content', short: 'Publish quality articles', description: 'Write and publish SEO-optimized blog posts with AI assistance.', icon: PenTool, href: '/marketing/blog', tone: 'orange' },
-  { title: 'Blog Agent', short: 'Automated content creation', description: 'AI researches topics, writes articles and publishes on your schedule.', icon: Bot, href: '/marketing/blog', tone: 'green' },
+  { title: 'Blog Agent', short: 'Automated content creation', description: 'AI researches topics, writes articles and publishes on your schedule.', icon: MessageSquareText, href: '/marketing/blog', tone: 'green' },
   { title: 'Invitations', short: `Professional event designs`, description: `Create branded invitations for festivals, events and special occasions.`, icon: MailOpen, href: '/marketing/invitations', tone: 'pink' },
 ];
 

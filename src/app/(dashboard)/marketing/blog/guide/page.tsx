@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { ArrowLeft, Copy, Check, ExternalLink, Code, Globe, Zap, CheckCircle, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Copy, Check, ExternalLink, Code, Globe, Workflow, CheckCircle, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const STEPS = [
@@ -81,7 +81,7 @@ const STEPS = [
     id: 'verify',
     num: 3,
     title: 'AINOS Detects Your Integration',
-    icon: Zap,
+    icon: Workflow,
     content: `Once the embed code is live on your website, visit your website in a browser. The moment the page loads, the embed script sends a signal to AINOS.\n\nGo back to your AINOS dashboard and refresh the Blog page. You will see a green \u201cWidget Live\u201d badge on your website card.\n\nThis means:\n  \u2705 AINOS knows your website is ready\n  \u2705 Blog generation starts automatically\n  \u2705 New blogs will appear on your site within minutes\n\nIf you still see \u201cWidget Not Integrated\u201d (amber badge):\n  \u2022 Make sure the embed code is pasted correctly (copy it fresh from the dashboard)\n  \u2022 Make sure you replaced YOUR_WEBSITE_URL with your actual URL\n  \u2022 Clear your browser cache and reload your website\n  \u2022 Wait 1\u20132 minutes and refresh the AINOS dashboard`,
   },
   {

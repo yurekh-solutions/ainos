@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, MessageCircle, Share2, Download, Eye, Clock, Sparkles, TrendingUp, Filter, Search } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Download, Eye, Clock, Star, TrendingUp, Filter, Search } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -149,7 +149,7 @@ export default function ProjectsGalleryPage() {
       <div className="mb-8">
         <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3 mb-2" style={{ color: 'hsl(var(--foreground))' }}>
           <div className="p-3 bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl shadow-lg shadow-purple-600/30">
-            <Sparkles className="text-white" size={28} />
+            <Star className="text-white" size={28} />
           </div>
           Projects Gallery
         </h1>
@@ -185,7 +185,7 @@ export default function ProjectsGalleryPage() {
         </div>
         <div className="glass-card p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="text-[hsl(var(--warning))]" size={20} />
+            <Star className="text-[hsl(var(--warning))]" size={20} />
           </div>
           <div className="text-2xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>
             {projects.filter(p => p.type === 'video').length}
@@ -307,7 +307,7 @@ export default function ProjectsGalleryPage() {
 
       {filteredProjects.length === 0 && (
         <div className="text-center py-20">
-          <Sparkles className="mx-auto mb-4" size={48} style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }} />
+          <Star className="mx-auto mb-4" size={48} style={{ color: 'hsl(var(--muted-foreground) / 0.5)' }} />
           <h3 className="text-lg font-medium mb-1" style={{ color: 'hsl(var(--foreground))' }}>No projects found</h3>
           <p style={{ color: 'hsl(var(--muted-foreground))' }}>Try adjusting your search or filter</p>
         </div>

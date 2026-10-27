@@ -2,9 +2,7 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Sparkles, Upload, RefreshCw, CheckCircle, AlertCircle,
-  Download, Mic, Image as ImageIcon, Video, X,
-} from 'lucide-react';
+  Star, Upload, RefreshCw, CheckCircle, AlertCircle, Download, Mic, Image as ImageIcon, Video, X } from 'lucide-react';
 import { generateVideo } from '@/lib/muapi';
 
 type LipSyncMode = 'portrait' | 'video';
@@ -205,7 +203,7 @@ export default function LipSyncPage() {
                 disabled={generating || !prompt.trim()}
                 className="w-full py-3 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, hsl(252 60% 55%) 0%, hsl(252 55% 45%) 100%)', boxShadow: '0 8px 24px -6px hsl(252 60% 55% / 0.4)' }}>
-                {generating ? <><RefreshCw className="w-4 h-4 animate-spin" /> Generating...</> : <><Sparkles className="w-4 h-4" /> Generate Talking Video</>}
+                {generating ? <><RefreshCw className="w-4 h-4 animate-spin" /> Generating...</> : <><Star className="w-4 h-4" /> Generate Talking Video</>}
               </motion.button>
             </motion.div>
 

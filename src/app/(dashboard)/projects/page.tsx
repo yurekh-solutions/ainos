@@ -3,15 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
-  FolderKanban,
-  Plus,
-  X,
-  Calendar,
-  Trash2,
-  CheckCircle,
-  PauseCircle,
-  PlayCircle,
-} from 'lucide-react';
+  FolderKanban, Plus, X, Calendar, Trash2, CheckCircle, PauseCircle, PlayCircle } from 'lucide-react';
 
 interface ProjectItem {
   id: string;

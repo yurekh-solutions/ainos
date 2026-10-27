@@ -4,23 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  Plus,
-  Search,
-  Download,
-  Wallet,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  RotateCcw,
-  Pencil,
-  Trash2,
-  AlertCircle,
-  Loader2,
-  TrendingUp,
-  TrendingDown,
-  Receipt,
-  ArrowRight,
-} from 'lucide-react';
+  Plus, Search, Download, Wallet, Clock, CheckCircle2, XCircle, RotateCcw, Pencil, Trash2, AlertCircle, Loader2, TrendingUp, TrendingDown, Receipt, ArrowRight } from 'lucide-react';
 
 interface ExpenseRow {
   id: string;

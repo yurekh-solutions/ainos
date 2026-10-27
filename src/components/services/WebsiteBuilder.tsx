@@ -3,7 +3,7 @@
 // watch it generate, preview live, download the finished website.
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, Download, Copy, ExternalLink, RefreshCw, Check, Wand2 } from 'lucide-react';
+import { X, Star, Download, Copy, ExternalLink, RefreshCw, Check, Wand2 } from 'lucide-react';
 
 interface WebsiteBuilderProps {
   siteType: string;
@@ -162,7 +162,7 @@ export default function WebsiteBuilder({ siteType, onClose, onGenerated }: Websi
 
             <button type="submit" className="w-full py-3 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2"
               style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
-              <Sparkles className="w-4 h-4" /> Generate My Website
+              <Star className="w-4 h-4" /> Generate My Website
             </button>
             <p className="text-[11px] text-center" style={{ color: 'hsl(var(--muted-foreground))' }}>Free instant generation · Download & host anywhere · Yurekh can customize it further for you</p>
           </form>
@@ -174,7 +174,7 @@ export default function WebsiteBuilder({ siteType, onClose, onGenerated }: Websi
             <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2.4, ease: 'linear' }}
               className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6"
               style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
-              <Sparkles className="w-8 h-8 text-white" />
+              <Star className="w-8 h-8 text-white" />
             </motion.div>
             <h3 className="font-bold mb-1" style={{ color: 'hsl(var(--foreground))' }}>Building {form.businessName}&apos;s website</h3>
             <AnimatePresence mode="wait">

@@ -4,18 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  AlertTriangle,
-  ArrowRight,
-  CircleDollarSign,
-  Loader2,
-  PackageCheck,
-  Pencil,
-  Plus,
-  Search,
-  ShieldAlert,
-  Trash2,
-  Wrench,
-} from 'lucide-react';
+  AlertTriangle, ArrowRight, CircleDollarSign, Loader2, PackageCheck, Pencil, Plus, Search, ShieldAlert, Trash2, Wrench } from 'lucide-react';
 
 interface RepairLine {
   id?: string;

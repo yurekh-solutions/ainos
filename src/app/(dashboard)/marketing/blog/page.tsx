@@ -5,13 +5,7 @@ import { useSession } from 'next-auth/react';
 import { isAdmin } from '@/lib/admin';
 import BlogCalendar from '@/components/blog/BlogCalendar';
 import {
-  X, FileText, Eye, Calendar, Sparkles, Wand2, Search,
-  Clock, Trash2, Edit3, CheckCircle, Send, ArrowLeft,
-  BookOpen, Layers, ExternalLink, Globe, CalendarRange, TrendingUp, Shield, Zap,
-  Code, Copy, Check, Rss, Map, Palette, RefreshCw, BarChart3, Share2, Target, Award,
-  Link2, Loader2, AlertCircle, ArrowRight, ChevronDown,
-  Radar, PlugZap, Unplug, CircleDashed, CalendarDays, LayoutGrid
-} from 'lucide-react';
+  X, FileText, Eye, Calendar, Star, Wand2, Search, Clock, Trash2, Edit3, CheckCircle, Send, ArrowLeft, BookOpen, Layers, ExternalLink, Globe, CalendarRange, TrendingUp, Shield, Workflow, Code, Copy, Check, Rss, Map, Palette, RefreshCw, BarChart3, Share2, Target, Award, Link2, Loader2, AlertCircle, ArrowRight, ChevronDown, Radar, PlugZap, Unplug, CircleDashed, CalendarDays, LayoutGrid } from 'lucide-react';
 
 interface BlogPost {
   id: string; title: string; slug: string; content: string; excerpt: string | null;
@@ -750,7 +744,7 @@ export default function BlogPage() {
                       </button>
                       <button onClick={() => handleSchedule30(w.id)} disabled={schedulingId === w.id}
                         className="px-4 py-2 rounded-xl text-xs font-bold text-purple-700 border border-purple-200 hover:bg-purple-50:bg-purple-900/20 transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                        {schedulingId === w.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Zap className="w-3.5 h-3.5" /> Schedule 30 More</>}
+                        {schedulingId === w.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Workflow className="w-3.5 h-3.5" /> Schedule 30 More</>}
                         <ArrowRight className="w-3 h-3" />
                       </button>
                       <button onClick={() => handleDisconnectWebsite(w.id)} disabled={disconnectingId === w.id}
@@ -1021,7 +1015,7 @@ export default function BlogPage() {
                         </>
                       ) : (
                         <>
-                          <Sparkles className="w-4 h-4" /> Generate SEO Blog Post
+                          <Star className="w-4 h-4" /> Generate SEO Blog Post
                         </>
                       )}
                     </button>
@@ -1323,7 +1317,7 @@ export default function BlogPage() {
                 {/* HOW IT WORKS - 3 Steps */}
                 <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-5 border border-emerald-200">
                   <h3 className="font-bold text-sm text-emerald-900 mb-4 flex items-center gap-2">
-                    <Zap className="w-4 h-4" /> 3 Simple Steps — Done in 30 Seconds!
+                    <Workflow className="w-4 h-4" /> 3 Simple Steps — Done in 30 Seconds!
                   </h3>
                   <div className="grid grid-cols-3 gap-3">
                     <div className="text-center">
@@ -1456,7 +1450,7 @@ export default function BlogPage() {
                 {/* Advanced Options */}
                 <details className="bg-gray-50 rounded-xl border border-gray-200">
                   <summary className="p-4 cursor-pointer font-semibold text-xs text-gray-700 flex items-center gap-2">
-                    <Zap className="w-3.5 h-3.5" /> Advanced Options (For Developers)
+                    <Workflow className="w-3.5 h-3.5" /> Advanced Options (For Developers)
                   </summary>
                   <div className="px-4 pb-4 space-y-4">
                     <div>

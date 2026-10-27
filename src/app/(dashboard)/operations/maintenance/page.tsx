@@ -5,21 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  AlertTriangle,
-  Boxes,
-  CalendarClock,
-  CheckCircle2,
-  ClipboardList,
-  Loader2,
-  Pencil,
-  PlayCircle,
-  Plus,
-  Search,
-  SkipForward,
-  Trash2,
-  Wallet,
-  Wrench,
-} from 'lucide-react';
+  AlertTriangle, Boxes, CalendarClock, CheckCircle2, ClipboardList, Loader2, Pencil, PlayCircle, Plus, Search, SkipForward, Trash2, Wallet, Wrench } from 'lucide-react';
 
 interface Asset {
   id: string;

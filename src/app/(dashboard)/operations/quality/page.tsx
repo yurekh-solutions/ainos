@@ -4,18 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  AlertTriangle,
-  CheckCircle2,
-  ClipboardCheck,
-  Loader2,
-  Pencil,
-  Plus,
-  Search,
-  ShieldCheck,
-  Trash2,
-  TrendingUp,
-  XCircle,
-} from 'lucide-react';
+  AlertTriangle, CheckCircle2, ClipboardCheck, Loader2, Pencil, Plus, Search, ShieldCheck, Trash2, TrendingUp, XCircle } from 'lucide-react';
 
 interface ChecklistRow {
   item: string;

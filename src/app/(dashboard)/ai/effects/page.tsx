@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Sparkles, Copy, Check, Download, X, Loader2, Zap } from 'lucide-react';
+import { Play, Star, Copy, Check, Download, X, Loader2, Workflow } from 'lucide-react';
 import { generateVideo } from '@/lib/muapi';
 
 interface EffectPreset {
@@ -98,7 +98,7 @@ export default function VideoEffectsPage() {
       <div className="mb-8">
         <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3 mb-2" style={{ color: 'hsl(var(--foreground))' }}>
           <div className="p-3 bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl shadow-lg shadow-purple-600/30">
-            <Zap className="text-white" size={28} />
+            <Workflow className="text-white" size={28} />
           </div>
           Video Effects Studio
         </h1>
@@ -213,7 +213,7 @@ export default function VideoEffectsPage() {
                     />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                       <div className="text-center p-6">
-                        <Sparkles className="w-12 h-12 mx-auto mb-3" style={{ color: 'hsl(var(--primary))' }} />
+                        <Star className="w-12 h-12 mx-auto mb-3" style={{ color: 'hsl(var(--primary))' }} />
                         <p className="text-sm font-medium mb-1" style={{ color: 'hsl(var(--foreground))' }}>Video Preview</p>
                         <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Connect to internet for full video generation</p>
                       </div>
@@ -315,7 +315,7 @@ export default function VideoEffectsPage() {
                     }}
                     className="px-6 py-3 btn-secondary font-medium flex items-center gap-2"
                   >
-                    <Sparkles size={20} />
+                    <Star size={20} />
                     Regenerate
                   </button>
                 </div>

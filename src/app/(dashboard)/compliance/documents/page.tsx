@@ -4,19 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  AlertTriangle,
-  CalendarClock,
-  CheckCircle2,
-  Download,
-  FileText,
-  FolderOpen,
-  Loader2,
-  Pencil,
-  Plus,
-  Search,
-  ShieldAlert,
-  Trash2,
-} from 'lucide-react';
+  AlertTriangle, CalendarClock, CheckCircle2, Download, FileText, FolderOpen, Loader2, Pencil, Plus, Search, ShieldAlert, Trash2 } from 'lucide-react';
 
 interface DocumentRow {
   id: string;

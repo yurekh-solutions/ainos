@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, Copy, Check, Download, RefreshCw, ExternalLink, Wand2, Users, Crown, Lightbulb } from 'lucide-react';
+import { X, Star, Copy, Check, Download, RefreshCw, ExternalLink, Wand2, Users, Crown, Lightbulb } from 'lucide-react';
 
 export type StudioToolId = 'logo' | 'brandkit' | 'social' | 'content' | 'seo' | 'email' | 'pr' | 'launch' | 'poster' | 'qr' | 'pitchdeck' | 'listing' | 'bizplan' | 'legal' | 'chatbot';
 
@@ -375,7 +375,7 @@ export default function AIToolStudio({ tool, serviceName, onClose, onRequestTeam
             ))}
             <button type="submit" className="w-full py-3 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2"
               style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
-              <Sparkles className="w-4 h-4" /> Run Tool
+              <Star className="w-4 h-4" /> Run Tool
             </button>
             <p className="text-[11px] text-center" style={{ color: 'hsl(var(--muted-foreground))' }}>Instant · Saved to My Deliverables · Executed by AINOS AI</p>
           </form>
@@ -387,7 +387,7 @@ export default function AIToolStudio({ tool, serviceName, onClose, onRequestTeam
             <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2.2, ease: 'linear' }}
               className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5"
               style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
-              <Sparkles className="w-7 h-7 text-white" />
+              <Star className="w-7 h-7 text-white" />
             </motion.div>
             <h3 className="font-bold mb-1 text-sm" style={{ color: 'hsl(var(--foreground))' }}>{config.name} is working</h3>
             <AnimatePresence mode="wait">

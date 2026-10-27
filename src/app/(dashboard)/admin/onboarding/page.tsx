@@ -5,11 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ShieldCheck, Building2, FileText, Clock, CheckCircle2, XCircle,
-  AlertTriangle, Eye, ChevronRight, Search, Filter, Users,
-  ArrowLeft, ExternalLink, RefreshCw, Mail, Phone, Globe, MapPin,
-  Calendar, Hash, UserCircle, Ban, RotateCcw, Loader2
-} from 'lucide-react';
+  ShieldCheck, Building2, FileText, Clock, CheckCircle2, XCircle, AlertTriangle, Eye, ChevronRight, Search, Filter, Users, ArrowLeft, ExternalLink, RefreshCw, Mail, Phone, Globe, MapPin, Calendar, Hash, UserCircle, Ban, RotateCcw, Loader2 } from 'lucide-react';
 
 interface CompanySummary {
   id: string;

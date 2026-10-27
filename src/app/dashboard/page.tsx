@@ -3,9 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  IndianRupee, Hourglass, UsersRound,
-  Wallet, Calculator, Megaphone, ArrowRight, ArrowDown, ArrowUp,
-} from 'lucide-react';
+  IndianRupee, Hourglass, UsersRound, Wallet, Calculator, Megaphone, ArrowRight, ArrowDown, ArrowUp } from 'lucide-react';
 import {
   fadeUp, IconCircle, Skeleton, Tone, plural,
   formatINR, formatCompact, FINANCE_TOOLS, marketingTools,

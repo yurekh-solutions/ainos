@@ -6,18 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowRight, Users, Bot,
-  ScrollText, Contact2, Megaphone,
-  Package, Scale,
-  Shield, Timer, Headphones,
-  BarChart3, CheckCircle2, TrendingUp, Building2, Layers,
-  UserPlus, LayoutGrid, FileSpreadsheet, Rocket,
-  Loader2, ArrowDownRight, Quote,
-  ChevronLeft, ChevronRight, ChevronDown,
-  Sparkles, Palette, Search, PenLine, Presentation,
-  MessageSquare, QrCode, ShoppingBag,
-  Wallet, UserCog, Boxes, LineChart
-} from 'lucide-react';
+  ArrowRight, Users, MessageSquareText, ScrollText, Contact2, Megaphone, Package, Scale, Shield, Timer, Headphones, BarChart3, CheckCircle2, TrendingUp, Building2, Layers, UserPlus, LayoutGrid, FileSpreadsheet, Rocket, Loader2, ArrowDownRight, Quote, ChevronLeft, ChevronRight, ChevronDown, Star, Palette, Search, PenLine, Presentation, MessageSquare, QrCode, ShoppingBag, Wallet, UserCog, Boxes, LineChart } from 'lucide-react';
 
 const MODULES = [
   {
@@ -61,7 +50,7 @@ const MODULES = [
     points: ['Live stock levels', 'Warehouse transfers', 'Purchase orders', 'Barcode scanning'],
   },
   {
-    icon: Bot,
+    icon: MessageSquareText,
     title: 'AI Assistant',
     desc: 'Smart automation and AI help across every module.',
     bg: 'from-indigo-500 to-violet-600',
@@ -90,7 +79,7 @@ const WORKFLOWS = [
   { icon: ScrollText, tag: 'Finance', title: 'Invoice in under a minute', desc: 'Raise a GST invoice with automatic CGST/SGST/IGST split and share it with your customer the same moment.' },
   { icon: FileSpreadsheet, tag: 'Finance', title: 'Bring your Tally data along', desc: 'Import customers, ledgers and stock from Tally — no retyping, no lost history.' },
   { icon: BarChart3, tag: 'Analytics', title: 'Watch cash flow live', desc: 'Revenue, invoices, clients and tasks update in real time on one dashboard.' },
-  { icon: Sparkles, tag: 'AI Studio', title: 'Put AI to work', desc: 'Blogs, captions, creatives and insights generated from a single brief in the AI Media Studio.' },
+  { icon: Star, tag: 'AI Studio', title: 'Put AI to work', desc: 'Blogs, captions, creatives and insights generated from a single brief in the AI Media Studio.' },
   { icon: Palette, tag: 'Branding', title: 'Logo & brand kit in seconds', desc: 'Generate a logo, colour palette and complete brand kit with AI — ready for invoices, social and web.' },
   { icon: Search, tag: 'Marketing', title: 'SEO audit on demand', desc: 'Scan your website for ranking issues and get a clear, prioritised fix list in minutes.' },
   { icon: PenLine, tag: 'Marketing', title: 'Content & email copy', desc: 'Blogs, captions and campaign emails written in your brand voice from one short brief.' },
@@ -476,7 +465,7 @@ export default function AinosLandingPage() {
                 { icon: Contact2, label: 'CRM', r: 40, a: 60, bg: 'from-blue-500 to-indigo-600' },
                 { icon: Users, label: 'HR', r: 40, a: 120, bg: 'from-emerald-500 to-teal-600' },
                 { icon: Megaphone, label: 'Marketing', r: 40, a: 180, bg: 'from-pink-500 to-rose-600' },
-                { icon: Bot, label: 'AI', r: 40, a: 230, bg: 'from-indigo-500 to-violet-600' },
+                { icon: MessageSquareText, label: 'AI', r: 40, a: 230, bg: 'from-indigo-500 to-violet-600' },
               ].map((sat, i) => {
                 const rad = (sat.a * Math.PI) / 180;
                 return (
@@ -1087,7 +1076,7 @@ export default function AinosLandingPage() {
                 <div className="mt-7 flex flex-wrap gap-2">
                   {['Invoice drafting', 'Report summaries', 'Trend alerts', 'Content generation'].map((chip) => (
                     <span key={chip} className="inline-flex items-center gap-1.5 rounded-full bg-white/10 ring-1 ring-white/20 px-3.5 py-1.5 text-xs font-medium text-white/90">
-                      <Bot className="w-3 h-3" /> {chip}
+                      <MessageSquareText className="w-3 h-3" /> {chip}
                     </span>
                   ))}
                 </div>

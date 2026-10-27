@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Bot, User, Sparkles } from 'lucide-react';
+import { Send, MessageSquareText, User, Star } from 'lucide-react';
 import { useToast } from '@/lib/toast';
 
 interface Message { role: 'user' | 'assistant'; content: string; }
@@ -71,7 +71,7 @@ export default function AIChatPage() {
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 {currentMessages.length === 0 ? (
                   <div className="text-center py-20">
-                    <Sparkles className="w-12 h-12 text-purple-300 mx-auto mb-3" />
+                    <Star className="w-12 h-12 text-purple-300 mx-auto mb-3" />
                     <p className="text-sm font-medium text-gray-600">Start a conversation</p>
                     <p className="text-xs text-gray-500 mt-1">Ask about invoices, customers, inventory, and more</p>
                   </div>
@@ -79,7 +79,7 @@ export default function AIChatPage() {
                   currentMessages.map((msg, i) => (
                     <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                       className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      {msg.role === 'assistant' && <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-purple-100"><Bot className="w-4 h-4 text-purple-600" /></div>}
+                      {msg.role === 'assistant' && <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-purple-100"><MessageSquareText className="w-4 h-4 text-purple-600" /></div>}
                       <div className={`max-w-[70%] px-4 py-3 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-900'}`}>
                         {msg.content}
                       </div>
@@ -89,7 +89,7 @@ export default function AIChatPage() {
                 )}
                 {loading && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-100"><Bot className="w-4 h-4 text-purple-600" /></div>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-100"><MessageSquareText className="w-4 h-4 text-purple-600" /></div>
                     <div className="px-4 py-3 rounded-2xl bg-gray-100 text-sm text-gray-500">Thinking...</div>
                   </motion.div>
                 )}

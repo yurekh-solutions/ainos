@@ -4,11 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft, ArrowRight, Zap, Coins, Play, Loader2, CheckCircle, AlertCircle, Lock, Send,
-  Copy, Check, Download, Plus, Trash2, FileText, Mail, Users, BarChart3, Share2, PenLine, Table2, Upload,
-  Sparkles, Palette, Search, Megaphone, Rocket, ImageIcon, QrCode, Presentation, ShoppingBag,
-  Briefcase, Scale, MessageCircle, BookOpen, Bot, Globe, Package, UserCog, ExternalLink,
-} from 'lucide-react';
+  ArrowLeft, ArrowRight, Workflow, Coins, Play, Loader2, CheckCircle, AlertCircle, Lock, Send, Copy, Check, Download, Plus, Trash2, FileText, Mail, Users, BarChart3, Share2, PenLine, Table2, Upload, Star, Palette, Search, Megaphone, Rocket, ImageIcon, QrCode, Presentation, ShoppingBag, Briefcase, Scale, MessageCircle, BookOpen, MessageSquareText, Globe, Package, UserCog, ExternalLink } from 'lucide-react';
 
 interface Tool {
   id: string;
@@ -102,7 +98,7 @@ interface ToolResult {
   requiredPlan?: string;
 }
 
-const SLUG_ICONS: Record<string, typeof Zap> = {
+const SLUG_ICONS: Record<string, typeof Workflow> = {
   'ai-content-writer': PenLine,
   'social-media-generator': Share2,
   'lead-scoring-ai': BarChart3,
@@ -112,7 +108,7 @@ const SLUG_ICONS: Record<string, typeof Zap> = {
   'data-export': Table2,
   // AI Studio deliverables (src/lib/ai-tools.ts)
   logo: Palette,
-  brandkit: Sparkles,
+  brandkit: Star,
   social: Share2,
   content: PenLine,
   seo: Search,
@@ -128,7 +124,7 @@ const SLUG_ICONS: Record<string, typeof Zap> = {
   chatbot: MessageCircle,
   // Subscription / company modules
   autoBlog: BookOpen,
-  aiAssistant: Bot,
+  aiAssistant: MessageSquareText,
   websiteGen: Globe,
   invoiceGen: FileText,
   crmAccess: Users,
@@ -457,7 +453,7 @@ export default function ToolExecutePage() {
     );
   }
 
-  const Icon = SLUG_ICONS[slug] || Zap;
+  const Icon = SLUG_ICONS[slug] || Workflow;
   const out = result?.output;
 
   // Subscription tools have no form — point the user at the live feature
@@ -751,7 +747,7 @@ export default function ToolExecutePage() {
         {fields && (
           <div className="space-y-4">
             <div className="rounded-xl bg-purple-50 border border-purple-100 px-4 py-3 text-sm text-purple-700 flex items-start gap-2">
-              <Sparkles className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <Star className="w-4 h-4 mt-0.5 flex-shrink-0" />
               Fill this in once — AINOS generates the finished deliverable, ready to copy, download or print.
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -829,7 +825,7 @@ export default function ToolExecutePage() {
                 ? <Lock className="w-5 h-5" />
                 : slug === 'email-campaign-sender'
                   ? <Send className="w-5 h-5" />
-                  : fields ? <Sparkles className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                  : fields ? <Star className="w-5 h-5" /> : <Play className="w-5 h-5" />}
             {executing
               ? 'Sending…'
               : tool.accessible === false
@@ -1192,7 +1188,7 @@ function StudioOutput({ out, copied, onCopy }: {
         <h2 className="flex-1 min-w-0 text-lg font-bold text-gray-900">{out.headline}</h2>
         {out.aiUsed && (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 border border-purple-100 text-purple-700 text-[11px] font-semibold">
-            <Sparkles className="w-3 h-3" /> AI Enhanced
+            <Star className="w-3 h-3" /> AI Enhanced
           </span>
         )}
         {sections.length > 0 && (

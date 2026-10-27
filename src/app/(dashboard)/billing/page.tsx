@@ -2,22 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Receipt,
-  Mail,
-  Crown,
-  CheckCircle,
-  Clock,
-  Coins,
-  Zap,
-  ArrowRight,
-  Sparkles,
-  TrendingUp,
-  CreditCard,
-  Copy,
-  Check,
-  MessageCircle,
-  Landmark,
-} from 'lucide-react';
+  Receipt, Mail, Crown, CheckCircle, Clock, Coins, Workflow, ArrowRight, Star, TrendingUp, CreditCard, Copy, Check, MessageCircle, Landmark } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -434,7 +419,7 @@ export default function BillingPage() {
       <div>
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-500/10">
-            <Zap className="w-5 h-5 text-purple-500" />
+            <Workflow className="w-5 h-5 text-purple-500" />
           </div>
           <div>
             <h2 className="text-xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>Credit Top-Up</h2>
@@ -459,7 +444,7 @@ export default function BillingPage() {
       {/* ── TOOL CREDIT COSTS TABLE ───────────────────────── */}
       <div>
         <button onClick={() => setShowToolCosts(!showToolCosts)} className="flex items-center gap-2 text-sm font-semibold mb-4" style={{ color: 'hsl(var(--foreground))' }}>
-          <Sparkles className="w-4 h-4 text-purple-500" />
+          <Star className="w-4 h-4 text-purple-500" />
           Per-Tool Credit Costs
           <ArrowRight className={`w-4 h-4 transition-transform ${showToolCosts ? 'rotate-90' : ''}`} />
         </button>

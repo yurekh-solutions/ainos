@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2, CheckCircle2, AlertCircle, TrendingUp, Bell, Mail, MessageCircle, CheckCircle, Upload, Zap, Loader2, Check } from 'lucide-react';
+import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2, CheckCircle2, AlertCircle, TrendingUp, Bell, Mail, MessageCircle, CheckCircle, Upload, Workflow, Loader2, Check } from 'lucide-react';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
 import { useToast } from '@/lib/toast';
@@ -1303,7 +1303,7 @@ export default function InvoicesPage() {
                           </>
                         ) : (
                           <>
-                            <Zap className="w-4 h-4" />
+                            <Workflow className="w-4 h-4" />
                             <span>Extract Template Design</span>
                           </>
                         )}

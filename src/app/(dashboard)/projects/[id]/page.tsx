@@ -4,18 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft,
-  ArrowRight,
-  Calendar,
-  ChevronLeft,
-  FolderKanban,
-  Flag,
-  Pencil,
-  Plus,
-  Trash2,
-  User,
-  X,
-} from 'lucide-react';
+  ArrowLeft, ArrowRight, Calendar, ChevronLeft, FolderKanban, Flag, Pencil, Plus, Trash2, User, X } from 'lucide-react';
 
 type TaskStatus = 'todo' | 'in_progress' | 'done';
 

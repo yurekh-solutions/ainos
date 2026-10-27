@@ -2,15 +2,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Sparkles, Bell, Mail, FileText, UserPlus, Package, Settings, Clock,
-  CheckCircle2, TrendingUp, Users, Briefcase, ShieldCheck, Headphones,
-  BarChart3, Zap, Plus, Trash2, Activity
-} from 'lucide-react';
+  Star, Bell, Mail, FileText, UserPlus, Package, Settings, Clock, CheckCircle2, TrendingUp, Users, Briefcase, ShieldCheck, Headphones, BarChart3, Workflow, Plus, Trash2, Activity } from 'lucide-react';
 
 const MODULE_ICONS: Record<string, React.ElementType> = {
   invoicing: FileText, crm: Users, hr: Briefcase, inventory: Package,
   marketing: TrendingUp, compliance: ShieldCheck, support: Headphones,
-  ai: Sparkles, reports: BarChart3,
+  ai: Star, reports: BarChart3,
 };
 
 const MODULE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -93,7 +90,7 @@ export default function AutomationsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
-                <Zap className="w-5 h-5 text-white" />
+                <Workflow className="w-5 h-5 text-white" />
               </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>Business Automations</h1>
@@ -153,9 +150,9 @@ export default function AutomationsPage() {
         {/* Automations List */}
         <div className="space-y-3">
           {filtered.map((automation, index) => {
-            const Icon = MODULE_ICONS[automation.module] || Zap;
+            const Icon = MODULE_ICONS[automation.module] || Workflow;
             const colors = MODULE_COLORS[automation.module] || MODULE_COLORS.invoicing;
-            const TriggerIcon = automation.trigger.type === 'schedule' ? Clock : automation.trigger.type === 'event' ? Zap : Activity;
+            const TriggerIcon = automation.trigger.type === 'schedule' ? Clock : automation.trigger.type === 'event' ? Workflow : Activity;
 
             return (
               <motion.div key={automation.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}
@@ -208,7 +205,7 @@ export default function AutomationsPage() {
 
         {filtered.length === 0 && (
           <div className="text-center py-12">
-            <Zap className="w-12 h-12 mx-auto mb-3" style={{ color: 'hsl(var(--primary) / 0.2)' }} />
+            <Workflow className="w-12 h-12 mx-auto mb-3" style={{ color: 'hsl(var(--primary) / 0.2)' }} />
             <p className="text-sm font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>No automations for this module</p>
           </div>
         )}

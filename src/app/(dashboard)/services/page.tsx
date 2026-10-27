@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { X, Globe, Palette, Megaphone, Rocket, Printer, BarChart3, Newspaper, Clock, Briefcase, ExternalLink, Wand2, Zap, Eye, Download, Trash2, Crown, Sparkles } from 'lucide-react';
+import { X, Globe, Palette, Megaphone, Rocket, Printer, BarChart3, Newspaper, Clock, Briefcase, ExternalLink, Wand2, Workflow, Eye, Download, Trash2, Crown, Star } from 'lucide-react';
 import WebsiteBuilder from '@/components/services/WebsiteBuilder';
 import AIToolStudio, { StudioToolId } from '@/components/services/AIToolStudio';
 
@@ -63,7 +63,7 @@ const TOOL_LABELS: Record<StudioToolId, string> = {
 const serviceCategories: ServiceCategory[] = [
   {
     title: 'Startup Essentials',
-    icon: Sparkles,
+    icon: Star,
     description: 'Pitch decks, business plans, listings, legal pages & AI chatbots',
     services: ['Investor Pitch Deck', 'Business Plan + Financial Projections', 'E-commerce Product Listing Writer', 'Legal Pages (Privacy, Terms & Refund)', 'Yurekh Web Chat AI Chatbot'],
   },
@@ -249,7 +249,7 @@ export default function YurekhServicesPage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-lg font-bold" style={{ color: 'hsl(var(--foreground))' }}>AI Website Builder</h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-white flex items-center gap-1" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}><Zap className="w-3 h-3" /> NEW TOOL</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-white flex items-center gap-1" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}><Workflow className="w-3 h-3" /> NEW TOOL</span>
               </div>
               <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Describe your business and get a complete, ready-to-use website in under a minute — just like Lovable & Replit, built into AINOS. Download it, host it anywhere, or let Yurekh customize it further.</p>
             </div>
@@ -396,7 +396,7 @@ export default function YurekhServicesPage() {
                       <span className="flex items-center gap-2 flex-wrap">
                         {service}
                         <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold text-white flex items-center gap-0.5" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
-                          <Zap className="w-2.5 h-2.5" /> {websiteTool ? 'WEBSITE AI' : TOOL_LABELS[tool!].toUpperCase()}
+                          <Workflow className="w-2.5 h-2.5" /> {websiteTool ? 'WEBSITE AI' : TOOL_LABELS[tool!].toUpperCase()}
                         </span>
                       </span>
                       <Wand2 className="w-4 h-4 flex-shrink-0" style={{ color: 'hsl(var(--primary))' }} />

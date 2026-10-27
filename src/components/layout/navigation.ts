@@ -1,13 +1,4 @@
-import {
-  LayoutDashboard, Landmark, Radio,
-  ScrollText, Contact2, Boxes, Coins, FileBarChart, ShoppingCart, PackageCheck, Sheet, BellRing, Paintbrush,
-  Send, AtSign, SearchCheck, PenTool, MailOpen,
-  ShoppingBag, Store, Package, ClipboardList, TrendingUp, Tag, MessageSquare, Users,
-  Terminal, CreditCard, Receipt, UtensilsCrossed, Clock,
-  Layers, Settings, Wrench, BarChart2, Truck, PackageSearch, Car,
-  Warehouse, ShieldCheck, UserCheck, LifeBuoy, CalendarDays, Target, Hammer,
-  KeyRound, CheckSquare, CalendarClock, Ticket,
-} from 'lucide-react';
+import { LayoutDashboard, Landmark, Radio, ScrollText, Contact2, Boxes, Coins, FileBarChart, ShoppingCart, PackageCheck, Sheet, BellRing, Paintbrush, Send, AtSign, SearchCheck, PenTool, MailOpen, ShoppingBag, Store, Package, ClipboardList, TrendingUp, Tag, MessageSquare, Users, Terminal, CreditCard, Receipt, UtensilsCrossed, Clock, Layers, Settings, Wrench, BarChart2, Truck, PackageSearch, Car, Warehouse, ShieldCheck, UserCheck, LifeBuoy, CalendarDays, Target, Hammer, KeyRound, CheckSquare, CalendarClock, Ticket, ReceiptText } from 'lucide-react';
 
 export interface NavItem {
   icon: React.ElementType;
@@ -172,7 +163,7 @@ export const NAV_GROUPS: NavGroup[] = [
     key: 'pos',
     title: 'Point of Sale',
     shortTitle: 'Billing',
-    icon: Terminal,
+    icon: ReceiptText,
     href: '/pos/sessions',
     items: [
       { icon: Clock, label: 'Sessions', href: '/pos/sessions' },

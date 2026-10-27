@@ -3,11 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import NextImage from 'next/image';
 import {
-  Search, Globe, Users, BarChart3,
-  CheckCircle, AlertCircle, Loader2, Sparkles,
-  FileText, Clock, Copy,
-  Shield, Lightbulb
-} from 'lucide-react';
+  Search, Globe, Users, BarChart3, CheckCircle, AlertCircle, Loader2, Star, FileText, Clock, Copy, Shield, Lightbulb } from 'lucide-react';
 
 const tabs = [
   { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -237,7 +233,7 @@ export default function SEODashboardPage() {
                       </div>
                       <div className="lg:col-span-2 p-5 rounded-2xl bg-purple-50 border border-purple-200">
                         <h4 className="text-sm font-bold text-purple-900 flex items-center gap-2 mb-2">
-                          <Sparkles className="w-4 h-4" /> AINOS AI — What to fix first
+                          <Star className="w-4 h-4" /> AINOS AI — What to fix first
                         </h4>
                         {auditAI ? (
                           <>
@@ -293,7 +289,7 @@ export default function SEODashboardPage() {
                 </div>
                 <button onClick={researchKeywords} disabled={loading || !keyword.trim()}
                   className="w-full py-3 px-4 rounded-xl text-white text-sm font-semibold bg-[#5b21b6] hover:bg-[#4c1d95] shadow-lg shadow-[#4c1d95]/25 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5b21b6]/50 transition-colors flex items-center justify-center gap-2 mb-6">
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Star className="w-4 h-4" />}
                   Find High-Value Keywords
                 </button>
                 {Array.isArray(result?.keywords) && (

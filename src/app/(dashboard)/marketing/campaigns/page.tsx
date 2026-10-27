@@ -4,12 +4,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  Mail, Plus, Send, Edit3, Trash2, Eye, Loader2,
-  Search, Filter, BarChart3, Users, Clock, ChevronDown,
-} from 'lucide-react';
+  Mail, Plus, Send, Edit3, Trash2, Eye, Loader2, Search, Filter, Users, Clock, ChevronDown, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import {
   type EmailCampaign, type ToastMsg,
-  statusColors, statusIcons, statusLabels, formatDate, Toast,
+  statusColors, statusIcons, statusLabels, formatDateShort, Toast,
 } from './_components/lib';
 
 export default function EmailCampaignsPage() {
@@ -21,6 +19,7 @@ export default function EmailCampaignsPage() {
   const [toast, setToast] = useState<ToastMsg | null>(null);
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [sortDesc, setSortDesc] = useState(true);
 
   const showToast = (message: string, type: ToastMsg['type'] = 'success') => {
     setToast({ message, type });
@@ -104,6 +103,12 @@ export default function EmailCampaignsPage() {
     return matchSearch && matchStatus;
   });
 
+  const visibleCampaigns = [...filteredCampaigns].sort((a, b) =>
+    sortDesc
+      ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  );
+
   const stats = {
     total: campaigns.length,
     drafts: campaigns.filter((c) => c.status === 'draft').length,
@@ -137,41 +142,49 @@ export default function EmailCampaignsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         {[
-          { label: 'Total Emails', value: stats.total, icon: BarChart3, grad: 'from-violet-500 to-purple-600', shadow: 'shadow-purple-600/25' },
-          { label: 'Not Sent', value: stats.drafts, icon: Clock, grad: 'from-amber-500 to-orange-600', shadow: 'shadow-amber-500/25' },
-          { label: 'Sent', value: stats.sent, icon: Send, grad: 'from-green-500 to-emerald-600', shadow: 'shadow-emerald-500/25' },
-          { label: 'People Reached', value: stats.totalRecipients, icon: Users, grad: 'from-blue-500 to-indigo-600', shadow: 'shadow-blue-500/25' },
+          { label: 'Total Emails', sub: 'All time', value: stats.total, icon: Mail, card: 'from-violet-50 to-purple-100/50', glow: 'bg-violet-300/40', chip: 'from-violet-500 to-purple-600' },
+          { label: 'Not Sent', sub: 'Drafts & pending', value: stats.drafts, icon: Clock, card: 'from-orange-50 to-amber-100/50', glow: 'bg-orange-300/40', chip: 'from-amber-500 to-orange-600' },
+          { label: 'Sent', sub: 'Successfully delivered', value: stats.sent, icon: Send, card: 'from-emerald-50 to-green-100/50', glow: 'bg-emerald-300/40', chip: 'from-green-500 to-emerald-600' },
+          { label: 'People Reached', sub: 'From your campaign', value: stats.totalRecipients, icon: Users, card: 'from-blue-50 to-indigo-100/50', glow: 'bg-blue-300/40', chip: 'from-blue-500 to-indigo-600' },
         ].map((stat) => (
-          <div key={stat.label} className="bg-white rounded-2xl p-4 border border-gray-200">
-            <div className={`inline-flex w-10 h-10 items-center justify-center rounded-xl bg-gradient-to-br ${stat.grad} ${stat.shadow} shadow-md mb-3`}>
-              <stat.icon className="text-white" size={19} strokeWidth={2.2} />
+          <div key={stat.label} className={`relative overflow-hidden rounded-2xl p-4 md:p-5 border border-white/70 bg-gradient-to-br ${stat.card} shadow-sm`}>
+            <div className={`pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full blur-2xl ${stat.glow}`} />
+            <div className={`relative inline-flex w-11 h-11 items-center justify-center rounded-xl bg-gradient-to-br ${stat.chip} shadow-md mb-4`}>
+              <stat.icon className="text-white" size={20} strokeWidth={2.2} />
             </div>
-            <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-            <div className="text-xs text-gray-500">{stat.label}</div>
+            <div className="relative flex items-end justify-between gap-2">
+              <div className="min-w-0">
+                <div className="text-2xl md:text-3xl font-bold text-gray-900 leading-none">{stat.value}</div>
+                <div className="text-sm font-semibold text-gray-800 mt-1.5">{stat.label}</div>
+                <div className="text-xs text-gray-500 mt-0.5">{stat.sub}</div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 mb-1" />
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-3 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input
-            type="text"
-            placeholder="Search..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500"
-          />
-        </div>
+      {/* Search + filters */}
+      <div className="relative mb-3">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+        <input
+          type="text"
+          placeholder="Search campaigns, contacts, or templates..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-11 pr-11 py-3 bg-white border border-gray-200 rounded-full text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500"
+        />
+        <SlidersHorizontal className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+      </div>
+      <div className="flex items-center justify-between gap-3 mb-6">
         <div className="relative">
-          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="pl-10 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500 appearance-none cursor-pointer"
+            className="pl-9 pr-9 py-2.5 bg-white border border-gray-200 rounded-full text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500 appearance-none cursor-pointer"
           >
             <option value="">All</option>
             <option value="draft">Not sent</option>
@@ -180,6 +193,15 @@ export default function EmailCampaignsPage() {
           </select>
           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
         </div>
+        <button
+          type="button"
+          onClick={() => setSortDesc(v => !v)}
+          className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-full bg-white border border-gray-200 text-sm text-gray-600 shadow-sm hover:text-purple-600 hover:border-purple-200 transition-colors"
+          title="Toggle sort order"
+        >
+          <SlidersHorizontal size={15} />
+          {sortDesc ? 'Newest' : 'Oldest'}
+        </button>
       </div>
 
       {/* Campaign List */}
@@ -201,7 +223,7 @@ export default function EmailCampaignsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredCampaigns.map((campaign) => {
+          {visibleCampaigns.map((campaign) => {
             const StatusIcon = statusIcons[campaign.status] || Clock;
             return (
               <motion.div
@@ -229,7 +251,7 @@ export default function EmailCampaignsPage() {
                     {campaign.subject && (
                       <p className="text-sm text-gray-500 truncate">Subject: {campaign.subject}</p>
                     )}
-                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2.5 text-xs text-gray-400">
                       <span className="flex items-center gap-1">
                         <Users size={12} />
                         {campaign.recipients?.length || 0} recipients
@@ -242,7 +264,7 @@ export default function EmailCampaignsPage() {
                       )}
                       <span className="flex items-center gap-1">
                         <Clock size={12} />
-                        {formatDate(campaign.createdAt)}
+                        {formatDateShort(campaign.createdAt)}
                       </span>
                     </div>
                   </Link>

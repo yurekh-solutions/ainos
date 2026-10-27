@@ -5,16 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useToast } from '@/lib/toast';
 import {
-  AlertTriangle,
-  CalendarClock,
-  CheckCircle2,
-  Clock,
-  Loader2,
-  Pencil,
-  Plus,
-  Trash2,
-  Users,
-} from 'lucide-react';
+  AlertTriangle, CalendarClock, CheckCircle2, Clock, Loader2, Pencil, Plus, Trash2, Users } from 'lucide-react';
 
 interface FollowUpRow {
   id: string;

@@ -5,21 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  AlertTriangle,
-  Car,
-  CheckCircle2,
-  Droplets,
-  Fuel,
-  Gauge,
-  IdCard,
-  Loader2,
-  Pencil,
-  Plus,
-  Search,
-  ShieldCheck,
-  Trash2,
-  Wallet,
-} from 'lucide-react';
+  AlertTriangle, Car, CheckCircle2, Droplets, Fuel, Gauge, IdCard, Loader2, Pencil, Plus, Search, ShieldCheck, Trash2, Wallet } from 'lucide-react';
 
 interface Vehicle {
   id: string;

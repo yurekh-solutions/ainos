@@ -3,11 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  User, Bell, Shield, Palette, Globe, 
-  Moon, Sun, CheckCircle2, 
-  Mail, Lock, Smartphone, Sparkles,
-  ChevronRight
-} from 'lucide-react';
+  User, Bell, Shield, Palette, Globe, Moon, Sun, CheckCircle2, Mail, Lock, Smartphone, Star, ChevronRight } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -88,7 +84,7 @@ export default function SettingsPage() {
             <div className="glass-card p-4 rounded-2xl">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, hsl(252 60% 55%), hsl(252 65% 65%))' }}>
-                  <Sparkles className="w-5 h-5 text-white" />
+                  <Star className="w-5 h-5 text-white" />
                 </div>
                 <div>
                   <h1 className="text-lg font-bold" style={{ color: 'hsl(var(--foreground))' }}>Settings</h1>

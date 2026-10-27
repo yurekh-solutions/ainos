@@ -2,22 +2,7 @@
 
 import { useState } from 'react';
 import {
-  Terminal,
-  Workflow,
-  Bot,
-  DatabaseZap,
-  Layers,
-  SlidersHorizontal,
-  Mic,
-  Blocks,
-  Clapperboard,
-  Rocket,
-  Gauge,
-  Newspaper,
-  GraduationCap,
-  Search,
-  CheckCircle2,
-} from 'lucide-react';
+  Terminal, Workflow, MessageSquareText, DatabaseZap, Layers, SlidersHorizontal, Mic, Blocks, Clapperboard, Rocket, Gauge, Newspaper, GraduationCap, Search, CheckCircle2 } from 'lucide-react';
 
 interface SkillItem {
   no: number;
@@ -49,7 +34,7 @@ const SKILLS: SkillItem[] = [
   },
   {
     no: 3,
-    icon: Bot,
+    icon: MessageSquareText,
     title: 'AI Agents',
     description:
       'Build multi-agent systems using platforms like LangGraph, AutoGen and CrewAI to complete tasks that require reasoning, coordination and memory.',

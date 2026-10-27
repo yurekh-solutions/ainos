@@ -5,11 +5,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  Radio, FileText, Zap, ArrowRight,
-  ScrollText, Contact2, Boxes, BarChart3, Hourglass, BadgePercent, FileBarChart,
-  Truck, FileSpreadsheet, BellRing, Paintbrush, Hash, SearchCheck, PenTool, Bot, MailOpen, Share2, Layers,
-  Plus, TrendingUp, Users, Calendar, Clock, CheckCircle2, Circle, Sparkles, Megaphone, Receipt, Wallet,
-} from 'lucide-react';
+  Radio, FileText, Workflow, ArrowRight, ScrollText, Contact2, Boxes, BarChart3, Hourglass, BadgePercent, FileBarChart, Truck, FileSpreadsheet, BellRing, Paintbrush, Hash, SearchCheck, PenTool, MessageSquareText, MailOpen, Share2, Layers, Plus, TrendingUp, Users, Calendar, Clock, CheckCircle2, Circle, Star, Megaphone, Receipt, Wallet } from 'lucide-react';
 
 interface Tool {
   title: string;
@@ -173,7 +169,7 @@ export default function DashboardPage() {
     {
       title: 'Blog Agent',
       description: 'Autonomous agent that researches, writes and publishes blogs.',
-      icon: Bot,
+      icon: MessageSquareText,
       href: '/marketing/blog-agent',
       stat: 'Agent ready',
       gradient: 'from-amber-500 to-orange-600',
@@ -456,7 +452,7 @@ export default function DashboardPage() {
             { icon: Plus, label: 'New Invoice', href: '/invoices', gradient: 'from-violet-500 to-purple-600' },
             { icon: Users, label: 'Add Customer', href: '/customers', gradient: 'from-cyan-500 to-blue-600' },
             { icon: Megaphone, label: 'Create Caption', href: '/marketing/social-media', gradient: 'from-violet-500 to-purple-600' },
-            { icon: Sparkles, label: 'AI Blog Post', href: '/marketing/blog', gradient: 'from-amber-500 to-orange-600' },
+            { icon: Star, label: 'AI Blog Post', href: '/marketing/blog', gradient: 'from-amber-500 to-orange-600' },
           ].map((action, i) => (
             <motion.div
               key={action.label}

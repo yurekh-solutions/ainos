@@ -4,9 +4,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft, Edit3, Send, Trash2, Loader2, Users, Copy,
-  CheckCircle, Clock, Mail,
-} from 'lucide-react';
+  ArrowLeft, Edit3, Send, Trash2, Loader2, Users, Copy, CheckCircle, Clock, Mail } from 'lucide-react';
 import {
   type EmailCampaign, type ToastMsg,
   statusColors, statusLabels, formatDate, Toast,
@@ -211,18 +209,18 @@ export default function CampaignDetailPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-200 text-sm">
-                <div className="flex items-center gap-1.5 text-gray-500">
-                  <Clock size={14} /> Created: <span className="text-gray-900">{formatDate(campaign.createdAt)}</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 pt-3 border-t border-gray-200 text-sm">
+                <div className="flex items-start gap-1.5 text-gray-500 min-w-0">
+                  <Clock size={14} className="mt-0.5 shrink-0" /> <span className="shrink-0">Created:</span> <span className="text-gray-900 break-words">{formatDate(campaign.createdAt)}</span>
                 </div>
                 {campaign.sentAt && (
-                  <div className="flex items-center gap-1.5 text-gray-500">
-                    <CheckCircle size={14} /> Sent: <span className="text-gray-900">{formatDate(campaign.sentAt)}</span>
+                  <div className="flex items-start gap-1.5 text-gray-500 min-w-0">
+                    <CheckCircle size={14} className="mt-0.5 shrink-0" /> <span className="shrink-0">Sent:</span> <span className="text-gray-900 break-words">{formatDate(campaign.sentAt)}</span>
                   </div>
                 )}
                 {campaign.status === 'sent' && (
-                  <div className="flex items-center gap-1.5 text-gray-500">
-                    <Users size={14} /> Delivered: <span className="text-gray-900">{campaign.sentCount}</span>
+                  <div className="flex items-center gap-1.5 text-gray-500 min-w-0">
+                    <Users size={14} className="shrink-0" /> Delivered: <span className="text-gray-900">{campaign.sentCount}</span>
                   </div>
                 )}
               </div>
