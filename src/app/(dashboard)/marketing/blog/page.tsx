@@ -42,27 +42,39 @@ const lengths = [
   { value: 'extra-long', label: 'Extra Long (2800-3200 words)' }
 ];
 
-// Friendly, non-developer step-by-step guides per website builder
+// Friendly, non-developer step-by-step guides per platform — one tag in <head>, like Google Analytics
 const platformSteps: Record<string, string[]> = {
   'WordPress': [
-    'Open the page where you want your blogs (Pages → Add New or edit any page).',
-    'Click the + button and choose “Custom HTML”.',
-    'Paste the code and press Publish. Done!',
+    'Easiest: install a free “Insert Headers and Footers” (or WPCode) plugin.',
+    'Paste the tag into the “Header” box and Save.',
+    'Or edit header.php and add it right after the opening <head> tag.',
   ],
   'Shopify': [
-    'Go to Online Store → Pages and open any page.',
-    'Click the “Show HTML” button in the editor.',
-    'Paste the code and press Save. Done!',
+    'Go to Online Store → Themes → ⋯ → Edit code.',
+    'Open layout/theme.liquid and paste the tag just before </head>.',
+    'Save — your blog section appears automatically.',
   ],
   'Wix': [
-    'In your editor, click Add → Embed → “Embed Code”.',
-    'Paste the code in the box.',
-    'Publish your site. Done!',
+    'In the Wix editor open: Settings → Head Code.',
+    'Paste the tag, click Apply, then Publish your site.',
   ],
-  'Other / Not sure': [
-    'Open your website editor — any platform works.',
-    'Paste the code anywhere on the page (bottom of the page is best).',
-    'Save or publish. The widget does the rest!',
+  'Squarespace': [
+    'Go to Settings → Advanced → Code Injection.',
+    'Paste the tag in the Header box and Save.',
+  ],
+  'Google Tag Manager': [
+    'In your GTM workspace, click Tags → New → “Custom HTML”.',
+    'Paste the tag, tick “Support document.write”, and set the trigger to All Pages.',
+    'Publish the container — AINOS detects the connection automatically.',
+  ],
+  'Webflow': [
+    'Open Project Settings → Custom Code → “Inside <head> tags”.',
+    'Paste the tag, Save, then Publish your site.',
+  ],
+  'Other / Custom HTML': [
+    'Open the pages you want blogs on (site-wide is best).',
+    'Paste the tag right before the closing </head> (or </body>) tag.',
+    'Save or publish — the widget finds its own place, no <div> needed.',
   ],
 };
 
@@ -173,6 +185,10 @@ export default function BlogPage() {
   const [embedRouting, setEmbedRouting] = useState<'hash' | 'path'>('hash');
   const [rewritePlatform, setRewritePlatform] = useState('Vercel');
   const [platformMode, setPlatformMode] = useState(false);
+  // Which website the modal was opened for (drives the live Verify step)
+  const [embedWebsiteId, setEmbedWebsiteId] = useState<string | null>(null);
+  // 'auto' = one tag, widget mounts a section itself (GA-style). 'manual' = script + <div>.
+  const [embedPlacement, setEmbedPlacement] = useState<'auto' | 'manual'>('auto');
 
   // ── Unified tab: 'blogs' | 'websites' ──
   const [activeTab, setActiveTab] = useState<'blogs' | 'websites'>('blogs');
@@ -232,8 +248,10 @@ export default function BlogPage() {
     return 'https://ainos-ywu0.onrender.com';
   })();
 
-  // Live embed snippet — updates as the user picks layout/count/color
-  const embedSnippet = `<script src="${baseUrl}/embed.js"></script>\n<div id="ainos-blog" data-limit="${embedLimit}" data-style="${embedStyle}"${embedColor ? ` data-color="${embedColor}"` : ''}${embedRouting === 'path' ? ' data-routing="path"' : ''}></div>`;
+  // Live embed snippet — 'auto' is a single head tag (like GA); 'manual' keeps the script + div.
+  const embedTag = `<script async src="${baseUrl}/embed.js"></script>`;
+  const embedSnippetManual = `<script src="${baseUrl}/embed.js"></script>\n<div id="ainos-blog" data-limit="${embedLimit}" data-style="${embedStyle}"${embedColor ? ` data-color="${embedColor}"` : ''}${embedRouting === 'path' ? ' data-routing="path"' : ''}></div>`;
+  const embedSnippet = embedPlacement === 'auto' ? embedTag : embedSnippetManual;
 
   const [aiForm, setAiForm] = useState({
     topic: '', keywords: '', tone: 'Professional', length: 'medium', industry: 'General Business'
@@ -744,7 +762,7 @@ export default function BlogPage() {
                         </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
-                        <button onClick={() => setShowEmbed(true)}
+                        <button onClick={() => { setEmbedWebsiteId(w.id); setShowEmbed(true); }}
                           className="px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 transition-colors flex items-center gap-1.5">
                           <Code className="w-3.5 h-3.5" /> Get Embed Code
                         </button>
@@ -1277,8 +1295,8 @@ export default function BlogPage() {
                       <Code className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-gray-900">Publish to Your Website</h2>
-                      <p className="text-xs text-gray-500">Works on WordPress, Shopify, React, HTML, Wix & more</p>
+                      <h2 className="text-lg font-bold text-gray-900">Connect Your Website</h2>
+                      <p className="text-xs text-gray-500">One tag in your &lt;head&gt; — like Google Analytics. WordPress, Shopify, Wix, GTM & more</p>
                     </div>
                   </div>
                   <button onClick={() => setShowEmbed(false)} className="p-2 rounded-lg hover:bg-gray-100:bg-gray-800 transition-colors">
@@ -1301,30 +1319,44 @@ export default function BlogPage() {
                     </div>
                     <div className="text-center">
                       <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-2 text-lg font-bold">2</div>
-                      <p className="text-xs font-semibold text-emerald-900">Paste in Website</p>
-                      <p className="text-[10px] text-emerald-700 mt-1">Any page, any platform</p>
+                      <p className="text-xs font-semibold text-emerald-900">Paste in &lt;head&gt;</p>
+                      <p className="text-[10px] text-emerald-700 mt-1">One tag, works site-wide</p>
                     </div>
                     <div className="text-center">
                       <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-2 text-lg font-bold">3</div>
-                      <p className="text-xs font-semibold text-emerald-900">Blogs Go Live!</p>
-                      <p className="text-[10px] text-emerald-700 mt-1">AINOS confirms the connection</p>
+                      <p className="text-xs font-semibold text-emerald-900">Verify &amp; Go Live</p>
+                      <p className="text-[10px] text-emerald-700 mt-1">AINOS confirms it’s receiving data</p>
                     </div>
                   </div>
                 </div>
 
-                {/* MAIN: Copy & Paste Code — Highlighted */}
+                {/* MAIN: One tag — install like Google Analytics */}
                 <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-5 border-2 border-purple-300">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-3">
                     <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center">
                       <Code className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-sm text-gray-900">Copy This Code & Paste in Your Website</h3>
-                      <p className="text-[10px] text-gray-500">Works on WordPress, Shopify, Wix, Squarespace, HTML — ANY platform!</p>
+                      <h3 className="font-bold text-sm text-gray-900">Copy your AINOS tag</h3>
+                      <p className="text-[10px] text-gray-500">Like Google Analytics — paste this one tag in your &lt;head&gt; and blogs go live site-wide.</p>
                     </div>
                   </div>
-                  {/* Live customization — the snippet below updates as you pick */}
-                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-3 text-[11px]">
+
+                  {/* placement toggle: auto (one tag) vs manual (script + div) */}
+                  <div className="inline-flex rounded-lg bg-white border border-purple-200 p-0.5 mb-3">
+                    <button onClick={() => setEmbedPlacement('auto')}
+                      className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${embedPlacement === 'auto' ? 'bg-[#5b21b6] text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
+                      Auto place (recommended)
+                    </button>
+                    <button onClick={() => setEmbedPlacement('manual')}
+                      className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${embedPlacement === 'manual' ? 'bg-[#5b21b6] text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
+                      I’ll choose the spot
+                    </button>
+                  </div>
+
+                  {/* Live customization — only relevant for the manual <div> mode */}
+                  {embedPlacement === 'manual' && (
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mb-3 text-[11px]">
                     <div className="flex items-center gap-1.5">
                       <span className="text-gray-500 font-medium">Layout:</span>
                       {(['grid', 'list'] as const).map(s => (
@@ -1356,18 +1388,22 @@ export default function BlogPage() {
                       ))}
                     </div>
                   </div>
-                  <div className="relative mt-3">
-                    <pre className="bg-gray-900 text-green-400 rounded-lg p-4 text-sm overflow-x-auto font-mono leading-relaxed">
+                  )}
+
+                  <div className="relative">
+                    <pre className="bg-gray-900 text-green-400 rounded-lg p-4 text-sm overflow-x-auto font-mono leading-relaxed whitespace-pre-wrap break-all">
                       {embedSnippet}
                     </pre>
                     <button onClick={() => handleCopyCode(embedSnippet, 'embed')}
                       className="absolute top-2 right-2 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 transition-colors flex items-center gap-1.5 text-white text-xs font-medium">
-                      {copiedCode === 'embed' ? <><Check className="w-3.5 h-3.5" /> Copied!</> : <><Copy className="w-3.5 h-3.5" /> Copy Code</>}
+                      {copiedCode === 'embed' ? <><Check className="w-3.5 h-3.5" /> Copied!</> : <><Copy className="w-3.5 h-3.5" /> Copy tag</>}
                     </button>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 mt-3">
-                    <p className="text-[10px] text-gray-500">No technical knowledge needed — if you can copy-paste, you can do this!</p>
-                  </div>
+                  <p className="text-[10px] text-gray-500 mt-2">
+                    {embedPlacement === 'auto'
+                      ? 'One line, no <div> needed — the widget creates a “Latest from Our Blog” section on every page automatically.'
+                      : 'Paste the script, then drop the <div> exactly where you want blogs to appear. Colors match your site automatically.'}
+                  </p>
                 </div>
 
                 {/* Platform picker — simple steps for non-developers */}
@@ -1390,6 +1426,35 @@ export default function BlogPage() {
                     </ol>
                   </div>
                 </div>
+
+                {/* Verify connection — like GA's "verify and see data" */}
+                {embedWebsiteId && (() => {
+                  const w = websites.find(x => x.id === embedWebsiteId);
+                  if (!w) return null;
+                  const view = connectionView(w);
+                  const connected = w.connectionStatus === 'connected';
+                  const busy = checkingId === w.id;
+                  return (
+                    <div className={`rounded-xl p-5 border ${connected ? 'bg-emerald-50 border-emerald-300' : 'bg-amber-50 border-amber-300'}`}>
+                      <h4 className="font-bold text-sm text-gray-900 mb-1 flex items-center gap-2">
+                        <Radar className="w-4 h-4" /> Verify it’s live
+                      </h4>
+                      <p className="text-[11px] text-gray-600 mb-3">
+                        Paste the tag, then open {w.url} in another tab. We confirm the moment AINOS starts receiving data from your site.
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button onClick={() => handleCheckConnection(w.id)} disabled={busy}
+                          className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#5b21b6] hover:bg-[#4c1d95] transition-colors flex items-center gap-1.5 disabled:opacity-60">
+                          {busy ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking…</> : <><Radar className="w-3.5 h-3.5" /> Verify connection</>}
+                        </button>
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${view.pill}`}>
+                          {connected ? '✓ Connected — receiving data' : view.label}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-gray-500 mt-2">{view.detail}</p>
+                    </div>
+                  );
+                })()}
 
                 {/* Auto Theme Matching — Highlight */}
                 <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200">
