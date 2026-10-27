@@ -111,14 +111,11 @@ export async function GET(req: NextRequest) {
         : [];
       const teaser = kwList.slice(0, 3).join(', ');
 
-      // Derive category from topic keywords, not just niche
       const topicWords = s.topic.split(/[^a-zA-Z0-9]+/).filter(w => w.length > 3);
-      const categoryKeywords = ['Marketing', 'Branding', 'Design', 'SEO', 'Social Media', 'Content', 'Strategy', 'Analytics', 'Advertising', 'Consulting', 'Franchise', 'PPC', 'Landing', 'UI', 'UX', 'B2B', 'SaaS', 'Startup', 'Growth', 'Leadership', 'Management', 'Finance', 'Legal', 'Technology', 'Innovation'];
-      const matchedCategory = categoryKeywords.find(cat =>
-        topicWords.some(w => w.toLowerCase() === cat.toLowerCase()) ||
-        s.topic.toLowerCase().includes(cat.toLowerCase())
-      );
-      const category = matchedCategory || niche.split(' ').slice(0, 2).join(' ') || 'Business';
+      // Category = the site's niche. Never scrape words out of the title: a
+      // substring match ("ui" inside "Guide", "ux" inside "Luxury") was showing
+      // junk UI/UX categories on real-estate blogs — unprofessional.
+      const category = niche.split(' ').slice(0, 2).join(' ') || 'Business';
 
       // Tags: use topic-specific keywords, not just niche
       const topicTags = topicWords
