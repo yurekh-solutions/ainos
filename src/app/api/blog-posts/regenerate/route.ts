@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       // Queued blogs are BlogSchedule rows — write the full article right now
       const schedule = await prisma.blogSchedule.findFirst({ where: { id: postId, ...scope } });
       if (!schedule) return NextResponse.json({ error: 'Post not found' }, { status: 404 });
-      const result = await generateScheduleNow(schedule.id);
+      const result = await generateScheduleNow(schedule.id, { force: true });
       if (result.status !== 'published') {
         return NextResponse.json({ error: 'The AI is busy right now — please try again in a moment.' }, { status: 502 });
       }

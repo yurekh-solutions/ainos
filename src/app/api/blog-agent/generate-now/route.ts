@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       select: { id: true },
     });
     if (!owned) return NextResponse.json({ error: 'Schedule not found' }, { status: 404 });
-    const result = await generateScheduleNow(owned.id);
+    const result = await generateScheduleNow(owned.id, { force: true });
     if (result.status !== 'published') {
       return NextResponse.json({ error: result.reason || 'Generation failed — please try again' }, { status: 502 });
     }

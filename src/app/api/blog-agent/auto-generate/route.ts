@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     const results = [];
 
     for (const schedule of pendingSchedules) {
-      const result = await generateScheduleNow(schedule.id);
+      const result = await generateScheduleNow(schedule.id, { force: true });
       results.push({ id: schedule.id, ...result });
     }
 

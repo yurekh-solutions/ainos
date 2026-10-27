@@ -122,9 +122,14 @@ export async function POST(req: NextRequest) {
     const topics = aiAnalysis.topics.slice(0, 30);
     const schedules = [];
     for (let i = 0; i < topics.length; i++) {
+      // First 3 publish immediately (dated just now), then one per day going forward.
       const scheduledDate = new Date(now);
-      scheduledDate.setDate(scheduledDate.getDate() + i);
-      scheduledDate.setHours(9, 0, 0, 0);
+      if (i < 3) {
+        scheduledDate.setTime(now.getTime() - (3 - i) * 1000);
+      } else {
+        scheduledDate.setDate(scheduledDate.getDate() + (i - 2));
+        scheduledDate.setHours(9, 0, 0, 0);
+      }
 
       // Generate diverse SEO keywords from topic
       const stopWords = new Set(['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'her', 'was', 'one', 'our', 'out', 'how', 'what', 'which', 'their', 'this', 'that', 'with', 'from', 'have', 'been', 'will', 'each', 'make', 'like', 'long', 'look', 'many', 'some', 'them', 'then', 'than', 'into', 'more', 'also', 'just', 'over', 'such', 'take', 'year', 'very', 'when', 'come', 'could', 'other', 'after', 'most', 'about', 'would', 'there', 'their', 'what', 'so', 'up', 'out', 'if', 'of', 'in', 'to', 'is', 'it', 'as', 'at', 'by', 'on', 'or', 'an', 'be', 'we', 'he', 'do', 'go', 'no', 'my', 'me', 'us']);

@@ -14,7 +14,7 @@ const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').repla
 // The post goes live on client sites on its scheduled date (publishedAt is
 // the go-live time). Writing ahead never changes that date.
 // Shared by the daily cron (auto-generate) and the on-demand "Generate Now" endpoint.
-export async function generateScheduleNow(scheduleId: string): Promise<{ status: string; blogPostId?: string; reason?: string; already?: boolean; liveAt?: string }> {
+export async function generateScheduleNow(scheduleId: string, opts?: { force?: boolean }): Promise<{ status: string; blogPostId?: string; reason?: string; already?: boolean; liveAt?: string }> {
   const schedule = await prisma.blogSchedule.findUnique({
     where: { id: scheduleId },
     include: {
@@ -33,9 +33,14 @@ export async function generateScheduleNow(scheduleId: string): Promise<{ status:
   if (!['pending', 'failed'].includes(schedule.status)) {
     return { status: schedule.status, reason: 'Schedule is not ready for generation' };
   }
-  // External receivers may ignore publishedAt. Do not deliver ahead of time.
+  // Respect the publishing calendar. A future-dated schedule waits until its time;
+  // only an explicit on-demand action or the daily cron (force) writes ahead of it.
   const targets = Array.isArray(schedule.publishTargets) ? schedule.publishTargets : ['ainos'];
-  if (schedule.scheduledDate > new Date() && targets.some(t => t !== 'ainos')) {
+  const future = schedule.scheduledDate > new Date();
+  if (future && !opts?.force) {
+    return { status: 'pending', reason: 'Not yet due — scheduled for a later date' };
+  }
+  if (future && opts?.force && targets.some(t => t !== 'ainos')) {
     return { status: 'pending', reason: 'External publishing waits until the scheduled time' };
   }
 

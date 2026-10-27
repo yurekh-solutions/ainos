@@ -125,11 +125,14 @@ export async function GET(req: NextRequest) {
         .filter(w => !['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'her', 'was', 'one', 'our', 'out', 'how', 'what', 'which', 'their', 'this', 'that', 'with', 'from', 'have', 'been', 'will', 'each', 'make', 'like', 'long', 'look', 'many', 'some', 'them', 'then', 'than', 'into', 'more', 'also', 'just', 'over', 'such', 'take', 'year', 'very', 'when', 'come', 'could', 'other', 'after', 'most', 'about', 'would', 'there', 'so', 'up', 'if', 'of', 'in', 'to', 'is', 'it', 'as', 'at', 'by', 'on', 'or', 'an', 'be', 'we', 'he', 'do', 'go', 'no', 'my', 'me', 'us', 'yurekh', 'blueprint', 'approach', 'framework', 'template', 'guide', 'secrets', 'principles', 'strategy', 'strategies'].includes(w.toLowerCase()))
         .slice(0, 5)
         .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
-      const tags = [...new Set([...topicTags, ...kwList.slice(0, 3)])].slice(0, 6);
+      // Queued previews show no hashtag chips — real, curated tags appear once the
+      // AI finishes writing (avoids cheap word-fragment tags on the calendar).
+      const tags: string[] = [];
+      void topicTags;
 
       const excerpt = s.status === 'generating'
-        ? 'AINOS is writing this article and preparing its featured image. The complete article will appear when ready.'
-        : 'This topic is queued on your publishing calendar. The complete article and featured image will appear after generation.';
+        ? 'Writing in progress — the full article will appear here automatically.'
+        : 'Scheduled in your publishing calendar. It goes live automatically on its date.';
 
       return {
         id: s.id,

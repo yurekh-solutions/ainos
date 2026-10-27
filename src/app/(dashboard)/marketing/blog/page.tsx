@@ -1208,9 +1208,9 @@ export default function BlogPage() {
                   <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
                     <CalendarRange className="w-7 h-7 text-white" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">Your article is being prepared</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Scheduled for publication</h3>
                   <p className="text-sm text-gray-500 max-w-md mx-auto leading-relaxed">
-                    The full 3000-word blog with headings, FAQs and a premium featured image will appear here automatically within minutes — no action needed.
+                    This article is queued in your publishing calendar and will go live automatically on its scheduled date.
                   </p>
                 </div>
               ) : (
