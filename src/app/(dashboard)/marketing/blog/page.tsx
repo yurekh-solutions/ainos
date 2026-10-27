@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { isAdmin } from '@/lib/admin';
 import BlogCalendar from '@/components/blog/BlogCalendar';
 import {
-  X, FileText, Eye, Calendar, Star, Wand2, Search, Clock, Trash2, Edit3, CheckCircle, Send, ArrowLeft, BookOpen, Layers, ExternalLink, Globe, CalendarRange, TrendingUp, Shield, Workflow, Code, Copy, Check, Rss, Map, Palette, RefreshCw, BarChart3, Share2, Target, Award, Link2, Loader2, AlertCircle, ArrowRight, ChevronDown, Radar, PlugZap, Unplug, CircleDashed, CalendarDays, LayoutGrid } from 'lucide-react';
+  X, FileText, Eye, Calendar, Star, Wand2, Search, Clock, Trash2, Edit3, CheckCircle, Send, ArrowLeft, Layers, ExternalLink, Store, Network, CalendarRange, TrendingUp, Shield, Workflow, Code, Copy, Check, Map, Palette, RefreshCw, BarChart3, Share2, Target, Award, Link2, Loader2, AlertCircle, ArrowRight, ChevronDown, Radar, PlugZap, Unplug, CircleDashed, CalendarDays, LayoutGrid } from 'lucide-react';
 
 interface BlogPost {
   id: string; title: string; slug: string; content: string; excerpt: string | null;
@@ -64,6 +64,32 @@ const platformSteps: Record<string, string[]> = {
     'Paste the code anywhere on the page (bottom of the page is best).',
     'Save or publish. The widget does the rest!',
   ],
+};
+
+// Server-side rewrite rules — only needed for the advanced “Clean URL” mode.
+// Each rule tells the host to serve the page holding the widget for /blog/* URLs,
+// so the widget can read the article address from the browser’s path.
+const rewriteRules: Record<string, { label: string; note: string; code: string }> = {
+  Vercel: {
+    label: 'Vercel',
+    note: 'Add this as a file called vercel.json in your project’s main folder.',
+    code: `{\n  "rewrites": [\n    { "source": "/blog/:slug*", "destination": "/index.html" }\n  ]\n}`,
+  },
+  Netlify: {
+    label: 'Netlify',
+    note: 'Add this line to a file called _redirects in your site’s main folder.',
+    code: `/blog/*  /index.html  200`,
+  },
+  nginx: {
+    label: 'nginx',
+    note: 'Add this block inside the server { } area of your nginx config.',
+    code: `location /blog/ {\n  try_files $uri $uri/ /index.html;\n}`,
+  },
+  Apache: {
+    label: 'Apache / cPanel',
+    note: 'Add these lines near the top of your .htaccess file.',
+    code: `RewriteEngine On\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteRule ^blog/([^/]+)/?$ /index.html [L]`,
+  },
 };
 
 // Simple markdown to HTML converter — strips ALL inline images (only featured image on card)
@@ -143,6 +169,9 @@ export default function BlogPage() {
   const [embedStyle, setEmbedStyle] = useState<'grid' | 'list'>('grid');
   const [embedLimit, setEmbedLimit] = useState(6);
   const [embedColor, setEmbedColor] = useState('');
+  // 'hash' = works everywhere, no setup. 'path' = clean URL, needs a server rule.
+  const [embedRouting, setEmbedRouting] = useState<'hash' | 'path'>('hash');
+  const [rewritePlatform, setRewritePlatform] = useState('Vercel');
   const [platformMode, setPlatformMode] = useState(false);
 
   // ── Unified tab: 'blogs' | 'websites' ──
@@ -204,7 +233,7 @@ export default function BlogPage() {
   })();
 
   // Live embed snippet — updates as the user picks layout/count/color
-  const embedSnippet = `<script src="${baseUrl}/embed.js"></script>\n<div id="ainos-blog" data-limit="${embedLimit}" data-style="${embedStyle}"${embedColor ? ` data-color="${embedColor}"` : ''}></div>`;
+  const embedSnippet = `<script src="${baseUrl}/embed.js"></script>\n<div id="ainos-blog" data-limit="${embedLimit}" data-style="${embedStyle}"${embedColor ? ` data-color="${embedColor}"` : ''}${embedRouting === 'path' ? ' data-routing="path"' : ''}></div>`;
 
   const [aiForm, setAiForm] = useState({
     topic: '', keywords: '', tone: 'Professional', length: 'medium', industry: 'General Business'
@@ -459,24 +488,27 @@ export default function BlogPage() {
   return (
     <div className="h-full overflow-auto bg-gray-50">
       {/* ═══════════ TOP ACTION BAR ═══════════ */}
-      <div className="flex items-center justify-between px-6 py-3 md:px-10 bg-white border-b border-gray-200/80">
+      <div className="flex items-center justify-between gap-2 px-4 py-3 sm:px-6 md:px-10 bg-white border-b border-gray-200/80">
         <div className="flex items-center gap-2.5">
-          <img src="/ainos.jpg" alt="AINOS" className="w-4 h-4 rounded-full object-cover" />
-          <span className="text-sm font-bold text-slate-900">Blogs & Content</span>
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 uppercase tracking-wider">AUTOPILOT</span>
+          <div className="w-8 h-8 rounded-lg bg-violet-100 ring-1 ring-violet-200 flex items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/ainos-alpha.png" alt="AINOS" className="w-5 h-5 object-contain" />
+          </div>
+          <span className="text-sm font-bold text-slate-900 whitespace-nowrap">Blogs &amp; Content</span>
+          <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 uppercase tracking-wider">AUTOPILOT</span>
           {isAdminUser && (
             <div className="ml-3 flex items-center bg-gray-100 rounded-lg p-0.5 border border-gray-200">
               <button onClick={() => setPlatformMode(false)}
                 className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all ${
-                  !platformMode ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900:text-white'
+                  !platformMode ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
                 }`}>
                 My Blogs
               </button>
               <button onClick={() => setPlatformMode(true)}
                 className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1 ${
-                  platformMode ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900:text-white'
+                  platformMode ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
                 }`}>
-                <Globe className="w-3 h-3" /> Platform
+                <Layers className="w-3 h-3" /> Platform
               </button>
             </div>
           )}
@@ -485,13 +517,13 @@ export default function BlogPage() {
           {activeTab === 'blogs' ? (
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={() => { setShowAI(true); setGenerated(null); }}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-md shadow-purple-500/20 transition-all">
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold text-white whitespace-nowrap bg-gradient-to-r from-purple-600 to-indigo-600 shadow-md shadow-purple-500/20 transition-all">
               <Wand2 className="w-3.5 h-3.5" /> Generate with AI
             </motion.button>
           ) : (
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={() => setShowConnect(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-md shadow-purple-500/20 transition-all">
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold text-white whitespace-nowrap bg-[#5b21b6] hover:bg-[#4c1d95] shadow-md shadow-purple-500/20 transition-all">
               <Link2 className="w-3.5 h-3.5" /> Connect Website
             </motion.button>
           )}
@@ -518,46 +550,11 @@ export default function BlogPage() {
                   on Full <span className="text-purple-400">Autopilot</span>
                 </h1>
                 <p className="text-sm text-white/60 max-w-md leading-relaxed">
-                  AI generates SEO-optimized blogs, auto-publishes them to your website, and drives organic traffic — all on autopilot.
+                  AINOS writes blog posts for your business and publishes them to your website automatically.
                 </p>
               </motion.div>
             </div>
 
-            {/* Right illustration */}
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.2 }}
-              className="hidden lg:block flex-shrink-0">
-              <div className="relative w-[280px] h-[200px]">
-                {/* Orbital lines */}
-                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 280 200">
-                  <ellipse cx="140" cy="100" rx="100" ry="60" fill="none" stroke="rgba(168,85,247,0.15)" strokeWidth="1" strokeDasharray="4 4" />
-                  <ellipse cx="140" cy="100" rx="70" ry="40" fill="none" stroke="rgba(168,85,247,0.1)" strokeWidth="1" strokeDasharray="3 3" />
-                </svg>
-                {/* Main document card */}
-                <div className="absolute top-4 left-8 w-[160px] h-[130px] bg-white/[0.08] backdrop-blur-sm rounded-2xl border border-white/[0.12] p-4 shadow-2xl">
-                  <div className="w-full h-3 bg-white/[0.1] rounded mb-2" />
-                  <div className="w-3/4 h-2 bg-white/[0.06] rounded mb-3" />
-                  <div className="w-full h-[60px] bg-white/[0.04] rounded-xl mb-2 flex items-center justify-center border border-white/[0.06]">
-                    <div className="w-8 h-8 rounded-lg bg-purple-400/20 flex items-center justify-center">
-                      <FileText className="w-4 h-4 text-purple-300/70" />
-                    </div>
-                  </div>
-                  <div className="w-1/2 h-2 bg-white/[0.06] rounded" />
-                </div>
-                {/* Floating icons */}
-                <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                  className="absolute top-0 right-4 w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/40 border border-blue-400/30">
-                  <Edit3 className="w-4 h-4 text-white" />
-                </motion.div>
-                <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-                  className="absolute bottom-4 right-0 w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/40 border border-emerald-400/30">
-                  <CheckCircle className="w-4 h-4 text-white" />
-                </motion.div>
-                <motion.div animate={{ y: [0, -5, 0] }} transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-                  className="absolute top-12 left-0 w-9 h-9 bg-purple-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/40 border border-purple-400/30">
-                  <Globe className="w-4 h-4 text-white" />
-                </motion.div>
-              </div>
-            </motion.div>
           </div>
         </div>
       </div>
@@ -565,10 +562,10 @@ export default function BlogPage() {
       {/* ═══════════ STATS CARDS (overlap hero) ═══════════ */}
       <div className="px-4 sm:px-6 md:px-10 max-w-[1400px] mx-auto -mt-8 relative z-10">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}
-          className="grid grid-cols-2 md:grid-cols-5 gap-4"
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4"
         >
           {[
-            { label: 'Connected Sites', value: websites.length, sub: 'Active Websites', icon: Globe, iconBg: 'bg-purple-100', iconColor: 'text-purple-600', subColor: 'text-purple-500' },
+            { label: 'Connected Sites', value: websites.length, sub: 'Active Websites', icon: Store, iconBg: 'bg-purple-100', iconColor: 'text-purple-600', subColor: 'text-purple-500' },
             { label: 'Blogs Planned', value: totalSiteBlogs, sub: 'On your calendar', icon: FileText, iconBg: 'bg-blue-100', iconColor: 'text-blue-600', subColor: 'text-blue-500' },
             { label: 'Blogs Written', value: totalSitePublished, sub: 'Ready or live', icon: CheckCircle, iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600', subColor: 'text-emerald-500' },
             { label: 'In Queue', value: totalSitePending, sub: 'Pending', icon: Clock, iconBg: 'bg-orange-100', iconColor: 'text-orange-600', subColor: 'text-orange-500' },
@@ -594,56 +591,30 @@ export default function BlogPage() {
       </div>
 
       {/* ═══════════ HOW IT WORKS ═══════════ */}
-      <div className="px-4 py-4 sm:px-6 sm:py-6 md:px-10 max-w-[1400px] mx-auto">
-        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl border border-purple-100 p-5 sm:p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
-              <BookOpen className="w-5 h-5 text-purple-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-sm font-bold text-gray-900 mb-3">How Blog Automation Works</h3>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="flex items-start gap-2">
-                  <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-900">Connect Website</p>
-                    <p className="text-[11px] text-gray-500">Add your website URL. AINOS analyzes niche & brand voice.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-900">Paste Embed Code</p>
-                    <p className="text-[11px] text-gray-500">Add the 2-line code to your site. AINOS checks your site and confirms when it is live.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-900">Blog Calendar</p>
-                    <p className="text-[11px] text-gray-500">Every blog has a date. It is written ahead and goes live on your site that day, with its own page URL.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="w-5 h-5 rounded-full bg-purple-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">4</span>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-900">Connection Watch</p>
-                    <p className="text-[11px] text-gray-500">AINOS re-checks your site daily and alerts you if the blog code goes missing.</p>
-                  </div>
+      <div className="px-4 py-4 sm:px-6 md:px-10 max-w-[1400px] mx-auto">
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-6">
+          <h3 className="text-sm font-bold text-gray-900 mb-4">How it works</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {[
+              { n: 1, title: 'Connect your website', desc: 'Add your site URL to get started.' },
+              { n: 2, title: 'Paste the embed code', desc: 'Copy a 2-line code into your site. We confirm the moment it goes live.' },
+              { n: 3, title: 'AI writes your blogs', desc: 'AINOS creates ready-to-post blogs for your business and puts them on a calendar.' },
+              { n: 4, title: 'They publish themselves', desc: 'Each blog goes live on its own date and page — nothing to do on your side.' },
+              { n: 5, title: 'We keep watch', desc: 'AINOS re-checks your site daily and alerts you if anything breaks.' },
+            ].map((s) => (
+              <div key={s.n} className="flex flex-col gap-2">
+                <span className="w-8 h-8 rounded-full bg-[#5b21b6] text-white text-sm font-bold flex items-center justify-center">{s.n}</span>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{s.title}</p>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">{s.desc}</p>
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-purple-100 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex flex-wrap items-center gap-4 text-[11px] text-gray-500">
-                  <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-green-500" /> Individual blog pages (<code className="px-1 py-0.5 bg-gray-100 rounded text-[10px]">blog/slug</code>)</span>
-                  <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-green-500" /> Replaces existing blog sections</span>
-                  <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-green-500" /> SEO-optimized with JSON-LD</span>
-                  <span className="flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5 text-green-500" /> Featured image on every blog</span>
-                </div>
-                <a href="/marketing/blog/guide" className="flex items-center gap-1 text-[11px] font-semibold text-purple-600 hover:text-purple-800:text-purple-300 transition-colors flex-shrink-0">
-                  Read Full Integration Guide <ArrowRight className="w-3.5 h-3.5" />
-                </a>
-              </div>
-            </div>
+            ))}
+          </div>
+          <div className="mt-4 pt-3 border-t border-gray-100">
+            <a href="/marketing/blog/guide" className="inline-flex items-center gap-1 text-xs font-semibold text-[#5b21b6] hover:text-[#4c1d95] transition-colors">
+              See the full setup guide <ArrowRight className="w-3.5 h-3.5" />
+            </a>
           </div>
         </div>
       </div>
@@ -652,12 +623,14 @@ export default function BlogPage() {
       <div className="px-4 py-6 sm:px-6 sm:py-8 md:px-10 max-w-[1400px] mx-auto">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-            <Globe className="w-5 h-5 text-purple-600" /> Connected Websites
+            <Network className="w-5 h-5 text-purple-600" /> Connected Websites
           </h2>
-          <button onClick={() => setShowConnect(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-md shadow-purple-500/20 transition-all">
-            <Link2 className="w-3.5 h-3.5" /> Connect Website
-          </button>
+          {websites.length > 0 && (
+            <button onClick={() => setShowConnect(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#5b21b6] hover:bg-[#4c1d95] shadow-md shadow-purple-500/20 transition-all">
+              <Link2 className="w-3.5 h-3.5" /> Connect Website
+            </button>
+          )}
         </div>
 
         {sitesLoading ? (
@@ -667,13 +640,14 @@ export default function BlogPage() {
           </div>
         ) : websites.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-gray-200">
-            <div className="w-16 h-16 rounded-2xl bg-purple-50 flex items-center justify-center mx-auto mb-4">
-              <Globe className="w-8 h-8 text-purple-400" />
+            <div className="w-16 h-16 rounded-2xl bg-violet-100 ring-1 ring-violet-200 flex items-center justify-center mx-auto mb-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/ainos-alpha.png" alt="AINOS" className="w-8 h-8 object-contain" />
             </div>
             <p className="text-lg font-semibold text-gray-900 mb-1">No websites connected</p>
             <p className="text-sm text-gray-500 mb-6">Connect your website to start auto-generating blogs</p>
             <button onClick={() => setShowConnect(true)}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 transition-colors inline-flex items-center gap-2">
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#5b21b6] hover:bg-[#4c1d95] transition-colors inline-flex items-center gap-2">
               <Link2 className="w-4 h-4" /> Connect Website
             </button>
           </div>
@@ -696,7 +670,7 @@ export default function BlogPage() {
                     {/* Left: Website info */}
                     <div className="flex items-start gap-4 min-w-0">
                       <div className="w-14 h-14 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0 border border-purple-100">
-                        <Globe className="w-6 h-6 text-purple-500" />
+                        <ExternalLink className="w-6 h-6 text-purple-500" />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -732,23 +706,23 @@ export default function BlogPage() {
                     </div>
 
                     {/* Right: Actions */}
-                    <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end">
+                    <div className="flex w-full flex-col gap-2.5 sm:w-auto sm:items-end">
                       <button onClick={() => toggleExpandWebsite(w.id)}
-                        className="px-4 py-2 rounded-xl text-xs font-bold text-blue-700 border border-blue-200 hover:bg-blue-50:bg-blue-900/20 transition-colors flex items-center gap-1.5">
+                        className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-blue-200 px-4 py-2.5 text-xs font-bold text-blue-700 transition-colors hover:bg-blue-50 sm:w-auto">
                         <FileText className="w-3.5 h-3.5" /> {expandedWebsiteId === w.id ? 'Hide Blogs' : 'View Blogs'}
                         <ChevronDown className={`w-3 h-3 transition-transform ${expandedWebsiteId === w.id ? 'rotate-180' : ''}`} />
                       </button>
                       <button onClick={() => { setAiForm({ topic: '', keywords: w.niche || '', tone: 'Professional', length: 'medium', industry: w.niche || 'General Business' }); setShowAI(true); }}
-                        className="px-4 py-2 rounded-xl text-xs font-bold text-emerald-700 border border-emerald-200 hover:bg-emerald-50:bg-emerald-900/20 transition-colors flex items-center gap-1.5">
+                        className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-emerald-200 px-4 py-2.5 text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-50 sm:w-auto">
                         <Wand2 className="w-3.5 h-3.5" /> Generate Blog
                       </button>
                       <button onClick={() => handleSchedule30(w.id)} disabled={schedulingId === w.id}
-                        className="px-4 py-2 rounded-xl text-xs font-bold text-purple-700 border border-purple-200 hover:bg-purple-50:bg-purple-900/20 transition-colors flex items-center gap-1.5 disabled:opacity-50">
+                        className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-purple-200 px-4 py-2.5 text-xs font-bold text-purple-700 transition-colors hover:bg-purple-50 disabled:opacity-50 sm:w-auto">
                         {schedulingId === w.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Workflow className="w-3.5 h-3.5" /> Schedule 30 More</>}
                         <ArrowRight className="w-3 h-3" />
                       </button>
                       <button onClick={() => handleDisconnectWebsite(w.id)} disabled={disconnectingId === w.id}
-                        className="px-4 py-2 rounded-xl text-xs font-bold text-red-600 border border-red-200 hover:bg-red-50:bg-red-900/20 transition-colors flex items-center gap-1.5 disabled:opacity-50">
+                        className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-red-200 px-4 py-2.5 text-xs font-bold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 sm:w-auto">
                         {disconnectingId === w.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Trash2 className="w-3.5 h-3.5" /> Disconnect</>}
                       </button>
                     </div>
@@ -844,7 +818,7 @@ export default function BlogPage() {
                                 initial={{ opacity: 0, y: 8 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 onClick={() => setShowReader(post)}
-                                className="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden group cursor-pointer hover:shadow-lg hover:border-purple-300:border-purple-700 transition-all"
+                                className="group cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-gray-50 transition-all hover:border-purple-300 hover:shadow-lg"
                               >
                                 {/* Featured Image — always show image or gradient placeholder */}
                                 <div className="h-32 overflow-hidden bg-gradient-to-br from-purple-600 via-indigo-600 to-indigo-800">
@@ -872,7 +846,7 @@ export default function BlogPage() {
                                     )}
                                   </div>
                                   {/* Title */}
-                                  <h5 className="font-semibold text-sm text-gray-900 mb-2 line-clamp-2 group-hover:text-purple-600:text-purple-400 transition-colors">
+                                  <h5 className="mb-2 line-clamp-2 text-sm font-semibold text-gray-900 transition-colors group-hover:text-purple-600">
                                     {post.title}
                                   </h5>
                                   {/* Excerpt */}
@@ -902,23 +876,23 @@ export default function BlogPage() {
                                       {post.status === 'published' && (
                                         <a href={`/blog/${post.slug}/`} target="_blank" rel="noopener noreferrer"
                                           onClick={(e) => e.stopPropagation()}
-                                          className="p-1.5 rounded-lg hover:bg-blue-50:bg-blue-900/20" title="View Public Post">
+                                          className="p-1.5 rounded-lg hover:bg-blue-50" title="View Public Post">
                                           <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
                                         </a>
                                       )}
                                       {post.status === 'draft' && (
                                         <button onClick={(e) => { e.stopPropagation(); handleUpdateStatus(post.id, 'published'); }}
-                                          className="p-1.5 rounded-lg hover:bg-emerald-50:bg-emerald-900/20" title="Publish">
+                                          className="p-1.5 rounded-lg hover:bg-emerald-50" title="Publish">
                                           <Send className="w-3.5 h-3.5 text-emerald-500" />
                                         </button>
                                       )}
                                       <button onClick={(e) => { e.stopPropagation(); handleRegenerate(post.id); }}
                                         disabled={regenerating === post.id}
-                                        className="p-1.5 rounded-lg hover:bg-purple-50:bg-purple-900/20" title="Regenerate with AI">
+                                        className="p-1.5 rounded-lg hover:bg-purple-50" title="Regenerate with AI">
                                         <RefreshCw className={`w-3.5 h-3.5 text-purple-500 ${regenerating === post.id ? 'animate-spin' : ''}`} />
                                       </button>
                                       <button onClick={(e) => { e.stopPropagation(); handleDelete(post.id); }}
-                                        className="p-1.5 rounded-lg hover:bg-red-50:bg-red-900/20" title="Delete">
+                                        className="p-1.5 rounded-lg hover:bg-red-50" title="Delete">
                                         <Trash2 className="w-3.5 h-3.5 text-red-400" />
                                       </button>
                                     </div>
@@ -961,7 +935,7 @@ export default function BlogPage() {
                     </div>
                   </div>
                   <button onClick={() => setShowAI(false)} disabled={generating}
-                    className="p-2 rounded-xl hover:bg-gray-100:bg-gray-800 transition-colors disabled:opacity-50">
+                    className="rounded-xl p-2 transition-colors hover:bg-gray-100 disabled:opacity-50">
                     <X className="w-5 h-5 text-gray-500" />
                   </button>
                 </div>
@@ -1300,7 +1274,7 @@ export default function BlogPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                      <Globe className="w-5 h-5 text-white" />
+                      <Code className="w-5 h-5 text-white" />
                     </div>
                     <div>
                       <h2 className="text-lg font-bold text-gray-900">Publish to Your Website</h2>
@@ -1491,6 +1465,44 @@ export default function BlogPage() {
                         </button>
                       </div>
                     </div>
+                    <div>
+                      <h4 className="font-semibold text-xs text-gray-700 mb-2">Article URLs (routing)</h4>
+                      <p className="text-[11px] text-gray-500 mb-2 leading-relaxed">
+                        By default articles open on a hash route (yourdomain.com/#/blog/slug). This needs no server configuration and works on every host — leave it here unless you know your server already rewrites <code className="text-gray-700">/blog/*</code> to your page.
+                      </p>
+                      <div className="flex items-center gap-1.5 mb-3">
+                        <button onClick={() => setEmbedRouting('hash')}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${embedRouting === 'hash' ? 'bg-[#5b21b6] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                          Hash (default)
+                        </button>
+                        <button onClick={() => setEmbedRouting('path')}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${embedRouting === 'path' ? 'bg-[#5b21b6] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                          Clean URL (data-routing=&quot;path&quot;)
+                        </button>
+                      </div>
+                      {embedRouting === 'path' && (
+                        <div>
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {Object.keys(rewriteRules).map(p => (
+                              <button key={p} onClick={() => setRewritePlatform(p)}
+                                className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${rewritePlatform === p ? 'bg-[#5b21b6] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                                {rewriteRules[p].label}
+                              </button>
+                            ))}
+                          </div>
+                          <p className="text-[10px] text-gray-500 mb-1">{rewriteRules[rewritePlatform].note}</p>
+                          <div className="relative">
+                            <pre className="bg-gray-900 text-green-400 rounded-lg p-3 pr-20 text-[10px] overflow-x-auto font-mono leading-relaxed">
+                              {rewriteRules[rewritePlatform].code}
+                            </pre>
+                            <button onClick={() => handleCopyCode(rewriteRules[rewritePlatform].code, `rewrite-${rewritePlatform}`)}
+                              className="absolute top-1.5 right-1.5 p-1.5 rounded bg-gray-700 hover:bg-gray-600 transition-colors">
+                              {copiedCode === `rewrite-${rewritePlatform}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-gray-300" />}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </details>
 
@@ -1576,7 +1588,7 @@ export default function BlogPage() {
                 </div>
 
                 <button onClick={handleConnectWebsite} disabled={connecting || !connectUrl.trim()}
-                  className="w-full py-3 rounded-xl text-white text-sm font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
+                  className="w-full py-3 rounded-xl text-white text-sm font-bold bg-[#5b21b6] hover:bg-[#4c1d95] transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed">
                   {connecting ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing Website...</>
                   ) : (
