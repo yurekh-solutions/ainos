@@ -845,7 +845,7 @@ export default function RegisterPage() {
           </div>
 
           {/* Right — application form */}
-          <div className="lg:sticky lg:top-8">
+          <div className="min-w-0 lg:sticky lg:top-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
