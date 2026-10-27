@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState, type ChangeEvent, type ElementType } 
 import Link from 'next/link';
 import { useToast } from '@/lib/toast';
 import { validateEmail, validatePhone, validatePassword, cleanPhone, PHONE_REGEX } from '@/lib/validation';
+import PdfPreview from '@/components/PdfPreview';
 
 const COMPANY_TYPES = [
   { value: 'proprietorship', label: 'Proprietorship', icon: User },
@@ -1200,7 +1201,9 @@ export default function RegisterPage() {
                               <p className="text-[11px] font-semibold text-purple-900 truncate">{previewDoc}</p>
                               <button type="button" onClick={() => setPreviewDoc(null)} className="text-[11px] font-medium text-purple-600 hover:text-purple-800 flex-shrink-0 ml-2">Close</button>
                             </div>
-                            <iframe src={docPreviews[previewDoc]} title={`Preview ${previewDoc}`} className="w-full h-56 bg-white" />
+                            <div className="max-h-[60vh] overflow-y-auto bg-gray-50 p-2">
+                              <PdfPreview url={docPreviews[previewDoc]} />
+                            </div>
                           </div>
                         )}
 
