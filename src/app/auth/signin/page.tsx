@@ -174,9 +174,9 @@ export default function SignInPage() {
               className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8"
             >
               <div className="flex items-center gap-3 mb-5">
-                <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0" style={{ background: '#4c1d95' }}>
+                <div className="w-12 h-12 rounded-xl flex-shrink-0 bg-gradient-to-br from-violet-100 to-purple-100 ring-1 ring-violet-200 flex items-center justify-center">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/ainos.jpg" alt="AINOS" className="w-full h-full object-cover" />
+                  <img src="/ainos-alpha.png" alt="AINOS" className="w-7 h-7 object-contain" />
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-gray-900 leading-tight">AINOS</h1>

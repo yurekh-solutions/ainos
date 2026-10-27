@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Building2, Mail, Phone, MapPin, Globe, CreditCard, Save, Upload, CheckCircle2, X, Image as ImageIcon, Hash, Landmark, FileText } from 'lucide-react';
+import { Building2, Mail, Phone, MapPin, Globe, Store, CreditCard, Save, Upload, CheckCircle2, X, Image as ImageIcon, Hash, Landmark, FileText } from 'lucide-react';
 import Image from 'next/image';
 
 interface CompanyData {
@@ -331,7 +331,7 @@ export default function CompanyPage() {
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                  <Globe className="w-3.5 h-3.5" /> Website
+                  <Store className="w-3.5 h-3.5" /> Website
                 </label>
                 <FormInput name="website" defaultValue={company.website} placeholder="www.yourcompany.com" />
               </div>

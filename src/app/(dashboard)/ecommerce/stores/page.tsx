@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Store, Search, X, Globe, Package, ShoppingCart } from 'lucide-react';
+import { Plus, Store, Search, X, Package, ShoppingCart } from 'lucide-react';
 
 export default function EcomStoresPage() {
   const [stores, setStores] = useState<any[]>([]);
@@ -94,7 +94,7 @@ export default function EcomStoresPage() {
                 style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="p-2 rounded-lg" style={{ background: '#6D28D920' }}>
-                    <Globe className="w-5 h-5" style={{ color: '#8B5CF6' }} />
+                    <Store className="w-5 h-5" style={{ color: '#8B5CF6' }} />
                   </div>
                   <span className="px-2 py-0.5 rounded-full text-xs font-medium"
                     style={{ background: store.status === 'active' ? '#10b98120' : '#f59e0b20', color: store.status === 'active' ? '#10b981' : '#f59e0b' }}>

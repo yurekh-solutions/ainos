@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ShieldCheck, Building2, FileText, Clock, CheckCircle2, XCircle, AlertTriangle, Eye, ChevronRight, Search, Filter, Users, ArrowLeft, ExternalLink, RefreshCw, Mail, Phone, Globe, MapPin, Calendar, Hash, UserCircle, Ban, RotateCcw, Loader2 } from 'lucide-react';
+  ShieldCheck, Building2, FileText, Clock, CheckCircle2, XCircle, AlertTriangle, Eye, ChevronRight, Search, Filter, Users, ArrowLeft, ExternalLink, RefreshCw, Mail, Phone, Store, MapPin, Calendar, Hash, UserCircle, Ban, RotateCcw, Loader2 } from 'lucide-react';
 
 interface CompanySummary {
   id: string;
@@ -278,7 +278,7 @@ export default function AdminOnboardingPage() {
                     )}
                     {selectedCompany.website && (
                       <div className="flex items-center gap-3 text-sm">
-                        <Globe className="w-4 h-4 text-white/30" />
+                        <Store className="w-4 h-4 text-white/30" />
                         <a href={selectedCompany.website} target="_blank" className="text-purple-400 hover:underline">{selectedCompany.website}</a>
                       </div>
                     )}

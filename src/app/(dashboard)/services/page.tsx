@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { X, Globe, Palette, Megaphone, Rocket, Printer, BarChart3, Newspaper, Clock, Briefcase, ExternalLink, Wand2, Workflow, Eye, Download, Trash2, Crown, Star } from 'lucide-react';
+import { X, Store, Palette, Megaphone, Rocket, Printer, BarChart3, Newspaper, Clock, Briefcase, ExternalLink, Wand2, Workflow, Eye, Download, Trash2, Crown, Star } from 'lucide-react';
 import WebsiteBuilder from '@/components/services/WebsiteBuilder';
 import AIToolStudio, { StudioToolId } from '@/components/services/AIToolStudio';
 
@@ -69,7 +69,7 @@ const serviceCategories: ServiceCategory[] = [
   },
   {
     title: 'Development Services',
-    icon: Globe,
+    icon: Store,
     description: 'Websites, apps & custom software built for your business',
     services: ['Website Development', 'Responsive Website', 'Web Maintenance', 'Landing Pages', 'Mobile Application', 'UI/UX Designing', 'E-commerce', 'Microsite', 'Digital Visiting Card', 'Custom QR Code', 'Custom Software', 'E-commerce Platform Development', 'Quality Assurance & Testing'],
   },

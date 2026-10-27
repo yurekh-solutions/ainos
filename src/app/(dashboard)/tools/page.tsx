@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Coins, Workflow, ArrowRight, Search, Star, Megaphone, Users, Timer, Wallet, Palette, Brush, Briefcase, ShoppingBag, LifeBuoy, BookOpen, Globe, TrendingUp, Package, UserCog, Lock } from 'lucide-react';
+import { Coins, Workflow, ArrowRight, Search, Star, Megaphone, Users, Timer, Wallet, Palette, Brush, Briefcase, ShoppingBag, LifeBuoy, BookOpen, Store, TrendingUp, Package, UserCog, Lock } from 'lucide-react';
 
 interface Tool {
   id: string;
@@ -48,7 +48,7 @@ const categoryIcons: Record<string, typeof Workflow> = {
   ecommerce: ShoppingBag,
   support: LifeBuoy,
   content: BookOpen,
-  web: Globe,
+  web: Store,
   sales: TrendingUp,
   operations: Package,
   hr: UserCog,

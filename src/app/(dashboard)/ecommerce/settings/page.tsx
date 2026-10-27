@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CreditCard, Truck, Shield, Globe, Save, Check } from 'lucide-react';
+import { CreditCard, Truck, Shield, Store, Save, Check } from 'lucide-react';
 
 export default function EcomSettingsPage() {
   const [activeTab, setActiveTab] = useState('payments');
@@ -17,7 +17,7 @@ export default function EcomSettingsPage() {
     { key: 'payments', label: 'Payments', icon: CreditCard },
     { key: 'shipping', label: 'Shipping', icon: Truck },
     { key: 'tax', label: 'Tax & Compliance', icon: Shield },
-    { key: 'store', label: 'Store Settings', icon: Globe },
+    { key: 'store', label: 'Store Settings', icon: Store },
   ];
 
   const inputClass = "w-full px-3 py-2 rounded-lg border text-sm";

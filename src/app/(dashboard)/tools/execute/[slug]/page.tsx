@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft, ArrowRight, Workflow, Coins, Play, Loader2, CheckCircle, AlertCircle, Lock, Send, Copy, Check, Download, Plus, Trash2, FileText, Mail, Users, BarChart3, Share2, PenLine, Table2, Upload, Star, Palette, Search, Megaphone, Rocket, ImageIcon, QrCode, Presentation, ShoppingBag, Briefcase, Scale, MessageCircle, BookOpen, MessageSquareText, Globe, Package, UserCog, ExternalLink } from 'lucide-react';
+  ArrowLeft, ArrowRight, Workflow, Coins, Play, Loader2, CheckCircle, AlertCircle, Lock, Send, Copy, Check, Download, Plus, Trash2, FileText, Mail, Users, BarChart3, Share2, PenLine, Table2, Upload, Star, Palette, Search, Megaphone, Rocket, ImageIcon, QrCode, Presentation, ShoppingBag, Briefcase, Scale, MessageCircle, BookOpen, MessageSquareText, Store, Package, UserCog, ExternalLink } from 'lucide-react';
 
 interface Tool {
   id: string;
@@ -125,7 +125,7 @@ const SLUG_ICONS: Record<string, typeof Workflow> = {
   // Subscription / company modules
   autoBlog: BookOpen,
   aiAssistant: MessageSquareText,
-  websiteGen: Globe,
+  websiteGen: Store,
   invoiceGen: FileText,
   crmAccess: Users,
   inventoryMgmt: Package,
