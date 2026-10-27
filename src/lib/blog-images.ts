@@ -82,20 +82,16 @@ function getVisualConcept(topic: string, context?: string): string {
 }
 
 export async function getBlogImage(topic: string, context?: string): Promise<string> {
-  // Strategy: niche-first query, then only concrete visual keywords from topic
-  // This avoids abstract words like "budget", "measure", "glossary" that return
-  // irrelevant stock photos (wallets, code, laptops instead of AV equipment)
-  const allWords = topic
-    .split(/[^a-zA-Z0-9]+/)
-    .filter(w => w.length > 2 && !STOPWORDS.has(w.toLowerCase()) && !ABSTRACT_WORDS.has(w.toLowerCase()));
-
-  // Build query: niche (context) is the PRIMARY search term
-  // Add at most 2 concrete visual keywords from the topic for specificity
-  const nicheQuery = (context || '').trim();
-  const topicKeywords = allWords.slice(0, 2).join(' ');
-  const query = nicheQuery
-    ? `${nicheQuery}${topicKeywords ? ' ' + topicKeywords : ''}`
-    : (allWords.slice(0, 3).join(' ') || 'business');
+  // Search on a clean, concrete visual phrase derived from the article's subject
+  // (or its niche via TOPIC_VISUAL_MAP). The old approach dumped the entire niche
+  // string + title word-fragments into the query — e.g. "Premium Real Estate and
+  // Commercial Deep Enclave in Mumbai luxury apartments" — which made Pexels
+  // return generic Mumbai slum/skyline aerials instead of the actual subject.
+  const visual = getVisualConcept(topic, context)
+    .replace(/\b(professional|concept)\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const query = visual || 'business';
   // Stable per-topic hash so every blog gets its OWN photo (Date-based seeds
   // made blogs created in the same loop pick the identical image)
   let hash = 7;

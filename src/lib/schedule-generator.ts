@@ -8,6 +8,31 @@ import { sendEmail } from '@/lib/email';
 
 const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 90);
 
+// Platform-wide generation throttle. The per-company `runningCompanies` guard
+// stops one tenant storming itself, but 100 tenants each running their own
+// background loop would fire 100 concurrent AI + image calls on ONE shared key
+// and instantly trip rate limits (mass 429 → everything stalls). This semaphore
+// caps how many articles generate at the same time ACROSS all companies on the
+// instance. Raise it (or move to a dedicated worker) when the AI quota grows.
+// Applied only inside startBackgroundGeneration's bulk loop so user-initiated
+// single "Generate Now" calls and the serial daily cron never queue behind it.
+class Semaphore {
+  private available: number;
+  private readonly waiters: Array<() => void> = [];
+  constructor(permits: number) { this.available = permits; }
+  acquire(): Promise<void> {
+    if (this.available > 0) { this.available--; return Promise.resolve(); }
+    return new Promise<void>(resolve => this.waiters.push(resolve));
+  }
+  release(): void {
+    const next = this.waiters.shift();
+    if (next) next();
+    else this.available++;
+  }
+}
+const GENERATION_CONCURRENCY = Number(process.env.BLOG_GEN_CONCURRENCY) || 2;
+const aiGate = new Semaphore(GENERATION_CONCURRENCY);
+
 // Generates ONE scheduled blog immediately: AI writes SEO/AEO content,
 // a verified featured image is attached (Pexels -> Unsplash -> Pollinations),
 // the BlogPost is created and schedule + quota are updated.
@@ -70,17 +95,11 @@ export async function generateScheduleNow(scheduleId: string, opts?: { force?: b
       await prisma.blogSchedule.update({ where: { id: schedule.id }, data: { status: 'cancelled' } });
       return { status: 'cancelled', reason: 'Website or subscription is inactive' };
     }
-    if (!siteLive) {
-      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
-      if (website.createdAt >= twoHoursAgo) {
-        console.log(`[Blog Gen] Skipping ${schedule.topic.substring(0, 50)}... — widget not integrated on ${website.name || website.url} (grace period active)`);
-        await prisma.blogSchedule.update({
-          where: { id: schedule.id },
-          data: { status: 'pending' },
-        });
-        return { status: 'pending', reason: 'Widget not integrated on website' };
-      }
-    }
+    // Generate regardless of whether the embed is detected yet. Blogs appear in
+    // the dashboard immediately and go live on the client site the moment the
+    // embed code is added. Connection status stays honest via site-health (a real
+    // widget sighting / page check) — gating generation here only made brand-new
+    // users see "no blogs" for the first two hours, which looked like a failure.
 
     // Topic relevance check disabled — user-requested blogs should generate regardless
     // The niche is used for context below, but we don't reject topics anymore
@@ -430,16 +449,19 @@ WRITING INSTRUCTIONS:
     // Quota/rate-limit errors (Gemini 429, Pollinations 402) are temporary —
     // keep the row pending ("Preparing") so it retries on the next run or
     // daily quota reset instead of showing a scary FAILED card.
-    const quota = /429|403|402|quota|payment required|busy right now|featured image unavailable/i.test(message);
+    // Quota/rate-limit AND transient infra errors (DB slot exhaustion, network
+    // timeouts) are temporary — keep the row pending so it retries on the next
+    // run instead of being abandoned as FAILED after 5 tries.
+    const retryable = /429|403|402|quota|payment required|busy right now|featured image unavailable|connection|slots|too many|timeout|timed out|econn|eai_again|socket hang up|network|prisma/i.test(message);
     const currentRetry = schedule.retryCount || 0;
     await prisma.blogSchedule.updateMany({
       where: { id: schedule.id, status: 'generating' },
       data: {
-        status: quota ? 'pending' : 'failed',
+        status: retryable ? 'pending' : 'failed',
         retryCount: currentRetry + 1,
       },
     });
-    return { status: quota ? 'pending' : 'failed', reason: message };
+    return { status: retryable ? 'pending' : 'failed', reason: message };
   }
 }
 
@@ -487,7 +509,15 @@ export function startBackgroundGeneration(companyId: string): boolean {
         if (!next) break;
         console.log(`[Blog Gen] Processing: ${next.topic.substring(0, 50)}... (status: ${next.status})`);
         attempted.add(next.id);
-        const result = await generateScheduleNow(next.id);
+        // Global cap: only ~2 articles generate at once across ALL tenants, so a
+        // 100-user burst sharing one AI key + DB never trips rate limits together.
+        await aiGate.acquire();
+        let result;
+        try {
+          result = await generateScheduleNow(next.id);
+        } finally {
+          aiGate.release();
+        }
         console.log(`[Blog Gen] Result: ${result.status} - ${result.reason || 'ok'}`);
         // quota exhausted on every provider — stop burning attempts; the
         // remaining rows stay pending and retry on the next run/reset
