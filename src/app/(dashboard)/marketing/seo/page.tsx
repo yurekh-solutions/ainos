@@ -125,7 +125,7 @@ export default function SEODashboardPage() {
   const auditAI = (result?.aiSummary ?? null) as { summary?: string; priorities?: Array<{ title: string; why: string; how: string }> } | null;
 
   return (
-    <div className="min-h-screen bg-gray-50 -mt-4 px-4 pt-0 pb-4 md:px-6 md:pb-6 lg:px-8 lg:pb-8">
+    <div className="min-h-screen bg-gray-50 px-4 pt-4 pb-6 md:px-6 lg:px-8 lg:pb-8">
       <div className="max-w-[1400px] mx-auto">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-4 sm:mb-6">
@@ -136,7 +136,7 @@ export default function SEODashboardPage() {
                   <NextImage src="/ainos-alpha.png" alt="AINOS" width={28} height={28} className="w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-base sm:text-2xl md:text-[26px] font-bold leading-tight text-white sm:text-gray-900">SEO &amp; Content Marketing Platform</h1>
+                  <h1 className="text-lg sm:text-2xl md:text-[26px] font-bold leading-tight text-white sm:text-gray-900">SEO &amp; Content Marketing Platform</h1>
                   <p className="text-xs sm:text-sm mt-1 text-purple-100 sm:text-gray-500">Site audits, keyword research, competitor analysis &amp; AI content ideas.</p>
                 </div>
               </div>
@@ -244,7 +244,7 @@ export default function SEODashboardPage() {
 
             {/* SITE AUDIT */}
             {activeTab === 'audit' && (
-              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Site Audit</h3>
                 <div className="flex flex-col sm:flex-row gap-2 mb-6">
                   <input value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} placeholder="https://yourwebsite.com"
@@ -311,7 +311,7 @@ export default function SEODashboardPage() {
 
             {/* KEYWORDS */}
             {activeTab === 'keywords' && (
-              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Keyword Research</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
                   <input value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="Enter seed keyword e.g. digital marketing"
@@ -353,7 +353,7 @@ export default function SEODashboardPage() {
 
             {/* COMPETITORS */}
             {activeTab === 'competitors' && (
-              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Competitor Analysis</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
                   <input value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} placeholder="Your website URL"
@@ -397,7 +397,7 @@ export default function SEODashboardPage() {
 
             {/* CONTENT IDEAS */}
             {activeTab === 'content' && (
-              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">AI Content Ideas</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
                   <input value={niche} onChange={e => setNiche(e.target.value)} placeholder="Your niche"
