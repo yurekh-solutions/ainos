@@ -37,6 +37,14 @@ export function NotificationsBell() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Let other components (e.g. blog disconnect) trigger an instant refresh
+  // without a full page reload.
+  useEffect(() => {
+    const refresh = () => { void fetchNotifications(); };
+    window.addEventListener('ainos:notifications-refresh', refresh);
+    return () => window.removeEventListener('ainos:notifications-refresh', refresh);
+  }, []);
+
   const markAllRead = async () => {
     try {
       const unread = notifications.filter(n => !n.read);

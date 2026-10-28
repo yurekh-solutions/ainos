@@ -110,6 +110,19 @@ export async function DELETE(req: NextRequest) {
       data: { status: 'cancelled' },
     });
 
+    // Clear this site's blog/connection notifications for the company so the bell
+    // doesn't keep showing "New Blog Published!" / "Website setup not confirmed"
+    // for a website that has been disconnected. Scoped by type so notifications
+    // from other modules are left untouched.
+    await prisma.notification.deleteMany({
+      where: {
+        companyId: company.id,
+        type: {
+          in: ['blog_published', 'blog_ready', 'website_setup', 'website_connected', 'website_disconnected'],
+        },
+      },
+    });
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Delete website error:', error);

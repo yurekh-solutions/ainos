@@ -350,7 +350,12 @@ export default function BlogPage() {
     setDisconnectingId(websiteId);
     try {
       const res = await fetch(`/api/blog-agent/websites?id=${websiteId}`, { method: 'DELETE' });
-      if (res.ok) fetchWebsites();
+      if (res.ok) {
+        fetchWebsites();
+        // Blog/connection notifications are deleted server-side on disconnect;
+        // nudge the bell so it reflects the cleared list without a reload.
+        window.dispatchEvent(new Event('ainos:notifications-refresh'));
+      }
     } catch (e) { console.error(e); }
     setDisconnectingId(null);
   };
