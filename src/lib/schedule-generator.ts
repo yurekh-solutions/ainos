@@ -95,11 +95,20 @@ export async function generateScheduleNow(scheduleId: string, opts?: { force?: b
       await prisma.blogSchedule.update({ where: { id: schedule.id }, data: { status: 'cancelled' } });
       return { status: 'cancelled', reason: 'Website or subscription is inactive' };
     }
-    // Generate regardless of whether the embed is detected yet. Blogs appear in
-    // the dashboard immediately and go live on the client site the moment the
-    // embed code is added. Connection status stays honest via site-health (a real
-    // widget sighting / page check) — gating generation here only made brand-new
-    // users see "no blogs" for the first two hours, which looked like a failure.
+    // Preview allowance: even before the embed is detected we write the first 3
+    // blogs so a brand-new user's dashboard shows real value immediately (never an
+    // empty "nothing happening" screen). Beyond 3, generation waits until the site
+    // is actually connected — this saves AI credits on sites that add a URL but
+    // never paste the tag, and turns "connect to unlock the rest" into a hook.
+    if (!siteLive) {
+      const written = await prisma.blogSchedule.count({
+        where: { companyId: schedule.companyId, status: 'published' },
+      });
+      if (written >= 3) {
+        await prisma.blogSchedule.update({ where: { id: schedule.id }, data: { status: 'pending' } });
+        return { status: 'pending', reason: 'Preview limit reached — connect your website to generate the rest' };
+      }
+    }
 
     // Topic relevance check disabled — user-requested blogs should generate regardless
     // The niche is used for context below, but we don't reject topics anymore

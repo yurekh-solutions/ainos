@@ -756,6 +756,9 @@ export default function BlogPage() {
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-gray-900">{checking ? 'Checking your website...' : cv.label}</p>
                           <p className="text-xs text-gray-600 mt-0.5 break-words">{cv.detail}</p>
+                          {w.connectionStatus !== 'connected' && w.publishedBlogs > 0 && (
+                            <p className="text-[11px] font-semibold text-purple-700 mt-1">✍️ {w.publishedBlogs} blog{w.publishedBlogs === 1 ? '' : 's'} ready to publish — connect to go live &amp; unlock the rest.</p>
+                          )}
                           {w.lastCheckedAt && (
                             <p className="text-[11px] text-gray-400 mt-0.5">Last checked {timeAgo(w.lastCheckedAt)}</p>
                           )}
@@ -800,6 +803,40 @@ export default function BlogPage() {
                       className="overflow-hidden border-t border-gray-200"
                     >
                       <div className="p-5 sm:p-6">
+                        {/* On-your-site preview — how the widget looks to visitors */}
+                        {(() => {
+                          const live = (websiteBlogs[w.id] || []).filter(b => !b.isSchedule && b.featuredImage).slice(0, 3);
+                          if (!live.length) return null;
+                          const host = (() => { try { return new URL(w.url.startsWith('http') ? w.url : `https://${w.url}`).host; } catch { return w.url; } })();
+                          return (
+                            <div className="mb-5">
+                              <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                                <Eye className="w-3.5 h-3.5" /> How it looks on your website
+                              </p>
+                              <div className="rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                                <div className="flex items-center gap-2 bg-gray-100 px-3 py-2 border-b border-gray-200">
+                                  <span className="flex gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-400" /><span className="w-2.5 h-2.5 rounded-full bg-yellow-400" /><span className="w-2.5 h-2.5 rounded-full bg-green-400" /></span>
+                                  <div className="flex-1 text-center min-w-0"><span className="inline-block text-[11px] text-gray-500 bg-white rounded-md px-3 py-0.5 max-w-full truncate">{host} · Blog</span></div>
+                                </div>
+                                <div className="bg-white p-4">
+                                  <h4 className="text-sm font-bold text-gray-900">Latest from Our Blog</h4>
+                                  <p className="text-[11px] text-gray-400 mb-3">Expert insights, tips and industry updates</p>
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    {live.map(b => (
+                                      <div key={b.id} className="rounded-lg border border-gray-100 overflow-hidden">
+                                        <img src={b.featuredImage || ''} alt="" className="w-full h-20 object-cover" />
+                                        <div className="p-2">
+                                          {b.category && <span className="text-[9px] font-bold text-purple-600 uppercase">{b.category}</span>}
+                                          <p className="text-[11px] font-semibold text-gray-900 line-clamp-2 mt-0.5">{b.title}</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
                         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                           <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2 min-w-0">
                             <FileText className="w-4 h-4 text-purple-600 flex-shrink-0" /> <span className="break-all">Blogs for {w.name || w.url}</span>
