@@ -141,24 +141,42 @@ function parseHTML(html: string, baseUrl: string): ScrapedData {
   };
 }
 
-// Fetch and scrape a single page
-async function scrapePage(url: string): Promise<ScrapedData | null> {
+// Browser-like headers: many hosts/WAFs soft-block obvious bot user-agents,
+// so we present as a normal browser to keep scraping reliable.
+const BROWSER_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Cache-Control': 'no-cache',
+};
+
+// One fetch attempt. Returns the HTML if the response carries a real document,
+// even on a soft error code (some hosts return 403/503 alongside a full page).
+async function fetchHtml(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; AINOS-Blog-Agent/1.0)',
-        'Accept': 'text/html,application/xhtml+xml',
-      },
-      signal: AbortSignal.timeout(15000),
+      headers: BROWSER_HEADERS,
+      redirect: 'follow',
+      signal: AbortSignal.timeout(20000),
     });
-
-    if (!res.ok) return null;
-
     const html = await res.text();
-    return parseHTML(html, url);
+    if (html && html.length > 300 && /<(?:!doctype|html|body|head)/i.test(html)) return html;
+    if (res.ok && html) return html;
+    return null;
   } catch {
     return null;
   }
+}
+
+// Fetch and scrape a single page, retrying transient failures (Render's outbound
+// can hiccup or a host can be briefly slow) with a short backoff.
+async function scrapePage(url: string, attempts = 3): Promise<ScrapedData | null> {
+  for (let i = 0; i < attempts; i++) {
+    const html = await fetchHtml(url);
+    if (html) return parseHTML(html, url);
+    if (i < attempts - 1) await new Promise(r => setTimeout(r, 700 * (i + 1)));
+  }
+  return null;
 }
 
 // Crawl inner pages for deeper context
@@ -170,7 +188,7 @@ async function crawlInnerPages(baseUrl: string, links: string[]): Promise<string
   for (const path of pagesToCrawl) {
     if (results.length >= 3) break;
     const url = `${baseUrl.replace(/\/$/, '')}${path}`;
-    const data = await scrapePage(url);
+    const data = await scrapePage(url, 1);
     if (data && data.rawText.length > 200) {
       results.push(data.rawText.substring(0, 2000));
     }
@@ -183,7 +201,7 @@ async function crawlInnerPages(baseUrl: string, links: string[]): Promise<string
       const href = link.split(': ').pop();
       if (!href) continue;
       const fullUrl = href.startsWith('http') ? href : `${baseUrl.replace(/\/$/, '')}${href}`;
-      const data = await scrapePage(fullUrl);
+      const data = await scrapePage(fullUrl, 1);
       if (data && data.rawText.length > 200) {
         results.push(data.rawText.substring(0, 2000));
       }
@@ -310,49 +328,91 @@ Rules:
       detectedNiche = scrapedData.metaKeywords[0] || name.split('|')[0].trim() || desc.split(' ').slice(0, 3).join(' ') || 'Business';
     }
 
-    const n = detectedNiche;
-    // 30 unique, varied topic templates - all dynamic based on detected niche
-    // Templates are business-focused and work for specific niches
-    const topicTemplates = [
-      `The Complete Guide to ${n} in 2026: What Every Business Owner Should Know`,
-      `Top 10 ${n} Trends That Will Define the Industry This Year`,
-      `How to Choose the Right ${n} Provider: A Step-by-Step Buyer's Guide`,
-      `${n} Mistakes That Cost Businesses Thousands (And How to Avoid Them)`,
-      `The Ultimate ${n} Checklist for Professionals and Beginners`,
-      `How ${n} is Evolving: Expert Predictions for the Next 5 Years`,
-      `From Beginner to Expert: Your Complete ${n} Learning Roadmap`,
-      `15 Expert Tips to Get the Most Out of Your ${n} Investment`,
-      `${n} vs Alternatives: An Honest Comparison for Smart Buyers`,
-      `The Hidden Costs of ${n} Nobody Warns You About`,
-      `How to Build a Winning ${n} Strategy for Your Business`,
-      `${n} for Small Businesses: A Practical Getting-Started Guide`,
-      `What Research Says About ${n}: Data-Backed Insights`,
-      `Case Study: How One Business Transformed Results with ${n}`,
-      `Best ${n} Tools and Solutions Worth Using in 2026`,
-      `The Real ROI of ${n}: Is the Investment Worth It?`,
-      `Common ${n} Myths Debunked with Real-World Evidence`,
-      `How to Stay Ahead of Competitors in the ${n} Space`,
-      `${n} Best Practices: Lessons from Industry Leaders`,
-      `A Day in the Life: What Working with ${n} Actually Looks Like`,
-      `The Future of ${n}: Technology, Trends, and What's Next`,
-      `How to Measure Success in ${n}: KPIs That Actually Matter`,
-      `${n} on a Budget: Smart Strategies That Don't Compromise Quality`,
-      `The Complete ${n} Glossary: Terms Every Client Should Know`,
-      `How ${n} Directly Impacts Customer Experience and Loyalty`,
-      `${n} Regulations and Compliance: What You Must Know`,
-      `From Zero to Results: Building Your First ${n} Plan`,
-      `The Psychology Behind Smart ${n} Decisions`,
-      `${n} Trends by Region: A Practical Global Perspective`,
-      `Your 30-Day ${n} Action Plan for Meaningful Results`,
-    ];
-
     return {
       niche: detectedNiche,
       brandVoice: 'Professional and informative',
       competitors: [],
-      topics: topicTemplates,
+      topics: buildFallbackTopics(detectedNiche),
     };
   }
+}
+
+// 30 unique, varied topic templates - all dynamic based on the niche. Used
+// whenever we cannot get tailored topics from the site itself.
+function buildFallbackTopics(n: string): string[] {
+  return [
+    `The Complete Guide to ${n} in 2026: What Every Business Owner Should Know`,
+    `Top 10 ${n} Trends That Will Define the Industry This Year`,
+    `How to Choose the Right ${n} Provider: A Step-by-Step Buyer's Guide`,
+    `${n} Mistakes That Cost Businesses Thousands (And How to Avoid Them)`,
+    `The Ultimate ${n} Checklist for Professionals and Beginners`,
+    `How ${n} is Evolving: Expert Predictions for the Next 5 Years`,
+    `From Beginner to Expert: Your Complete ${n} Learning Roadmap`,
+    `15 Expert Tips to Get the Most Out of Your ${n} Investment`,
+    `${n} vs Alternatives: An Honest Comparison for Smart Buyers`,
+    `The Hidden Costs of ${n} Nobody Warns You About`,
+    `How to Build a Winning ${n} Strategy for Your Business`,
+    `${n} for Small Businesses: A Practical Getting-Started Guide`,
+    `What Research Says About ${n}: Data-Backed Insights`,
+    `Case Study: How One Business Transformed Results with ${n}`,
+    `Best ${n} Tools and Solutions Worth Using in 2026`,
+    `The Real ROI of ${n}: Is the Investment Worth It?`,
+    `Common ${n} Myths Debunked with Real-World Evidence`,
+    `How to Stay Ahead of Competitors in the ${n} Space`,
+    `${n} Best Practices: Lessons from Industry Leaders`,
+    `A Day in the Life: What Working with ${n} Actually Looks Like`,
+    `The Future of ${n}: Technology, Trends, and What's Next`,
+    `How to Measure Success in ${n}: KPIs That Actually Matter`,
+    `${n} on a Budget: Smart Strategies That Don't Compromise Quality`,
+    `The Complete ${n} Glossary: Terms Every Client Should Know`,
+    `How ${n} Directly Impacts Customer Experience and Loyalty`,
+    `${n} Regulations and Compliance: What You Must Know`,
+    `From Zero to Results: Building Your First ${n} Plan`,
+    `The Psychology Behind Smart ${n} Decisions`,
+    `${n} Trends by Region: A Practical Global Perspective`,
+    `Your 30-Day ${n} Action Plan for Meaningful Results`,
+  ];
+}
+
+// Best-effort business name from a URL when the site cannot be read.
+function nameFromDomain(url: string): string {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, '');
+    const base = host.split('.')[0] || host;
+    return base.charAt(0).toUpperCase() + base.slice(1);
+  } catch {
+    return url;
+  }
+}
+
+// When the site is blocked/unreachable from our server, infer a profile from the
+// domain so the user can still connect and get blogs instead of a dead-end error.
+async function analyzeFromDomain(name: string, url: string): Promise<{
+  niche: string; brandVoice: string; competitors: string[]; topics: string[];
+}> {
+  const systemPrompt = `You are an expert SEO strategist. A website could not be read automatically, so infer the most likely business from its name and domain. Return ONLY valid JSON: {"niche": "specific 2-5 word industry, or 'Business' if unsure", "brandVoice": "1 sentence", "competitors": [], "topics": ["30 professional, broadly useful blog topics"]}. Do not invent specific facts you are unsure about.`;
+  try {
+    const text = await generateAIText(systemPrompt, `Business name: ${name}\nDomain: ${url}`, { json: true });
+    let result: { niche?: string; brandVoice?: string; competitors?: unknown; topics?: unknown } | null = null;
+    try { result = JSON.parse(text); }
+    catch { const m = text.match(/\{[\s\S]*\}/); result = m ? JSON.parse(m[0]) : null; }
+    if (result && Array.isArray(result.topics) && result.topics.length >= 5) {
+      return {
+        niche: result.niche || 'Business',
+        brandVoice: result.brandVoice || 'Professional and informative',
+        competitors: Array.isArray(result.competitors) ? (result.competitors as string[]) : [],
+        topics: (result.topics as string[]).slice(0, 30),
+      };
+    }
+  } catch (error) {
+    console.error('Domain analysis fallback error:', error);
+  }
+  return {
+    niche: 'Business',
+    brandVoice: 'Professional and informative',
+    competitors: [],
+    topics: buildFallbackTopics(name || 'Business'),
+  };
 }
 
 // Main export: Connect and analyze a website
@@ -368,10 +428,31 @@ export async function connectAndAnalyzeWebsite(url: string): Promise<{
   // Normalize URL
   const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
 
-  // Scrape homepage
-  const scrapedData = await scrapePage(normalizedUrl);
+  // Scrape homepage (with retries). If the bare host fails, try the www /
+  // non-www variant — some sites only serve one form to server-side clients.
+  let scrapedData = await scrapePage(normalizedUrl, 3);
   if (!scrapedData) {
-    throw new Error('Could not access website. Please check the URL and ensure the site is publicly accessible.');
+    try {
+      const parsed = new URL(normalizedUrl);
+      const altUrl = parsed.hostname.startsWith('www.')
+        ? `${parsed.protocol}//${parsed.hostname.slice(4)}${parsed.pathname}${parsed.search}`
+        : `${parsed.protocol}//www.${parsed.hostname}${parsed.pathname}${parsed.search}`;
+      scrapedData = await scrapePage(altUrl, 2);
+    } catch { /* malformed URL — skip variant attempt */ }
+  }
+  if (!scrapedData) {
+    // The site could not be read from our server (blocked or temporarily
+    // unreachable). Never dead-end the user — connect with a best-effort,
+    // domain-derived profile so blogs still generate instead of a hard error.
+    const name = nameFromDomain(normalizedUrl);
+    const fallback: ScrapedData = {
+      url: normalizedUrl, name, description: '', techStack: 'other', headings: [],
+      metaKeywords: [], pageLinks: [], openGraph: {}, jsonLd: [], rawText: '',
+      titleRaw: name, h1Count: 0, imgTotal: 0, imgMissingAlt: 0, hasViewport: false,
+      hasCanonical: false, hasFavicon: false, hasTwitterCard: false, wordCount: 0,
+    };
+    const analysis = await analyzeFromDomain(name, normalizedUrl);
+    return { scrapedData: fallback, analysis };
   }
 
   // Crawl inner pages
