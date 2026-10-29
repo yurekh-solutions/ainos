@@ -280,6 +280,12 @@ async function testEwayBill() {
   const dbInv = await prisma.invoice.findUnique({ where: { id: invoiceId }, select: { ewayBillNo: true, ewayBillValid: true } });
   ok('invoice.ewayBillNo stored from generation', dbInv?.ewayBillNo === gen.data?.ewbNo && !!dbInv?.ewayBillValid, dbInv?.ewayBillNo);
 
+  // UI "sample" demo sends persist:false — must return a number WITHOUT writing the invoice.
+  await api('PUT', '/api/delivery-challans/ewaybill', { challanId, ewbNo: '111122223333' });
+  const smp = await api('POST', '/api/delivery-challans/ewaybill', { challanId, distance: 100, persist: false });
+  const dbSmp = await prisma.invoice.findUnique({ where: { id: invoiceId }, select: { ewayBillNo: true } });
+  ok('sample persist:false does not write the invoice', smp.status === 201 && smp.data?.persistedInvoiceId === null && dbSmp?.ewayBillNo === '111122223333', `${smp.status} persisted=${smp.data?.persistedInvoiceId} inv=${dbSmp?.ewayBillNo}`);
+
   // Manual-assist (FREE portal) path: PUT records a real 12-digit EWB onto the linked invoice.
   const rec = await api('PUT', '/api/delivery-challans/ewaybill', { challanId, ewbNo: '334455667788', validTill: '2026-12-31T23:59:59.000Z' });
   ok('manual record: PUT stores real EWB (200)', rec.status === 200 && rec.data?.recorded === true && rec.data?.persistedInvoiceId === invoiceId, `${rec.status} ${rec.data?.error || ''}`);

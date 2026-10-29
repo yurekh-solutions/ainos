@@ -87,8 +87,10 @@ export async function POST(req: NextRequest) {
     const result = await getEwbAdapter().generate(ewbReq, { distance, hazardous });
 
     // Persist onto the linked invoice when present (ewayBill columns live there).
+    // body.persist === false is used by the UI "sample" demo so a mock number is
+    // never written to a real invoice's compliance field.
     let persistedInvoiceId: string | null = null;
-    if (challan.invoiceId) {
+    if (challan.invoiceId && body.persist !== false) {
       const invoice = await prisma.invoice.findFirst({ where: { id: challan.invoiceId, companyId: user.companyId } });
       if (invoice) {
         await prisma.invoice.update({

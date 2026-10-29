@@ -223,11 +223,14 @@ export const mockAdapter: EwbAdapter = {
   async generate(req, opts) {
     const days = computeValidityDays(opts.distance, { hazardous: opts.hazardous });
     const till = computeValidityTill(new Date(req.partA.validFrom), days);
-    // Stable 12-digit pseudo EWB from the document number + date.
-    const base = `${req.partA.otherDocumentNumber}${req.partA.toState}${days}`;
+    // Dynamic 12-digit pseudo EWB seeded from doc no + consignee state + date.
+    const base = `${req.partA.otherDocumentNumber}${req.partA.toState}${req.partA.validFrom.slice(0, 10)}${days}`;
     let h = 0; for (const ch of base) h = (h * 131 + ch.charCodeAt(0)) % 1_000_000_000_000;
     const ewbNo = String(h).padStart(12, '0').slice(0, 12);
-    return { provider: 'mock', ewbNo, validityTill: till.toISOString(), status: 'mock', qrCode: `EWB#${ewbNo}` };
+    // Realistic-looking QR payload (NICeW encodes a semicolon-separated string).
+    const qrPayload = `01;${ewbNo};IN;${req.partA.fromState};${req.partA.toState};${req.partA.otherDocumentNumber};${req.partA.totalValue}`;
+    const qr = Buffer.from(qrPayload).toString('base64').replace(/=+$/, '').slice(0, 40);
+    return { provider: 'mock', ewbNo, validityTill: till.toISOString(), status: 'mock', qrCode: qr };
   },
 };
 
