@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Plus, Truck, Package, Search, X } from 'lucide-react';
+import { Plus, Truck, Package, Search, X, Eye, Wand2, AlertTriangle, CheckCircle2, Route, Loader2 } from 'lucide-react';
 import { useToast } from '@/lib/toast';
 
 interface Challan {
@@ -272,7 +272,207 @@ export default function ChallansPage() {
           )}
         </div>
 
+        {challans.length > 0 && <EwayBillPanel challans={challans} />}
+
       </div>
+    </div>
+  );
+}
+
+// ── E-Way Bill panel ─────────────────────────────────────────────────────────
+interface EwbPreview {
+  challan: { id: string; number: string; customerName: string; goodsValue: number; invoiceId: string | null };
+  requiresEwb: boolean; threshold: number; ready: boolean; errors: string[];
+  payload: { partA: { fromState: string; toState: string; itemDetails: unknown[] }; partB: Record<string, unknown> };
+}
+interface EwbResult {
+  provider: string; ewbNo: string; validityDays: number; validityTill: string;
+  qrCode?: string; warnings: string[]; persistedInvoiceId: string | null;
+}
+
+const MODES = [{ v: '1', l: 'Road' }, { v: '2', l: 'Rail' }, { v: '3', l: 'Air' }, { v: '4', l: 'Ship' }];
+
+function EwayBillPanel({ challans }: { challans: Challan[] }) {
+  const [challanId, setChallanId] = useState('');
+  const activeChallanId = challanId || challans[0]?.id || '';
+  const [distance, setDistance] = useState('');
+  const [transportMode, setTransportMode] = useState('1');
+  const [fromPin, setFromPin] = useState('');
+  const [toPin, setToPin] = useState('');
+  const [hazardous, setHazardous] = useState(false);
+  const [preview, setPreview] = useState<EwbPreview | null>(null);
+  const [result, setResult] = useState<EwbResult | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState('');
+
+  const clearOutputs = () => { setPreview(null); setResult(null); setError(''); };
+
+  const doPreview = async () => {
+    if (!activeChallanId) return;
+    clearOutputs(); setLoadingPreview(true);
+    try {
+      const res = await fetch(`/api/delivery-challans/ewaybill?challanId=${activeChallanId}`);
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Could not build preview'); return; }
+      setPreview(data);
+    } catch { setError('Preview request failed'); }
+    finally { setLoadingPreview(false); }
+  };
+
+  const doGenerate = async () => {
+    if (!activeChallanId) return;
+    clearOutputs(); setGenerating(true);
+    try {
+      const res = await fetch('/api/delivery-challans/ewaybill', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          challanId: activeChallanId, transportMode,
+          distance: distance ? Number(distance) : undefined,
+          fromPinCode: fromPin || undefined, toPinCode: toPin || undefined, hazardous,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const list: string[] = Array.isArray(data.errors) ? data.errors : [data.error || 'Generation failed'];
+        setError(list.join(' · '));
+        return;
+      }
+      setResult(data);
+    } catch { setError('Generation request failed'); }
+    finally { setGenerating(false); }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-2xl p-6">
+      <div className="flex items-center gap-2 mb-1">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.1)' }}>
+          <Route className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
+        </div>
+        <h3 className="font-semibold text-lg" style={{ color: 'hsl(var(--foreground))' }}>Generate E-Way Bill</h3>
+      </div>
+      <p className="text-sm mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>
+        Raise an E-Way Bill for a challan&apos;s goods movement. Required when the consignment value exceeds
+        ₹{(preview?.threshold ?? 50000).toLocaleString('en-IN')} (excluding GST).
+      </p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+        <div className="sm:col-span-2 lg:col-span-1">
+          <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Challan *</label>
+          <select value={activeChallanId} onChange={e => { setChallanId(e.target.value); clearOutputs(); }}
+            className="glass-input rounded-xl px-4 py-2.5 text-sm w-full">
+            {challans.map(c => <option key={c.id} value={c.id}>{c.challanNumber} · {c.customerName}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Transport Mode</label>
+          <select value={transportMode} onChange={e => setTransportMode(e.target.value)} className="glass-input rounded-xl px-4 py-2.5 text-sm w-full">
+            {MODES.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Distance (km)</label>
+          <input type="number" min="1" value={distance} onChange={e => setDistance(e.target.value)}
+            className="glass-input rounded-xl px-4 py-2.5 text-sm w-full" placeholder="e.g. 250" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>From Pincode</label>
+          <input type="text" inputMode="numeric" maxLength={6} value={fromPin} onChange={e => setFromPin(e.target.value.replace(/\D/g, ''))}
+            className="glass-input rounded-xl px-4 py-2.5 text-sm w-full" placeholder="400001" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>To Pincode</label>
+          <input type="text" inputMode="numeric" maxLength={6} value={toPin} onChange={e => setToPin(e.target.value.replace(/\D/g, ''))}
+            className="glass-input rounded-xl px-4 py-2.5 text-sm w-full" placeholder="110001" />
+        </div>
+        <label className="flex items-center gap-2 self-end pb-2.5 cursor-pointer select-none">
+          <input type="checkbox" checked={hazardous} onChange={e => setHazardous(e.target.checked)} className="w-4 h-4 accent-[hsl(var(--primary))]" />
+          <span className="text-sm" style={{ color: 'hsl(var(--foreground))' }}>Hazardous goods</span>
+        </label>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <button onClick={doPreview} disabled={loadingPreview || generating}
+          className="btn-secondary rounded-xl px-4 py-2.5 text-sm font-medium flex items-center gap-2">
+          {loadingPreview ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />} Preview
+        </button>
+        <button onClick={doGenerate} disabled={generating || loadingPreview}
+          className="btn-primary rounded-xl px-4 py-2.5 text-sm font-medium flex items-center gap-2">
+          {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} Generate E-Way Bill
+        </button>
+      </div>
+
+      {error && (
+        <div className="flex items-start gap-2 text-sm rounded-xl p-3 mb-3 bg-red-500/10 border border-red-500/30">
+          <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+          <span style={{ color: 'hsl(var(--foreground))' }}>{error}</span>
+        </div>
+      )}
+
+      {preview && (
+        <div className="rounded-xl p-4 mb-3 space-y-2" style={{ background: 'hsl(var(--secondary))' }}>
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{preview.challan.number}</span>
+            <span style={{ color: 'hsl(var(--muted-foreground))' }}>· value ₹{preview.challan.goodsValue.toLocaleString('en-IN')}</span>
+            {preview.requiresEwb
+              ? <Badge tone="amber">EWB required</Badge>
+              : <Badge tone="gray">Below ₹{preview.threshold.toLocaleString('en-IN')} · optional</Badge>}
+            {preview.ready
+              ? <Badge tone="emerald">Ready to generate</Badge>
+              : <Badge tone="red">Needs fixing</Badge>}
+          </div>
+          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+            Route: state {preview.payload.partA.fromState || '—'} → {preview.payload.partA.toState || '—'} · {preview.payload.partA.itemDetails.length} item(s)
+          </p>
+          {preview.errors.length > 0 && (
+            <ul className="text-xs space-y-0.5">
+              {preview.errors.map((e, i) => <li key={i} style={{ color: 'hsl(var(--muted-foreground))' }}>• {e}</li>)}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {result && (
+        <div className="rounded-xl p-4 space-y-3 border" style={{ borderColor: 'hsl(var(--primary) / 0.3)', background: 'hsl(var(--primary) / 0.05)' }}>
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            <span className="font-semibold" style={{ color: 'hsl(var(--foreground))' }}>E-Way Bill generated</span>
+            <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-gray-500/20 text-gray-600 border border-gray-500/30">{result.provider}</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <EwbStat label="EWB Number" value={result.ewbNo} />
+            <EwbStat label="Valid Till" value={new Date(result.validityTill).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })} />
+            <EwbStat label="Validity" value={`${result.validityDays} day(s)`} />
+          </div>
+          {result.persistedInvoiceId
+            ? <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Stored on the linked invoice (E-Way Bill no, date & validity).</p>
+            : <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>No linked invoice — result shown here only.</p>}
+          {result.warnings.length > 0 && (
+            <ul className="text-xs space-y-0.5">
+              {result.warnings.map((w, i) => <li key={i} style={{ color: 'hsl(var(--muted-foreground))' }}>• {w}</li>)}
+            </ul>
+          )}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+function Badge({ tone, children }: { tone: 'emerald' | 'red' | 'amber' | 'gray'; children: React.ReactNode }) {
+  const cls: Record<string, string> = {
+    emerald: 'bg-emerald-500/20 text-emerald-600 border-emerald-500/30',
+    red: 'bg-red-500/20 text-red-600 border-red-500/30',
+    amber: 'bg-amber-500/20 text-amber-600 border-amber-500/30',
+    gray: 'bg-gray-500/20 text-gray-600 border-gray-500/30',
+  };
+  return <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${cls[tone]}`}>{children}</span>;
+}
+
+function EwbStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="p-3 rounded-xl" style={{ background: 'hsl(var(--card-bg))' }}>
+      <p className="text-xs mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{label}</p>
+      <p className="text-base font-bold" style={{ color: 'hsl(var(--foreground))' }}>{value}</p>
     </div>
   );
 }
