@@ -248,7 +248,7 @@ async function testBankReconcile() {
 }
 
 async function testEwayBill() {
-  console.log('\n=== E-WAY BILL (mock): build from challan, validate, generate, persist ===');
+  console.log('\n=== E-WAY BILL (mock + manual record): build, validate, generate, persist ===');
   // Link target invoice (eway columns live on invoice)
   const inv = await api('POST', '/api/invoices', {
     customerName: 'Move Co', customerEmail: 'mv@t.com', customerGst: '07ABCDE1234F1Z5', supplyType: 'inter', status: 'sent',
@@ -279,6 +279,14 @@ async function testEwayBill() {
 
   const dbInv = await prisma.invoice.findUnique({ where: { id: invoiceId }, select: { ewayBillNo: true, ewayBillValid: true } });
   ok('invoice.ewayBillNo stored from generation', dbInv?.ewayBillNo === gen.data?.ewbNo && !!dbInv?.ewayBillValid, dbInv?.ewayBillNo);
+
+  // Manual-assist (FREE portal) path: PUT records a real 12-digit EWB onto the linked invoice.
+  const rec = await api('PUT', '/api/delivery-challans/ewaybill', { challanId, ewbNo: '334455667788', validTill: '2026-12-31T23:59:59.000Z' });
+  ok('manual record: PUT stores real EWB (200)', rec.status === 200 && rec.data?.recorded === true && rec.data?.persistedInvoiceId === invoiceId, `${rec.status} ${rec.data?.error || ''}`);
+  const dbInv2 = await prisma.invoice.findUnique({ where: { id: invoiceId }, select: { ewayBillNo: true, ewayBillValid: true } });
+  ok('manual record: invoice.ewayBillNo updated to real number', dbInv2?.ewayBillNo === '334455667788', dbInv2?.ewayBillNo);
+  const badRec = await api('PUT', '/api/delivery-challans/ewaybill', { challanId, ewbNo: '12' });
+  ok('manual record: rejects non-12-digit EWB (400)', badRec.status === 400 && /12 digits/i.test(badRec.data?.error || ''), `${badRec.status} ${badRec.data?.error}`);
 
   // Negative: consignee has no GSTIN/state -> hard validation error, no generation
   const bad = await api('POST', '/api/delivery-challans', {

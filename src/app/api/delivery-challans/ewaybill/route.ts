@@ -121,3 +121,64 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }
+
+/**
+ * PUT { challanId, ewbNo, validTill?, vehicleNo?, transportDocNo? }
+ * — records a REAL E-Way Bill number that the user generated on the free
+ * NICeW portal (ewaybill gst.gov.in). No gateway call, no cost. Persists onto
+ * the linked Invoice's ewayBill columns (no DB migration needed).
+ */
+export async function PUT(req: NextRequest) {
+  try {
+    const user = await resolveUser(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const body = await req.json();
+    const challanId = String(body.challanId || '');
+    const ewbNo = String(body.ewbNo || '').replace(/\s/g, '');
+    if (!challanId) return NextResponse.json({ error: 'challanId required' }, { status: 400 });
+    if (!/^\d{12}$/.test(ewbNo)) {
+      return NextResponse.json({ error: 'E-Way Bill number must be exactly 12 digits' }, { status: 400 });
+    }
+
+    const challan = await prisma.deliveryChallan.findFirst({ where: { id: challanId, companyId: user.companyId } });
+    if (!challan) return NextResponse.json({ error: 'Challan not found' }, { status: 404 });
+
+    const validTill = body.validTill ? new Date(body.validTill) : null;
+    if (validTill && isNaN(validTill.getTime())) {
+      return NextResponse.json({ error: 'Invalid valid-till date' }, { status: 400 });
+    }
+
+    // Persist onto the linked invoice (eway columns live there). No invoice => record-only.
+    let persistedInvoiceId: string | null = null;
+    if (challan.invoiceId) {
+      const invoice = await prisma.invoice.findFirst({ where: { id: challan.invoiceId, companyId: user.companyId } });
+      if (invoice) {
+        await prisma.invoice.update({
+          where: { id: invoice.id },
+          data: {
+            ewayBillNo: ewbNo,
+            ewayBillDate: new Date(),
+            ...(validTill ? { ewayBillValid: validTill } : {}),
+            ...(body.vehicleNo ? { vehicleNo: String(body.vehicleNo).toUpperCase() } : {}),
+            ...(body.transportDocNo ? { transportDocNo: String(body.transportDocNo) } : {}),
+          },
+        });
+        persistedInvoiceId = invoice.id;
+      }
+    }
+
+    return NextResponse.json({
+      recorded: true,
+      ewbNo,
+      validTill: validTill ? validTill.toISOString() : null,
+      persistedInvoiceId,
+      message: persistedInvoiceId
+        ? 'E-Way Bill stored on the linked invoice.'
+        : 'Recorded, but no linked invoice to store it on — link an invoice to persist.',
+    });
+  } catch (error) {
+    console.error('EWB record error:', error);
+    return NextResponse.json({ error: 'Failed to record E-Way Bill' }, { status: 500 });
+  }
+}
