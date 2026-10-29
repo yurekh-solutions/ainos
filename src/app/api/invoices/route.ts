@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import {
+  stateCodeFromGstin, resolveSupplyType, computeGstSplit, computeTds, computeTcs1H,
+  UT_STATE_CODES, type SupplyType,
+} from '@/lib/finance/gst';
 
 export async function GET(req: NextRequest) {
   try {
@@ -98,8 +102,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Determine supply type and GST split
-    const supplyType = body.supplyType || 'intra'; // 'intra' or 'inter'
+    // Company context drives interstate detection and default currency
+    const company = await prisma.company.findUnique({
+      where: { id: user.companyId },
+      select: { gstNumber: true, state: true, currency: true },
+    });
     const billingType = body.billingType || 'gst'; // 'gst', 'non-gst', 'mrp'
 
     // Process items with per-item GST rates
@@ -136,17 +143,18 @@ export async function POST(req: NextRequest) {
     const profitAmount = items.reduce((sum: number, item: Record<string, unknown>) =>
       sum + Number(item.profit), 0);
 
-    // GST split calculation
-    let cgstAmount = 0;
-    let sgstAmount = 0;
-    let igstAmount = 0;
+    // Interstate detection: seller state code (from GSTIN) vs place of supply.
+    const sellerStateCode = stateCodeFromGstin(company?.gstNumber);
+    const placeOfSupplyCode = body.placeOfSupply || stateCodeFromGstin(body.customerGst) || null;
+    const supplyType: SupplyType = (body.supplyType as SupplyType)
+      || resolveSupplyType(sellerStateCode, placeOfSupplyCode);
+    const isUt = supplyType === 'intra' && !!sellerStateCode && UT_STATE_CODES.has(sellerStateCode);
 
-    if (supplyType === 'intra') {
-      cgstAmount = taxTotal / 2;
-      sgstAmount = taxTotal / 2;
-    } else {
-      igstAmount = taxTotal;
-    }
+    const split = computeGstSplit(taxTotal, 100, { supplyType, sellerStateCode, ut: isUt });
+    const cgstAmount = split.cgst;
+    const sgstAmount = split.sgst;
+    const igstAmount = split.igst;
+    const utgstAmount = split.utgst;
 
     // Discount calculation
     const discountAmount = Number(body.discountAmount ?? 0);
@@ -156,6 +164,16 @@ export async function POST(req: NextRequest) {
       : discountAmount;
 
     const totalAmount = subtotal + taxTotal - actualDiscount;
+
+    // Currency snapshot + optional TDS / TCS (section-driven)
+    const currency = body.currency || company?.currency || 'INR';
+    const currencyRate = body.currencyRate ? Number(body.currencyRate) : (currency === 'INR' ? 1 : null);
+    const tdsSection = body.tdsSection || null;
+    const tdsAmount = tdsSection ? computeTds(subtotal, tdsSection, body.tdsRate != null ? Number(body.tdsRate) : null) : 0;
+    const tcsSection = body.tcsSection || null;
+    const tcsAmount = tcsSection
+      ? computeTcs1H(totalAmount, Number(body.priorBuyerReceipts ?? 0), { sellerEligible: !!body.tcsSellerEligible, rate: body.tcsRate != null ? Number(body.tcsRate) : undefined })
+      : 0;
 
     // Payment tracking
     const payments = body.payments || null;
@@ -193,6 +211,16 @@ export async function POST(req: NextRequest) {
         cgstAmount,
         sgstAmount,
         igstAmount,
+        utgstAmount,
+        // Compliance add-ons
+        currency,
+        currencyRate,
+        tdsSection,
+        tdsAmount,
+        tcsSection,
+        tcsAmount,
+        isExport: body.isExport ? true : null,
+        isSez: body.isSez ? true : null,
         billingType,
         supplyType,
         discountAmount: actualDiscount,

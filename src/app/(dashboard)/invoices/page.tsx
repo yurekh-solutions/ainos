@@ -894,6 +894,20 @@ export default function InvoicesPage() {
   const totalProfit = invoices.reduce((s, i) => s + (i.profitAmount || 0), 0);
 
   // Row actions are shared by the desktop table and the mobile cards.
+  const exportBulkPdf = async () => {
+    const ids = filteredInvoices.map(i => i.id).filter(Boolean);
+    if (!ids.length) return;
+    const res = await fetch('/api/invoices/bulk-pdf', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }),
+    });
+    if (res.ok) {
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `ainos-invoices-${ids.length}.pdf`;
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+  };
+
   const renderActions = (invoice: Invoice) => (
     <div className="flex items-center gap-1">
       {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
@@ -981,6 +995,17 @@ export default function InvoicesPage() {
               <Upload className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:-translate-y-1" />
               <span>Upload Template</span>
             </button>
+            {company?.name && filteredInvoices.length > 0 && (
+              <button
+                onClick={exportBulkPdf}
+                className="group inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl text-sm font-medium transition-all border-2 hover:opacity-80"
+                style={{ borderColor: 'hsl(var(--primary))', color: 'hsl(var(--primary))', background: 'transparent' }}
+                title="Download all filtered invoices as one PDF"
+              >
+                <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span>Bulk PDF</span>
+              </button>
+            )}
             {company?.name ? (
               <Link
                 href="/invoices/new"

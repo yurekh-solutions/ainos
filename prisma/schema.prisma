@@ -18,6 +18,9 @@ model Company {
   phone              String?
   website            String?
   country            String?
+  state              String?
+  currency           String?             @default("INR")
+  gstinStateCode     String?             @map("gstin_state_code")
   companyType        String?             @map("company_type")
   uploadedDocs       Json?               @map("uploaded_docs")
   docsVerified       Boolean             @default(false) @map("docs_verified")
@@ -107,6 +110,8 @@ model Company {
   recurringInvoices  RecurringInvoice[]
   bankAccounts       BankAccount[]
   bankTransactions   BankTransaction[]
+  gstFilings         GstFiling[]
+  gstReconImports    GstReconImport[]
   onboardingAudits   OnboardingAudit[]
   onlineStores       OnlineStore[]
   ecomCategories     EcomCategory[]
@@ -355,6 +360,17 @@ model Invoice {
   discountAmount    Float?    @map("discount_amount")
   discountType      String?   @map("discount_type")
   profitAmount      Float?    @map("profit_amount")
+  // GST compliance add-ons
+  utgstAmount       Float?    @map("utgst_amount")
+  currency          String?   @default("INR")
+  currencyRate      Float?    @map("currency_rate")
+  tdsAmount         Float?    @default(0) @map("tds_amount")
+  tdsSection        String?   @map("tds_section")
+  tcsAmount         Float?    @default(0) @map("tcs_amount")
+  tcsSection        String?   @map("tcs_section")
+  isExport          Boolean?  @map("is_export")
+  isSez             Boolean?  @map("is_sez")
+  hsnSummary        Json?     @map("hsn_summary")
   // E-Invoice fields
   einvoiceIrn       String?   @map("einvoice_irn")
   einvoiceQr        String?   @map("einvoice_qr")
@@ -1428,6 +1444,41 @@ model BankTransaction {
   @@index([companyId])
   @@index([date])
   @@map("bank_transactions")
+}
+
+// ═══════════════════════════════════════════
+// GST FILING TRACKER + 2B RECONCILIATION
+// ═══════════════════════════════════════════
+
+model GstFiling {
+  id        String    @id @default(uuid())
+  companyId String    @map("company_id")
+  period    String    // e.g. "2026-04" or "Q1-FY26"
+  type      String    // GSTR1 | GSTR3B
+  status    String    @default("pending") // pending | filed
+  filedAt   DateTime? @map("filed_at")
+  payload   Json?     // exported GSTN json snapshot for the period
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  company   Company   @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, period, type])
+  @@index([companyId])
+  @@map("gst_filings")
+}
+
+model GstReconImport {
+  id          String   @id @default(uuid())
+  companyId   String   @map("company_id")
+  periodStart DateTime @map("period_start")
+  periodEnd   DateTime @map("period_end")
+  rawJson     Json     @map("raw_json") // GSTR-2B portal file as downloaded
+  resultJson  Json?    @map("result_json") // cached reconciliation result
+  createdAt   DateTime @default(now()) @map("created_at")
+  company     Company  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@map("gst_recon_imports")
 }
 
 // ═══════════════════════════════════════════

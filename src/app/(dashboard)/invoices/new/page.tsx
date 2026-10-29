@@ -90,6 +90,8 @@ export default function NewInvoicePage() {
   const [discountAmount, setDiscountAmount] = useState('0');
   const [discountType, setDiscountType] = useState<'flat' | 'percent'>('flat');
   const [paymentMethod, setPaymentMethod] = useState('');
+  const [currency, setCurrency] = useState('INR');
+  const [currencyRate, setCurrencyRate] = useState('1');
   const [notes, setNotes] = useState('');
   const [dueDate, setDueDate] = useState('');
   // Items
@@ -287,6 +289,8 @@ export default function NewInvoicePage() {
           customerName, customerEmail, customerPhone, customerAddress,
           customerGst, customerState, customerPan,
           items: apiItems, supplyType, billingType,
+          currency: currency || 'INR',
+          currencyRate: currency && currency !== 'INR' ? (parseFloat(currencyRate) || 1) : 1,
           discountAmount: parseFloat(discountAmount) || 0,
           discountType, paymentMethod, notes,
           dueDate: dueDate || undefined,
@@ -542,6 +546,25 @@ export default function NewInvoicePage() {
                   <option value="bank">Bank Transfer</option>
                   <option value="credit">Credit</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Currency</label>
+                <select value={currency} onChange={e => setCurrency(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none" style={inputStyle}>
+                  <option value="INR">INR — Indian Rupee</option>
+                  <option value="USD">USD — US Dollar</option>
+                  <option value="EUR">EUR — Euro</option>
+                  <option value="GBP">GBP — British Pound</option>
+                  <option value="AED">AED — UAE Dirham</option>
+                  <option value="SGD">SGD — Singapore Dollar</option>
+                  <option value="AUD">AUD — Australian Dollar</option>
+                  <option value="CAD">CAD — Canadian Dollar</option>
+                  <option value="SAR">SAR — Saudi Riyal</option>
+                </select>
+                {currency !== 'INR' && (
+                  <input type="number" step="0.0001" value={currencyRate} onChange={e => setCurrencyRate(e.target.value)}
+                    placeholder="Rate to INR" className="mt-2 w-full px-3 py-2 rounded-xl text-sm focus:outline-none" style={inputStyle} />
+                )}
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Due Date</label>
