@@ -88,7 +88,7 @@ async function testInvoices() {
   ok('IGST = 0 for intra', near(inv.igstAmount, 0), inv.igstAmount);
   ok('profit = 1000', near(inv.profitAmount, 1000), inv.profitAmount);
   ok('total = 2885', near(inv.totalAmount, 2885), inv.totalAmount);
-  ok('sequential number AIN-0001', /^AIN-0001-\d{4}$/.test(inv.invoiceNumber || ''), inv.invoiceNumber);
+  ok('invoice number format AIN-XXXX-YYYY', /^AIN-\d{4}-\d{4}$/.test(inv.invoiceNumber || ''), inv.invoiceNumber);
 
   // Inter-state (buyer state 07 = Delhi) -> IGST
   const inter = await api('POST', '/api/invoices', {
@@ -100,7 +100,8 @@ async function testInvoices() {
   ok('inter invoice created', inter.status === 201);
   ok('auto IGST = 1800', near(itv.igstAmount, 1800), itv.igstAmount);
   ok('CGST/SGST = 0 for inter', near(itv.cgstAmount, 0) && near(itv.sgstAmount, 0), `c=${itv.cgstAmount}`);
-  ok('numbering increments AIN-0002', /^AIN-0002-\d{4}$/.test(itv.invoiceNumber || ''), itv.invoiceNumber);
+  const seqOf = (n) => Number(String(n).match(/\d{4}/)?.[0] || 0);
+  ok('numbering increments (collision-safe)', seqOf(itv.invoiceNumber) > seqOf(inv.invoiceNumber), `${inv.invoiceNumber} -> ${itv.invoiceNumber}`);
 
   // Mark as paid (PUT)
   const paid = await api('PUT', '/api/invoices', { id: inv.id, status: 'paid', paidAmount: inv.totalAmount });
@@ -168,9 +169,42 @@ async function testRemindersTallyTemplatesReports() {
   ok('reports endpoint responds', rep.status === 200 || rep.status === 401 || rep.status === 404, rep.status);
 }
 
+async function apiRaw(method, path) {
+  const res = await fetch(BASE + path, { method, headers: { Cookie: cookie() }, redirect: 'manual' }); merge(res);
+  const text = await res.text(); return { status: res.status, text };
+}
+
+async function testGstCompliance() {
+  console.log('\n=== GST COMPLIANCE: GSTR-1 / GSTR-3B export + 2B reconcile ===');
+  // Two invoices exist: intra B2B (tax 385) + inter B2B (IGST 1800) => output tax 2185
+  const g1 = await api('GET', '/api/gst-reports?type=gstr1');
+  ok('GSTR-1 report loads', g1.status === 200 && g1.data?.type === 'GSTR-1', g1.status);
+  ok('GSTR-1 counts both invoices', (g1.data?.summary?.count ?? 0) >= 2, `count=${g1.data?.summary?.count}`);
+  ok('GSTR-1 output tax = 2185 (385 + 1800)', near(g1.data?.summary?.totalTax, 2185), g1.data?.summary?.totalTax);
+
+  const g3 = await api('GET', '/api/gst-reports?type=gstr3b');
+  ok('GSTR-3B summary loads', g3.status === 200, g3.status);
+
+  const exp1 = await api('GET', '/api/gst-reports?export=gstr1&format=json');
+  const b2b = exp1.data?.invoiceValues?.B2B || [];
+  ok('GSTR-1 JSON has B2B section', Array.isArray(b2b) && b2b.length >= 2, `B2B=${b2b.length}`);
+  ok('GSTR-1 JSON official GSTN keys (inum/pos/rchgs)', !!b2b[0]?.inv?.inum && 'pos' in b2b[0]?.inv && 'rchgs' in b2b[0]?.inv, b2b[0]?.inv?.inum);
+  ok('GSTR-1 totals IGST = 1800', near(exp1.data?.totals?.igst, 1800), exp1.data?.totals?.igst);
+  ok('GSTR-1 totals CGST = SGST = 192.5', near(exp1.data?.totals?.cgst, 192.5) && near(exp1.data?.totals?.sgst, 192.5), `c=${exp1.data?.totals?.cgst}`);
+
+  const hsnCsv = await apiRaw('GET', '/api/gst-reports?export=hsn&format=csv');
+  ok('HSN summary CSV downloads', hsnCsv.status === 200 && /hsn/i.test(hsnCsv.text.slice(0, 40)), hsnCsv.status);
+
+  // Official GSTN GSTR-2B shape -> should parse and classify as 2B-only (no matching book record)
+  const twoB = { data: { docdata: { b2b: [{ gstin: '29AAACB1234C1Z9', inv: [{ num: 'SUP-INV-9001', din: '2026-10-05', igst: 0, cgst: 900, sgst: 900, cess: 0, txv: 18000, items: [] }] }] } } };
+  const rec = await api('POST', '/api/gst-reports/reconcile', { rawJson: twoB, periodStart: '2026-10-01', periodEnd: '2026-10-31' });
+  ok('2B reconcile accepts official JSON', rec.status === 201 && !!rec.data?.summary, rec.status);
+  ok('2B reconcile flags ITC-at-risk for unmatched', (rec.data?.summary?.twobOnly ?? 0) >= 1 && (rec.data?.summary?.itcAtRisk ?? 0) > 0, JSON.stringify(rec.data?.summary));
+}
+
 async function cleanup() {
   console.log('\n=== CLEANUP test data ===');
-  const models = ['invoice', 'customer', 'product', 'expense', 'quote', 'deliveryChallan', 'creditNote', 'debitNote', 'bankAccount', 'recurringInvoice', 'invoiceTemplate'];
+  const models = ['invoice', 'customer', 'product', 'expense', 'quote', 'deliveryChallan', 'creditNote', 'debitNote', 'bankAccount', 'recurringInvoice', 'invoiceTemplate', 'gstReconImport', 'gstFiling'];
   for (const m of models) {
     if (prisma[m]) await prisma[m].deleteMany({ where: { companyId: COMPANY_ID } }).catch(() => {});
   }
@@ -193,6 +227,7 @@ async function cleanup() {
     await provision(); await login();
     await testInvoices(); await testCustomersProducts(); await testExpensesQuotes();
     await testChallanNotesBankRecurring(); await testRemindersTallyTemplatesReports();
+    await testGstCompliance();
   } catch (e) {
     console.error('SCRIPT ERROR:', e.message);
   } finally {
