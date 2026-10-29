@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, TrendingUp, DollarSign, Scale } from 'lucide-react';
+import { BarChart3, TrendingUp, DollarSign, Scale, LineChart } from 'lucide-react';
 
 const inr = (n: number) => `₹${(Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -11,6 +11,7 @@ export default function FinancialReportsPage() {
   const [report, setReport] = useState<any>(null);
   const [type, setType] = useState('profit-loss');
   const [loading, setLoading] = useState(false);
+  const [forecast, setForecast] = useState<any>(null);
   const [startDate, setStartDate] = useState(() => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
 
@@ -24,6 +25,14 @@ export default function FinancialReportsPage() {
   const generate = async () => { setLoading(true); await fetchReport(); };
 
   useEffect(() => { fetchReport(); }, [type]);
+
+  // 90-day AI cash forecast loads independently of the selected report.
+  useEffect(() => {
+    fetch('/api/finance/ai/forecast')
+      .then(r => (r.ok ? r.json() : null))
+      .then(setForecast)
+      .catch(() => {});
+  }, []);
 
   const reports = [
     { id: 'profit-loss', label: 'Profit & Loss', icon: TrendingUp, color: 'text-emerald-500' },
@@ -112,8 +121,44 @@ export default function FinancialReportsPage() {
             )}
           </motion.div>
         )}
+
+        {forecast && <ForecastPanel forecast={forecast} />}
       </div>
     </div>
+  );
+}
+
+function ForecastPanel({ forecast }: { forecast: any }) {
+  const points = (forecast.points || []) as Array<{ weekStart: string; inflow: number; outflow: number; closingCash: number }>;
+  const max = Math.max(1, ...points.map(p => Math.abs(p.closingCash)));
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-2xl p-6 mt-6">
+      <div className="flex items-center gap-2 mb-1">
+        <LineChart className="w-5 h-5 text-purple-600" />
+        <h3 className="font-semibold text-lg" style={{ color: 'hsl(var(--foreground))' }}>90-Day Cash Flow Forecast</h3>
+      </div>
+      <p className="text-sm mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>
+        Projected from outstanding invoices and your average monthly spend.
+        {forecast.runwayDays !== null && <span className="text-red-600 font-medium"> Cash may go negative in ~{forecast.runwayDays} days.</span>}
+        {forecast.runwayDays === null && <span className="text-emerald-600 font-medium"> Cash stays positive through the horizon.</span>}
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+        <Stat label="Opening Cash" value={inr(forecast.startingCash)} cls="text-blue-600" />
+        <Stat label="Expected In (90d)" value={inr(forecast.expectedInflows90)} cls="text-emerald-600" />
+        <Stat label="Projected Out (90d)" value={inr(forecast.projectedOutflows90)} cls="text-red-600" />
+        <Stat label="Closing Cash" value={inr(forecast.projectedCash90)} cls={forecast.projectedCash90 >= 0 ? 'text-emerald-600' : 'text-red-600'} />
+      </div>
+      <div className="flex items-end gap-1 h-32">
+        {points.map((p, i) => (
+          <div key={i} className="flex-1 flex flex-col items-center justify-end h-full" title={`${p.weekStart}: ${inr(p.closingCash)}`}>
+            <div className={`w-full rounded-t ${p.closingCash >= 0 ? 'bg-purple-500/70' : 'bg-red-500/70'}`} style={{ height: `${Math.min(100, (Math.abs(p.closingCash) / max) * 100)}%` }} />
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-between text-[10px] mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
+        <span>Now</span><span>90 days</span>
+      </div>
+    </motion.div>
   );
 }
 

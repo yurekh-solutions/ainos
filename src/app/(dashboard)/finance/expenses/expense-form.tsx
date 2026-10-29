@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { AlertCircle, ArrowLeft, CheckCircle2, Loader2, Receipt, Save } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle2, Loader2, Receipt, Save, Sparkles } from 'lucide-react';
 
 export const EXPENSE_CATEGORIES = [
   'Travel',
@@ -70,6 +70,30 @@ export default function ExpenseForm({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [categorizing, setCategorizing] = useState(false);
+  const [aiNote, setAiNote] = useState('');
+
+  const aiCategorise = async () => {
+    const text = [form.title, form.vendor, form.description].filter(Boolean).join('\n').trim();
+    if (!text) { setError('Add a title, vendor or description first so AI can categorise.'); return; }
+    setError(''); setAiNote(''); setCategorizing(true);
+    try {
+      const res = await fetch('/api/finance/ai/categorize', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, amount: Number(form.amount) || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'AI categorise failed');
+      setForm((prev) => {
+        const base = Number(prev.amount) || 0;
+        const suggestedTax = base > 0 ? String(Math.round(base * (data.gstRate || 0))) : prev.taxAmount;
+        return { ...prev, category: data.category, taxAmount: (data.gstRate ? suggestedTax : prev.taxAmount) };
+      });
+      setAiNote(`${data.category} · ${data.gstRate}% GST — ${data.reason || 'AI suggestion'}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'AI categorise failed');
+    } finally { setCategorizing(false); }
+  };
 
   const set = <K extends keyof ExpenseFormValues>(key: K, value: ExpenseFormValues[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -225,9 +249,17 @@ export default function ExpenseForm({
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="category" className="mb-1 block text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                    Category
-                  </label>
+                  <div className="mb-1 flex items-center justify-between">
+                    <label htmlFor="category" className="block text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                      Category
+                    </label>
+                    <button type="button" onClick={aiCategorise} disabled={categorizing}
+                      className="flex items-center gap-1 text-[11px] font-medium text-purple-600 hover:text-purple-700 disabled:opacity-60">
+                      {categorizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                      AI categorise
+                    </button>
+                  </div>
+                  {aiNote && <p className="mb-1 text-[11px] text-emerald-600">{aiNote}</p>}
                   <select
                     id="category"
                     value={form.category}

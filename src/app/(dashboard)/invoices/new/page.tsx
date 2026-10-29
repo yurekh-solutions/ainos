@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Trash2, Save, FileText, Percent, Building2, Package, ChevronDown, IndianRupee, Truck, CreditCard } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, FileText, Percent, Building2, Package, ChevronDown, IndianRupee, Truck, CreditCard, ScanLine, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -99,6 +99,8 @@ export default function NewInvoicePage() {
     { id: '1', productId: '', productName: '', description: '', hsnCode: '', quantity: '1', price: '', costPrice: '', gstRate: '18' }
   ]);
   const [showDropdown, setShowDropdown] = useState<string | null>(null);
+  const ocrFileRef = useRef<HTMLInputElement>(null);
+  const [ocrLoading, setOcrLoading] = useState(false);
   // Customer search
   const [customers, setCustomers] = useState<Array<{id:string;name:string;email?:string;phone?:string;address?:string;gstNumber?:string;panNumber?:string;state?:string}>>([]);
   const [customerSearch, setCustomerSearch] = useState('');
@@ -204,6 +206,43 @@ export default function NewInvoicePage() {
       id: Date.now().toString(), productId: '', productName: '', description: '',
       hsnCode: '', quantity: '1', price: '', costPrice: '', gstRate: '18'
     }]);
+  };
+
+  // Receipt/invoice OCR: read an image, send to the AI extract endpoint and
+  // append the recognised line items (values stay editable before saving).
+  const onOcrFile = async (file: File) => {
+    setOcrLoading(true);
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error('Could not read the file'));
+        reader.readAsDataURL(file);
+      });
+      const res = await fetch('/api/finance/ai/ocr', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: dataUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'OCR failed');
+      const ocrItems: InvoiceItem[] = (data.items || []).map((it: Record<string, unknown>, idx: number) => ({
+        id: `ocr-${Date.now()}-${idx}`,
+        productId: '', productName: String(it.productName || ''), description: String(it.description || ''),
+        hsnCode: String(it.hsnCode || ''), quantity: String(it.quantity ?? 1), price: String(it.price ?? ''),
+        costPrice: '', gstRate: String(it.gstRate ?? 18),
+      }));
+      if (ocrItems.length) {
+        setItems(prev => {
+          const cleaned = prev.filter(i => i.productName || i.price); // drop the blank starter row
+          return [...cleaned, ...ocrItems];
+        });
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'OCR failed');
+    } finally {
+      setOcrLoading(false);
+      if (ocrFileRef.current) ocrFileRef.current.value = '';
+    }
   };
 
   const removeItem = (id: string) => {
@@ -628,11 +667,20 @@ export default function NewInvoicePage() {
                 </div>
                 Items
               </h2>
-              <button type="button" onClick={addItem}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
-                style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}>
-                <Plus className="w-4 h-4" /> Add Item
-              </button>
+              <div className="flex items-center gap-2">
+                <input ref={ocrFileRef} type="file" accept="image/*" className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) onOcrFile(f); }} />
+                <button type="button" onClick={() => ocrFileRef.current?.click()} disabled={ocrLoading}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all disabled:opacity-60"
+                  style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}>
+                  {ocrLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanLine className="w-4 h-4" />} Scan Receipt
+                </button>
+                <button type="button" onClick={addItem}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
+                  style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}>
+                  <Plus className="w-4 h-4" /> Add Item
+                </button>
+              </div>
             </div>
 
             {/* Table Header */}

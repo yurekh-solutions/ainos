@@ -1,9 +1,9 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Download, RefreshCw, CheckCircle2, Upload, FileJson, FileSpreadsheet } from 'lucide-react';
+import { Download, RefreshCw, CheckCircle2, Upload, FileJson, FileSpreadsheet, ShieldAlert } from 'lucide-react';
 
-type Tab = 'gstr1' | 'gstr3b' | 'recon';
+type Tab = 'gstr1' | 'gstr3b' | 'recon' | 'anomaly';
 
 interface HsnRow { hsn: string; description: string; uqc: string; quantity: number; taxableValue: number; igst: number; cgst: number; sgst: number; cess: number }
 interface ReconRow { supplierGstin: string; invoiceNo: string; date: string | null; taxable: number; igst: number; cgst: number; sgst: number; cess: number; status: string; bookTaxable: number | null; bookTax: number; taxIn2b: number }
@@ -24,6 +24,18 @@ export default function GstReportsPage() {
   const [reconLoading, setReconLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // AI anomaly scan state
+  const [anomaly, setAnomaly] = useState<any>(null);
+  const [anomalyLoading, setAnomalyLoading] = useState(false);
+
+  const fetchAnomalies = useCallback(async () => {
+    setAnomalyLoading(true);
+    try {
+      const res = await fetch(`/api/finance/ai/anomalies?from=${startDate}&to=${endDate}`);
+      if (res.ok) setAnomaly(await res.json());
+    } finally { setAnomalyLoading(false); }
+  }, [startDate, endDate]);
+
   const fetchReport = useCallback(async () => {
     setLoading(true);
     try {
@@ -32,7 +44,8 @@ export default function GstReportsPage() {
     } finally { setLoading(false); }
   }, [tab, startDate, endDate]);
 
-  useEffect(() => { if (tab !== 'recon') void fetchReport(); }, [fetchReport, tab]);
+  useEffect(() => { if (tab !== 'recon' && tab !== 'anomaly') void fetchReport(); }, [fetchReport, tab]);
+  useEffect(() => { if (tab === 'anomaly') void fetchAnomalies(); }, [tab, fetchAnomalies]);
 
   const download = (kind: 'gstr1' | 'gstr3b' | 'hsn', format: 'json' | 'csv') => {
     const url = `/api/gst-reports?export=${kind}&format=${format}&startDate=${startDate}&endDate=${endDate}`;
@@ -68,6 +81,7 @@ export default function GstReportsPage() {
     { id: 'gstr1', label: 'GSTR-1 (Outward)' },
     { id: 'gstr3b', label: 'GSTR-3B (Summary)' },
     { id: 'recon', label: '2B Reconciliation' },
+    { id: 'anomaly', label: 'AI Anomalies' },
   ];
 
   return (
@@ -98,9 +112,14 @@ export default function GstReportsPage() {
               <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--muted-foreground))' }}>To</label>
               <input type="date" className="glass-input rounded-xl px-4 py-2.5 text-sm" value={endDate} onChange={e => setEndDate(e.target.value)} />
             </div>
-            {tab !== 'recon' && (
+            {tab !== 'recon' && tab !== 'anomaly' && (
               <button onClick={fetchReport} className="btn-secondary rounded-xl px-4 py-2.5 text-sm font-medium flex items-center gap-2">
                 <RefreshCw className="w-4 h-4" /> Refresh
+              </button>
+            )}
+            {tab === 'anomaly' && (
+              <button onClick={fetchAnomalies} className="btn-secondary rounded-xl px-4 py-2.5 text-sm font-medium flex items-center gap-2">
+                <RefreshCw className="w-4 h-4" /> Re-scan
               </button>
             )}
           </div>
@@ -108,6 +127,8 @@ export default function GstReportsPage() {
 
         {tab === 'recon' ? (
           <ReconPanel {...{ recon, reconLoading, fileRef, onImport2B, setRecon }} inr={inr} />
+        ) : tab === 'anomaly' ? (
+          <AnomalyPanel anomaly={anomaly} loading={anomalyLoading} />
         ) : report ? (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             {/* Summary + export */}
@@ -217,6 +238,54 @@ function Stat({ label, value }: { label: string; value: string }) {
     <div className="p-4 rounded-xl" style={{ background: 'hsl(var(--secondary))' }}>
       <p className="text-xs mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>{label}</p>
       <p className="text-lg font-bold" style={{ color: 'hsl(var(--foreground))' }}>{value}</p>
+    </div>
+  );
+}
+
+function AnomalyPanel({ anomaly, loading }: { anomaly: any; loading: boolean }) {
+  const SEV: Record<string, string> = { high: 'text-red-600', medium: 'text-amber-600', low: 'text-blue-600' };
+  if (loading && !anomaly) return <div className="glass-card rounded-2xl p-10 text-center text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>Scanning invoices for compliance issues…</div>;
+  if (!anomaly) return <div className="glass-card rounded-2xl p-10 text-center text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>No scan yet.</div>;
+  const issues = (anomaly.issues || []) as Array<{ invoiceNumber: string; customerName: string | null; severity: string; type: string; message: string }>;
+  return (
+    <div className="space-y-6">
+      <div className="glass-card rounded-2xl p-6">
+        <div className="flex items-center gap-2 mb-1">
+          <ShieldAlert className="w-5 h-5 text-purple-600" />
+          <h3 className="font-semibold text-lg" style={{ color: 'hsl(var(--foreground))' }}>AI Compliance Anomaly Scan</h3>
+        </div>
+        <p className="text-sm mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>Scanned {anomaly.scanned} invoice(s). Automatic checks for GSTIN validity, inter/intra-state split, tax reconciliation, HSN and payment mismatches.</p>
+        <div className="grid grid-cols-3 gap-3">
+          <Stat label="High" value={String(anomaly.counts?.high ?? 0)} />
+          <Stat label="Medium" value={String(anomaly.counts?.medium ?? 0)} />
+          <Stat label="Low" value={String(anomaly.counts?.low ?? 0)} />
+        </div>
+      </div>
+      <div className="glass-card rounded-2xl p-6">
+        {issues.length === 0 ? (
+          <p className="text-sm text-center py-6" style={{ color: 'hsl(var(--muted-foreground))' }}>All clear — no anomalies detected in this period.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="border-b" style={{ borderColor: 'hsl(var(--border))' }}>
+                {['Severity', 'Invoice', 'Customer', 'Issue'].map(h => (
+                  <th key={h} className="text-left p-2 text-xs font-semibold" style={{ color: 'hsl(var(--muted-foreground))' }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {issues.map((r, i) => (
+                  <tr key={i} className="border-b" style={{ borderColor: 'hsl(var(--border) / 0.5)' }}>
+                    <td className={`p-2 font-medium capitalize ${SEV[r.severity] || ''}`}>{r.severity}</td>
+                    <td className="p-2">{r.invoiceNumber}</td>
+                    <td className="p-2">{r.customerName || '-'}</td>
+                    <td className="p-2">{r.message}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

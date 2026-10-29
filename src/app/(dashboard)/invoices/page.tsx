@@ -156,6 +156,7 @@ export default function InvoicesPage() {
   const [extractedData, setExtractedData] = useState<ExtractedTemplate | null>(null);
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [templateLogo, setTemplateLogo] = useState('');
+  const [chasing, setChasing] = useState(false);
 
   const handleInvoiceExtract = async () => {
     if (!invoiceFile) return;
@@ -908,6 +909,30 @@ export default function InvoicesPage() {
     }
   };
 
+  const runPaymentChase = async () => {
+    setChasing(true);
+    try {
+      // Dry run first so nothing emails until the user confirms.
+      const preview = await fetch('/api/finance/ai/payment-chase', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dryRun: true }),
+      });
+      const pData = await preview.json();
+      if (!preview.ok) throw new Error(pData.error || 'Failed to scan overdue invoices');
+      if (!pData.overdueCount) { toast.info('No overdue invoices to chase right now.'); return; }
+      const names = (pData.candidates as { invoiceNumber: string }[]).slice(0, 5).map(c => c.invoiceNumber).join(', ');
+      const ok = window.confirm(`Send payment reminders for ${pData.overdueCount} overdue invoice(s) totalling ₹${Number(pData.totalOutstanding).toLocaleString('en-IN')}?\n\n${names}${pData.overdueCount > 5 ? '…' : ''}`);
+      if (!ok) return;
+      const res = await fetch('/api/finance/ai/payment-chase', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dryRun: false }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Payment chase failed');
+      toast.success(`Chased ${data.sent?.length ?? 0} invoice(s)${data.failed?.length ? `, ${data.failed.length} failed` : ''}.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Payment chase failed');
+    } finally { setChasing(false); }
+  };
+
   const renderActions = (invoice: Invoice) => (
     <div className="flex items-center gap-1">
       {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
@@ -1004,6 +1029,18 @@ export default function InvoicesPage() {
               >
                 <Download className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>Bulk PDF</span>
+              </button>
+            )}
+            {company?.name && (
+              <button
+                onClick={runPaymentChase}
+                disabled={chasing}
+                className="group inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl text-sm font-medium transition-all border-2 hover:opacity-80 disabled:opacity-60"
+                style={{ borderColor: 'hsl(280 60% 55%)', color: 'hsl(280 60% 55%)', background: 'hsl(280 60% 55% / 0.05)' }}
+                title="Email reminders to all overdue customers"
+              >
+                {chasing ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <Bell className="w-4 h-4 sm:w-5 sm:h-5" />}
+                <span>Chase Payments</span>
               </button>
             )}
             {company?.name ? (
