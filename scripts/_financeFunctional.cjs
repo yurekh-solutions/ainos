@@ -247,6 +247,48 @@ async function testBankReconcile() {
   ok('persisted transaction now matched=true', txn?.matched === true && txn?.matchedWith === a.id, `matched=${txn?.matched}`);
 }
 
+async function testEwayBill() {
+  console.log('\n=== E-WAY BILL (mock): build from challan, validate, generate, persist ===');
+  // Link target invoice (eway columns live on invoice)
+  const inv = await api('POST', '/api/invoices', {
+    customerName: 'Move Co', customerEmail: 'mv@t.com', customerGst: '07ABCDE1234F1Z5', supplyType: 'inter', status: 'sent',
+    items: [{ productName: 'Goods', price: 5000, quantity: 1, gstRate: 18, costPrice: 3000 }],
+  });
+  const invoiceId = inv.data?.id;
+
+  // High-value inter-state challan (> ₹50k) with valid consignee GSTIN + HSN
+  const dc = await api('POST', '/api/delivery-challans', {
+    customerName: 'Move Co', customerGst: '07ABCDE1234F1Z5', vehicleNo: 'MH 01 AB 1234', supplyType: 'inter',
+    items: [{ productName: 'Steel', hsnCode: '7208', price: 60000, quantity: 1, gstRate: 18 }],
+  });
+  const challanId = dc.data?.id;
+  ok('high-value challan created', dc.status === 201 && near(dc.data?.subtotal, 60000), `subtotal=${dc.data?.subtotal}`);
+  await api('PUT', '/api/delivery-challans', { id: challanId, invoiceId });
+
+  const preview = await api('GET', `/api/delivery-challans/ewaybill?challanId=${challanId}`);
+  ok('EWB preview: EWB required (value > 50k)', preview.data?.requiresEwb === true, `requiresEwb=${preview.data?.requiresEwb}`);
+  ok('EWB preview: payload is ready to generate', preview.data?.ready === true, JSON.stringify(preview.data?.errors));
+  ok('EWB preview: totalValue maps challan subtotal', near(preview.data?.payload?.partA?.totalValue, 60000), preview.data?.payload?.partA?.totalValue);
+  ok('EWB preview: state codes resolved (27 -> 07)', preview.data?.payload?.partA?.fromState === '27' && preview.data?.payload?.partA?.toState === '07', `${preview.data?.payload?.partA?.fromState}->${preview.data?.payload?.partA?.toState}`);
+
+  const gen = await api('POST', '/api/delivery-challans/ewaybill', { challanId, distance: 250 });
+  ok('EWB generated via mock adapter (201)', gen.status === 201 && gen.data?.provider === 'mock', `${gen.status} ${gen.data?.error || ''}`);
+  ok('EWB number is 12 digits', /^\d{12}$/.test(gen.data?.ewbNo || ''), gen.data?.ewbNo);
+  ok('validity = 3 days for 250 km (Rule 13B)', gen.data?.validityDays === 3, `days=${gen.data?.validityDays}`);
+  ok('persisted onto linked invoice', gen.data?.persistedInvoiceId === invoiceId, gen.data?.persistedInvoiceId);
+
+  const dbInv = await prisma.invoice.findUnique({ where: { id: invoiceId }, select: { ewayBillNo: true, ewayBillValid: true } });
+  ok('invoice.ewayBillNo stored from generation', dbInv?.ewayBillNo === gen.data?.ewbNo && !!dbInv?.ewayBillValid, dbInv?.ewayBillNo);
+
+  // Negative: consignee has no GSTIN/state -> hard validation error, no generation
+  const bad = await api('POST', '/api/delivery-challans', {
+    customerName: 'NoGst Co', vehicleNo: 'MH 02 CD 5678', supplyType: 'intra',
+    items: [{ productName: 'Misc', hsnCode: '9403', price: 80000, quantity: 1, gstRate: 18 }],
+  });
+  const badGen = await api('POST', '/api/delivery-challans/ewaybill', { challanId: bad.data?.id, distance: 50 });
+  ok('rejects generation when consignee state missing (400)', badGen.status === 400 && (badGen.data?.errors || []).some(e => /to-state/i.test(e)), JSON.stringify(badGen.data?.errors));
+}
+
 async function cleanup() {
   console.log('\n=== CLEANUP test data ===');
   const models = ['invoice', 'customer', 'product', 'expense', 'quote', 'deliveryChallan', 'creditNote', 'debitNote', 'bankAccount', 'bankTransaction', 'recurringInvoice', 'invoiceTemplate', 'gstReconImport', 'gstFiling'];
@@ -274,6 +316,7 @@ async function cleanup() {
     await testChallanNotesBankRecurring(); await testRemindersTallyTemplatesReports();
     await testGstCompliance();
     await testBankReconcile();
+    await testEwayBill();
   } catch (e) {
     console.error('SCRIPT ERROR:', e.message);
   } finally {
