@@ -1,4 +1,4 @@
-import { LayoutDashboard, Landmark, Radio, ScrollText, Contact2, Boxes, Coins, FileBarChart, ShoppingCart, PackageCheck, Sheet, BellRing, Paintbrush, Send, AtSign, SearchCheck, PenTool, MailOpen, ShoppingBag, Store, Package, ClipboardList, TrendingUp, Tag, MessageSquare, Users, Terminal, CreditCard, Receipt, UtensilsCrossed, Clock, Layers, Settings, Wrench, BarChart2, Truck, PackageSearch, Car, Warehouse, ShieldCheck, UserCheck, LifeBuoy, CalendarDays, Target, Hammer, KeyRound, CheckSquare, CalendarClock, Ticket, ReceiptText } from 'lucide-react';
+import { LayoutDashboard, Landmark, Radio, ScrollText, Contact2, Boxes, Coins, FileBarChart, ShoppingCart, PackageCheck, Sheet, BellRing, Paintbrush, Send, AtSign, SearchCheck, PenTool, MailOpen, ShoppingBag, Store, Package, ClipboardList, TrendingUp, Tag, MessageSquare, Users, Terminal, CreditCard, Receipt, UtensilsCrossed, Clock, Layers, Settings, Wrench, BarChart2, Truck, PackageSearch, Car, Warehouse, ShieldCheck, UserCheck, LifeBuoy, CalendarDays, Target, Hammer, KeyRound, CheckSquare, CalendarClock, ReceiptText } from 'lucide-react';
 
 export interface NavItem {
   icon: React.ElementType;
@@ -138,8 +138,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { icon: SearchCheck, label: 'SEO Platform', href: '/marketing/seo' },
       { icon: PenTool, label: 'Blog & Content', href: '/marketing/blog' },
       { icon: MailOpen, label: 'Invitations', href: '/marketing/invitations' },
-      { icon: ClipboardList, label: 'Surveys', href: '/marketing/surveys' },
-      { icon: Ticket, label: 'Events', href: '/marketing/events' },
     ],
   },
   {
