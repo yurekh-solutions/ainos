@@ -4,6 +4,8 @@ export interface NavItem {
   icon: React.ElementType;
   label: string;
   href: string;
+  /** 'advanced' items tuck under an "Advanced" divider; core items show first. */
+  tier?: 'core' | 'advanced';
 }
 
 export interface NavGroup {
@@ -101,14 +103,14 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { icon: ScrollText, label: 'Invoices', href: '/invoices' },
       { icon: Contact2, label: 'Customers', href: '/customers' },
-      { icon: Boxes, label: 'Products', href: '/products' },
       { icon: Coins, label: 'Expenses', href: '/finance/expenses' },
-      { icon: FileBarChart, label: 'Quotations', href: '/finance/quotes' },
-      { icon: ShoppingCart, label: 'Purchase Orders', href: '/finance/purchase-orders' },
-      { icon: PackageCheck, label: 'Delivery Challans', href: '/finance/challans' },
-      { icon: Sheet, label: 'Tally / Excel', href: '/finance/tally' },
-      { icon: BellRing, label: 'Payment Reminders', href: '/finance/reminders' },
-      { icon: Paintbrush, label: 'Template Designer', href: '/finance/templates' },
+      { icon: BellRing, label: 'Pending Payments', href: '/finance/reminders' },
+      { icon: Boxes, label: 'Products', href: '/products', tier: 'advanced' },
+      { icon: FileBarChart, label: 'Quotations', href: '/finance/quotes', tier: 'advanced' },
+      { icon: ShoppingCart, label: 'Purchase Orders', href: '/finance/purchase-orders', tier: 'advanced' },
+      { icon: PackageCheck, label: 'Delivery Challans', href: '/finance/challans', tier: 'advanced' },
+      { icon: Sheet, label: 'Tally / Excel Export', href: '/finance/tally', tier: 'advanced' },
+      { icon: Paintbrush, label: 'Invoice Design', href: '/finance/templates', tier: 'advanced' },
     ],
   },
   {
@@ -118,13 +120,13 @@ export const NAV_GROUPS: NavGroup[] = [
     icon: Receipt,
     href: '/finance/daybook',
     items: [
-      { icon: Receipt, label: 'Recurring Invoices', href: '/finance/recurring-invoices' },
-      { icon: FileBarChart, label: 'Debit Notes', href: '/finance/debit-notes' },
-      { icon: ScrollText, label: 'Credit Notes', href: '/finance/credit-notes' },
-      { icon: Landmark, label: 'Bank Accounts', href: '/finance/bank-accounts' },
       { icon: Sheet, label: 'Daybook', href: '/finance/daybook' },
+      { icon: BarChart2, label: 'Profit & Reports', href: '/finance/reports' },
       { icon: FileBarChart, label: 'GST Reports', href: '/finance/gst-reports' },
-      { icon: BarChart2, label: 'Finance Reports', href: '/finance/reports' },
+      { icon: Receipt, label: 'Recurring Invoices', href: '/finance/recurring-invoices', tier: 'advanced' },
+      { icon: Landmark, label: 'Bank Accounts', href: '/finance/bank-accounts', tier: 'advanced' },
+      { icon: ScrollText, label: 'Credit Notes', href: '/finance/credit-notes', tier: 'advanced' },
+      { icon: FileBarChart, label: 'Debit Notes', href: '/finance/debit-notes', tier: 'advanced' },
     ],
   },
   {

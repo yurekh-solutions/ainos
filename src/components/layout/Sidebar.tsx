@@ -89,24 +89,39 @@ function GroupNav({ group, collapsed, pathname }: { group: NavGroup; collapsed: 
             className="overflow-hidden"
           >
             <div className="ml-5 pl-3 my-1 border-l border-white/10 space-y-0.5">
-              {group.items.map((item, idx) => {
-                const ItemIcon = item.icon;
-                const itemActive = matchesPath(pathname, item.href);
+              {(() => {
+                const core = group.items.filter(i => i.tier !== 'advanced');
+                const advanced = group.items.filter(i => i.tier === 'advanced');
+                const renderItem = (item: typeof group.items[number], idx: number) => {
+                  const ItemIcon = item.icon;
+                  const itemActive = matchesPath(pathname, item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center gap-2.5 px-3 h-9 rounded-lg text-[13px] transition-colors ${
+                        itemActive ? 'bg-white/10 text-white font-medium' : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded-md flex items-center justify-center ${itemActive ? 'bg-white/20' : getIconBg(idx + 1)}`}>
+                        <ItemIcon className="w-3.5 h-3.5 text-white" />
+                      </div>
+                      <span className="truncate">{item.label}</span>
+                    </Link>
+                  );
+                };
                 return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-2.5 px-3 h-9 rounded-lg text-[13px] transition-colors ${
-                      itemActive ? 'bg-white/10 text-white font-medium' : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
-                    }`}
-                  >
-                    <div className={`w-6 h-6 rounded-md flex items-center justify-center ${itemActive ? 'bg-white/20' : getIconBg(idx + 1)}`}>
-                      <ItemIcon className="w-3.5 h-3.5 text-white" />
-                    </div>
-                    <span className="truncate">{item.label}</span>
-                  </Link>
+                  <>
+                    {core.map(renderItem)}
+                    {advanced.length > 0 && (
+                      <>
+                        <div className="pt-1.5 pb-0.5 pl-3 text-[10px] font-semibold uppercase tracking-wider text-white/35">Advanced</div>
+                        {advanced.map((item, i) => renderItem(item, core.length + i))}
+                      </>
+                    )}
+                  </>
                 );
-              })}
+              })()}
             </div>
           </motion.div>
         )}

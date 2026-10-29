@@ -558,20 +558,20 @@ export default function NewInvoicePage() {
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Supply Type</label>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Customer's Location</label>
                 <select value={supplyType} onChange={e => setSupplyType(e.target.value as 'intra' | 'inter')}
                   className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none" style={inputStyle}>
-                  <option value="intra">Intra-State (CGST+SGST)</option>
-                  <option value="inter">Inter-State (IGST)</option>
+                  <option value="intra">Same State (CGST + SGST)</option>
+                  <option value="inter">Other State (IGST)</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Billing Type</label>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Bill Type</label>
                 <select value={billingType} onChange={e => setBillingType(e.target.value as 'gst' | 'non-gst' | 'mrp')}
                   className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none" style={inputStyle}>
-                  <option value="gst">GST Billing</option>
-                  <option value="non-gst">Non-GST</option>
-                  <option value="mrp">MRP (Tax Inclusive)</option>
+                  <option value="gst">GST Bill</option>
+                  <option value="non-gst">No GST</option>
+                  <option value="mrp">MRP (price includes tax)</option>
                 </select>
               </div>
               <div>
