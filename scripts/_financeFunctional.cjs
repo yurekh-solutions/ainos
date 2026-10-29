@@ -202,9 +202,54 @@ async function testGstCompliance() {
   ok('2B reconcile flags ITC-at-risk for unmatched', (rec.data?.summary?.twobOnly ?? 0) >= 1 && (rec.data?.summary?.itcAtRisk ?? 0) > 0, JSON.stringify(rec.data?.summary));
 }
 
+async function testBankReconcile() {
+  console.log('\n=== BANK AUTO-MATCH: parse statement, match credits, apply payment ===');
+  // Dedicated bank account to receive the statement
+  const acct = await api('POST', '/api/bank-accounts', { name: 'Recon SB', accountNumber: '99001122', ifscCode: 'HDFC0002', bankName: 'HDFC', balance: 50000 });
+  const BANK_ACCOUNT_ID = acct.data?.id;
+  ok('reconcile bank account created', !!BANK_ACCOUNT_ID, acct.status);
+  // Fresh unpaid invoice to reconcile against
+  const invA = await api('POST', '/api/invoices', {
+    customerName: 'PayCo', customerEmail: 'pay@t.com', customerGst: '27AAAAP1234A1Z5',
+    supplyType: 'intra', status: 'sent',
+    items: [{ productName: 'Consulting', price: 10000, quantity: 1, gstRate: 18, costPrice: 5000 }],
+  });
+  const a = invA.data || {};
+  ok('invoice for reconcile created', invA.status === 201 && near(a.totalAmount, 11800), `status=${invA.status} total=${a.totalAmount}`);
+
+  // Bank statement CSV (Date,Description,Reference,Debit,Credit)
+  const csv = [
+    'Date,Description,Reference,Debit,Credit',
+    `05/10/2026,NEFT RECEIPT ${a.invoiceNumber},${a.invoiceNumber},0,11800.00`,
+    '06/10/2026,MISC CREDIT,RAND000777,0,7777.00',
+    '07/10/2026,SERVICE CHARGE,CHQ101,150,0',
+  ].join('\n');
+
+  const rec = await api('POST', '/api/bank-reconciliation', { accountId: BANK_ACCOUNT_ID, csv });
+  ok('reconcile endpoint returns preview', rec.status === 200 && !!rec.data?.summary, rec.status);
+  ok('CSV parsed into 3 transactions', rec.data?.summary?.parsed === 3, `parsed=${rec.data?.summary?.parsed}`);
+  ok('transactions persisted to account', rec.data?.summary?.persisted === 3, `persisted=${rec.data?.summary?.persisted}`);
+  ok('exactly 1 credit auto-matched', rec.data?.summary?.matched === 1, `matched=${rec.data?.summary?.matched}`);
+  ok('unrelated credit flagged unmatched', rec.data?.summary?.unmatched === 1, `unmatched=${rec.data?.summary?.unmatched}`);
+
+  const matchedRow = (rec.data?.rows || []).find(r => r.match);
+  ok('match is EXACT via invoice number', matchedRow?.match?.confidence === 'exact' && matchedRow?.match?.invoiceNumber === a.invoiceNumber, matchedRow?.match?.confidence);
+  ok('match allocates full outstanding', near(matchedRow?.match?.allocAmount, 11800), matchedRow?.match?.allocAmount);
+
+  // Apply: reuse ledger-correct invoice PUT, then flag the transaction matched
+  const paid = await api('PUT', '/api/invoices', { id: a.id, status: 'paid', paidAmount: a.totalAmount, paidDate: new Date().toISOString(), paymentMethod: 'bank' });
+  ok('matched invoice marked paid (ledger path)', paid.status === 200 && paid.data?.status === 'paid', paid.data?.status);
+  const flag = await api('PUT', '/api/bank-reconciliation', { applied: [{ transactionId: matchedRow?.txnId, invoiceId: a.id }] });
+  ok('transaction flagged applied', flag.status === 200 && flag.data?.updated === 1, JSON.stringify(flag.data));
+
+  const list = await api('GET', '/api/bank-reconciliation');
+  const txn = (Array.isArray(list.data) ? list.data : []).find(t => t.id === matchedRow?.txnId);
+  ok('persisted transaction now matched=true', txn?.matched === true && txn?.matchedWith === a.id, `matched=${txn?.matched}`);
+}
+
 async function cleanup() {
   console.log('\n=== CLEANUP test data ===');
-  const models = ['invoice', 'customer', 'product', 'expense', 'quote', 'deliveryChallan', 'creditNote', 'debitNote', 'bankAccount', 'recurringInvoice', 'invoiceTemplate', 'gstReconImport', 'gstFiling'];
+  const models = ['invoice', 'customer', 'product', 'expense', 'quote', 'deliveryChallan', 'creditNote', 'debitNote', 'bankAccount', 'bankTransaction', 'recurringInvoice', 'invoiceTemplate', 'gstReconImport', 'gstFiling'];
   for (const m of models) {
     if (prisma[m]) await prisma[m].deleteMany({ where: { companyId: COMPANY_ID } }).catch(() => {});
   }
@@ -228,6 +273,7 @@ async function cleanup() {
     await testInvoices(); await testCustomersProducts(); await testExpensesQuotes();
     await testChallanNotesBankRecurring(); await testRemindersTallyTemplatesReports();
     await testGstCompliance();
+    await testBankReconcile();
   } catch (e) {
     console.error('SCRIPT ERROR:', e.message);
   } finally {
