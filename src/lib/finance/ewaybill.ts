@@ -79,14 +79,6 @@ export interface EwbRequest {
   partB: EwbPartB;
 }
 
-export interface EwbResult {
-  provider: string;
-  ewbNo: string;
-  validityTill: string;   // ISO datetime
-  status: 'generated' | 'mock';
-  qrCode?: string;
-}
-
 // ── Validity (Rule 13B) ──────────────────────────────────────────────────────
 export function computeValidityDays(distanceKm: number, opts: { hazardous?: boolean; overDimensional?: boolean } = {}): number {
   if (opts.overDimensional) return 180; // ODC: 6 months
@@ -209,62 +201,11 @@ export function validateEwb(req: EwbRequest, goodsValue: number): string[] {
   return e;
 }
 
-// ── Provider adapters ────────────────────────────────────────────────────────
-export interface EwbAdapter {
-  name: string;
-  generate(req: EwbRequest, opts: { distance: number; hazardous?: boolean }): Promise<EwbResult>;
-}
-
+// ── Readiness helper ─────────────────────────────────────────────────────────
+// "not mandatory" is a soft note (consignment below threshold); everything else
+// is a hard blocker. EWB numbers themselves are only ever REAL — generated on
+// the free government NICeW portal and recorded via the PUT endpoint. There is
+// deliberately no mock/generator adapter so the product can never emit a fake.
 const isHardError = (errs: string[]) => errs.some((x) => !x.includes('not mandatory'));
-
-/** Deterministic offline generator — used for tests and until live creds are wired. */
-export const mockAdapter: EwbAdapter = {
-  name: 'mock',
-  async generate(req, opts) {
-    const days = computeValidityDays(opts.distance, { hazardous: opts.hazardous });
-    const till = computeValidityTill(new Date(req.partA.validFrom), days);
-    // Dynamic 12-digit pseudo EWB seeded from doc no + consignee state + date.
-    const base = `${req.partA.otherDocumentNumber}${req.partA.toState}${req.partA.validFrom.slice(0, 10)}${days}`;
-    let h = 0; for (const ch of base) h = (h * 131 + ch.charCodeAt(0)) % 1_000_000_000_000;
-    const ewbNo = String(h).padStart(12, '0').slice(0, 12);
-    // Realistic-looking QR payload (NICeW encodes a semicolon-separated string).
-    const qrPayload = `01;${ewbNo};IN;${req.partA.fromState};${req.partA.toState};${req.partA.otherDocumentNumber};${req.partA.totalValue}`;
-    const qr = Buffer.from(qrPayload).toString('base64').replace(/=+$/, '').slice(0, 40);
-    return { provider: 'mock', ewbNo, validityTill: till.toISOString(), status: 'mock', qrCode: qr };
-  },
-};
-
-/**
- * ClearTax live adapter. Env-gated: requires CLEAR_TAX_API_KEY (and optional
- * CLEAR_TAX_EWB_URL). The exact endpoint + response field mapping must be
- * confirmed against ClearTax's EWB API docs during live wiring; until then this
- * throws so nothing silently "succeeds" against an unverified contract.
- */
-export const clearTaxAdapter: EwbAdapter = {
-  name: 'cleartax',
-  async generate(req, opts) {
-    const key = process.env.CLEAR_TAX_API_KEY;
-    const url = process.env.CLEAR_TAX_EWB_URL || 'https://api.cleartax.in/eb/gst/ewaybill/generate';
-    if (!key) throw new Error('ClearTax live EWB requires CLEAR_TAX_API_KEY to be configured');
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ ewb: { req: { data: req.partA }, partB: req.partB } }),
-    });
-    if (!res.ok) throw new Error(`ClearTax EWB generation failed (${res.status})`);
-    const json = await res.json().catch(() => ({}) as { data?: { ewbNo?: string; validUntil?: string; qrCode?: string }; ewbNo?: string });
-    const ewbNo = String(json?.data?.ewbNo || json?.ewbNo || '');
-    if (ewbNo.length !== 12) throw new Error('ClearTax response did not include a 12-digit ewbNo — verify field mapping');
-    const days = computeValidityDays(opts.distance, { hazardous: opts.hazardous });
-    const till = json?.data?.validUntil || computeValidityTill(new Date(req.partA.validFrom), days).toISOString();
-    return { provider: 'cleartax', ewbNo, validityTill: String(till), status: 'generated', qrCode: json?.data?.qrCode };
-  },
-};
-
-/** Picks ClearTax when EWB_PROVIDER=cleartax and a key is present, otherwise mock. */
-export function getEwbAdapter(): EwbAdapter {
-  if ((process.env.EWB_PROVIDER || '').toLowerCase() === 'cleartax' && process.env.CLEAR_TAX_API_KEY) return clearTaxAdapter;
-  return mockAdapter;
-}
 
 export { isHardError };

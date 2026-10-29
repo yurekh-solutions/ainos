@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Truck, Package, Search, X, Eye, Copy, ExternalLink, Save, Wand2, AlertTriangle, CheckCircle2, Route, Loader2 } from 'lucide-react';
+import { Plus, Truck, Package, Search, X, Eye, Copy, ExternalLink, Save, AlertTriangle, CheckCircle2, Route, Loader2 } from 'lucide-react';
 import { useToast } from '@/lib/toast';
 
 interface Challan {
@@ -312,11 +312,9 @@ function EwayBillPanel({ challans }: { challans: Challan[] }) {
   const [validTill, setValidTill] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<SavedEwb | null>(null);
-  const [generating, setGenerating] = useState(false);
-  const [sample, setSample] = useState<{ provider: string; ewbNo: string; validityDays: number; validityTill: string; qrCode?: string } | null>(null);
   const [error, setError] = useState('');
 
-  const clearOutputs = () => { setPreview(null); setSaved(null); setSample(null); setCopied(false); setError(''); };
+  const clearOutputs = () => { setPreview(null); setSaved(null); setCopied(false); setError(''); };
 
   const doPreview = async () => {
     if (!activeChallanId) return;
@@ -343,7 +341,7 @@ function EwayBillPanel({ challans }: { challans: Challan[] }) {
       `Items:`,
       ...a.itemDetails.map((it, i) => `  ${i + 1}. ${it.productAsDesc} | HSN ${it.hsnCode || '—'} | Qty ${it.quantity} ${it.baseUnit} | Taxable ₹${it.taxableAmountAndRate.taxableAmount.toLocaleString('en-IN')} @ ${it.taxableAmountAndRate.gstRate}%`),
       ``,
-      `Submit on the free portal: ${NICED_URL}`,
+      `Submit on the NICeW portal: ${NICED_URL}`,
     ].join('\n');
   };
 
@@ -355,26 +353,6 @@ function EwayBillPanel({ challans }: { challans: Challan[] }) {
   };
 
   const openPortal = () => { window.open(NICED_URL, '_blank', 'noopener'); };
-
-  const doGenerateSample = async () => {
-    if (!activeChallanId) return;
-    setError(''); setSample(null); setGenerating(true);
-    try {
-      const res = await fetch('/api/delivery-challans/ewaybill', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          challanId: activeChallanId, transportMode,
-          distance: distance ? Number(distance) : undefined,
-          fromPinCode: fromPin || undefined, toPinCode: toPin || undefined, hazardous,
-          persist: false,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) { const list: string[] = Array.isArray(data.errors) ? data.errors : [data.error || 'Generation failed']; setError(list.join(' · ')); return; }
-      setSample(data);
-    } catch { setError('Sample generation failed'); }
-    finally { setGenerating(false); }
-  };
 
   const record = async () => {
     if (!activeChallanId) return;
@@ -397,10 +375,10 @@ function EwayBillPanel({ challans }: { challans: Challan[] }) {
         <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.1)' }}>
           <Route className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
         </div>
-        <h3 className="font-semibold text-lg" style={{ color: 'hsl(var(--foreground))' }}>E-Way Bill — Free Portal Assist</h3>
+        <h3 className="font-semibold text-lg" style={{ color: 'hsl(var(--foreground))' }}>E-Way Bill — Portal Assist</h3>
       </div>
       <p className="text-sm mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>
-        Prepare the details here, file them on the government NICeW portal (no fee), then record the real
+        Prepare the details here, file them on the government NICeW portal, then record the real
         12-digit EWB number back. Needed when the consignment value exceeds
         ₹{(preview?.threshold ?? 50000).toLocaleString('en-IN')} (excluding GST).
       </p>
@@ -455,10 +433,6 @@ function EwayBillPanel({ challans }: { challans: Challan[] }) {
               className="btn-secondary rounded-xl px-4 py-2.5 text-sm font-medium flex items-center gap-2">
               <ExternalLink className="w-4 h-4" /> Open NICeW portal
             </button>
-            <button onClick={doGenerateSample} disabled={generating || saving}
-              className="btn-primary rounded-xl px-4 py-2.5 text-sm font-medium flex items-center gap-2">
-              {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />} Generate sample
-            </button>
           </>
         )}
       </div>
@@ -494,23 +468,6 @@ function EwayBillPanel({ challans }: { challans: Challan[] }) {
             <summary className="cursor-pointer" style={{ color: 'hsl(var(--primary))' }}>View portal worksheet</summary>
             <pre className="mt-2 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap" style={{ background: 'hsl(var(--card-bg))', color: 'hsl(var(--muted-foreground))' }}>{buildWorksheet()}</pre>
           </details>
-        </div>
-      )}
-
-      {sample && (
-        <div className="rounded-xl p-4 mb-3 space-y-2 border border-amber-500/40" style={{ background: 'hsl(var(--primary) / 0.02)' }}>
-          <div className="flex flex-wrap items-center gap-2">
-            <Wand2 className="w-5 h-5 text-amber-600" />
-            <span className="font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Sample E-Way Bill</span>
-            <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 border border-amber-500/30">Demo — not filed</span>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <EwbStat label="EWB Number" value={sample.ewbNo} />
-            <EwbStat label="Valid Till" value={new Date(sample.validityTill).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })} />
-            <EwbStat label="Validity" value={`${sample.validityDays} day(s)`} />
-          </div>
-          {sample.qrCode && <p className="text-xs break-all" style={{ color: 'hsl(var(--muted-foreground))' }}>QR payload: {sample.qrCode}</p>}
-          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Dynamic demo — not stored on any invoice. The real number comes from the NICeW portal and is saved in the box below.</p>
         </div>
       )}
 

@@ -248,7 +248,7 @@ async function testBankReconcile() {
 }
 
 async function testEwayBill() {
-  console.log('\n=== E-WAY BILL (mock + manual record): build, validate, generate, persist ===');
+  console.log('\n=== E-WAY BILL (real manual-assist): build, validate, record ===');
   // Link target invoice (eway columns live on invoice)
   const inv = await api('POST', '/api/invoices', {
     customerName: 'Move Co', customerEmail: 'mv@t.com', customerGst: '07ABCDE1234F1Z5', supplyType: 'inter', status: 'sent',
@@ -267,40 +267,29 @@ async function testEwayBill() {
 
   const preview = await api('GET', `/api/delivery-challans/ewaybill?challanId=${challanId}`);
   ok('EWB preview: EWB required (value > 50k)', preview.data?.requiresEwb === true, `requiresEwb=${preview.data?.requiresEwb}`);
-  ok('EWB preview: payload is ready to generate', preview.data?.ready === true, JSON.stringify(preview.data?.errors));
+  ok('EWB preview: payload is ready to file', preview.data?.ready === true, JSON.stringify(preview.data?.errors));
   ok('EWB preview: totalValue maps challan subtotal', near(preview.data?.payload?.partA?.totalValue, 60000), preview.data?.payload?.partA?.totalValue);
   ok('EWB preview: state codes resolved (27 -> 07)', preview.data?.payload?.partA?.fromState === '27' && preview.data?.payload?.partA?.toState === '07', `${preview.data?.payload?.partA?.fromState}->${preview.data?.payload?.partA?.toState}`);
 
-  const gen = await api('POST', '/api/delivery-challans/ewaybill', { challanId, distance: 250 });
-  ok('EWB generated via mock adapter (201)', gen.status === 201 && gen.data?.provider === 'mock', `${gen.status} ${gen.data?.error || ''}`);
-  ok('EWB number is 12 digits', /^\d{12}$/.test(gen.data?.ewbNo || ''), gen.data?.ewbNo);
-  ok('validity = 3 days for 250 km (Rule 13B)', gen.data?.validityDays === 3, `days=${gen.data?.validityDays}`);
-  ok('persisted onto linked invoice', gen.data?.persistedInvoiceId === invoiceId, gen.data?.persistedInvoiceId);
+  // No fake generator: POST has been removed so the product cannot emit a mock EWB.
+  const genGone = await api('POST', '/api/delivery-challans/ewaybill', { challanId, distance: 250 });
+  ok('no mock generator: POST /ewaybill unavailable (405)', genGone.status === 405, `${genGone.status}`);
 
-  const dbInv = await prisma.invoice.findUnique({ where: { id: invoiceId }, select: { ewayBillNo: true, ewayBillValid: true } });
-  ok('invoice.ewayBillNo stored from generation', dbInv?.ewayBillNo === gen.data?.ewbNo && !!dbInv?.ewayBillValid, dbInv?.ewayBillNo);
-
-  // UI "sample" demo sends persist:false — must return a number WITHOUT writing the invoice.
-  await api('PUT', '/api/delivery-challans/ewaybill', { challanId, ewbNo: '111122223333' });
-  const smp = await api('POST', '/api/delivery-challans/ewaybill', { challanId, distance: 100, persist: false });
-  const dbSmp = await prisma.invoice.findUnique({ where: { id: invoiceId }, select: { ewayBillNo: true } });
-  ok('sample persist:false does not write the invoice', smp.status === 201 && smp.data?.persistedInvoiceId === null && dbSmp?.ewayBillNo === '111122223333', `${smp.status} persisted=${smp.data?.persistedInvoiceId} inv=${dbSmp?.ewayBillNo}`);
-
-  // Manual-assist (FREE portal) path: PUT records a real 12-digit EWB onto the linked invoice.
+  // Manual-assist (FREE portal) path: PUT records a REAL 12-digit EWB onto the linked invoice.
   const rec = await api('PUT', '/api/delivery-challans/ewaybill', { challanId, ewbNo: '334455667788', validTill: '2026-12-31T23:59:59.000Z' });
   ok('manual record: PUT stores real EWB (200)', rec.status === 200 && rec.data?.recorded === true && rec.data?.persistedInvoiceId === invoiceId, `${rec.status} ${rec.data?.error || ''}`);
-  const dbInv2 = await prisma.invoice.findUnique({ where: { id: invoiceId }, select: { ewayBillNo: true, ewayBillValid: true } });
-  ok('manual record: invoice.ewayBillNo updated to real number', dbInv2?.ewayBillNo === '334455667788', dbInv2?.ewayBillNo);
+  const dbInv = await prisma.invoice.findUnique({ where: { id: invoiceId }, select: { ewayBillNo: true, ewayBillValid: true } });
+  ok('manual record: invoice.ewayBillNo updated to real number', dbInv?.ewayBillNo === '334455667788' && !!dbInv?.ewayBillValid, dbInv?.ewayBillNo);
   const badRec = await api('PUT', '/api/delivery-challans/ewaybill', { challanId, ewbNo: '12' });
   ok('manual record: rejects non-12-digit EWB (400)', badRec.status === 400 && /12 digits/i.test(badRec.data?.error || ''), `${badRec.status} ${badRec.data?.error}`);
 
-  // Negative: consignee has no GSTIN/state -> hard validation error, no generation
+  // Negative preview: consignee with no GSTIN/state -> not ready, to-state error.
   const bad = await api('POST', '/api/delivery-challans', {
     customerName: 'NoGst Co', vehicleNo: 'MH 02 CD 5678', supplyType: 'intra',
     items: [{ productName: 'Misc', hsnCode: '9403', price: 80000, quantity: 1, gstRate: 18 }],
   });
-  const badGen = await api('POST', '/api/delivery-challans/ewaybill', { challanId: bad.data?.id, distance: 50 });
-  ok('rejects generation when consignee state missing (400)', badGen.status === 400 && (badGen.data?.errors || []).some(e => /to-state/i.test(e)), JSON.stringify(badGen.data?.errors));
+  const badPrev = await api('GET', `/api/delivery-challans/ewaybill?challanId=${bad.data?.id}`);
+  ok('preview flags missing consignee state (not ready)', badPrev.data?.ready === false && (badPrev.data?.errors || []).some(e => /to-state/i.test(e)), JSON.stringify(badPrev.data?.errors));
 }
 
 async function cleanup() {
