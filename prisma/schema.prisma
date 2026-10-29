@@ -1272,7 +1272,7 @@ model ToolActivation {
 
 model Account {
   id          String    @id @default(uuid())
-  code        String    @unique
+  code        String
   name        String
   type        String    // asset, liability, equity, income, expense
   parentId    String?   @map("parent_id")
@@ -1287,6 +1287,7 @@ model Account {
   children    Account[] @relation("AccountHierarchy")
   entries     LedgerEntry[]
 
+  @@unique([companyId, code])
   @@index([companyId])
   @@index([type])
   @@map("accounts")

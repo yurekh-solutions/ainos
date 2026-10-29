@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { postExpense, removeSource } from '@/lib/finance/ledger';
 
 const STATUSES = ['pending', 'approved', 'rejected', 'reimbursed'] as const;
 const PAYMENT_METHODS = ['cash', 'upi', 'card', 'bank', 'cheque', 'credit'] as const;
@@ -346,6 +347,8 @@ export async function PUT(req: NextRequest) {
     }
 
     const expense = await prisma.expense.update({ where: { id }, data });
+    // Approved/reimbursed claims post to the ledger; others are cleared.
+    await postExpense(prisma, expense);
     return NextResponse.json(expense);
   } catch (error) {
     console.error('Error updating expense:', error);
@@ -376,6 +379,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     await prisma.expense.delete({ where: { id } });
+    await removeSource(prisma, 'EXPENSE', id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting expense:', error);

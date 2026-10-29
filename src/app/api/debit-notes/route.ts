@@ -2,11 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { postDebitNote, removeSource } from '@/lib/finance/ledger';
 
 const toNumber = (value: unknown) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
 };
+
+// Adapt a stored DebitNote row to the ledger posting shape.
+const toNoteDoc = (n: {
+  id: string; companyId: string | null; noteNumber: string; subtotal: number | null;
+  tax: number | null; total: number | null; status: string; vendorName: string | null;
+}) => ({
+  id: n.id, companyId: n.companyId || '', noteNumber: n.noteNumber,
+  subtotal: n.subtotal, tax: n.tax, total: n.total, status: n.status || 'draft',
+  partyName: n.vendorName,
+});
 
 export async function GET(req: NextRequest) {
   try {
@@ -60,6 +71,7 @@ export async function POST(req: NextRequest) {
         companyId: user.companyId,
       },
     });
+    await postDebitNote(prisma, toNoteDoc(note));
     return NextResponse.json(note, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to create debit note' }, { status: 500 });
@@ -102,6 +114,7 @@ export async function PUT(req: NextRequest) {
     if (body.total !== undefined || body.amount !== undefined) data.total = toNumber(body.total ?? body.amount);
 
     const note = await prisma.debitNote.update({ where: { id }, data });
+    await postDebitNote(prisma, toNoteDoc(note));
     return NextResponse.json(note);
   } catch (error) {
     console.error('Error updating debit note:', error);
@@ -125,6 +138,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     await prisma.debitNote.delete({ where: { id } });
+    await removeSource(prisma, 'DEBIT_NOTE', id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting debit note:', error);

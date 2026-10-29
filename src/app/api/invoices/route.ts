@@ -5,6 +5,7 @@ import {
   stateCodeFromGstin, resolveSupplyType, computeGstSplit, computeTds, computeTcs1H,
   UT_STATE_CODES, type SupplyType,
 } from '@/lib/finance/gst';
+import { postInvoiceIssued, postInvoicePayment, removeSource } from '@/lib/finance/ledger';
 
 export async function GET(req: NextRequest) {
   try {
@@ -254,6 +255,10 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Post to the double-entry ledger (idempotent; drafts simply no-op).
+    await postInvoiceIssued(prisma, invoice);
+    await postInvoicePayment(prisma, invoice);
+
     return NextResponse.json(invoice, { status: 201 });
   } catch (error) {
     console.error('Error creating invoice:', error);
@@ -294,6 +299,10 @@ export async function PUT(req: NextRequest) {
       data,
     });
 
+    // Reconcile the ledger against the updated document.
+    await postInvoiceIssued(prisma, invoice);
+    await postInvoicePayment(prisma, invoice);
+
     return NextResponse.json(invoice);
   } catch (error) {
     console.error('Error updating invoice:', error);
@@ -323,6 +332,10 @@ export async function DELETE(req: NextRequest) {
     await prisma.invoice.delete({
       where: { id, companyId: user.companyId },
     });
+
+    // Remove any journals posted for this invoice and its payment.
+    await removeSource(prisma, 'INVOICE', id);
+    await removeSource(prisma, 'INVOICE_PAYMENT', id);
 
     return NextResponse.json({ success: true });
   } catch (error) {
