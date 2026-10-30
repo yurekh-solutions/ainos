@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2, CheckCircle2, TrendingUp, Bell, Mail, MessageCircle, CheckCircle, Loader2, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
+import QRCode from 'qrcode';
 import { useToast } from '@/lib/toast';
 
 interface Invoice {
@@ -547,6 +548,23 @@ export default function InvoicesPage() {
         });
       }
       y += 4;
+    }
+
+    // ── E-INVOICE QR + IRN ──
+    if (invoice.einvoiceQr) {
+      try {
+        const qrData = await QRCode.toDataURL(invoice.einvoiceQr, { margin: 1, width: 160 });
+        const qrSize = 26;
+        const qrY = H - 62;
+        doc.addImage(qrData, 'PNG', M, qrY, qrSize, qrSize);
+        doc.setFontSize(6);
+        doc.setTextColor(90, 90, 90);
+        doc.text('e-Invoice IRN', M + qrSize + 3, qrY + 5);
+        const irn = invoice.einvoiceIrn || '';
+        doc.text(doc.splitTextToSize(irn.slice(0, 34), 70), M + qrSize + 3, qrY + 9);
+        doc.text(doc.splitTextToSize(irn.slice(34), 70), M + qrSize + 3, qrY + 14);
+        if (invoice.einvoiceAck) doc.text(`Ack: ${invoice.einvoiceAck}`, M + qrSize + 3, qrY + 22);
+      } catch { /* QR render is best-effort */ }
     }
 
     // ── SIGNATURES ──

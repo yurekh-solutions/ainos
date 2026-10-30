@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import jsPDF from 'jspdf';
+import QRCode from 'qrcode';
 import { amountInWords, currencySymbol } from '@/lib/finance/gst';
 
 async function resolveUser(req: NextRequest) {
@@ -33,6 +34,14 @@ export async function POST(req: NextRequest) {
     const company = await prisma.company.findUnique({ where: { id: user.companyId }, select: { name: true } });
 
     if (!invoices.length) return NextResponse.json({ error: 'Invoices not found' }, { status: 404 });
+
+    // Pre-render e-invoice QR images (best-effort) so the sync page loop can embed them.
+    const qrMap = new Map<string, string>();
+    for (const inv of invoices) {
+      if (inv.einvoiceQr) {
+        try { qrMap.set(inv.id, await QRCode.toDataURL(inv.einvoiceQr, { margin: 1, width: 160 })); } catch { /* skip */ }
+      }
+    }
 
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageW = 200;
@@ -107,6 +116,19 @@ export async function POST(req: NextRequest) {
       y += 6;
       doc.setFont('helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor(90);
       doc.text(`Amount in words: ${amountInWords(inv.totalAmount || 0, cur)}`, M, y);
+
+      // e-Invoice QR + IRN (bottom-left of each page)
+      const qr = qrMap.get(inv.id);
+      if (qr && inv.einvoiceIrn) {
+        const qrSize = 20;
+        const qrY = 272;
+        doc.addImage(qr, 'PNG', M, qrY, qrSize, qrSize);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(6); doc.setTextColor(90);
+        doc.text('e-Invoice IRN', M + qrSize + 2, qrY + 4);
+        doc.text(doc.splitTextToSize(inv.einvoiceIrn.slice(0, 40), 60), M + qrSize + 2, qrY + 8);
+        doc.text(doc.splitTextToSize(inv.einvoiceIrn.slice(40), 60), M + qrSize + 2, qrY + 12);
+        if (inv.einvoiceAck) doc.text(`Ack: ${inv.einvoiceAck}`, M + qrSize + 2, qrY + 17);
+      }
     });
 
     const buf = Buffer.from(doc.output('arraybuffer'));
