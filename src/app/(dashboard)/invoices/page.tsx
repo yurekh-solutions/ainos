@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2, CheckCircle2, TrendingUp, Bell, Mail, MessageCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2, CheckCircle2, TrendingUp, Bell, Mail, MessageCircle, CheckCircle, Loader2, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
 import { useToast } from '@/lib/toast';
@@ -30,6 +30,10 @@ interface Invoice {
   status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
   createdAt: string;
   dueDate?: string;
+  einvoiceIrn?: string | null;
+  einvoiceQr?: string | null;
+  einvoiceAck?: string | null;
+  einvoiceStatus?: string | null;
   items: {
     description: string;
     quantity: number;
@@ -109,6 +113,8 @@ export default function InvoicesPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   
   const [chasing, setChasing] = useState(false);
+  const [einvoicing, setEinvoicing] = useState(false);
+  const [einvBusy, setEinvBusy] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -703,6 +709,40 @@ export default function InvoicesPage() {
     }
   };
 
+  const generateEinvoice = async (invoice: Invoice) => {
+    setEinvBusy(invoice.id);
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}/einvoice`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Registration failed');
+      setInvoices(prev => prev.map(i => (i.id === invoice.id ? { ...i, ...data } : i)));
+      toast.success(`Invoice ${invoice.invoiceNumber} e-invoiced${data.einvoiceIrn ? ` (IRN ${String(data.einvoiceIrn).slice(0, 8)}…)` : ''}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'E-invoice failed');
+    } finally {
+      setEinvBusy(null);
+    }
+  };
+
+  const runBulkEinvoice = async () => {
+    const ids = filteredInvoices.filter(i => i.einvoiceStatus !== 'registered').map(i => i.id).filter(Boolean);
+    if (!ids.length) { toast.info('All filtered invoices are already e-invoiced.'); return; }
+    setEinvoicing(true);
+    try {
+      const res = await fetch('/api/invoices/einvoice/bulk', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Bulk e-invoice failed');
+      await fetchData();
+      toast.success(`E-invoiced ${data.summary?.registered ?? 0} invoice(s)${data.summary?.failed ? `, ${data.summary.failed} failed` : ''}.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Bulk e-invoice failed');
+    } finally {
+      setEinvoicing(false);
+    }
+  };
+
   const runPaymentChase = async () => {
     setChasing(true);
     try {
@@ -746,6 +786,21 @@ export default function InvoicesPage() {
           className="p-1.5 rounded-lg transition-colors hover:bg-green-50"
           title="WhatsApp Reminder">
           <MessageCircle className="w-3.5 h-3.5 text-green-600" />
+        </button>
+      )}
+      {invoice.einvoiceStatus === 'registered' ? (
+        <button onClick={() => toast.info(`IRN: ${invoice.einvoiceIrn}`)}
+          className="p-1.5 rounded-lg transition-colors hover:bg-emerald-50"
+          title="E-invoice registered — view IRN">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+        </button>
+      ) : (
+        <button onClick={() => generateEinvoice(invoice)} disabled={einvBusy === invoice.id}
+          className="p-1.5 rounded-lg transition-colors hover:bg-[hsl(var(--primary)/0.1)] disabled:opacity-50"
+          title="Generate e-Invoice (IRN)">
+          {einvBusy === invoice.id
+            ? <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: 'hsl(var(--primary))' }} />
+            : <ShieldCheck className="w-3.5 h-3.5" style={{ color: 'hsl(var(--primary))' }} />}
         </button>
       )}
       <button onClick={() => downloadPDF(invoice)}
@@ -811,6 +866,18 @@ export default function InvoicesPage() {
               >
                 <Download className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>Bulk PDF</span>
+              </button>
+            )}
+            {company?.name && filteredInvoices.length > 0 && (
+              <button
+                onClick={runBulkEinvoice}
+                disabled={einvoicing}
+                className="group inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl text-sm font-medium transition-all border-2 hover:opacity-80 disabled:opacity-60"
+                style={{ borderColor: 'hsl(142 76% 36%)', color: 'hsl(142 76% 36%)', background: 'hsl(142 76% 36% / 0.05)' }}
+                title="Generate IRNs for all filtered invoices"
+              >
+                {einvoicing ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />}
+                <span>Bulk e-Invoice</span>
               </button>
             )}
             {company?.name && (
@@ -970,6 +1037,12 @@ export default function InvoicesPage() {
                                 <span className="block text-[10px] px-1.5 py-0.5 rounded mt-0.5 w-fit"
                                   style={{ background: invoice.supplyType === 'inter' ? 'hsl(280 60% 55% / 0.1)' : 'hsl(var(--primary) / 0.1)', color: invoice.supplyType === 'inter' ? 'hsl(280 60% 70%)' : 'hsl(var(--primary))' }}>
                                   {invoice.supplyType === 'inter' ? 'IGST' : 'CGST+SGST'}
+                                </span>
+                              )}
+                              {invoice.einvoiceStatus === 'registered' && (
+                                <span className="block text-[10px] px-1.5 py-0.5 rounded mt-0.5 w-fit"
+                                  style={{ background: 'hsl(142 76% 36% / 0.12)', color: 'hsl(142 76% 36%)' }}>
+                                  E-invoiced
                                 </span>
                               )}
                             </div>
