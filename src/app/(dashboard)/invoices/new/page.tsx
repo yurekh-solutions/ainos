@@ -4,9 +4,10 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Trash2, Save, FileText, Percent, Building2, Package, ChevronDown, IndianRupee, Truck, CreditCard, ScanLine, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, FileText, Percent, Building2, Package, ChevronDown, IndianRupee, Truck, CreditCard, ScanLine, Loader2, LayoutGrid } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { BUSINESS_PRESETS } from '@/lib/finance/business-presets';
 
 interface InvoiceItem {
   id: string;
@@ -68,6 +69,7 @@ export default function NewInvoicePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
   const [template, setTemplate] = useState<InvoiceTemplate | null>(null);
+  const [businessKey, setBusinessKey] = useState('');
   const [dynamicFieldValues, setDynamicFieldValues] = useState<Record<string, string>>({});
   // Digital Signature
   const [signatureType, setSignatureType] = useState<'upload' | 'draw' | 'none'>('none');
@@ -446,6 +448,27 @@ export default function NewInvoicePage() {
     color: 'hsl(var(--foreground))',
   };
 
+  // Apply a business-type preset: swap the invoice table columns + custom fields
+  // the user sees, keeping the current template's other settings intact.
+  const applyBusinessPreset = (key: string) => {
+    setBusinessKey(key);
+    const preset = BUSINESS_PRESETS.find(p => p.key === key);
+    if (!preset) return;
+    setTemplate(prev => ({
+      ...(prev || { id: 'preset', name: preset.label }),
+      formFields: preset.formFields,
+      tableColumns: preset.tableColumns,
+    } as InvoiceTemplate));
+    // Re-init dynamic field values for the new field set (keep shared keys).
+    setDynamicFieldValues(prev => {
+      const next: Record<string, string> = {};
+      preset.formFields.forEach(f => { next[f.key] = prev[f.key] || ''; });
+      return next;
+    });
+  };
+
+  const selectedPreset = BUSINESS_PRESETS.find(p => p.key === businessKey);
+
   return (
     <div className="h-full overflow-y-auto p-4 sm:p-6 lg:p-8" style={{ background: 'var(--page-gradient)' }}>
       <div className="max-w-5xl mx-auto">
@@ -479,6 +502,40 @@ export default function NewInvoicePage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Quick start: pick your business type */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-2xl p-4 sm:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'hsl(var(--primary) / 0.12)' }}>
+                  <LayoutGrid className="w-5 h-5" style={{ color: 'hsl(var(--primary))' }} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Quick start</h3>
+                  <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>Select your business to auto-fill the invoice columns &amp; fields</p>
+                </div>
+              </div>
+              <select
+                value={businessKey}
+                onChange={e => applyBusinessPreset(e.target.value)}
+                className="w-full sm:w-60 px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20 cursor-pointer"
+                style={inputStyle}
+              >
+                <option value="">Select your business…</option>
+                {BUSINESS_PRESETS.map(p => (
+                  <option key={p.key} value={p.key}>{p.label}</option>
+                ))}
+              </select>
+            </div>
+            {selectedPreset && (
+              <div className="mt-4 flex flex-wrap items-center gap-1.5 pt-3 border-t" style={{ borderColor: 'hsl(var(--border) / 0.4)' }}>
+                <span className="text-[11px] uppercase tracking-wide mr-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Custom fields</span>
+                {selectedPreset.formFields.map(f => (
+                  <span key={f.key} className="text-xs px-2.5 py-0.5 rounded-full font-medium" style={{ background: 'hsl(var(--primary) / 0.08)', color: 'hsl(var(--primary))' }}>{f.label}</span>
+                ))}
+              </div>
+            )}
+          </motion.div>
+
           {/* Customer Info */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--foreground))' }}>
