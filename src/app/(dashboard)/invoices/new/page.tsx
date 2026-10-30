@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Trash2, Save, FileText, Percent, Building2, Package, ChevronDown, IndianRupee, Truck, CreditCard, ScanLine, Loader2, LayoutGrid } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, FileText, Building2, ChevronDown, IndianRupee, Truck, CreditCard, ScanLine, Loader2, LayoutGrid, ShieldCheck, FileSpreadsheet, Bell, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BUSINESS_PRESETS } from '@/lib/finance/business-presets';
@@ -469,37 +469,41 @@ export default function NewInvoicePage() {
 
   const selectedPreset = BUSINESS_PRESETS.find(p => p.key === businessKey);
 
+  // Numbered step badge + header trust chip (shared visual atoms).
+  const stepBadge = (n: number) => (
+    <span className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>{n}</span>
+  );
+  const trustChip = (icon: React.ReactNode, label: string) => (
+    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium" style={{ background: 'hsl(var(--primary) / 0.08)', color: 'hsl(var(--primary))' }}>{icon}{label}</span>
+  );
+
   return (
     <div className="h-full overflow-y-auto p-4 sm:p-6 lg:p-8" style={{ background: 'var(--page-gradient)' }}>
       <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Link href="/invoices" className="p-2 rounded-xl transition-colors" style={{ background: 'hsl(var(--muted))' }}>
-            <ArrowLeft className="w-5 h-5" style={{ color: 'hsl(var(--foreground))' }} />
-          </Link>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>New GST Invoice</h1>
-            <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>Create a GST-compliant invoice with CGST/SGST/IGST</p>
-          </div>
-        </div>
+        {/* Back */}
+        <Link href="/invoices" className="inline-flex items-center gap-2 text-sm mb-4 hover:opacity-80" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          <ArrowLeft className="w-4 h-4" /> Back to Invoices
+        </Link>
 
-        {/* Company Info */}
-        {company && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-4 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.1)' }}>
-                <Building2 className="w-5 h-5" style={{ color: 'hsl(var(--primary))' }} />
+        {/* Header card */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-2xl p-5 sm:p-6 mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
+                <FileText className="w-6 h-6 text-white" />
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-sm" style={{ color: 'hsl(var(--foreground))' }}>{company.name}</h3>
-                <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                  {company.gstNumber ? `GSTIN: ${company.gstNumber}` : 'No GSTIN'}
-                </p>
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>Create GST Invoice</h1>
+                <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>Generate professional GST-compliant invoices in seconds</p>
               </div>
-              <Link href="/company" className="text-xs hover:underline" style={{ color: 'hsl(var(--primary))' }}>Edit</Link>
             </div>
-          </motion.div>
-        )}
+            <div className="flex flex-wrap gap-2">
+              {trustChip(<ShieldCheck className="w-3.5 h-3.5" />, 'GST Compliant')}
+              {trustChip(<FileSpreadsheet className="w-3.5 h-3.5" />, 'Tally Export')}
+              {trustChip(<Bell className="w-3.5 h-3.5" />, 'Auto Reminders')}
+            </div>
+          </div>
+        </motion.div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Quick start: pick your business type */}
@@ -536,90 +540,123 @@ export default function NewInvoicePage() {
             )}
           </motion.div>
 
-          {/* Customer Info */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--foreground))' }}>
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.1)' }}>
-                <FileText className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
+          {/* Step 1: Company & Customer Details */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-2xl p-5 sm:p-6">
+            <div className="flex items-center gap-3">
+              {stepBadge(1)}
+              <div>
+                <h2 className="text-base sm:text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Company &amp; Customer Details</h2>
+                <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Enter your business and customer information</p>
               </div>
-              Customer Details
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="relative">
-                <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Name *</label>
-                <input type="text" value={customerSearch || customerName} onChange={e => { setCustomerSearch(e.target.value); setCustomerName(''); setShowCustomerResults(true); }}
-                  onFocus={() => setShowCustomerResults(true)}
-                  onBlur={() => setTimeout(() => setShowCustomerResults(false), 200)}
-                  className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
-                  style={inputStyle} placeholder="Search customer..." required />
-                {showCustomerResults && filteredCustomers.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 max-h-48 overflow-auto rounded-xl border shadow-lg" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
-                    {filteredCustomers.slice(0, 8).map(c => (
-                      <button key={c.id} type="button" onClick={() => selectCustomer(c)}
-                        className="w-full text-left px-3 py-2 text-sm hover:opacity-80 transition-opacity border-b last:border-b-0"
-                        style={{ borderColor: 'hsl(var(--border) / 0.3)' }}>
-                        <span className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>{c.name}</span>
-                        {c.email && <span className="ml-2 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{c.email}</span>}
-                        {c.gstNumber && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}>{c.gstNumber}</span>}
-                      </button>
-                    ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5">
+              {/* Company */}
+              <div className="rounded-xl p-4 sm:p-5" style={{ background: 'hsl(var(--card-bg))', border: '1px solid hsl(var(--border) / 0.5)' }}>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.1)' }}>
+                    <Building2 className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
                   </div>
-                )}
+                  <h3 className="text-sm font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Company Details</h3>
+                  <Link href="/company" className="ml-auto text-xs hover:underline" style={{ color: 'hsl(var(--primary))' }}>Edit</Link>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Company Name</label>
+                    <input type="text" value={company?.name || ''} readOnly className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none opacity-70" style={inputStyle} placeholder="Your business name" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>GSTIN</label>
+                    <input type="text" value={company?.gstNumber || ''} readOnly className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none opacity-70" style={inputStyle} placeholder="22AAAAA0000A1Z5" />
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Email</label>
-                <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
-                  style={inputStyle} placeholder="email@example.com" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Phone</label>
-                <input type="text" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
-                  style={inputStyle} placeholder="+91 XXXXX XXXXX" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>GSTIN</label>
-                <input type="text" value={customerGst} onChange={e => setCustomerGst(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
-                  style={inputStyle} placeholder="22AAAAA0000A1Z5" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>PAN</label>
-                <input type="text" value={customerPan} onChange={e => setCustomerPan(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
-                  style={inputStyle} placeholder="ABCDE1234F" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>State</label>
-                <input type="text" value={customerState} onChange={e => setCustomerState(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
-                  style={inputStyle} placeholder="Maharashtra" />
-              </div>
-              <div className="sm:col-span-3">
-                <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Address</label>
-                <input type="text" value={customerAddress} onChange={e => setCustomerAddress(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
-                  style={inputStyle} placeholder="Full address with PIN code" />
+              {/* Customer */}
+              <div className="rounded-xl p-4 sm:p-5" style={{ background: 'hsl(var(--card-bg))', border: '1px solid hsl(var(--border) / 0.5)' }}>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.1)' }}>
+                    <User className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
+                  </div>
+                  <h3 className="text-sm font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Customer Details</h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="relative sm:col-span-2">
+                    <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Name *</label>
+                    <input type="text" value={customerSearch || customerName} onChange={e => { setCustomerSearch(e.target.value); setCustomerName(''); setShowCustomerResults(true); }}
+                      onFocus={() => setShowCustomerResults(true)}
+                      onBlur={() => setTimeout(() => setShowCustomerResults(false), 200)}
+                      className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
+                      style={inputStyle} placeholder="Search customer..." required />
+                    {showCustomerResults && filteredCustomers.length > 0 && (
+                      <div className="absolute z-50 w-full mt-1 max-h-48 overflow-auto rounded-xl border shadow-lg" style={{ background: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}>
+                        {filteredCustomers.slice(0, 8).map(c => (
+                          <button key={c.id} type="button" onClick={() => selectCustomer(c)}
+                            className="w-full text-left px-3 py-2 text-sm hover:opacity-80 transition-opacity border-b last:border-b-0"
+                            style={{ borderColor: 'hsl(var(--border) / 0.3)' }}>
+                            <span className="font-medium" style={{ color: 'hsl(var(--foreground))' }}>{c.name}</span>
+                            {c.email && <span className="ml-2 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{c.email}</span>}
+                            {c.gstNumber && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}>{c.gstNumber}</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Email</label>
+                    <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
+                      style={inputStyle} placeholder="email@example.com" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Phone</label>
+                    <input type="text" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
+                      style={inputStyle} placeholder="+91 XXXXX XXXXX" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>GSTIN</label>
+                    <input type="text" value={customerGst} onChange={e => setCustomerGst(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
+                      style={inputStyle} placeholder="22AAAAA0000A1Z5" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>PAN</label>
+                    <input type="text" value={customerPan} onChange={e => setCustomerPan(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
+                      style={inputStyle} placeholder="ABCDE1234F" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>State</label>
+                    <input type="text" value={customerState} onChange={e => setCustomerState(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
+                      style={inputStyle} placeholder="Maharashtra" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Address</label>
+                    <input type="text" value={customerAddress} onChange={e => setCustomerAddress(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
+                      style={inputStyle} placeholder="Full address with PIN code" />
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>
 
-          {/* Billing Settings */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="glass-card p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--foreground))' }}>
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.1)' }}>
-                <Percent className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
-              </div>
-              Billing Settings
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {/* Step 2: Invoice Details */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="glass-card rounded-2xl p-5 sm:p-6">
+            <div className="flex items-center gap-3">
+              {stepBadge(2)}
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Customer's Location</label>
+                <h2 className="text-base sm:text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Invoice Details</h2>
+                <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Set supply type, billing and payment options</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5">
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Invoice Type</label>
                 <select value={supplyType} onChange={e => setSupplyType(e.target.value as 'intra' | 'inter')}
                   className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none" style={inputStyle}>
-                  <option value="intra">Same State (CGST + SGST)</option>
-                  <option value="inter">Other State (IGST)</option>
+                  <option value="intra">B2B Intra-State (CGST + SGST)</option>
+                  <option value="inter">B2B Inter-State (IGST)</option>
                 </select>
               </div>
               <div>
@@ -668,62 +705,56 @@ export default function NewInvoicePage() {
                   className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none" style={inputStyle} />
               </div>
             </div>
+            {template?.formFields && (template.formFields as FormField[]).length > 0 && (
+              <div className="mt-5 pt-5 border-t" style={{ borderColor: 'hsl(var(--border) / 0.5)' }}>
+                <h3 className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--foreground))' }}>Custom Fields</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {(template.formFields as FormField[]).map((field) => (
+                    <div key={field.key}>
+                      <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                        {field.label} {field.required && <span style={{ color: 'hsl(var(--destructive))' }}>*</span>}
+                      </label>
+                      {field.type === 'select' ? (
+                        <select
+                          value={dynamicFieldValues[field.key] || ''}
+                          onChange={e => setDynamicFieldValues(prev => ({ ...prev, [field.key]: e.target.value }))}
+                          className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
+                          style={inputStyle}
+                          required={field.required}
+                        >
+                          <option value="">Select...</option>
+                          {field.options?.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type={field.type}
+                          value={dynamicFieldValues[field.key] || ''}
+                          onChange={e => setDynamicFieldValues(prev => ({ ...prev, [field.key]: e.target.value }))}
+                          className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
+                          style={inputStyle}
+                          placeholder={field.placeholder || `Enter ${field.label}`}
+                          required={field.required}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </motion.div>
 
-          {/* Dynamic Custom Fields from Template */}
-          {template?.formFields && (template.formFields as FormField[]).length > 0 && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.075 }} className="glass-card p-6">
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--foreground))' }}>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.1)' }}>
-                  <FileText className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
+          {/* Step 3: Items */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card rounded-2xl p-5 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center gap-3">
+                {stepBadge(3)}
+                <div>
+                  <h2 className="text-base sm:text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Items</h2>
+                  <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Add products or services to your invoice</p>
                 </div>
-                Custom Fields
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {(template.formFields as FormField[]).map((field) => (
-                  <div key={field.key}>
-                    <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                      {field.label} {field.required && <span style={{ color: 'hsl(var(--destructive))' }}>*</span>}
-                    </label>
-                    {field.type === 'select' ? (
-                      <select
-                        value={dynamicFieldValues[field.key] || ''}
-                        onChange={e => setDynamicFieldValues(prev => ({ ...prev, [field.key]: e.target.value }))}
-                        className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
-                        style={inputStyle}
-                        required={field.required}
-                      >
-                        <option value="">Select...</option>
-                        {field.options?.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type={field.type}
-                        value={dynamicFieldValues[field.key] || ''}
-                        onChange={e => setDynamicFieldValues(prev => ({ ...prev, [field.key]: e.target.value }))}
-                        className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/20"
-                        style={inputStyle}
-                        placeholder={field.placeholder || `Enter ${field.label}`}
-                        required={field.required}
-                      />
-                    )}
-                  </div>
-                ))}
               </div>
-            </motion.div>
-          )}
-
-          {/* Items */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'hsl(var(--foreground))' }}>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.1)' }}>
-                  <Package className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
-                </div>
-                Items
-              </h2>
               <div className="flex items-center gap-2">
                 <input ref={ocrFileRef} type="file" accept="image/*" className="hidden"
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) onOcrFile(f); }} />
@@ -733,23 +764,23 @@ export default function NewInvoicePage() {
                   {ocrLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanLine className="w-4 h-4" />} Scan Receipt
                 </button>
                 <button type="button" onClick={addItem}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
-                  style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}>
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white transition-all"
+                  style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))' }}>
                   <Plus className="w-4 h-4" /> Add Item
                 </button>
               </div>
             </div>
 
             {/* Table Header */}
-            <div className="hidden lg:grid lg:grid-cols-12 gap-2 px-3 py-2 text-xs font-medium mb-2" style={{ color: 'hsl(var(--muted-foreground))' }}>
+            <div className="hidden lg:grid lg:grid-cols-12 gap-2 px-3 py-2 text-xs font-medium mt-4 mb-2" style={{ color: 'hsl(var(--muted-foreground))' }}>
               <div className="col-span-2">Product</div>
-              <div className="col-span-1">HSN</div>
+              <div className="col-span-1">HSN/SAC</div>
               <div className="col-span-1">Qty</div>
-              <div className="col-span-1">Rate</div>
+              <div className="col-span-1">Rate (₹)</div>
               <div className="col-span-1">Cost</div>
               <div className="col-span-1">GST%</div>
               <div className="col-span-1">Tax</div>
-              <div className="col-span-1">Total</div>
+              <div className="col-span-1">Amount</div>
               <div className="col-span-1">Profit</div>
               <div className="col-span-1"></div>
             </div>
@@ -840,9 +871,16 @@ export default function NewInvoicePage() {
             </div>
           </motion.div>
 
-          {/* Discount + Notes */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="glass-card p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Step 4: Review & Sign */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="glass-card rounded-2xl p-5 sm:p-6">
+            <div className="flex items-center gap-3">
+              {stepBadge(4)}
+              <div>
+                <h2 className="text-base sm:text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Review &amp; Sign</h2>
+                <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Add discount, review totals and sign the invoice</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
               <div>
                 <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Discount</label>
                 <div className="flex gap-2">
@@ -861,11 +899,8 @@ export default function NewInvoicePage() {
                   className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none" style={inputStyle} placeholder="Payment terms, thank you note..." />
               </div>
             </div>
-          </motion.div>
 
-          {/* Totals Summary */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6 pt-6 border-t" style={{ borderColor: 'hsl(var(--border) / 0.5)' }}>
               {/* GST Breakdown */}
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--foreground))' }}>
@@ -908,18 +943,15 @@ export default function NewInvoicePage() {
                 </div>
               </div>
             </div>
-          </motion.div>
 
-          {/* Digital Signature */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="glass-card p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--foreground))' }}>
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.1)' }}>
-                <FileText className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
-              </div>
-              Digital Signature
-            </h2>
-            <div className="space-y-4">
-              <div className="flex gap-4">
+              <h3 className="text-base font-semibold mt-6 pt-6 border-t mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--foreground))', borderColor: 'hsl(var(--border) / 0.5)' }}>
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'hsl(var(--primary) / 0.1)' }}>
+                  <FileText className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
+                </div>
+                Digital Signature
+              </h3>
+              <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                 <button
                   type="button"
                   onClick={() => setSignatureType('upload')}
