@@ -351,31 +351,53 @@ export default function NewInvoicePage() {
     }
   };
 
-  // Canvas drawing functions
+  // Canvas drawing functions (DPR-aware: crisp, uniform, undistorted strokes)
+  const configureCtx = (ctx: CanvasRenderingContext2D) => {
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#111827';
+  };
+
+  const resizeCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    const dpr = window.devicePixelRatio || 1;
+    const prev = canvas.width > 0 && signatureImage ? canvas.toDataURL() : null;
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+    configureCtx(ctx);
+    if (prev) {
+      const img = new Image();
+      img.onload = () => ctx.drawImage(img, 0, 0, rect.width, rect.height);
+      img.src = prev;
+    }
+  };
+
+  const getPointerPos = (e: React.PointerEvent<HTMLCanvasElement>, canvas: HTMLCanvasElement) => {
+    const rect = canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
+
   const startDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
-    // Prevent default touch behavior
     e.preventDefault();
     canvas.setPointerCapture(e.pointerId);
-    
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
-    
-    // Set pencil style
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#1a1a1a';
-    
+    const { x, y } = getPointerPos(e, canvas);
+    configureCtx(ctx);
     ctx.beginPath();
     ctx.moveTo(x, y);
+    ctx.lineTo(x + 0.1, y + 0.1);
+    ctx.stroke();
     lastPointRef.current = { x, y };
     setIsDrawing(true);
   };
@@ -386,27 +408,18 @@ export default function NewInvoicePage() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
     e.preventDefault();
-    
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
-    
-    // Smooth quadratic curve (pencil-like)
+    const { x, y } = getPointerPos(e, canvas);
     const lastPoint = lastPointRef.current;
     if (lastPoint) {
       const midX = (lastPoint.x + x) / 2;
       const midY = (lastPoint.y + y) / 2;
+      ctx.beginPath();
+      ctx.moveTo(lastPoint.x, lastPoint.y);
       ctx.quadraticCurveTo(lastPoint.x, lastPoint.y, midX, midY);
       ctx.stroke();
     }
-    
     lastPointRef.current = { x, y };
-    
-    // Auto-save after drawing stops (debounce)
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
   };
 
@@ -414,22 +427,18 @@ export default function NewInvoicePage() {
     if (!isDrawing) return;
     setIsDrawing(false);
     lastPointRef.current = null;
-    
-    // Auto-save signature after 500ms
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      // Check if canvas has content
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const hasContent = imageData.data.some((val, idx) => idx % 4 === 3 && val > 0);
       if (hasContent) {
-        const dataUrl = canvas.toDataURL('image/png');
-        setSignatureImage(dataUrl);
+        setSignatureImage(canvas.toDataURL('image/png'));
       }
-    }, 500);
+    }, 400);
   };
 
   const clearCanvas = () => {
@@ -437,10 +446,23 @@ export default function NewInvoicePage() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+    configureCtx(ctx);
     setSignatureImage('');
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
   };
+
+  useEffect(() => {
+    if (signatureType !== 'draw') return;
+    resizeCanvas();
+    const onResize = () => resizeCanvas();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signatureType]);
 
   const inputStyle = {
     background: 'hsl(var(--card-bg))',
@@ -1009,18 +1031,24 @@ export default function NewInvoicePage() {
               {signatureType === 'draw' && (
                 <div className="space-y-2">
                   <label className="block text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Draw Your Signature (Auto-saves)</label>
-                  <div className="border-2 border-dashed rounded-xl p-4" style={{ borderColor: 'hsl(var(--border))' }}>
-                    <canvas
-                      ref={canvasRef}
-                      width={800}
-                      height={200}
-                      className="w-full bg-white rounded-lg touch-none"
-                      style={{ cursor: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'20\' height=\'20\' viewBox=\'0 0 20 20\'%3E%3Cpath d=\'M3 17l4-4m0 0l8-8m-8 8l-2-2m2 2l2 2\' stroke=\'%23333\' stroke-width=\'1.5\' fill=\'none\'/%3E%3C/svg%3E") 2 18, crosshair' }}
-                      onPointerDown={startDrawing}
-                      onPointerMove={draw}
-                      onPointerUp={stopDrawing}
-                      onPointerLeave={stopDrawing}
-                    />
+                  <div className="border-2 border-dashed rounded-xl p-3 sm:p-4" style={{ borderColor: 'hsl(var(--border))' }}>
+                    <div className="relative">
+                      <canvas
+                        ref={canvasRef}
+                        className="w-full h-40 sm:h-44 bg-white rounded-lg border touch-none"
+                        style={{ borderColor: 'hsl(var(--border))', cursor: 'crosshair' }}
+                        onPointerDown={startDrawing}
+                        onPointerMove={draw}
+                        onPointerUp={stopDrawing}
+                        onPointerLeave={stopDrawing}
+                      />
+                      {!signatureImage && !isDrawing && (
+                        <div className="pointer-events-none absolute inset-0 flex items-end justify-center pb-7">
+                          <span className="text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>Draw your signature here</span>
+                        </div>
+                      )}
+                      <div className="pointer-events-none absolute left-6 right-6 bottom-9 border-b border-dashed" style={{ borderColor: 'hsl(var(--border))' }} />
+                    </div>
                     {signatureImage && (
                       <div className="mt-2 p-2 rounded-lg border flex items-center gap-2" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--primary) / 0.05)' }}>
                         <span className="text-xs" style={{ color: 'hsl(var(--primary))' }}>✓ Saved</span>
