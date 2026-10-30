@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Palette, Type, Layout, FileText, Save, Check, Trash2, Copy, Eye, ChevronDown, ChevronUp, Star, Plus } from 'lucide-react';
+  Palette, Type, Layout, FileText, Save, Check, Trash2, Copy, Eye, ChevronDown, ChevronUp, Star, Plus,
+  Utensils, Code, Store, Factory, PenTool, Truck, ShoppingBag, Building2, Pill, GraduationCap, Navigation } from 'lucide-react';
 
 interface TableColumn {
   label: string;
@@ -167,6 +168,318 @@ const PRESETS: Record<string, Partial<Template>> = {
   },
 };
 
+// ── Business-type presets (full structure: columns + formFields + terms + layout) ──
+const BUSINESS_ICONS: Record<string, React.ReactNode> = {
+  restaurant: <Utensils className="w-5 h-5" />,
+  it: <Code className="w-5 h-5" />,
+  retail: <Store className="w-5 h-5" />,
+  manufacturing: <Factory className="w-5 h-5" />,
+  freelancer: <PenTool className="w-5 h-5" />,
+  wholesale: <Truck className="w-5 h-5" />,
+  ecommerce: <ShoppingBag className="w-5 h-5" />,
+  construction: <Building2 className="w-5 h-5" />,
+  medical: <Pill className="w-5 h-5" />,
+  education: <GraduationCap className="w-5 h-5" />,
+  transport: <Navigation className="w-5 h-5" />,
+};
+
+interface BusinessPreset {
+  key: string;
+  label: string;
+  description: string;
+  config: Partial<Template>;
+}
+
+const BUSINESS_PRESETS: BusinessPreset[] = [
+  {
+    key: 'restaurant', label: 'Restaurant / Cafe',
+    description: 'Item, Qty, Rate columns; Order No, Table No fields; MRP-based',
+    config: {
+      name: 'Restaurant Invoice', primaryColor: '#EA580C', secondaryColor: '#FB923C',
+      backgroundColor: '#FFF7ED', textColor: '#431407', layout: 'compact', fontSize: 'medium',
+      borderRadius: 'large', showLogo: true, showQrCode: true, showBankDetails: false,
+      terms: 'All prices are inclusive of applicable taxes. FSSAI Licence: [ADD YOURS].',
+      footerText: 'Thank you for dining with us!', signatureStyle: 'simple',
+      showDocInfoTable: false, showValidityDate: false, termsNumbering: 'plain',
+      tableColumns: [
+        { label: 'Item', key: 'name', width: '40%' },
+        { label: 'Qty', key: 'qty', width: '12%' },
+        { label: 'Unit', key: 'unit', width: '12%' },
+        { label: 'Rate', key: 'rate', width: '18%' },
+        { label: 'Amount', key: 'total', width: '18%' },
+      ],
+      formFields: [
+        { label: 'Order No', key: 'orderNo', type: 'text', required: true, placeholder: 'e.g. ORD-045' },
+        { label: 'Table No', key: 'tableNo', type: 'text', required: false, placeholder: 'e.g. T-12' },
+        { label: 'Service Type', key: 'serviceType', type: 'select', required: false, options: ['Dine-In', 'Takeaway', 'Delivery', 'Catering'] },
+      ],
+    },
+  },
+  {
+    key: 'it', label: 'IT Services / Agency',
+    description: 'Description, Period/Hours, Rate; Project Name, PO Number; SLA terms',
+    config: {
+      name: 'IT Services Invoice', primaryColor: '#2563EB', secondaryColor: '#3B82F6',
+      backgroundColor: '#F8FAFC', textColor: '#0F172A', layout: 'modern', fontSize: 'medium',
+      borderRadius: 'large', showLogo: true, showQrCode: false, showBankDetails: true,
+      terms: '1. Payment due within 30 days of invoice date.\n2. Scope changes may require a revised estimate.\n3. Support SLA: P1 — 4 hrs, P2 — 8 hrs, P3 — 24 hrs.',
+      footerText: '', signatureStyle: 'detailed', paymentTermsLayout: 'text',
+      showDocInfoTable: false, showValidityDate: false, termsNumbering: 'numbered',
+      tableColumns: [
+        { label: 'Description', key: 'name', width: '42%' },
+        { label: 'Period / Hrs', key: 'qty', width: '16%' },
+        { label: 'Rate', key: 'rate', width: '18%' },
+        { label: 'Amount', key: 'total', width: '24%' },
+      ],
+      formFields: [
+        { label: 'Project Name', key: 'projectName', type: 'text', required: true, placeholder: 'e.g. Mobile App v2' },
+        { label: 'PO Number', key: 'poNumber', type: 'text', required: false, placeholder: 'Client PO ref' },
+        { label: 'Service Period Start', key: 'serviceStart', type: 'date', required: false },
+        { label: 'Service Period End', key: 'serviceEnd', type: 'date', required: false },
+      ],
+    },
+  },
+  {
+    key: 'retail', label: 'Retail / Shop',
+    description: 'Product, SKU, Qty, Rate, Disc, GST; Counter No, Loyalty Card',
+    config: {
+      name: 'Retail Invoice', primaryColor: '#059669', secondaryColor: '#10B981',
+      backgroundColor: '#FFFFFF', textColor: '#374151', layout: 'compact', fontSize: 'small',
+      borderRadius: 'small', showLogo: true, showQrCode: true, showBankDetails: true,
+      terms: 'Goods once sold will not be taken back. Exchange within 7 days with bill.',
+      footerText: 'Powered by AINOS', signatureStyle: 'simple',
+      showDocInfoTable: false, showValidityDate: false, termsNumbering: 'bullets',
+      tableColumns: [
+        { label: 'Product', key: 'name', width: '30%' },
+        { label: 'SKU', key: 'sku', width: '12%' },
+        { label: 'Qty', key: 'qty', width: '8%' },
+        { label: 'Rate', key: 'rate', width: '14%' },
+        { label: 'Disc', key: 'disc', width: '8%' },
+        { label: 'GST%', key: 'gst', width: '8%' },
+        { label: 'Total', key: 'total', width: '20%' },
+      ],
+      formFields: [
+        { label: 'Shop/Counter No', key: 'counterNo', type: 'text', required: false, placeholder: 'e.g. Counter 2' },
+        { label: 'Loyalty Card No', key: 'loyaltyCard', type: 'text', required: false, placeholder: 'Membership #)' },
+      ],
+    },
+  },
+  {
+    key: 'manufacturing', label: 'Manufacturing',
+    description: 'Item, HSN(8), Qty, Unit, Rate, Taxable, GST; Job Order, Batch, Vehicle',
+    config: {
+      name: 'Manufacturing Invoice', primaryColor: '#1E3A5F', secondaryColor: '#2D5A8E',
+      backgroundColor: '#FFFFFF', textColor: '#1A1A2E', layout: 'standard', fontSize: 'medium',
+      borderRadius: 'small', showLogo: true, showQrCode: false, showBankDetails: true,
+      terms: '1. E-Way Bill mandatory for consignments exceeding Rs 50,000.\n2. Delivery as per purchase order schedule.\n3. Quality inspection at buyer end within 7 days.',
+      footerText: '', signatureStyle: 'detailed',
+      showDocInfoTable: true, showValidityDate: true, termsNumbering: 'numbered', headerLayout: 'side-by-side',
+      tableColumns: [
+        { label: 'Item', key: 'name', width: '22%' },
+        { label: 'HSN', key: 'hsn', width: '10%' },
+        { label: 'Qty', key: 'qty', width: '8%' },
+        { label: 'Unit', key: 'unit', width: '8%' },
+        { label: 'Rate', key: 'rate', width: '12%' },
+        { label: 'Taxable', key: 'taxable', width: '12%' },
+        { label: 'GST', key: 'gst', width: '8%' },
+        { label: 'Total', key: 'total', width: '12%' },
+      ],
+      formFields: [
+        { label: 'Job Order No', key: 'jobOrder', type: 'text', required: true, placeholder: 'JO-YYYY-NNN' },
+        { label: 'Batch No', key: 'batchNo', type: 'text', required: false },
+        { label: 'Vehicle No', key: 'vehicleNo', type: 'text', required: false, placeholder: 'MH 01 AB 1234' },
+        { label: 'LR No', key: 'lrNo', type: 'text', required: false, placeholder: 'Lorry Receipt' },
+        { label: 'EWB No', key: 'ewbNo', type: 'text', required: false, placeholder: '12-digit E-Way Bill' },
+      ],
+    },
+  },
+  {
+    key: 'freelancer', label: 'Freelancer / Consultant',
+    description: 'Description, Hours, Rate; Client Ref, Due Date; Minimal, no GST',
+    config: {
+      name: 'Freelancer Invoice', primaryColor: '#1F2937', secondaryColor: '#6B7280',
+      backgroundColor: '#FFFFFF', textColor: '#111827', layout: 'minimal', fontSize: 'small',
+      borderRadius: 'small', showLogo: false, showQrCode: false, showBankDetails: true,
+      terms: 'Payment due within 14 days. Please include invoice number as reference.',
+      footerText: '', signatureStyle: 'simple',
+      showDocInfoTable: false, showValidityDate: false, termsNumbering: 'plain',
+      tableColumns: [
+        { label: 'Description', key: 'name', width: '48%' },
+        { label: 'Hours', key: 'qty', width: '14%' },
+        { label: 'Rate', key: 'rate', width: '18%' },
+        { label: 'Amount', key: 'total', width: '20%' },
+      ],
+      formFields: [
+        { label: 'Client Reference', key: 'clientRef', type: 'text', required: false, placeholder: 'Their PO or project code' },
+        { label: 'Due Date', key: 'dueDate', type: 'date', required: true },
+        { label: 'Payment Method', key: 'payMethod', type: 'select', required: false, options: ['Bank Transfer', 'UPI', 'PayPal', 'Wise'] },
+      ],
+    },
+  },
+  {
+    key: 'wholesale', label: 'Wholesale / Distribution',
+    description: 'Product, HSN, Qty, Unit, Rate, Disc, GST, Total; Transport, Vehicle, EWB',
+    config: {
+      name: 'Wholesale Invoice', primaryColor: '#0D9488', secondaryColor: '#2DD4BF',
+      backgroundColor: '#F0FDFA', textColor: '#134E4A', layout: 'standard', fontSize: 'medium',
+      borderRadius: 'medium', showLogo: true, showQrCode: false, showBankDetails: true,
+      terms: '1. E-Way Bill required for inter-state movement > Rs 50,000.\n2. Goods in transit at consignee risk.\n3. Payment: 30 days from invoice date.',
+      footerText: '', signatureStyle: 'detailed',
+      showDocInfoTable: true, showValidityDate: true, termsNumbering: 'numbered', headerLayout: 'side-by-side',
+      tableColumns: [
+        { label: 'Product', key: 'name', width: '22%' },
+        { label: 'HSN', key: 'hsn', width: '10%' },
+        { label: 'Qty', key: 'qty', width: '8%' },
+        { label: 'Unit', key: 'unit', width: '8%' },
+        { label: 'Rate', key: 'rate', width: '12%' },
+        { label: 'Disc', key: 'disc', width: '8%' },
+        { label: 'GST%', key: 'gst', width: '8%' },
+        { label: 'Amount', key: 'total', width: '14%' },
+      ],
+      formFields: [
+        { label: 'Transport Mode', key: 'transportMode', type: 'select', required: false, options: ['Road', 'Rail', 'Air', 'Courier'] },
+        { label: 'Vehicle No', key: 'vehicleNo', type: 'text', required: false, placeholder: 'MH 01 AB 1234' },
+        { label: 'Lorry Receipt No', key: 'lrNo', type: 'text', required: false },
+        { label: 'EWB No', key: 'ewbNo', type: 'text', required: false, placeholder: '12-digit' },
+        { label: 'Delivery Date', key: 'deliveryDate', type: 'date', required: false },
+      ],
+    },
+  },
+  {
+    key: 'ecommerce', label: 'E-Commerce / D2C',
+    description: 'Product, SKU, Platform, Qty, Price; Order ID, COD/Prepaid, Shipping',
+    config: {
+      name: 'E-Commerce Invoice', primaryColor: '#7C3AED', secondaryColor: '#A78BFA',
+      backgroundColor: '#FAFAF9', textColor: '#292524', layout: 'modern', fontSize: 'medium',
+      borderRadius: 'large', showLogo: true, showQrCode: true, showBankDetails: true,
+      terms: '1. Returns accepted within 7 days of delivery in original packaging.\n2. Shipping charges as applicable at checkout.\n3. COD orders: please keep exact change ready.',
+      footerText: '', signatureStyle: 'simple',
+      showDocInfoTable: false, showValidityDate: false, termsNumbering: 'numbered',
+      tableColumns: [
+        { label: 'Product', key: 'name', width: '28%' },
+        { label: 'SKU', key: 'sku', width: '14%' },
+        { label: 'Qty', key: 'qty', width: '10%' },
+        { label: 'Price', key: 'rate', width: '18%' },
+        { label: 'Amount', key: 'total', width: '18%' },
+      ],
+      formFields: [
+        { label: 'Order ID', key: 'orderId', type: 'text', required: true, placeholder: 'e.g. ORD-2026-00456' },
+        { label: 'Platform', key: 'platform', type: 'select', required: true, options: ['Amazon', 'Flipkart', 'Meesho', 'Own Website', 'Shopify', 'Instagram', 'WhatsApp'] },
+        { label: 'Payment Mode', key: 'payMode', type: 'select', required: true, options: ['Prepaid (UPI/Card/NetBanking)', 'COD'] },
+        { label: 'Shipping Charges', key: 'shipping', type: 'number', required: false, placeholder: '\u20B9' },
+      ],
+    },
+  },
+  {
+    key: 'construction', label: 'Construction / Real Estate',
+    description: 'Work Item, Unit, Qty, Rate; Site Name, MB Ref, TDS 194C, Location',
+    config: {
+      name: 'Construction Invoice', primaryColor: '#D97706', secondaryColor: '#FBBF24',
+      backgroundColor: '#FFFBEB', textColor: '#451A03', layout: 'standard', fontSize: 'medium',
+      borderRadius: 'medium', showLogo: true, showQrCode: false, showBankDetails: true,
+      terms: '1. TDS u/s 194C will be deducted at applicable rate.\n2. Payments linked to measurement book certification.\n3. Work as per approved drawings and specifications.',
+      footerText: '', signatureStyle: 'detailed',
+      showDocInfoTable: true, showValidityDate: true, termsNumbering: 'numbered', headerLayout: 'side-by-side',
+      tableColumns: [
+        { label: 'Description of Work', key: 'name', width: '32%' },
+        { label: 'Unit', key: 'unit', width: '10%' },
+        { label: 'Qty', key: 'qty', width: '10%' },
+        { label: 'Rate', key: 'rate', width: '16%' },
+        { label: 'Amount', key: 'total', width: '16%' },
+      ],
+      formFields: [
+        { label: 'Site / Project Name', key: 'projectName', type: 'text', required: true, placeholder: 'e.g. Sunrise Apartments Phase 2' },
+        { label: 'MB Reference', key: 'mbRef', type: 'text', required: false, placeholder: 'Measurement Book Page/Ledger' },
+        { label: 'Period', key: 'period', type: 'text', required: false, placeholder: 'e.g. Jan\u2013Mar 2026' },
+        { label: 'TDS Section', key: 'tdsSection', type: 'select', required: false, options: ['194C', '194J', '194H', 'None'] },
+        { label: 'Location', key: 'location', type: 'text', required: false },
+      ],
+    },
+  },
+  {
+    key: 'medical', label: 'Medical / Pharmacy',
+    description: 'Drug, Batch, Expiry, Strip, MRP, GST%; Prescription No, Schedule, License',
+    config: {
+      name: 'Pharmacy Invoice', primaryColor: '#0891B2', secondaryColor: '#22D3EE',
+      backgroundColor: '#FFFFFF', textColor: '#164E63', layout: 'compact', fontSize: 'small',
+      borderRadius: 'small', showLogo: true, showQrCode: false, showBankDetails: true,
+      terms: '1. Store below 25\u00B0C, protect from light.\n2. SCHEDULE H/H1 drugs dispensed against valid prescription only.\n3. Goods once sold are not returnable (Drug Licence conditions).',
+      footerText: 'Drug Licence No: [ADD YOURS] | Pharmacist: [NAME]',
+      signatureStyle: 'detailed',
+      showDocInfoTable: false, showValidityDate: false, termsNumbering: 'numbered',
+      tableColumns: [
+        { label: 'Drug / Item', key: 'name', width: '24%' },
+        { label: 'Batch', key: 'batch', width: '10%' },
+        { label: 'Expiry', key: 'expiry', width: '10%' },
+        { label: 'Pack', key: 'unit', width: '10%' },
+        { label: 'MRP', key: 'rate', width: '12%' },
+        { label: 'GST%', key: 'gst', width: '8%' },
+        { label: 'Amount', key: 'total', width: '14%' },
+      ],
+      formFields: [
+        { label: 'Prescription No', key: 'prescNo', type: 'text', required: false },
+        { label: 'Doctor Name', key: 'doctorName', type: 'text', required: false },
+        { label: 'Schedule', key: 'schedule', type: 'select', required: false, options: ['H', 'H1', 'X', 'C', 'Non-Schedule'] },
+        { label: 'Drug Licence No', key: 'licenceNo', type: 'text', required: true, placeholder: 'MH/DR/...' },
+      ],
+    },
+  },
+  {
+    key: 'education', label: 'Education / Coaching',
+    description: 'Fee Head, Session/Term, Amount; Student, Course, Admission, Installments',
+    config: {
+      name: 'Fee Receipt', primaryColor: '#4F46E5', secondaryColor: '#818CF8',
+      backgroundColor: '#EEF2FF', textColor: '#1E1B4B', layout: 'standard', fontSize: 'medium',
+      borderRadius: 'medium', showLogo: true, showQrCode: false, showBankDetails: true,
+      terms: '1. Fees once paid are non-refundable except as per institution policy.\n2. Installment default attracts late fee of \u20B9500/month.\n3. Identity card must be produced at examination hall.',
+      footerText: 'This is a computer-generated receipt.',
+      signatureStyle: 'detailed',
+      showDocInfoTable: false, showValidityDate: true, termsNumbering: 'bullets',
+      tableColumns: [
+        { label: 'Fee Head', key: 'name', width: '44%' },
+        { label: 'Session / Term', key: 'qty', width: '22%' },
+        { label: 'Amount', key: 'total', width: '22%' },
+      ],
+      formFields: [
+        { label: 'Student Name', key: 'studentName', type: 'text', required: true },
+        { label: 'Course / Batch', key: 'course', type: 'text', required: true, placeholder: 'e.g. JEE 2026 Batch-A' },
+        { label: 'Admission No', key: 'admissionNo', type: 'text', required: true, placeholder: 'ADM-2026-XXX' },
+        { label: 'Session', key: 'session', type: 'text', required: false, placeholder: 'e.g. 2025-26' },
+        { label: 'Payment Mode', key: 'payMode', type: 'select', required: false, options: ['Cash', 'UPI', 'Cheque', 'NEFT/RTGS', 'Card'] },
+      ],
+    },
+  },
+  {
+    key: 'transport', label: 'Transport / Logistics',
+    description: 'Consignment, Origin-Dest, Weight, Freight; Trip No, Vehicle, EWB, LR/GR',
+    config: {
+      name: 'Freight Invoice', primaryColor: '#0F172A', secondaryColor: '#334155',
+      backgroundColor: '#FFFFFF', textColor: '#1E293B', layout: 'minimal', fontSize: 'medium',
+      borderRadius: 'none', showLogo: true, showQrCode: false, showBankDetails: true,
+      terms: '1. E-Way Bill mandatory for inter-state goods movement (\u20B950,000+).\n2. Goods in transit at owner risk; insurance at additional charge.\n3. Freight payable before delivery unless credit terms agreed.',
+      footerText: '', signatureStyle: 'detailed',
+      showDocInfoTable: true, showValidityDate: false, termsNumbering: 'numbered', headerLayout: 'side-by-side',
+      tableColumns: [
+        { label: 'Consignment', key: 'name', width: '22%' },
+        { label: 'Origin', key: 'origin', width: '12%' },
+        { label: 'Destination', key: 'dest', width: '12%' },
+        { label: 'Wt/Vol', key: 'qty', width: '12%' },
+        { label: 'Freight', key: 'rate', width: '14%' },
+        { label: 'Amount', key: 'total', width: '14%' },
+      ],
+      formFields: [
+        { label: 'Trip / Consignment No', key: 'tripNo', type: 'text', required: true, placeholder: 'e.g. TRP-2026-0789' },
+        { label: 'Vehicle No', key: 'vehicleNo', type: 'text', required: true, placeholder: 'MH 01 AB 1234' },
+        { label: 'LR / GR No', key: 'lrNo', type: 'text', required: false, placeholder: 'Lorry Receipt / Goods Receipt' },
+        { label: 'EWB No', key: 'ewbNo', type: 'text', required: false, placeholder: '12-digit' },
+        { label: 'Delivery Date', key: 'deliveryDate', type: 'date', required: false },
+        { label: 'Origin', key: 'originCity', type: 'text', required: false },
+        { label: 'Destination', key: 'destCity', type: 'text', required: false },
+      ],
+    },
+  },
+];
+
 // Individual color swatches for quick color picking
 const COLOR_SWATCHES: { name: string; primary: string; secondary: string }[] = [
   { name: 'Purple', primary: '#6D28D9', secondary: '#8B5CF6' },
@@ -233,6 +546,11 @@ export default function TemplateDesignerPage() {
       setTemplate(prev => ({ ...prev, ...preset, name: `${name} Template` }));
       setSaved(false);
     }
+  };
+
+  const applyBusinessPreset = (preset: BusinessPreset) => {
+    setTemplate(prev => ({ ...prev, ...preset.config } as Template));
+    setSaved(false);
   };
 
   const saveTemplate = async () => {
@@ -386,7 +704,31 @@ export default function TemplateDesignerPage() {
         </div>
       </div>
 
-      {/* Preset Templates */}
+      {/* Business Type Presets */}
+      <div className="glass-card rounded-xl p-5 mb-6">
+        <h3 className="text-sm font-semibold mb-1 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
+          <Layout size={16} /> Start with your business type
+        </h3>
+        <p className="text-xs mb-4" style={{ color: 'var(--muted-foreground)' }}>Pre-fills columns, fields, terms &amp; layout. You can customise after selecting.</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {BUSINESS_PRESETS.map((bp) => (
+            <button
+              key={bp.key}
+              onClick={() => applyBusinessPreset(bp)}
+              className="flex flex-col items-start gap-2 p-4 rounded-xl border text-left transition-all hover:scale-[1.02] hover:border-primary/40"
+              style={{ borderColor: (bp.config.primaryColor || '#6D28D9') + '40', background: (bp.config.primaryColor || '#6D28D9') + '06' }}
+            >
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: (bp.config.primaryColor || '#6D28D9') + '18', color: bp.config.primaryColor }}>
+                {BUSINESS_ICONS[bp.key]}
+              </div>
+              <span className="text-sm font-semibold leading-tight" style={{ color: 'var(--foreground)' }}>{bp.label}</span>
+              <span className="text-[11px] leading-tight line-clamp-2" style={{ color: 'var(--muted-foreground)' }}>{bp.description}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Preset Templates (color/style only) */}
       <div className="glass-card rounded-xl p-4 mb-6">
         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
           <Palette size={16} /> Quick Presets — Click to Apply
