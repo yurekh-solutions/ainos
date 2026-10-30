@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AINOS — Invoice Workflow</title>
+<style>
+  :root {
+    --primary: #4c1d95;
+    --primary-2: #7c3aed;
+    --accent: #a855f7;
+    --bg: #f5f3ff;
+    --card: #ffffff;
+    --ink: #1e1b2e;
+    --muted: #6b6880;
+    --line: #ddd6fe;
+    --ok: #059669;
+    --ok-bg: #ecfdf5;
+    --warn: #b45309;
+    --warn-bg: #fffbeb;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+    padding: 32px 16px;
+  }
+  .sheet {
+    max-width: 860px;
+    margin: 0 auto;
+    background: var(--card);
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(76, 29, 149, 0.12);
+    overflow: hidden;
+  }
+
+  /* Header */
+  .head {
+    background: linear-gradient(135deg, var(--primary), var(--primary-2));
+    color: #fff;
+    padding: 32px 36px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .logo {
+    width: 54px; height: 54px; border-radius: 16px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.35);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; font-weight: 800;
+  }
+  .head h1 { font-size: 24px; font-weight: 800; letter-spacing: 0.2px; }
+  .head p { font-size: 14px; opacity: 0.9; margin-top: 2px; }
+  .head .tag {
+    margin-left: auto;
+    font-size: 12px; font-weight: 600;
+    background: rgba(255,255,255,0.16);
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 7px 14px; border-radius: 999px;
+  }
+
+  /* Body */
+  .body { padding: 34px 36px 10px; }
+  .flow-title {
+    font-size: 13px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--primary); margin-bottom: 22px;
+  }
+
+  .steps { position: relative; }
+  .steps::before {
+    content: ""; position: absolute; left: 26px; top: 12px; bottom: 12px;
+    width: 3px; background: linear-gradient(var(--line), var(--accent));
+    border-radius: 3px;
+  }
+  .step {
+    position: relative; display: flex; gap: 20px; align-items: flex-start;
+    padding-bottom: 24px;
+  }
+  .step:last-child { padding-bottom: 6px; }
+  .num {
+    flex: 0 0 auto; width: 54px; height: 54px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--primary-2));
+    color: #fff; font-size: 22px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 16px rgba(76,29,149,0.35);
+    z-index: 1;
+  }
+  .card {
+    flex: 1; background: #fff;
+    border: 1px solid var(--line); border-radius: 16px;
+    padding: 16px 18px;
+    box-shadow: 0 4px 14px rgba(30,27,46,0.04);
+  }
+  .card h3 { font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+  .card p { font-size: 14px; color: var(--muted); }
+  .card .ico { font-size: 15px; }
+  .chip {
+    display: inline-block; margin-top: 8px;
+    font-size: 12px; font-weight: 600; color: var(--primary);
+    background: var(--bg); border: 1px solid var(--line);
+    padding: 4px 10px; border-radius: 999px;
+  }
+
+  /* Branch */
+  .branch {
+    margin: 8px 0 4px 74px;
+    display: flex; gap: 16px; flex-wrap: wrap;
+  }
+  .node {
+    flex: 1; min-width: 220px; border-radius: 14px; padding: 14px 16px;
+    font-size: 14px; font-weight: 600; border: 1px solid transparent;
+  }
+  .node small { display:block; font-weight: 500; opacity: .8; margin-top: 3px; font-size: 12px; }
+  .node.q { background: var(--bg); border-color: var(--line); color: var(--primary); }
+  .node.ok { background: var(--ok-bg); border-color: #a7f3d0; color: var(--ok); }
+  .node.warn { background: var(--warn-bg); border-color: #fde68a; color: var(--warn); }
+
+  /* Footer */
+  .foot {
+    margin: 26px 36px 30px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-2));
+    color: #fff; border-radius: 16px; padding: 18px 22px;
+    font-size: 15px; font-weight: 600; text-align: center;
+  }
+  .foot span { opacity: .85; font-weight: 500; }
+
+  @media (max-width: 620px) {
+    .head { padding: 24px; }
+    .head .tag { margin-left: 0; }
+    .body { padding: 26px 20px 6px; }
+    .steps::before { left: 20px; }
+    .num { width: 42px; height: 42px; font-size: 18px; }
+    .step { gap: 14px; }
+    .branch { margin-left: 0; }
+    .foot { margin: 20px; }
+  }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .sheet { box-shadow: none; border-radius: 0; max-width: 100%; }
+    .no-print { display: none !important; }
+    @page { size: A4; margin: 12mm; }
+  }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="head">
+      <div class="logo">α</div>
+      <div>
+        <h1>Invoice Workflow</h1>
+        <p>AINOS Business Suite — invoice kaise banta hai, 6 aasan steps mein</p>
+      </div>
+      <div class="tag">Simple • GST Auto • Professional</div>
+    </div>
+
+    <div class="body">
+      <div class="flow-title">Step-by-step process</div>
+      <div class="steps">
+        <div class="step">
+          <div class="num">1</div>
+          <div class="card">
+            <h3>Business type chuno</h3>
+            <p>Restaurant, Retail, IT, Transport jaisa apna business chunte hi invoice ke fields &amp; columns apne aap set ho jaate hain.</p>
+            <span class="chip">11 ready templates</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">2</div>
+          <div class="card">
+            <h3>Customer details daalo</h3>
+            <p>Naam type karo — purane customer ka GST, phone, address auto-fill. Naya ho to apne aap save ho jaata hai.</p>
+            <span class="chip">Your company &amp; GSTIN upar se ready</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">3</div>
+          <div class="card">
+            <h3>Items add karo</h3>
+            <p>Product/service ki quantity, price aur GST %. Chahe to bill/receipt ki photo <b>scan</b> karo — items khud read ho jaate hain.</p>
+            <span class="chip">Live total as you type</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">4</div>
+          <div class="card">
+            <h3>GST &amp; totals automatic</h3>
+            <p>Apne state mein <b>CGST + SGST</b>, doosre state mein <b>IGST</b>. Discount, grand total aur aapka profit — sab khud calculate.</p>
+            <span class="chip">No manual math</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">5</div>
+          <div class="card">
+            <h3>Sign karo &amp; save</h3>
+            <p>Signature upload karo ya screen par <b>draw</b> karo. Save karte hi invoice ko serial number milta hai — jaise AIN-0042-2026.</p>
+            <span class="chip">Auto serial numbering</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">6</div>
+          <div class="card">
+            <h3>Send, track &amp; download</h3>
+            <p>Saaf professional <b>PDF</b> download karo, WhatsApp par reminder bhejo, aur payment aate hi status <b>Paid</b> mark karo.</p>
+            <span class="chip">Draft → Sent → Paid</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="branch">
+        <div class="node q">Payment aaya?<br><small>Status tracking</small></div>
+        <div class="node ok">Haan → Mark as Paid ✅<small>Aapke accounts/books apne aap update</small></div>
+        <div class="node warn">Nahi → WhatsApp Reminder<small>Ek click mein customer ko</small></div>
+      </div>
+    </div>
+
+    <div class="foot">
+      Business chuno → Customer daalo → Items add karo → GST/totals auto → Sign &amp; save → Send/PDF → Paid track
+      <br><span>AINOS — invoicing, GST aur payments, sab ek jagah.</span>
+    </div>
+  </div>
+
+  <p class="no-print" style="max-width:860px;margin:18px auto 0;text-align:center;color:#6b6880;font-size:13px;">
+    PDF banane ke liye: <b>Ctrl + P</b> → Destination “Save as PDF” → Save. (A4, ek page par fit.)
+  </p>
+</body>
+</html>
