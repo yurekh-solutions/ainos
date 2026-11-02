@@ -6,10 +6,9 @@ import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import {
-  IndianRupee, Hourglass, UsersRound, Wallet, ArrowRight, ArrowDown, ArrowUp, ExternalLink, X } from 'lucide-react';
+  ArrowRight, ExternalLink, X } from 'lucide-react';
 import {
-  fadeUp, IconCircle, Skeleton, Tone, plural,
-  formatINR, formatCompact,
+  fadeUp,
   useFinanceSummary, RecentInvoicesCard, CollectionsCard,
 } from '@/components/dashboard/kit';
 import { VERTICALS, verticalByKey } from '@/lib/verticals';
@@ -61,38 +60,6 @@ export default function DashboardPage() {
     return () => { cancelled = true; };
   }, []);
 
-  const outstandingFoot = data.overdueCount > 0
-    ? { text: `${data.overdueCount} late`, cls: 'bg-rose-50 text-rose-600' }
-    : data.outstanding > 0
-      ? { text: 'To be paid', cls: 'bg-orange-50 text-orange-600' }
-      : { text: 'All paid', cls: 'bg-emerald-50 text-emerald-600' };
-
-  const stats: { label: string; value: string; full: string; icon: React.ElementType; tone: Tone; href: string; foot: React.ReactNode }[] = [
-    {
-      label: 'Total Bills', value: formatCompact(data.billed), full: formatINR(data.billed), icon: IndianRupee, tone: 'green', href: '/invoices',
-      foot: <span className="text-neutral-500 font-light">{plural(data.invoiceCount, 'bill')} made</span>,
-    },
-    {
-      label: 'Money In', value: formatCompact(data.collected), full: formatINR(data.collected), icon: Wallet, tone: 'purple', href: '/invoices',
-      foot: (
-        <span className={`overview-rate ${collectionRate > 0 ? 'is-positive' : ''}`}>
-          {collectionRate > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-          {collectionRate}% received
-        </span>
-      ),
-    },
-    {
-      label: 'Money Due', value: formatCompact(data.outstanding), full: formatINR(data.outstanding), icon: Hourglass, tone: 'orange', href: '/finance/reminders',
-      foot: <span className={`inline-flex px-2.5 py-1 rounded-full font-medium ${outstandingFoot.cls}`}>{outstandingFoot.text}</span>,
-    },
-    {
-      label: 'Customers', value: data.customers.toString(), full: data.customers.toString(), icon: UsersRound, tone: 'blue', href: '/customers',
-      foot: data.customers === 0
-        ? <span className="inline-flex items-center gap-1 font-medium text-[#6d28d9]">Add your first <ArrowRight className="w-3 h-3" /></span>
-        : <span className="text-neutral-500 font-light">{plural(data.products, 'product')} in catalog</span>,
-    },
-  ];
-
   return (
     <div className="ainos-overview">
       <div className="overview-container">
@@ -129,26 +96,6 @@ export default function DashboardPage() {
             {plan ? 'Manage plan' : 'View plans'} <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </motion.div>
-
-        {/* Stats */}
-        <section className="overview-stats" aria-label="Business summary">
-          {stats.map((stat, i) => (
-            <motion.div key={stat.label} {...fadeUp(0.04 + i * 0.03)} className="min-w-0">
-              <Link href={stat.href} className={`overview-card overview-stat overview-tone-${stat.tone}`}>
-                <IconCircle icon={stat.icon} tone={stat.tone} size="lg" />
-                <div className="overview-stat-copy">
-                  <p className="overview-stat-label">{stat.label}</p>
-                  {loaded ? (
-                    <p title={stat.full} className="overview-stat-value">{stat.value}</p>
-                  ) : (
-                    <Skeleton className="mt-2 h-7 w-20" />
-                  )}
-                  <div className="overview-stat-foot">{loaded ? stat.foot : <Skeleton className="h-4 w-20" />}</div>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
-        </section>
 
         {/* Workspaces — Zoho-style showcase tiles, one clear entry per vertical */}
         <motion.section {...fadeUp(0.08)} aria-label="Your workspaces" className="mb-6">
