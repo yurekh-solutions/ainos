@@ -409,6 +409,36 @@ export default function RegisterPage() {
     setFetchingGst(true);
     setGstError('');
 
+    // Prefer the API-key provider (reliable, no captcha, no GSTN hang). Only
+    // falls back to the GSTN captcha scraper when no provider key is set.
+    try {
+      const pres = await fetch('/api/gst-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'lookupGst', gstNumber: gst }),
+      });
+      const pdata = await pres.json().catch(() => ({}) as Record<string, unknown>);
+      if (pdata.providerAvailable === false) {
+        // no key configured → continue with the captcha flow below
+      } else if (pdata.success) {
+        if (pdata.companyName) setCompanyName(pdata.companyName as string);
+        if (pdata.tradeName && !companyName) setCompanyName(pdata.tradeName as string);
+        if (pdata.address) setCompanyAddress(pdata.address as string);
+        if (pdata.entityType && pdata.entityType !== companyType) setCompanyType(pdata.entityType as string);
+        setGstVerified(true);
+        setGstStatus((pdata.gstStatus as string) || null);
+        setShowCaptcha(false);
+        setFetchingGst(false);
+        return;
+      } else {
+        setGstError((pdata.error as string) || 'GST lookup failed. Please check the number.');
+        setFetchingGst(false);
+        return;
+      }
+    } catch {
+      // provider call failed → fall back to the captcha flow below
+    }
+
     const MAX_ATTEMPTS = 3;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
