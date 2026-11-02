@@ -25,8 +25,8 @@ jobs:
 
       - name: Ping GST Scraper service
         run: |
-          echo "Pinging GST Scraper to prevent cold start..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://ainos-gst-scraper.onrender.com/api/v1/getCaptcha)
+          echo "Pinging GST Scraper health endpoint to prevent cold start (no GSTN call)..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://ainos-gst-scraper.onrender.com/api/v1/health)
           echo "Response status: $response"
           if [ "$response" = "200" ]; then
             echo "✅ GST Scraper is alive"
