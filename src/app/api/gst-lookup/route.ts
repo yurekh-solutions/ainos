@@ -150,6 +150,20 @@ export async function POST(req: NextRequest) {
         };
         const entityType = entityTypeMap[realEntityType] || PAN_ENTITY[pan.charAt(3)] || 'proprietorship';
 
+        // Registration status lives in different shapes depending on the GSTN
+        // endpoint version: a top-level `sts`, or — most commonly for the
+        // taxpayerDetails search — the latest `registrations[].stst` entry.
+        const readGstStatus = (d: Record<string, unknown>): string | null => {
+          const top = d?.sts ?? d?.stst;
+          if (typeof top === 'string' && top.trim()) return top.trim();
+          const regs = Array.isArray(d?.registrations) ? (d.registrations as Record<string, unknown>[]) : [];
+          for (let i = regs.length - 1; i >= 0; i--) {
+            const s = regs[i]?.stst;
+            if (typeof s === 'string' && s.trim()) return s.trim();
+          }
+          return null;
+        };
+
         return NextResponse.json({
           success: true,
           source: 'gstn-portal',
@@ -164,7 +178,7 @@ export async function POST(req: NextRequest) {
           registrationDate: data.rgdt || null,
           constitution: data.ctb || data.ctj || null,
           natureOfBusiness: Array.isArray(data.nba) ? data.nba.join(', ') : (data.nba || null),
-          gstStatus: data.sts || null,
+          gstStatus: readGstStatus(data),
           taxpayerType: data.dty || null,
           email: null,
           phone: null,
