@@ -9,7 +9,6 @@ import {
   ArrowRight, X } from 'lucide-react';
 import {
   fadeUp,
-  useFinanceSummary, RecentInvoicesCard, CollectionsCard,
 } from '@/components/dashboard/kit';
 import { VERTICALS, verticalByKey } from '@/lib/verticals';
 import { NAV_GROUPS } from '@/components/layout/navigation';
@@ -28,7 +27,6 @@ type PlanInfo = { label: string; validTill: string | null; trial: boolean; credi
 
 export default function DashboardPage() {
 
-  const { data, loaded, collectionRate } = useFinanceSummary();
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   // Set by middleware when a workspace route was blocked for this member.
@@ -147,12 +145,6 @@ export default function DashboardPage() {
             })}
           </div>
         </motion.section>
-
-        {/* Recent invoices + collections */}
-        <motion.div {...fadeUp(0.14)} className="overview-widgets">
-          <RecentInvoicesCard data={data} loaded={loaded} appearance="lavender" />
-          <CollectionsCard data={data} loaded={loaded} rate={collectionRate} appearance="lavender" />
-        </motion.div>
       </div>
     </div>
   );
