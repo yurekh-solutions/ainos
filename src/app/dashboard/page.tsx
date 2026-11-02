@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import {
-  ArrowRight, ExternalLink, X } from 'lucide-react';
+  ArrowRight, X } from 'lucide-react';
 import {
   fadeUp,
   useFinanceSummary, RecentInvoicesCard, CollectionsCard,
@@ -102,7 +102,7 @@ export default function DashboardPage() {
           <div className="flex items-end justify-between gap-2 mb-4">
             <div>
               <h2 className="text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Your Workspaces</h2>
-              <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>Each workspace groups the tools one team uses — open it with a single click</p>
+              <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>Open the tools your team uses each day</p>
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-3">
@@ -132,22 +132,15 @@ export default function DashboardPage() {
                         </span>
                       ))}
                       {items.length > preview.length && (
-                        <span className="px-2 py-0.5 rounded-lg text-[11px] font-medium" style={{ color: '#6d28d9', background: 'rgba(109,40,217,0.07)' }}>+{items.length - preview.length} more</span>
+                        <span className="px-2 py-0.5 rounded-lg bg-neutral-50 border border-neutral-100 text-[11px] font-medium text-neutral-600">+{items.length - preview.length} more</span>
                       )}
                     </div>
                     <div className="mt-auto flex items-center justify-between pt-0.5 sm:pt-1">
                       <span className="text-[10px] sm:text-[11px] font-medium text-neutral-500">{items.length} tools</span>
                       <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold" style={{ color: '#5b21b6' }}>
-                        <span className="hidden sm:inline">Open workspace</span> <ArrowRight className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Open</span> <ArrowRight className="w-3.5 h-3.5" />
                       </span>
                     </div>
-                  </Link>
-                  <Link
-                    href={`/auth/signin?v=${v.key}&callbackUrl=${encodeURIComponent(v.landingHref)}`}
-                    title={`${v.title} login page`}
-                    className="hidden sm:flex absolute top-3 right-3 w-7 h-7 rounded-lg items-center justify-center text-neutral-300 hover:text-[#5b21b6] hover:bg-purple-50 transition-colors"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
                   </Link>
                 </motion.div>
               );
