@@ -1146,24 +1146,28 @@ export default function RegisterPage() {
                         )}
 
                         {gstVerified && (
-                          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="p-3 rounded-xl bg-green-50 border border-green-200">
+                          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="p-3 rounded-xl bg-green-50 border border-green-200 space-y-2">
                             <div className="flex items-start gap-2">
                               <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                              <div className="min-w-0">
-                                <p className="text-[13px] text-green-700 break-words leading-snug">
-                                  <span className="font-semibold">GST verified.</span> Company details auto-filled from the GSTN portal.
-                                </p>
-                                {gstBadge && (
-                                  <div className="mt-1.5">
-                                    <span className={`inline-flex items-center text-[10px] font-semibold border px-2 py-0.5 rounded-full whitespace-nowrap ${gstBadge.cls}`}>
-                                      GST status: {gstBadge.label}
-                                    </span>
-                                    {(gstBadge.key === 'cancelled' || gstBadge.key === 'inactive' || gstBadge.key === 'suspended') && (
-                                      <p className="text-[11px] text-red-600 leading-snug mt-1">This GSTIN is not active — your application will be reviewed by our team.</p>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
+                              <p className="text-[13px] text-green-700 break-words leading-snug">
+                                <span className="font-semibold">GST verified.</span> Company details auto-filled from the GSTN portal.
+                              </p>
+                            </div>
+                            {/* Prominent, always-visible registration status after data fetch. */}
+                            <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-green-200/70">
+                              <span className="text-[11px] font-semibold text-gray-600">GST Status:</span>
+                              {gstBadge ? (
+                                <span className={`inline-flex items-center text-xs font-bold border px-2.5 py-0.5 rounded-full whitespace-nowrap ${gstBadge.cls}`}>
+                                  {gstBadge.label}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center text-xs font-bold border px-2.5 py-0.5 rounded-full whitespace-nowrap bg-gray-100 text-gray-600 border-gray-300">
+                                  Not returned by GSTN
+                                </span>
+                              )}
+                              {gstBadge && (gstBadge.key === 'cancelled' || gstBadge.key === 'inactive' || gstBadge.key === 'suspended') && (
+                                <p className="w-full text-[11px] text-red-600 leading-snug">This GSTIN is not active — your application will be reviewed by our team.</p>
+                              )}
                             </div>
                           </motion.div>
                         )}
