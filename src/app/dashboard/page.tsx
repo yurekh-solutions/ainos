@@ -62,27 +62,27 @@ export default function DashboardPage() {
   }, []);
 
   const outstandingFoot = data.overdueCount > 0
-    ? { text: `${data.overdueCount} overdue`, cls: 'bg-rose-50 text-rose-600' }
+    ? { text: `${data.overdueCount} late`, cls: 'bg-rose-50 text-rose-600' }
     : data.outstanding > 0
-      ? { text: 'Awaiting payment', cls: 'bg-orange-50 text-orange-600' }
-      : { text: 'All settled', cls: 'bg-emerald-50 text-emerald-600' };
+      ? { text: 'To be paid', cls: 'bg-orange-50 text-orange-600' }
+      : { text: 'All paid', cls: 'bg-emerald-50 text-emerald-600' };
 
   const stats: { label: string; value: string; full: string; icon: React.ElementType; tone: Tone; href: string; foot: React.ReactNode }[] = [
     {
-      label: 'Total billed', value: formatCompact(data.billed), full: formatINR(data.billed), icon: IndianRupee, tone: 'green', href: '/invoices',
-      foot: <span className="text-neutral-500 font-light">Across <span className="font-medium text-neutral-800">{plural(data.invoiceCount, 'invoice')}</span></span>,
+      label: 'Total Bills', value: formatCompact(data.billed), full: formatINR(data.billed), icon: IndianRupee, tone: 'green', href: '/invoices',
+      foot: <span className="text-neutral-500 font-light">{plural(data.invoiceCount, 'bill')} made</span>,
     },
     {
-      label: 'Collected', value: formatCompact(data.collected), full: formatINR(data.collected), icon: Wallet, tone: 'purple', href: '/invoices',
+      label: 'Money In', value: formatCompact(data.collected), full: formatINR(data.collected), icon: Wallet, tone: 'purple', href: '/invoices',
       foot: (
         <span className={`overview-rate ${collectionRate > 0 ? 'is-positive' : ''}`}>
           {collectionRate > 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-          {collectionRate}% collected
+          {collectionRate}% received
         </span>
       ),
     },
     {
-      label: 'Outstanding', value: formatCompact(data.outstanding), full: formatINR(data.outstanding), icon: Hourglass, tone: 'orange', href: '/finance/reminders',
+      label: 'Money Due', value: formatCompact(data.outstanding), full: formatINR(data.outstanding), icon: Hourglass, tone: 'orange', href: '/finance/reminders',
       foot: <span className={`inline-flex px-2.5 py-1 rounded-full font-medium ${outstandingFoot.cls}`}>{outstandingFoot.text}</span>,
     },
     {
