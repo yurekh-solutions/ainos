@@ -98,29 +98,54 @@ export default function DashboardPage() {
           ))}
         </section>
 
-        {/* Workspaces — direct login entry for each vertical */}
+        {/* Workspaces — Zoho-style showcase tiles, one clear entry per vertical */}
         <motion.section {...fadeUp(0.08)} aria-label="Your workspaces" className="mb-6">
-          <div className="flex items-center justify-between gap-2 mb-4">
-            <h2 className="text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Your Workspaces</h2>
-            <p className="text-xs hidden sm:block" style={{ color: 'hsl(var(--muted-foreground))' }}>Open a suite directly, or share its login page</p>
+          <div className="flex items-end justify-between gap-2 mb-4">
+            <div>
+              <h2 className="text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Your Workspaces</h2>
+              <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--muted-foreground))' }}>Each workspace groups the tools one team uses — open it with a single click</p>
+            </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
             {myVerticals.map((v, i) => {
               const Icon = v.icon;
-              const toolCount = NAV_GROUPS.find(g => g.key === v.key)?.items.length ?? 0;
+              const items = NAV_GROUPS.find(g => g.key === v.key)?.items ?? [];
+              const preview = items.slice(0, 4);
               return (
-                <motion.div key={v.key} {...fadeUp(0.1 + i * 0.02)} className="relative rounded-2xl bg-white border border-neutral-100 p-4 shadow-[0_4px_20px_-8px_rgb(0_0_0_/_0.08)] hover:shadow-[0_10px_28px_-8px_rgb(109_40_217_/_0.25)] hover:border-purple-100 transition-all">
-                  <Link href={v.landingHref} className="flex flex-col gap-1.5 min-w-0">
-                    <span className={`w-9 h-9 rounded-xl bg-gradient-to-br ${v.gradient} flex items-center justify-center shadow-lg mb-1`}>
-                      <Icon className="w-5 h-5 text-white" />
-                    </span>
-                    <span className="text-sm font-semibold text-neutral-900 truncate">Login to {v.title}</span>
-                    <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{toolCount} tools</span>
+                <motion.div key={v.key} {...fadeUp(0.1 + i * 0.02)} className="relative rounded-2xl bg-white border border-neutral-100 p-4 shadow-[0_4px_20px_-8px_rgb(0_0_0_/_0.08)] hover:shadow-[0_12px_30px_-10px_rgb(109_40_217_/_0.28)] hover:border-purple-200 transition-all">
+                  <Link href={v.landingHref} className="flex flex-col gap-3 min-w-0 h-full">
+                    <div className="flex items-start gap-3">
+                      <span className={`w-11 h-11 rounded-xl bg-gradient-to-br ${v.gradient} flex items-center justify-center shadow-lg flex-shrink-0`}>
+                        <Icon className="w-[22px] h-[22px] text-white" />
+                      </span>
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-semibold text-neutral-900 truncate">{v.title}</h3>
+                        <p className="text-xs leading-snug mt-0.5 line-clamp-2" style={{ color: 'hsl(var(--muted-foreground))' }}>{v.tagline}</p>
+                      </div>
+                    </div>
+                    {preview.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {preview.map(t => (
+                          <span key={t.href} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-neutral-50 border border-neutral-100 text-[11px] font-medium text-neutral-600">
+                            <t.icon className="w-3 h-3" style={{ color: '#6d28d9' }} />{t.label}
+                          </span>
+                        ))}
+                        {items.length > preview.length && (
+                          <span className="px-2 py-0.5 rounded-lg text-[11px] font-medium" style={{ color: '#6d28d9', background: 'rgba(109,40,217,0.07)' }}>+{items.length - preview.length} more</span>
+                        )}
+                      </div>
+                    )}
+                    <div className="mt-auto flex items-center justify-between pt-1">
+                      <span className="text-[11px] font-medium text-neutral-500">{items.length} tools</span>
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: '#5b21b6' }}>
+                        Open workspace <ArrowRight className="w-3.5 h-3.5" />
+                      </span>
+                    </div>
                   </Link>
                   <Link
                     href={`/auth/signin?v=${v.key}&callbackUrl=${encodeURIComponent(v.landingHref)}`}
                     title={`${v.title} login page`}
-                    className="absolute top-3 right-3 w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-[#5b21b6] hover:bg-purple-50 transition-colors"
+                    className="absolute top-3 right-3 w-7 h-7 rounded-lg flex items-center justify-center text-neutral-300 hover:text-[#5b21b6] hover:bg-purple-50 transition-colors"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                   </Link>
