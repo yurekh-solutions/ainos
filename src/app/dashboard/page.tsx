@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import {
-  IndianRupee, Hourglass, UsersRound, Wallet, ArrowRight, ArrowDown, ArrowUp, ExternalLink, Check, X } from 'lucide-react';
+  IndianRupee, Hourglass, UsersRound, Wallet, ArrowRight, ArrowDown, ArrowUp, ExternalLink, X } from 'lucide-react';
 import {
   fadeUp, IconCircle, Skeleton, Tone, plural,
   formatINR, formatCompact,
@@ -39,19 +39,11 @@ export default function DashboardPage() {
   const allowed = session?.user?.verticals;
   const myVerticals = VERTICALS.filter(v => !allowed || allowed.includes(v.key));
 
-  // Plan banner + setup checklist signals.
+  // Plan banner signal.
   const [plan, setPlan] = useState<PlanInfo | null>(null);
-  const [teamCount, setTeamCount] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    void fetch('/api/team')
-      .then(r => (r.ok ? r.json() : null))
-      .then(d => {
-        const arr = Array.isArray(d) ? d : (d?.users ?? d?.members ?? []);
-        if (!cancelled && Array.isArray(arr)) setTeamCount(arr.length);
-      })
-      .catch(() => {});
     Promise.all([
       fetch('/api/billing').then(r => (r.ok ? r.json() : null)),
       fetch('/api/billing/credits').then(r => (r.ok ? r.json() : null)),
@@ -100,14 +92,6 @@ export default function DashboardPage() {
         : <span className="text-neutral-500 font-light">{plural(data.products, 'product')} in catalog</span>,
     },
   ];
-
-  const setupSteps = [
-    { label: 'Add your first customer', href: '/customers', done: data.customers > 0 },
-    { label: 'Create your first invoice', href: '/invoices/new', done: data.invoiceCount > 0 },
-    { label: 'Build your product catalog', href: '/products', done: data.products > 0 },
-    { label: 'Invite a team member', href: '/team', done: teamCount !== null && teamCount > 1 },
-  ];
-  const setupDone = setupSteps.filter(s => s.done).length;
 
   return (
     <div className="ainos-overview">
@@ -223,30 +207,6 @@ export default function DashboardPage() {
             })}
           </div>
         </motion.section>
-
-        {/* Setup checklist — guides new companies to their first real actions */}
-        {loaded && setupDone < setupSteps.length && (
-          <motion.section {...fadeUp(0.12)} aria-label="Your setup" className="mb-6 rounded-2xl bg-white border border-neutral-100 p-4 sm:p-5 shadow-[0_4px_20px_-8px_rgb(0_0_0_/_0.08)]">
-            <div className="flex items-center justify-between gap-3 mb-2">
-              <h2 className="text-base font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Your Setup</h2>
-              <span className="text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap" style={{ color: '#5b21b6', background: 'rgba(109,40,217,0.08)' }}>{setupDone}/{setupSteps.length} completed</span>
-            </div>
-            <div className="h-1.5 rounded-full bg-neutral-100 overflow-hidden mb-3">
-              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(setupDone / setupSteps.length) * 100}%`, background: 'linear-gradient(90deg, #4c1d95, #6d28d9)' }} />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {setupSteps.map(s => (
-                <Link key={s.label} href={s.href} className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 min-w-0 transition-colors ${s.done ? 'border-emerald-100 bg-emerald-50/50' : 'border-neutral-100 bg-white hover:border-purple-200 hover:bg-purple-50/40'}`}>
-                  <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${s.done ? 'bg-emerald-500 text-white' : 'bg-neutral-100'}`}>
-                    {s.done ? <Check className="w-3 h-3" /> : <span className="w-1.5 h-1.5 rounded-full bg-neutral-300" />}
-                  </span>
-                  <span className={`text-[13px] truncate ${s.done ? 'text-neutral-400 line-through' : 'font-medium text-neutral-800'}`}>{s.label}</span>
-                  {!s.done && <ArrowRight className="w-3.5 h-3.5 ml-auto text-[#6d28d9] flex-shrink-0" />}
-                </Link>
-              ))}
-            </div>
-          </motion.section>
-        )}
 
         {/* Recent invoices + collections */}
         <motion.div {...fadeUp(0.14)} className="overview-widgets">
