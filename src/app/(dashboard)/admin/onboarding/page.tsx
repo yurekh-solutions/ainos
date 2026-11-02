@@ -5,7 +5,8 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ShieldCheck, Building2, FileText, Clock, CheckCircle2, XCircle, AlertTriangle, Eye, ChevronRight, Search, Filter, Users, ArrowLeft, ExternalLink, RefreshCw, Mail, Phone, Store, MapPin, Calendar, Hash, UserCircle, Ban, RotateCcw, Loader2 } from 'lucide-react';
+  ShieldCheck, Building2, FileText, Clock, CheckCircle2, XCircle, AlertTriangle, Eye, ChevronRight, Search, Filter, Users, ArrowLeft, ExternalLink, RefreshCw, Mail, Phone, Store, MapPin, Calendar, Hash, UserCircle, Ban, RotateCcw, Loader2, Layers } from 'lucide-react';
+import { VERTICALS, ALL_VERTICAL_KEYS } from '@/lib/verticals';
 
 interface CompanySummary {
   id: string;
@@ -62,6 +63,7 @@ interface CompanyDetail {
   country: string | null;
   companyType: string | null;
   gstNumber: string | null;
+  gstStatus: string | null;
   taxId: string | null;
   onboardingStatus: string;
   onboardingSubmittedAt: string | null;
@@ -69,6 +71,7 @@ interface CompanyDetail {
   totalDocsUploaded: number;
   totalDocsApproved: number;
   docsVerified: boolean;
+  enabledVerticals?: string[];
   createdAt: string;
   createdBy: string;
   users: { id: string; name: string; email: string; phone: string | null; role: string; createdAt: string }[];
@@ -107,6 +110,9 @@ export default function AdminOnboardingPage() {
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, total: 0, totalPages: 0 });
+  // Company-level workspace toggles (empty = all enabled)
+  const [editVerticals, setEditVerticals] = useState<string[]>([]);
+  const [verticalsSaving, setVerticalsSaving] = useState(false);
 
   const fetchCompanies = useCallback(async (filterStatus?: string) => {
     setLoading(true);
@@ -138,6 +144,7 @@ export default function AdminOnboardingPage() {
         setSelectedCompany(data.company);
         setDocuments(data.documents);
         setAudits(data.audits);
+        setEditVerticals(data.company.enabledVerticals ?? []);
       }
     } catch (err) {
       console.error('Failed to fetch company detail:', err);
@@ -192,6 +199,31 @@ export default function AdminOnboardingPage() {
       console.error('Doc action failed:', err);
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const toggleEnabledVertical = (key: string) => {
+    setEditVerticals(prev => {
+      // "All enabled" (empty) materializes into the full list on first toggle
+      const base = prev.length === 0 ? ALL_VERTICAL_KEYS : prev;
+      return base.includes(key) ? base.filter(k => k !== key) : [...base, key];
+    });
+  };
+
+  const handleSaveVerticals = async () => {
+    if (!selectedCompany) return;
+    setVerticalsSaving(true);
+    try {
+      const res = await fetch(`/api/admin/onboarding/${selectedCompany.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabledVerticals: editVerticals }),
+      });
+      if (res.ok) await fetchCompanyDetail(selectedCompany.id);
+    } catch (err) {
+      console.error('Verticals update failed:', err);
+    } finally {
+      setVerticalsSaving(false);
     }
   };
 
@@ -289,15 +321,74 @@ export default function AdminOnboardingPage() {
                       </div>
                     )}
                     {selectedCompany.gstNumber && (
-                      <div className="flex items-center gap-3 text-sm">
+                      <div className="flex items-center gap-3 text-sm flex-wrap">
                         <Hash className="w-4 h-4 text-white/30" />
                         <span className="text-white/70">GST: {selectedCompany.gstNumber}</span>
+                        {selectedCompany.gstStatus && (
+                          <span className={`inline-flex items-center text-[11px] font-semibold border px-2 py-0.5 rounded-full ${
+                            /INACT|CNL|CANCEL/i.test(selectedCompany.gstStatus)
+                              ? 'bg-red-500/15 text-red-300 border-red-500/30'
+                              : /SUSP/i.test(selectedCompany.gstStatus)
+                                ? 'bg-orange-500/15 text-orange-300 border-orange-500/30'
+                                : /PRO/i.test(selectedCompany.gstStatus)
+                                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                                  : /ACT|VALID/i.test(selectedCompany.gstStatus)
+                                    ? 'bg-green-500/15 text-green-300 border-green-500/30'
+                                    : 'bg-white/5 text-white/60 border-white/15'
+                          }`}>{selectedCompany.gstStatus}</span>
+                        )}
                       </div>
                     )}
                     <div className="flex items-center gap-3 text-sm">
                       <Calendar className="w-4 h-4 text-white/30" />
                       <span className="text-white/70">Registered {new Date(selectedCompany.createdAt).toLocaleDateString()}</span>
                     </div>
+                  </div>
+                </div>
+
+                {/* Vertical Workspaces */}
+                <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-6">
+                  <h3 className="text-sm font-medium text-white/40 uppercase tracking-wider mb-1 flex items-center gap-2">
+                    <Layers className="w-4 h-4" /> Vertical Workspaces
+                  </h3>
+                  <p className="text-xs text-white/30 mb-4">
+                    {editVerticals.length === 0
+                      ? 'All workspaces are enabled for this company.'
+                      : `${editVerticals.length} of ${VERTICALS.length} workspaces enabled.`}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {VERTICALS.map(v => {
+                      const Icon = v.icon;
+                      const on = editVerticals.length === 0 || editVerticals.includes(v.key);
+                      return (
+                        <button
+                          key={v.key}
+                          onClick={() => toggleEnabledVertical(v.key)}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition-colors ${
+                            on ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' : 'bg-white/5 text-white/30 border-white/10 hover:text-white/60'
+                          }`}
+                        >
+                          <Icon className="w-3 h-3" /> {v.shortTitle}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center gap-2 mt-4">
+                    {editVerticals.length > 0 && (
+                      <button
+                        onClick={() => setEditVerticals([])}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium border border-white/10 text-white/50 hover:bg-white/5 transition-colors"
+                      >
+                        Enable all
+                      </button>
+                    )}
+                    <button
+                      onClick={handleSaveVerticals}
+                      disabled={verticalsSaving}
+                      className="px-4 py-1.5 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-medium hover:bg-purple-500/30 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {verticalsSaving && <Loader2 className="w-3 h-3 animate-spin" />} Save workspaces
+                    </button>
                   </div>
                 </div>
 

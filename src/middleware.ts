@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { verticalForPath } from '@/lib/verticals';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -50,51 +51,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/setup-company', request.url));
   }
 
-  // Tool-specific route protection mapping
-  const toolRouteMap: Record<string, string> = {
-    '/marketing/blog': 'autoBlog',
-    '/marketing/blog-agent': 'autoBlog',
-    '/marketing/social-media': 'emailMarketing',
-    '/finance/invoices': 'invoiceGen',
-    '/finance/quotes': 'invoiceGen',
-    '/finance/sales-orders': 'invoiceGen',
-    '/crm': 'crmAccess',
-    '/inventory': 'inventoryMgmt',
-    '/hr': 'hrPayroll',
-    '/ai-assistant': 'aiAssistant',
-    '/website-builder': 'websiteGen',
-  };
-
-  // Check if route requires tool access
-  for (const [route, toolName] of Object.entries(toolRouteMap)) {
-    if (pathname.startsWith(route)) {
-      // Fetch company's tool access from database
-      try {
-        const { prisma } = await import('@/lib/prisma');
-        const company = await prisma.company.findUnique({
-          where: { id: token.companyId as string },
-          select: {
-            autoBlog: true,
-            invoiceGen: true,
-            crmAccess: true,
-            inventoryMgmt: true,
-            hrPayroll: true,
-            emailMarketing: true,
-            aiAssistant: true,
-            websiteGen: true,
-          },
-        });
-
-        if (!company || !(company as Record<string, unknown>)[toolName]) {
-          // Redirect to billing page with required tool info
-          const billingUrl = new URL('/billing', request.url);
-          billingUrl.searchParams.set('required_tool', toolName);
-          return NextResponse.redirect(billingUrl);
-        }
-      } catch (error) {
-        console.error('Middleware tool check error:', error);
-        // On error, allow access (fail-open for now, can change to fail-closed)
+  // Vertical workspace protection: every route owned by a vertical
+  // requires the two-layer access (company ∩ user grants) from lib/access.
+  const vertical = verticalForPath(pathname);
+  if (vertical) {
+    try {
+      const { canAccessVertical } = await import('@/lib/access');
+      const allowed = await canAccessVertical(token.email as string, vertical.key);
+      if (!allowed) {
+        // Send the user back to the shared dashboard with a reason flag.
+        const dashUrl = new URL('/dashboard', request.url);
+        dashUrl.searchParams.set('no_access', vertical.key);
+        return NextResponse.redirect(dashUrl);
       }
+    } catch (error) {
+      console.error('Middleware vertical access check error:', error);
+      // On error, allow access (fail-open for now, can change to fail-closed)
     }
   }
 
@@ -104,12 +76,27 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/dashboard/:path*',
-    '/marketing/:path*',
-    '/finance/:path*',
     '/crm/:path*',
     '/inventory/:path*',
+    '/manufacturing/:path*',
     '/hr/:path*',
-    '/ai-assistant/:path*',
-    '/website-builder/:path*',
+    '/planning/:path*',
+    '/support/:path*',
+    '/projects/:path*',
+    '/calendar/:path*',
+    '/team/:path*',
+    '/automations/:path*',
+    '/reports/:path*',
+    '/approvals/:path*',
+    '/compliance/:path*',
+    '/invoices/:path*',
+    '/customers/:path*',
+    '/products/:path*',
+    '/finance/:path*',
+    '/marketing/:path*',
+    '/ecommerce/:path*',
+    '/pos/:path*',
+    '/operations/:path*',
+    '/rental/:path*',
   ],
 };

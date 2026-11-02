@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Shield, ShieldCheck, Mail, Phone, Crown, Edit2, Check, X } from 'lucide-react';
+import { Users, Shield, ShieldCheck, Mail, Phone, Crown, Edit2, Check, X, Layers } from 'lucide-react';
+import { VERTICALS } from '@/lib/verticals';
 
 interface TeamMember {
   id: string; name: string; email: string; role: string; isAdmin: boolean;
+  allowedVerticals?: string[];
   phone?: string; image?: string; createdAt: string;
 }
 
@@ -17,6 +19,10 @@ export default function TeamPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editRole, setEditRole] = useState('');
   const [editAdmin, setEditAdmin] = useState(false);
+  // Vertical grants: all=true means inherit everything (stored as [])
+  const [verticalsAll, setVerticalsAll] = useState(true);
+  const [editVerticals, setEditVerticals] = useState<string[]>([]);
+  const [verticalsOpen, setVerticalsOpen] = useState(false);
 
   const fetchTeam = async () => {
     try {
@@ -33,13 +39,34 @@ export default function TeamPage() {
       const res = await fetch('/api/team', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, role: editRole, isAdmin: editAdmin }),
+        body: JSON.stringify({
+          userId,
+          role: editRole,
+          isAdmin: editAdmin,
+          allowedVerticals: verticalsAll ? [] : editVerticals,
+        }),
       });
       if (res.ok) {
         setEditingId(null);
+        setVerticalsOpen(false);
         fetchTeam();
       }
     } catch (e) { console.error(e); }
+  };
+
+  const startEdit = (member: TeamMember) => {
+    setEditingId(member.id);
+    setEditRole(member.role);
+    setEditAdmin(member.isAdmin);
+    const granted = member.allowedVerticals ?? [];
+    setVerticalsAll(granted.length === 0);
+    setEditVerticals(granted);
+    setVerticalsOpen(false);
+  };
+
+  const toggleVertical = (key: string) => {
+    setVerticalsAll(false);
+    setEditVerticals(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   };
 
   const roleColors: Record<string, string> = {
@@ -89,11 +116,17 @@ export default function TeamPage() {
                         <Phone className="w-3 h-3" /> {member.phone}
                       </span>
                     )}
+                    <span className="text-xs flex items-center gap-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                      <Layers className="w-3 h-3" />
+                      {(member.allowedVerticals?.length ?? 0) > 0
+                        ? `${member.allowedVerticals!.length} workspace${member.allowedVerticals!.length === 1 ? '' : 's'}`
+                        : 'All workspaces'}
+                    </span>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   {editingId === member.id ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 relative">
                       <select value={editRole} onChange={e => setEditRole(e.target.value)}
                         className="glass-input rounded-lg px-2 py-1.5 text-xs">
                         {roles.map(r => <option key={r} value={r}>{r}</option>)}
@@ -101,12 +134,46 @@ export default function TeamPage() {
                       <label className="flex items-center gap-1 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
                         <input type="checkbox" checked={editAdmin} onChange={e => setEditAdmin(e.target.checked)} className="rounded" /> Admin
                       </label>
+                      <button
+                        type="button"
+                        onClick={() => setVerticalsOpen(o => !o)}
+                        className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs border border-purple-200 text-[#5b21b6] hover:bg-purple-50 transition-colors"
+                      >
+                        <Layers className="w-3 h-3" />
+                        {verticalsAll ? 'All' : `${editVerticals.length} selected`}
+                      </button>
                       <button onClick={() => handleSave(member.id)} className="p-1.5 rounded-lg bg-green-500/10 text-green-600 hover:bg-green-500/20">
                         <Check className="w-3.5 h-3.5" />
                       </button>
-                      <button onClick={() => setEditingId(null)} className="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20">
+                      <button onClick={() => { setEditingId(null); setVerticalsOpen(false); }} className="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20">
                         <X className="w-3.5 h-3.5" />
                       </button>
+
+                      <AnimatePresence>
+                        {verticalsOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -4 }}
+                            className="absolute right-0 bottom-10 z-20 w-64 max-h-72 overflow-y-auto rounded-xl bg-white border border-neutral-100 shadow-[0_12px_32px_-8px_rgba(16,24,40,0.18)] p-2"
+                          >
+                            <label className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-semibold text-neutral-700 hover:bg-neutral-50 cursor-pointer">
+                              <input type="checkbox" checked={verticalsAll} onChange={() => { setVerticalsAll(true); setEditVerticals([]); }} className="rounded" />
+                              All workspaces (inherit company)
+                            </label>
+                            <div className="border-t border-neutral-100 my-1" />
+                            {VERTICALS.map(v => (
+                              <label key={v.key} className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-neutral-700 hover:bg-neutral-50 cursor-pointer">
+                                <input type="checkbox" checked={!verticalsAll && editVerticals.includes(v.key)} onChange={() => toggleVertical(v.key)} className="rounded" />
+                                <span className={`w-5 h-5 rounded-md bg-gradient-to-br ${v.gradient} flex items-center justify-center flex-shrink-0`}>
+                                  <v.icon className="w-3 h-3 text-white" />
+                                </span>
+                                {v.title}
+                              </label>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   ) : (
                     <>
@@ -120,7 +187,7 @@ export default function TeamPage() {
                           <ShieldCheck className="w-3 h-3" /> Admin
                         </span>
                       )}
-                      <button onClick={() => { setEditingId(member.id); setEditRole(member.role); setEditAdmin(member.isAdmin); }}
+                      <button onClick={() => startEdit(member)}
                         className="p-1.5 rounded-lg hover:bg-black/5 transition-colors" title="Edit role">
                         <Edit2 className="w-3.5 h-3.5" style={{ color: 'hsl(var(--muted-foreground))' }} />
                       </button>

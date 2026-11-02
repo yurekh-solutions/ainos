@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
       companyAddress,
       country,
       gstNumber,
+      gstStatus,
       documents,
       emailProof,
     } = body;
@@ -85,6 +86,7 @@ export async function POST(req: NextRequest) {
           country: country || 'India',
           companyType: companyType || null,
           gstNumber: gstNumber || null,
+          gstStatus: gstStatus ? String(gstStatus) : null,
           uploadedDocs: documents && Object.keys(documents).length > 0 ? documents : null,
           createdBy: email,
           // Trial access by default (0=locked, 1=basic, 2=subscribed, 3=premium)

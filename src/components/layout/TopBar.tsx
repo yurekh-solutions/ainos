@@ -2,13 +2,14 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession, signOut } from 'next-auth/react';
 import { LogOut, Settings, User, Menu, Search, CornerDownLeft } from 'lucide-react';
 import { NotificationsBell } from './NotificationsBell';
 import { BrandMark } from './BrandMark';
 import { DASHBOARD_NAV, NAV_GROUPS, NavItem } from './navigation';
+import { verticalForPath } from '@/lib/verticals';
 
 export const OPEN_SIDEBAR_EVENT = 'ainos:open-sidebar';
 
@@ -115,6 +116,7 @@ function QuickSearch() {
 
 export function TopBar() {
   const { data: session } = useSession();
+  const pathname = usePathname() || '';
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -133,6 +135,10 @@ export function TopBar() {
     .toUpperCase()
     .slice(0, 2);
 
+  // Workspace chip shows the vertical the current route belongs to
+  const activeVertical = verticalForPath(pathname);
+  const ActiveIcon = activeVertical?.icon;
+
   return (
     <header className="sticky top-0 z-30 h-16 flex-shrink-0 flex items-center gap-3 px-4 sm:px-6 lg:px-8 bg-white border-b border-neutral-100">
       {/* Mobile: menu + logo */}
@@ -147,8 +153,16 @@ export function TopBar() {
         <BrandMark />
       </div>
 
-      {/* Desktop: quick search */}
-      <div className="hidden lg:flex flex-1">
+      {/* Desktop: workspace chip + quick search */}
+      <div className="hidden lg:flex flex-1 items-center gap-3">
+        {activeVertical && ActiveIcon && (
+          <span className="inline-flex items-center gap-2 pl-1 pr-3 h-10 rounded-full bg-purple-50 border border-purple-100 text-[#5b21b6] text-sm font-semibold whitespace-nowrap">
+            <span className={`w-7 h-7 rounded-full bg-gradient-to-br ${activeVertical.gradient} flex items-center justify-center`}>
+              <ActiveIcon className="w-4 h-4 text-white" />
+            </span>
+            {activeVertical.title}
+          </span>
+        )}
         <QuickSearch />
       </div>
 

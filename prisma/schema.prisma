@@ -12,6 +12,7 @@ model Company {
   name               String
   logoUrl            String?             @map("logo_url")
   gstNumber          String?             @map("gst_number")
+  gstStatus          String?             @map("gst_status")
   taxId              String?             @map("tax_id")
   address            String?
   email              String?
@@ -53,6 +54,9 @@ model Company {
   aiAssistant        Int                 @default(0) @map("ai_assistant_level")
   websiteGen         Int                 @default(0) @map("website_gen_level")
   
+  // VERTICAL WORKSPACES (empty = every vertical enabled for this company)
+  enabledVerticals   String[]            @default([]) @map("enabled_verticals")
+
   // SUBSCRIPTION STATUS
   subscriptionStatus String              @default("inactive") @map("subscription_status")
   subscriptionEndsAt DateTime?           @map("subscription_ends_at")
@@ -159,6 +163,8 @@ model User {
   role      String   @default("user")
   isAdmin   Boolean  @default(false) @map("is_admin")
   companyId String?  @map("company_id")
+  // Per-member vertical workspace grants (empty = inherit all company verticals)
+  allowedVerticals String[] @default([]) @map("allowed_verticals")
   phone     String?
   address   String?
   country   String?

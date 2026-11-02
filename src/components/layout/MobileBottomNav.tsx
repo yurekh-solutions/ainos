@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Home, MoreHorizontal } from 'lucide-react';
 import { NAV_GROUPS, isDashboardActive, isGroupActive } from './navigation';
 import { OPEN_SIDEBAR_EVENT } from './TopBar';
@@ -16,7 +17,11 @@ const BOTTOM_GROUP_KEYS = ['finance', 'ecommerce', 'pos'] as const;
 
 export function MobileBottomNav() {
   const pathname = usePathname() || '';
-  const bottomGroups = NAV_GROUPS.filter(g => (BOTTOM_GROUP_KEYS as readonly string[]).includes(g.key));
+  const { data: session } = useSession();
+  const allowed = session?.user?.verticals;
+  const bottomGroups = NAV_GROUPS.filter(g =>
+    (BOTTOM_GROUP_KEYS as readonly string[]).includes(g.key) && (!allowed || allowed.includes(g.key))
+  );
 
   return (
     <nav

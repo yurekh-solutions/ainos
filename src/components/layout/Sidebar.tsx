@@ -5,10 +5,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession, signOut } from 'next-auth/react';
-import { ChevronLeft, ChevronRight, ChevronDown, LogOut, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, LogOut, X, LayoutGrid } from 'lucide-react';
 import { OPEN_SIDEBAR_EVENT } from './TopBar';
 import { BrandMark } from './BrandMark';
 import { DASHBOARD_NAV, NAV_GROUPS, NavGroup, isDashboardActive, isGroupActive, matchesPath } from './navigation';
+import { verticalForPath, Vertical } from '@/lib/verticals';
 
 // Deep indigo surface with one violet highlight for the active row
 const SURFACE = 'bg-gradient-to-b from-[#1d1752] via-[#18134a] to-[#120e36]';
@@ -130,9 +131,19 @@ function GroupNav({ group, collapsed, pathname }: { group: NavGroup; collapsed: 
   );
 }
 
-function NavList({ collapsed, pathname }: { collapsed: boolean; pathname: string }) {
+function NavList({ collapsed, pathname, verticalKey }: { collapsed: boolean; pathname: string; verticalKey?: string | null }) {
+  const { data: session } = useSession();
   const DashIcon = DASHBOARD_NAV.icon;
   const dashActive = isDashboardActive(pathname);
+  // Session carries the effective workspace list; undefined = legacy session,
+  // fall back to the full navigation until the next session refresh.
+  const allowed = session?.user?.verticals;
+  let groups = allowed ? NAV_GROUPS.filter(g => allowed.includes(g.key)) : NAV_GROUPS;
+  // Inside a vertical workspace the sidebar shows only that vertical's tools.
+  if (verticalKey) {
+    const scoped = groups.filter(g => g.key === verticalKey);
+    if (scoped.length > 0) groups = scoped;
+  }
   return (
     <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
       <Link
@@ -143,7 +154,7 @@ function NavList({ collapsed, pathname }: { collapsed: boolean; pathname: string
         <DashIcon className="w-5 h-5 flex-shrink-0" />
         {!collapsed && <span className="font-medium">{DASHBOARD_NAV.label}</span>}
       </Link>
-      {NAV_GROUPS.map(group => (
+      {groups.map(group => (
         <GroupNav key={group.key} group={group} collapsed={collapsed} pathname={pathname} />
       ))}
     </nav>
@@ -177,6 +188,27 @@ function UserFooter({ collapsed }: { collapsed: boolean }) {
   );
 }
 
+function WorkspaceHeader({ vertical, collapsed }: { vertical: Vertical; collapsed: boolean }) {
+  const Icon = vertical.icon;
+  return (
+    <Link
+      href={DASHBOARD_NAV.href}
+      title="Switch workspace"
+      className={`flex items-center gap-2.5 mx-3 mt-3 px-3 h-10 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] transition-colors ${collapsed ? 'justify-center' : ''}`}
+    >
+      <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${vertical.gradient} flex items-center justify-center flex-shrink-0`}>
+        <Icon className="w-4 h-4 text-white" />
+      </div>
+      {!collapsed && (
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-semibold text-white truncate leading-tight">{vertical.title}</p>
+          <p className="text-[10px] text-white/50 flex items-center gap-1"><LayoutGrid className="w-3 h-3" /> Switch workspace</p>
+        </div>
+      )}
+    </Link>
+  );
+}
+
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -184,6 +216,8 @@ export function Sidebar() {
   // Defer pathname to client-only to prevent hydration mismatch
   const isClient = useSyncExternalStore(subscribeNoop, () => true, () => false);
   const pathname = isClient ? routerPathname || '' : '';
+  // Current vertical workspace derived from the route (null = full dashboard)
+  const activeVertical = verticalForPath(pathname);
 
   useEffect(() => {
     if (mobileOpen) {
@@ -240,7 +274,8 @@ export function Sidebar() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <NavList collapsed={false} pathname={pathname} />
+            {activeVertical && !isDashboardActive(pathname) && <WorkspaceHeader vertical={activeVertical} collapsed={false} />}
+            <NavList collapsed={false} pathname={pathname} verticalKey={activeVertical?.key} />
             <UserFooter collapsed={false} />
           </motion.aside>
         )}
@@ -256,7 +291,8 @@ export function Sidebar() {
           <BrandMark tone="dark" showText={!collapsed} />
         </div>
 
-        <NavList collapsed={collapsed} pathname={pathname} />
+        {activeVertical && <WorkspaceHeader vertical={activeVertical} collapsed={collapsed} />}
+        <NavList collapsed={collapsed} pathname={pathname} verticalKey={activeVertical?.key} />
 
         <button
           onClick={() => setCollapsed(!collapsed)}

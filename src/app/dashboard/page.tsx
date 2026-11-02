@@ -1,14 +1,19 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import {
-  IndianRupee, Hourglass, UsersRound, Wallet, Calculator, Megaphone, ArrowRight, ArrowDown, ArrowUp } from 'lucide-react';
+  IndianRupee, Hourglass, UsersRound, Wallet, Calculator, Megaphone, ArrowRight, ArrowDown, ArrowUp, ExternalLink, X } from 'lucide-react';
 import {
   fadeUp, IconCircle, Skeleton, Tone, plural,
   formatINR, formatCompact, FINANCE_TOOLS, marketingTools,
   useFinanceSummary, useTemplateCount, RecentInvoicesCard, CollectionsCard,
 } from '@/components/dashboard/kit';
+import { VERTICALS, verticalByKey } from '@/lib/verticals';
+import { NAV_GROUPS } from '@/components/layout/navigation';
 
 const TOOL_TONES: Tone[] = ['purple', 'blue', 'purple', 'orange', 'blue'];
 
@@ -88,6 +93,14 @@ function SuiteIllustration({ kind }: { kind: 'finance' | 'marketing' }) {
 export default function DashboardPage() {
   const { data, loaded, collectionRate } = useFinanceSummary();
   const templateLabel = useTemplateCount();
+  const { data: session } = useSession();
+  const searchParams = useSearchParams();
+  // Set by middleware when a workspace route was blocked for this member.
+  const noAccess = verticalByKey(searchParams.get('no_access'));
+  const [toastDismissed, setToastDismissed] = useState(false);
+  // Workspaces this member can open; undefined = legacy session, show all.
+  const allowed = session?.user?.verticals;
+  const myVerticals = VERTICALS.filter(v => !allowed || allowed.includes(v.key));
 
   const outstandingFoot = data.overdueCount > 0
     ? { text: `${data.overdueCount} overdue`, cls: 'bg-rose-50 text-rose-600' }
@@ -148,6 +161,20 @@ export default function DashboardPage() {
       <div className="overview-container">
         <h1 className="sr-only">AINOS Business Dashboard</h1>
 
+        {/* Blocked-workspace notice from middleware redirect */}
+        {noAccess && !toastDismissed && (
+          <motion.div {...fadeUp(0.02)} className="flex items-center justify-between gap-3 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3 mb-6">
+            <p className="text-sm text-amber-800">You don&apos;t have access to {noAccess.title} — ask your company admin to grant this workspace.</p>
+            <button
+              onClick={() => setToastDismissed(true)}
+              aria-label="Dismiss"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-amber-600 hover:bg-amber-100 flex-shrink-0"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+
         {/* Stats */}
         <section className="overview-stats" aria-label="Business summary">
           {stats.map((stat, i) => (
@@ -167,6 +194,38 @@ export default function DashboardPage() {
             </motion.div>
           ))}
         </section>
+
+        {/* Workspaces — direct login entry for each vertical */}
+        <motion.section {...fadeUp(0.08)} aria-label="Your workspaces" className="mb-6">
+          <div className="flex items-center justify-between gap-2 mb-4">
+            <h2 className="text-lg font-semibold" style={{ color: 'hsl(var(--foreground))' }}>Your Workspaces</h2>
+            <p className="text-xs hidden sm:block" style={{ color: 'hsl(var(--muted-foreground))' }}>Open a suite directly, or share its login page</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {myVerticals.map((v, i) => {
+              const Icon = v.icon;
+              const toolCount = NAV_GROUPS.find(g => g.key === v.key)?.items.length ?? 0;
+              return (
+                <motion.div key={v.key} {...fadeUp(0.1 + i * 0.02)} className="relative rounded-2xl bg-white border border-neutral-100 p-4 shadow-[0_4px_20px_-8px_rgb(0_0_0_/_0.08)] hover:shadow-[0_10px_28px_-8px_rgb(109_40_217_/_0.25)] hover:border-purple-100 transition-all">
+                  <Link href={v.landingHref} className="flex flex-col gap-1.5 min-w-0">
+                    <span className={`w-9 h-9 rounded-xl bg-gradient-to-br ${v.gradient} flex items-center justify-center shadow-lg mb-1`}>
+                      <Icon className="w-5 h-5 text-white" />
+                    </span>
+                    <span className="text-sm font-semibold text-neutral-900 truncate">Login to {v.title}</span>
+                    <span className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{toolCount} tools</span>
+                  </Link>
+                  <Link
+                    href={`/auth/signin?v=${v.key}&callbackUrl=${encodeURIComponent(v.landingHref)}`}
+                    title={`${v.title} login page`}
+                    className="absolute top-3 right-3 w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-[#5b21b6] hover:bg-purple-50 transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.section>
 
         {/* Suites */}
         <motion.section {...fadeUp(0.1)} className="overview-suites" aria-label="Your business suites">

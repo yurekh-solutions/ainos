@@ -3,6 +3,7 @@ import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { isAdmin } from '@/lib/admin';
 import { sendEmail } from '@/lib/email';
+import { ALL_VERTICAL_KEYS } from '@/lib/verticals';
 
 // Send onboarding notification email via the shared sendEmail util (Brevo / SMTP)
 async function sendOnboardingEmail(params: {
@@ -217,6 +218,53 @@ export async function POST(
   }
 }
 
+// PATCH /api/admin/onboarding/[companyId] — set the vertical workspaces a company can use
+// (empty array = every vertical enabled)
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ companyId: string }> }
+) {
+  try {
+    const session = await getServerSession(req);
+    if (!session?.user?.email || !isAdmin(session.user.email)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { companyId } = await params;
+    const { enabledVerticals } = await req.json();
+    if (!Array.isArray(enabledVerticals)) {
+      return NextResponse.json({ error: 'enabledVerticals must be an array of vertical keys' }, { status: 400 });
+    }
+    const cleaned = Array.from(new Set(
+      enabledVerticals.filter((k: unknown) => typeof k === 'string' && ALL_VERTICAL_KEYS.includes(k))
+    ));
+
+    const company = await prisma.company.update({
+      where: { id: companyId },
+      data: { enabledVerticals: cleaned },
+      select: { id: true, name: true, enabledVerticals: true },
+    });
+
+    await prisma.onboardingAudit.create({
+      data: {
+        companyId,
+        action: 'verticals_updated',
+        performedBy: session.user.email,
+        performedByName: session.user.name || session.user.email,
+        notes: cleaned.length === 0
+          ? 'All vertical workspaces enabled'
+          : `Enabled verticals: ${cleaned.join(', ')}`,
+        metadata: { enabledVerticals: cleaned },
+      },
+    });
+
+    return NextResponse.json({ success: true, company });
+  } catch (error) {
+    console.error('Error updating company verticals:', error);
+    return NextResponse.json({ error: 'Failed to update company verticals' }, { status: 500 });
+  }
+}
+
 // GET /api/admin/onboarding/[companyId] — get detailed company + documents for review
 export async function GET(
   req: NextRequest,
@@ -243,6 +291,7 @@ export async function GET(
           country: true,
           companyType: true,
           gstNumber: true,
+          gstStatus: true,
           taxId: true,
           onboardingStatus: true,
           onboardingSubmittedAt: true,
@@ -252,6 +301,7 @@ export async function GET(
           totalDocsUploaded: true,
           totalDocsApproved: true,
           docsVerified: true,
+          enabledVerticals: true,
           createdAt: true,
           createdBy: true,
           users: {

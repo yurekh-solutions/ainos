@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { isAdmin } from '@/lib/admin';
 import { findUserByEmail } from '@/lib/identity';
+import { getVerticalsForUser } from '@/lib/access';
 
 export const authOptions: NextAuthOptions = {
   secret:
@@ -141,6 +142,9 @@ export const authOptions: NextAuthOptions = {
             session.user.id = dbUser.id;
             session.user.role = dbUser.role;
             session.user.companyId = dbUser.companyId || undefined;
+            // Workspace access is re-read on every session fetch, so grants
+            // and company toggles apply without forcing a re-login.
+            session.user.verticals = await getVerticalsForUser(dbUser, dbUser.email);
           }
         } catch (error) {
           console.error('Session error:', error);

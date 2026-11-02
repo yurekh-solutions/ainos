@@ -9,14 +9,29 @@ import { useToast } from '@/lib/toast';
 import { validateEmail, validatePhone, validatePassword, cleanPhone, PHONE_REGEX } from '@/lib/validation';
 import PdfPreview from '@/components/PdfPreview';
 
-const COMPANY_TYPES = [
+// Company type options depend on the country — India gets the MCA/Registrar
+// categories, every other market gets the generic international set.
+const INDIAN_COMPANY_TYPES = [
   { value: 'proprietorship', label: 'Proprietorship', icon: User },
   { value: 'partnership', label: 'Partnership', icon: Users },
   { value: 'llp', label: 'LLP', icon: Building2 },
   { value: 'pvt_ltd', label: 'Pvt Ltd', icon: Briefcase },
   { value: 'public_ltd', label: 'Public Ltd', icon: BarChart3 },
   { value: 'opc', label: 'OPC', icon: Building },
+  { value: 'trust', label: 'Trust', icon: ShieldCheck },
+  { value: 'society', label: 'Society', icon: FolderCheck },
 ];
+
+const INTERNATIONAL_COMPANY_TYPES = [
+  { value: 'sole_proprietorship', label: 'Sole Proprietor', icon: User },
+  { value: 'partnership', label: 'Partnership', icon: Users },
+  { value: 'llc', label: 'LLC', icon: Building2 },
+  { value: 'corporation', label: 'Corporation', icon: Briefcase },
+];
+
+function companyTypesForCountry(countryName: string) {
+  return countryName === 'India' ? INDIAN_COMPANY_TYPES : INTERNATIONAL_COMPANY_TYPES;
+}
 
 const COUNTRIES = [
   'India', 'United States', 'United Kingdom', 'Canada', 'Australia',
@@ -54,8 +69,20 @@ function parseGst(gst: string): { stateName: string; entityType: string; entityL
   const stateName = GST_STATE_CODES[cleaned.slice(0, 2)];
   const entityType = PAN_ENTITY_MAP[cleaned.charAt(5)];
   if (!stateName || !entityType) return null;
-  const entityLabel = COMPANY_TYPES.find(c => c.value === entityType)?.label || entityType;
+  const entityLabel = INDIAN_COMPANY_TYPES.find(c => c.value === entityType)?.label || entityType;
   return { stateName, entityType, entityLabel };
+}
+
+// GST registration status as returned by GSTN (sts) — mapped to a pill style.
+function gstStatusBadge(raw: string | null): { key: string; label: string; cls: string } | null {
+  if (!raw) return null;
+  const v = raw.trim().toUpperCase();
+  if (v.includes('INACT')) return { key: 'inactive', label: 'Inactive', cls: 'bg-red-100 text-red-700 border-red-300' };
+  if (v.includes('CNL') || v.includes('CANCEL')) return { key: 'cancelled', label: 'Cancelled', cls: 'bg-red-100 text-red-700 border-red-300' };
+  if (v.includes('SUSP')) return { key: 'suspended', label: 'Suspended', cls: 'bg-orange-100 text-orange-700 border-orange-300' };
+  if (v.includes('PROVISION') || v === 'PRO') return { key: 'provisional', label: 'Provisional', cls: 'bg-amber-100 text-amber-700 border-amber-300' };
+  if (v.includes('ACT') || v.includes('VALID')) return { key: 'active', label: 'Active', cls: 'bg-green-100 text-green-700 border-green-300' };
+  return { key: 'unknown', label: raw.trim(), cls: 'bg-gray-100 text-gray-600 border-gray-300' };
 }
 
 const DOCUMENT_REQUIREMENTS: Record<string, { name: string; optional?: boolean }[]> = {
@@ -76,7 +103,7 @@ const DOCUMENT_REQUIREMENTS: Record<string, { name: string; optional?: boolean }
     { name: 'LLP Agreement' },
     { name: 'PAN Card of LLP', optional: true },
     { name: 'Address Proof of Registered Office', optional: true },
-    { name: 'Director ID Proof (All Partners)', optional: true },
+    { name: 'Partner ID Proof (All Partners)', optional: true },
   ],
   pvt_ltd: [
     { name: 'Certificate of Incorporation' },
@@ -102,6 +129,38 @@ const DOCUMENT_REQUIREMENTS: Record<string, { name: string; optional?: boolean }
     { name: 'PAN Card of Company', optional: true },
     { name: 'Nominee Details & Consent', optional: true },
     { name: 'Director ID Proof', optional: true },
+  ],
+  trust: [
+    { name: 'Trust Deed' },
+    { name: 'PAN Card of Trust' },
+    { name: 'Registration Certificate', optional: true },
+    { name: 'Address Proof of Trust', optional: true },
+    { name: 'Trustee ID Proof', optional: true },
+  ],
+  society: [
+    { name: 'Certificate of Registration' },
+    { name: 'Society Bylaws' },
+    { name: 'PAN Card of Society', optional: true },
+    { name: 'Managing Committee List', optional: true },
+    { name: 'Address Proof of Society', optional: true },
+  ],
+  sole_proprietorship: [
+    { name: 'PAN Card / ID Proof' },
+    { name: 'Address Proof (Utility Bill / Lease)' },
+    { name: 'Business License / DBA', optional: true },
+    { name: 'EIN Letter', optional: true },
+  ],
+  llc: [
+    { name: 'Certificate of Formation' },
+    { name: 'EIN Assignment Letter' },
+    { name: 'Operating Agreement', optional: true },
+    { name: 'Address Proof', optional: true },
+  ],
+  corporation: [
+    { name: 'Articles of Incorporation' },
+    { name: 'EIN Assignment Letter' },
+    { name: 'Corporate Bylaws', optional: true },
+    { name: 'Address Proof', optional: true },
   ],
 };
 
@@ -245,6 +304,8 @@ export default function RegisterPage() {
   const [verifyingGst, setVerifyingGst] = useState(false);
   const [gstVerified, setGstVerified] = useState(false);
   const [gstError, setGstError] = useState('');
+  // Registration status of the verified GSTIN (Active / Provisional / …).
+  const [gstStatus, setGstStatus] = useState<string | null>(null);
 
   // Step 4 — documents
   const [documents, setDocuments] = useState<Record<string, { filename: string; fileUrl: string }>>({});
@@ -397,6 +458,7 @@ export default function RegisterPage() {
     setCaptchaText('');
     setGstVerified(false);
     setGstError('');
+    setGstStatus(null);
 
     if (cleaned.length === 15) {
       const parsed = parseGst(cleaned);
@@ -438,6 +500,7 @@ export default function RegisterPage() {
         if (data.address) setCompanyAddress(data.address);
         if (data.entityType && data.entityType !== companyType) setCompanyType(data.entityType);
         setGstVerified(true);
+        setGstStatus(data.gstStatus || null);
         setShowCaptcha(false);
       } else {
         setGstError(data.error || 'GST verification failed. Please check the captcha and try again.');
@@ -467,7 +530,21 @@ export default function RegisterPage() {
   };
 
   const docs = companyType ? (DOCUMENT_REQUIREMENTS[companyType] || []) : [];
-  const ctLabel = COMPANY_TYPES.find(c => c.value === companyType)?.label;
+  const activeCompanyTypes = companyTypesForCountry(country);
+  const ctLabel = activeCompanyTypes.find(c => c.value === companyType)?.label;
+  const gstBadge = gstStatusBadge(gstStatus);
+
+  // Country decides which company-type options apply; a type that no longer
+  // exists in the new list is cleared together with its document uploads.
+  const handleCountryChange = (val: string) => {
+    setCountry(val);
+    if (companyType && !companyTypesForCountry(val).some(t => t.value === companyType)) {
+      setCompanyType('');
+      setDocuments({});
+      setDocPreviews({});
+      setPreviewDoc(null);
+    }
+  };
 
   const validateStep1 = () => {
     const errors: Record<string, string> = {};
@@ -576,10 +653,10 @@ export default function RegisterPage() {
 
     if (!emailProof) { setError('Email verification expired — please verify again'); setFieldErrors({}); setStep(2); return; }
 
-    const mandatoryDocs = docs.filter(d => !d.optional);
-    const missingMandatory = mandatoryDocs.filter(d => !documents[d.name]);
-    if (missingMandatory.length > 0) {
-      toast.error(`Please upload: ${missingMandatory.map(d => d.name).join(', ')}`);
+    // Any single document from the type's list is enough to file the
+    // application — the admin reviews authenticity, not the count.
+    if (Object.keys(documents).length === 0) {
+      toast.error('Please upload at least one document for verification');
       return;
     }
 
@@ -600,6 +677,7 @@ export default function RegisterPage() {
           companyAddress,
           country,
           gstNumber: gstNumber || undefined,
+          gstStatus: gstStatus || undefined,
           documents: {},
           emailProof,
         }),
@@ -1071,9 +1149,21 @@ export default function RegisterPage() {
                           <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="p-3 rounded-xl bg-green-50 border border-green-200">
                             <div className="flex items-start gap-2">
                               <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                              <p className="text-[13px] text-green-700 break-words leading-snug">
-                                <span className="font-semibold">GST verified.</span> Company details auto-filled from the GSTN portal.
-                              </p>
+                              <div className="min-w-0">
+                                <p className="text-[13px] text-green-700 break-words leading-snug">
+                                  <span className="font-semibold">GST verified.</span> Company details auto-filled from the GSTN portal.
+                                </p>
+                                {gstBadge && (
+                                  <div className="mt-1.5">
+                                    <span className={`inline-flex items-center text-[10px] font-semibold border px-2 py-0.5 rounded-full whitespace-nowrap ${gstBadge.cls}`}>
+                                      GST status: {gstBadge.label}
+                                    </span>
+                                    {(gstBadge.key === 'cancelled' || gstBadge.key === 'inactive' || gstBadge.key === 'suspended') && (
+                                      <p className="text-[11px] text-red-600 leading-snug mt-1">This GSTIN is not active — your application will be reviewed by our team.</p>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </motion.div>
                         )}
@@ -1098,37 +1188,35 @@ export default function RegisterPage() {
                           {fieldErrors.companyAddress && <p className="text-red-500 text-xs mt-1">{fieldErrors.companyAddress}</p>}
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-700 mb-1.5">Country</label>
-                            <select value={country} onChange={e => setCountry(e.target.value)}
-                              className={`${inputBase} px-3 appearance-none cursor-pointer`}>
-                              {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                              Company type
-                              {gstInfo && <span className="ml-1.5 inline-flex items-center text-[10px] font-medium text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full whitespace-nowrap">Auto-detected</span>}
-                            </label>
-                          </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1.5">Country</label>
+                          <select value={country} onChange={e => handleCountryChange(e.target.value)}
+                            className={`${inputBase} px-3 appearance-none cursor-pointer`}>
+                            {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-2">
-                          {COMPANY_TYPES.map(ct => {
-                            const Icon = ct.icon;
-                            const selected = companyType === ct.value;
-                            return (
-                              <button key={ct.value} type="button" onClick={() => { setCompanyType(ct.value); clearFieldError('companyType'); setDocuments({}); setDocPreviews({}); setPreviewDoc(null); }}
-                                className={`h-auto py-2 px-1 rounded-xl border text-[10px] sm:text-[11px] font-medium transition-all text-center flex flex-col items-center justify-center gap-1 leading-tight min-h-[56px] sm:min-h-[64px] lg:min-h-[72px] ${selected ? 'text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300'}`}
-                                style={selected ? { background: '#4c1d95', borderColor: '#4c1d95' } : {}}>
-                                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
-                                <span className="break-words w-full px-0.5">{ct.label}</span>
-                              </button>
-                            );
-                          })}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                            Company type
+                            {gstInfo && <span className="ml-1.5 inline-flex items-center text-[10px] font-medium text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full whitespace-nowrap">Auto-detected</span>}
+                          </label>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
+                            {activeCompanyTypes.map(ct => {
+                              const Icon = ct.icon;
+                              const selected = companyType === ct.value;
+                              return (
+                                <button key={ct.value} type="button" onClick={() => { setCompanyType(ct.value); clearFieldError('companyType'); setDocuments({}); setDocPreviews({}); setPreviewDoc(null); }}
+                                  className={`h-auto py-2 px-1 rounded-xl border text-[10px] sm:text-[11px] font-medium transition-all text-center flex flex-col items-center justify-center gap-1 leading-tight min-h-[56px] sm:min-h-[64px] ${selected ? 'text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300'}`}
+                                  style={selected ? { background: '#4c1d95', borderColor: '#4c1d95' } : {}}>
+                                  <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                                  <span className="break-words w-full px-0.5">{ct.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {fieldErrors.companyType && <p className="text-red-500 text-xs mt-1">{fieldErrors.companyType}</p>}
                         </div>
-                        {fieldErrors.companyType && <p className="text-red-500 text-xs mt-1">{fieldErrors.companyType}</p>}
 
                         {error && (
                           <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-100">
@@ -1155,7 +1243,7 @@ export default function RegisterPage() {
                     <motion.div key="s4" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.2 }}>
                       <div className="mb-4">
                         <h3 className="text-base sm:text-lg font-bold text-gray-900">Documents &amp; review</h3>
-                        <p className="text-xs text-gray-500 mt-0.5">{companyType ? `Required for ${ctLabel}` : 'Select a company type first'}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{companyType ? `Upload any one document for your ${ctLabel} — our team verifies the rest` : 'Select a company type first'}</p>
                       </div>
 
                       <div className="space-y-3.5">

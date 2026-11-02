@@ -6,6 +6,7 @@ import { Shield, FileText, ArrowRight, Globe, Loader2, AlertCircle, Eye, EyeOff,
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { verticalByKey } from '@/lib/verticals';
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20">
@@ -37,6 +38,12 @@ const leftFeatures = [
 export default function SignInPage() {
   const searchParams = useSearchParams();
   const urlError = searchParams.get('error');
+  // Per-vertical login: ?v=crm brands the page, ?callbackUrl= lands the
+  // user straight on the tool they signed in for.
+  const vertical = verticalByKey(searchParams.get('v'));
+  const rawCallback = searchParams.get('callbackUrl');
+  const postLoginUrl = rawCallback && rawCallback.startsWith('/') ? rawCallback : '/dashboard';
+  const registerHref = `/auth/register${rawCallback && rawCallback.startsWith('/') ? `?callbackUrl=${encodeURIComponent(rawCallback)}` : ''}`;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -62,12 +69,12 @@ export default function SignInPage() {
     try { window.sessionStorage.setItem('ainos_google_attempt', '1'); } catch { /* ignore */ }
 
     try {
-      await signIn('google', { callbackUrl: '/dashboard' });
+      await signIn('google', { callbackUrl: postLoginUrl });
     } catch {
       setStatus('Retrying...');
       await new Promise(r => setTimeout(r, 3000));
       try {
-        await signIn('google', { callbackUrl: '/dashboard' });
+        await signIn('google', { callbackUrl: postLoginUrl });
       } catch {
         setError('Sign-in failed. Please try again.');
         setLoading(false);
@@ -108,7 +115,7 @@ export default function SignInPage() {
       }
 
       if (result?.ok) {
-        window.location.href = '/dashboard';
+        window.location.href = postLoginUrl;
         return;
       }
 
@@ -179,12 +186,14 @@ export default function SignInPage() {
                   <img src="/ainos-alpha.png" alt="AINOS" className="w-7 h-7 object-contain" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900 leading-tight">AINOS</h1>
+                  <h1 className="text-xl font-bold text-gray-900 leading-tight">{vertical ? vertical.title : 'AINOS'}</h1>
                   <p className="text-xs text-gray-500 font-medium">Where Intelligence Meets Business</p>
                 </div>
               </div>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Welcome back! Access your dashboard to manage invoices, customers, inventory, and AI automation — all in one intelligent platform.
+                {vertical
+                  ? vertical.tagline
+                  : 'Welcome back! Access your dashboard to manage invoices, customers, inventory, and AI automation — all in one intelligent platform.'}
               </p>
             </motion.div>
 
@@ -205,7 +214,7 @@ export default function SignInPage() {
                     Join growing businesses using AI-powered invoicing, CRM, and automation. Quick setup in minutes!
                   </p>
                   <Link
-                    href="/auth/register"
+                    href={registerHref}
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
                     style={{ background: '#4c1d95' }}
                   >
@@ -248,10 +257,10 @@ export default function SignInPage() {
               {/* Card Header */}
               <div className="px-6 sm:px-8 pt-8 pb-6 text-center border-b border-gray-50">
                 <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%)' }}>
-                  <LogIn className="w-7 h-7 text-white" />
+                  {vertical ? (() => { const VIcon = vertical.icon; return <VIcon className="w-7 h-7 text-white" />; })() : <LogIn className="w-7 h-7 text-white" />}
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-1.5">Welcome Back</h2>
-                <p className="text-sm text-gray-500">Enter your credentials to access your dashboard</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-1.5">{vertical ? `Sign in to ${vertical.title}` : 'Welcome Back'}</h2>
+                <p className="text-sm text-gray-500">{vertical ? vertical.tagline : 'Enter your credentials to access your dashboard'}</p>
               </div>
 
               {/* Card Body */}
@@ -357,7 +366,7 @@ export default function SignInPage() {
                     {loading && mode === 'credentials' ? (
                       <><Loader2 className="w-4 h-4 animate-spin" /> Signing in...</>
                     ) : (
-                      <><LogIn className="w-4 h-4" /> Login to Dashboard <ArrowRight className="w-4 h-4" /></>
+                      <><LogIn className="w-4 h-4" /> Login to {vertical ? vertical.shortTitle : 'Dashboard'} <ArrowRight className="w-4 h-4" /></>
                     )}
                   </motion.button>
                 </motion.form>
@@ -385,7 +394,7 @@ export default function SignInPage() {
             {/* Mobile: Already have account */}
             <p className="lg:hidden text-center text-sm text-gray-500 mt-6">
               Don&apos;t have an account?{' '}
-              <Link href="/auth/register" className="font-semibold" style={{ color: '#6d28d9' }}>
+              <Link href={registerHref} className="font-semibold" style={{ color: '#6d28d9' }}>
                 Create Account
               </Link>
             </p>
