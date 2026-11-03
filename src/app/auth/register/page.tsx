@@ -1294,7 +1294,6 @@ export default function RegisterPage() {
                                     <FileText className="w-4 h-4 flex-shrink-0" style={{ color: '#4c1d95' }} />
                                     <div className="min-w-0">
                                       <p className="text-[13px] font-medium text-gray-800 truncate">{d.name}</p>
-                                      {d.optional && <p className="text-[11px] text-gray-400">Optional</p>}
                                     </div>
                                   </div>
                                   <label className="flex-shrink-0 ml-2 cursor-pointer">
