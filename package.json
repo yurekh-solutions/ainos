@@ -12,6 +12,8 @@
     "build": "NODE_OPTIONS=--max-old-space-size=12288 next build",
     "start": "node server.js",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -57,6 +59,7 @@
     "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
-    "prisma": "^6.0.0"
+    "prisma": "^6.0.0",
+    "vitest": "^2.1.9"
   }
 }
