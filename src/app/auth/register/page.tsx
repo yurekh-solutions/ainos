@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileText, ArrowRight, ArrowLeft, Check, Loader2, AlertCircle, Eye, EyeOff, Building2, FolderCheck, Upload, Phone, MapPin, Mail, Lock, User, Briefcase, Building, BarChart3, Users, ShieldCheck, LogIn, Globe, UserPlus, Shield, RefreshCw, MailCheck } from 'lucide-react';
-import { useCallback, useEffect, useState, type ChangeEvent, type ElementType } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type ElementType } from 'react';
 import Link from 'next/link';
 import { useToast } from '@/lib/toast';
 import { validateEmail, validatePhone, validatePassword, cleanPhone, PHONE_REGEX } from '@/lib/validation';
@@ -316,6 +316,52 @@ export default function RegisterPage() {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  // ── Draft persistence: survive a refresh on the same step with data intact ──
+  const DRAFT_KEY = 'ainos_register_draft_v1';
+  const hydrated = useRef(false);
+
+  // Restore once on mount (client-only, so no SSR/hydration mismatch). Runs
+  // before the save effect writes, and `hydrated` guards the save so the stored
+  // draft is never clobbered with empty defaults during the first commit.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const s = JSON.parse(raw) as Record<string, unknown>;
+        if (typeof s.step === 'number') setStep(s.step as number);
+        if (s.name) setName(s.name as string);
+        if (s.userEmail) setUserEmail(s.userEmail as string);
+        if (s.userPhone) setUserPhone(s.userPhone as string);
+        if (s.password) setPassword(s.password as string);
+        if (s.companyName) setCompanyName(s.companyName as string);
+        if (s.companyType) setCompanyType(s.companyType as string);
+        if (s.companyEmail) setCompanyEmail(s.companyEmail as string);
+        if (s.companyPhone) setCompanyPhone(s.companyPhone as string);
+        if (s.companyAddress) setCompanyAddress(s.companyAddress as string);
+        if (s.country) setCountry(s.country as string);
+        if (s.gstNumber) setGstNumber(s.gstNumber as string);
+        if (s.gstStatus) setGstStatus(s.gstStatus as string);
+        if (s.gstVerified) setGstVerified(true);
+        if (s.emailVerified) setEmailVerified(true);
+        if (s.emailProof) setEmailProof(s.emailProof as string);
+        if (s.documents) setDocuments(s.documents as Record<string, { filename: string; fileUrl: string }>);
+      }
+    } catch { /* ignore malformed draft */ }
+    hydrated.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated.current) return;
+    try {
+      if (success) { sessionStorage.removeItem(DRAFT_KEY); return; }
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
+        step, name, userEmail, userPhone, password,
+        companyName, companyType, companyEmail, companyPhone, companyAddress, country,
+        gstNumber, gstStatus, gstVerified, emailVerified, emailProof, documents,
+      }));
+    } catch { /* storage full/blocked — non-fatal */ }
+  }, [step, name, userEmail, userPhone, password, companyName, companyType, companyEmail, companyPhone, companyAddress, country, gstNumber, gstStatus, gstVerified, emailVerified, emailProof, documents, success]);
 
   const emailTarget = userEmail.trim().toLowerCase();
   const phoneDigits = cleanPhone(userPhone);
