@@ -459,6 +459,33 @@ export default function RegisterPage() {
     setFetchingGst(true);
     setGstError('');
 
+    // Resilience first: if we already have a fresh cached lookup for this GSTIN,
+    // auto-fill immediately and skip the portal/captcha entirely. This is what
+    // lets registration proceed while GSTN is in "Scheduled Downtime". On any
+    // miss or error we simply fall through to the live captcha flow below.
+    try {
+      const c = await fetch('/api/gst-lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'getCached', gstNumber: gst }),
+      });
+      if (c.ok) {
+        const cd = await c.json();
+        if (cd?.success && cd?.cached) {
+          if (cd.companyName) setCompanyName(cd.companyName);
+          if (cd.tradeName && !companyName) setCompanyName(cd.tradeName);
+          if (cd.address) setCompanyAddress(cd.address);
+          if (cd.entityType && cd.entityType !== companyType) setCompanyType(cd.entityType);
+          setGstStatus(cd.gstStatus || null);
+          setGstVerified(true);
+          setShowCaptcha(false);
+          setFetchingGst(false);
+          toast.success('Company details auto-filled from GST records.');
+          return;
+        }
+      }
+    } catch { /* cache unavailable — continue to live captcha flow */ }
+
     // Single bounded attempt: the GSTN portal rate-limits bursts, so rapid
     // auto-retries only prolong the cooldown. On failure we surface a friendly
     // message plus a deliberate "Try again" button instead of hammering it.

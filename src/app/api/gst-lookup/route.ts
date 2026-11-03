@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 // GST Scraper - Self-hosted Flask server on Render
 // Flow: getCaptcha → user solves captcha → verifyGST → real data
 const FLASK_URL = process.env.GST_SCRAPER_URL || 'https://ainos-gst-scraper.onrender.com';
+
+// How long a cached GST lookup stays usable before we prefer a fresh portal
+// hit. GST registration status can change (Active -> Cancelled), so this is a
+// bounded TTL, not indefinite. Override with GST_CACHE_TTL_DAYS.
+const CACHE_TTL_DAYS = Number(process.env.GST_CACHE_TTL_DAYS || 30);
+const normGst = (v: unknown): string => typeof v === 'string' ? v.toUpperCase().trim() : '';
 
 // Server-side retry: attempt fetch up to N times with delay between attempts
 // Handles transient 502/503 from Render cold starts or GSTN portal hiccups
@@ -34,6 +41,29 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { action } = body;
+
+    // Action 0: Return a cached GST lookup if one exists and is fresh, so the
+    // client can auto-fill WITHOUT hitting GSTN at all. This is the resilience
+    // path for GSTN "Scheduled Downtime". A miss/stale simply returns
+    // cached:false and the caller falls back to the live captcha flow.
+    if (action === 'getCached') {
+      const gst = normGst(body.gstNumber);
+      if (!gst || gst.length !== 15) {
+        return NextResponse.json({ error: 'Invalid GST number' }, { status: 400 });
+      }
+      try {
+        const row = await prisma.gstLookupCache.findUnique({ where: { gstNumber: gst } });
+        if (!row) return NextResponse.json({ success: false, cached: false });
+        const ageMs = Date.now() - row.fetchedAt.getTime();
+        const fresh = ageMs <= CACHE_TTL_DAYS * 24 * 60 * 60 * 1000;
+        if (!fresh) return NextResponse.json({ success: false, cached: false, stale: true });
+        return NextResponse.json({ success: true, cached: true, source: 'cache', fetchedAt: row.fetchedAt, ...(row.payload as Record<string, unknown>) });
+      } catch (err) {
+        // Cache is a best-effort optimization; never let it break the flow.
+        console.error('[GST] Cache read error:', err);
+        return NextResponse.json({ success: false, cached: false });
+      }
+    }
 
     // Action 1: Get captcha for GST verification
     if (action === 'getCaptcha') {
@@ -176,7 +206,7 @@ export async function POST(req: NextRequest) {
           return null;
         };
 
-        return NextResponse.json({
+        const result = {
           success: true,
           source: 'gstn-portal',
           gstNumber: gst,
@@ -195,7 +225,23 @@ export async function POST(req: NextRequest) {
           email: null,
           phone: null,
           message: 'Real GST data fetched from GSTN portal',
-        });
+        };
+
+        // Persist the successful live lookup so future requests for this GSTIN
+        // can auto-fill from cache even while GSTN is in scheduled downtime.
+        // Best-effort: a cache-write failure must never break the live result.
+        try {
+          const { success: _s, message: _m, ...payload } = result;
+          await prisma.gstLookupCache.upsert({
+            where: { gstNumber: gst },
+            create: { gstNumber: gst, payload, gstStatus: result.gstStatus, source: 'gstn-portal' },
+            update: { payload, gstStatus: result.gstStatus, source: 'gstn-portal' },
+          });
+        } catch (err) {
+          console.error('[GST] Cache write failed:', err);
+        }
+
+        return NextResponse.json(result);
       } catch (err) {
         console.error('[GST] Verify error:', err);
         return NextResponse.json({

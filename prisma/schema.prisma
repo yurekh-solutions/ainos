@@ -7,6 +7,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// GST LOOKUP CACHE — stores the normalized result of a successful GSTN
+// taxpayer lookup so a known GSTIN can auto-fill WITHOUT re-hitting the
+// portal. This is what keeps registration working during GSTN "Scheduled
+// Downtime" windows. Additive: a brand-new GSTIN simply misses and falls
+// back to the live captcha flow. Keyed by the uppercased 15-char GSTIN.
+model GstLookupCache {
+  id        String   @id @default(uuid())
+  gstNumber String   @unique @map("gst_number") // normalized (uppercased, trimmed)
+  payload   Json     // full normalized lookup result (names, address, status, …)
+  gstStatus String?  @map("gst_status")
+  source    String?  // e.g. 'gstn-portal'
+  fetchedAt DateTime @default(now()) @map("fetched_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([fetchedAt])
+  @@map("gst_lookup_cache")
+}
+
 model Company {
   id                 String              @id @default(uuid())
   name               String
