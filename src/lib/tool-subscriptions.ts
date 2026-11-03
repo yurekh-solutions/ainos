@@ -54,23 +54,35 @@ function resolveCapability(key: string): Capability | null {
   return capabilityForKey(key);
 }
 
-/** Monthly INR for an offering + edition. */
-export function toolMonthlyInr(offering: ToolOffering, edition: ToolEdition): number {
+/** Per-user monthly INR for an offering + edition (seats excluded). */
+export function toolMonthlyInr(offering: ToolOffering, edition: ToolEdition, seats = 1): number {
   const mult = TOOL_EDITIONS.find((e) => e.level === edition)?.multiplier ?? 1;
-  return Math.round(offering.baseMonthlyInr * mult);
+  return Math.round(offering.baseMonthlyInr * mult * seats);
 }
 
-/** Amount charged, in paise, honouring the billing cycle. */
-export function toolPriceMinor(offering: ToolOffering, edition: ToolEdition, cycle: ToolCycle): number {
-  const monthly = toolMonthlyInr(offering, edition);
+/** Amount charged, in paise, honouring the billing cycle and seat count. */
+export function toolPriceMinor(offering: ToolOffering, edition: ToolEdition, cycle: ToolCycle, seats = 1): number {
+  const monthly = toolMonthlyInr(offering, edition, seats);
   const inr = cycle === 'annual' ? monthly * ANNUAL_MONTHS_CHARGED : monthly;
   return inr * 100;
+}
+
+/** Seat bound shared by checkout + UI. */
+export const MAX_TOOL_SEATS = 500;
+
+/** Normalise a requested seat count to a safe integer >= 1. */
+export function normSeats(n: number | undefined): number {
+  const v = Math.floor(Number(n));
+  if (!Number.isFinite(v) || v < 1) return 1;
+  return Math.min(v, MAX_TOOL_SEATS);
 }
 
 export interface SelectionInput {
   key: string;
   edition: ToolEdition;
   cycle: ToolCycle;
+  /** Number of user seats; price scales linearly. Omitted/invalid = 1. */
+  seats?: number;
 }
 
 /** Validate a requested selection against the catalog. */
@@ -122,7 +134,7 @@ export interface CheckoutIntent {
   amountMinor: number;
   currency: string;
   keyId: string | null;
-  lineItems: { key: string; label: string; edition: ToolEdition; cycle: ToolCycle; monthlyInr: number; chargeInr: number }[];
+  lineItems: { key: string; label: string; edition: ToolEdition; cycle: ToolCycle; seats: number; monthlyInr: number; chargeInr: number }[];
   directlyActivated: boolean;
 }
 
@@ -150,13 +162,16 @@ export async function createToolCheckout(
   if (resolved.length === 0) throw new Error('No valid tools selected');
 
   const lineItems = resolved.map(({ input, r }) => {
-    const chargeMinor = toolPriceMinor(r.offering, input.edition, input.cycle === 'annual' ? 'annual' : 'monthly');
+    const seats = normSeats(input.seats);
+    const cycle = (input.cycle === 'annual' ? 'annual' : 'monthly') as ToolCycle;
+    const chargeMinor = toolPriceMinor(r.offering, input.edition, cycle, seats);
     return {
       key: r.offering.key,
       label: r.offering.label,
       edition: input.edition,
-      cycle: (input.cycle === 'annual' ? 'annual' : 'monthly') as ToolCycle,
-      monthlyInr: toolMonthlyInr(r.offering, input.edition),
+      cycle,
+      seats,
+      monthlyInr: toolMonthlyInr(r.offering, input.edition, seats),
       chargeInr: chargeMinor / 100,
       chargeMinor,
     };
@@ -175,6 +190,7 @@ export async function createToolCheckout(
         billingCycle: li.cycle,
         priceMinor: li.chargeMinor,
         currency: 'INR',
+        seats: li.seats,
         status: 'pending',
         orderId: null,
       },
@@ -186,6 +202,7 @@ export async function createToolCheckout(
         billingCycle: li.cycle,
         priceMinor: li.chargeMinor,
         currency: 'INR',
+        seats: li.seats,
         status: 'pending',
       },
     });
@@ -322,6 +339,7 @@ export interface ToolSubscriptionView {
     edition: number;
     billingCycle: string;
     currentPeriodEnd: Date | null;
+    seats: number;
   } | null;
 }
 
@@ -344,6 +362,7 @@ export async function listToolOfferingsForCompany(companyId: string): Promise<To
             edition: s.edition,
             billingCycle: s.billingCycle,
             currentPeriodEnd: s.currentPeriodEnd,
+            seats: s.seats ?? 1,
           }
         : null,
     };

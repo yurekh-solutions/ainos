@@ -43,7 +43,7 @@ interface ToolInfo {
   vertical: string;
   monthlyInr: number;
   editions: ToolEditionInfo[];
-  subscription: { status: string; edition: number; billingCycle: string; currentPeriodEnd?: string | null } | null;
+  subscription: { status: string; edition: number; billingCycle: string; currentPeriodEnd?: string | null; seats?: number } | null;
 }
 
 interface PaymentInfo {
@@ -162,6 +162,7 @@ export default function BillingPage() {
   const [busyPlan, setBusyPlan] = useState<string | null>(null);
   const [toolSubs, setToolSubs] = useState<ToolInfo[]>([]);
   const [busyTool, setBusyTool] = useState<string | null>(null);
+  const [toolSeats, setToolSeats] = useState<Record<string, number>>({});
 
   // Marketing UI tiers map to the activate-tools plan keys (category-level plan).
   const MARKETING_PLAN_KEYS: Record<string, string> = {
@@ -211,13 +212,19 @@ export default function BillingPage() {
     }
   };
 
-  const subscribeTool = async (key: string, edition: number) => {
+  const seatCountFor = (key: string, tool: ToolInfo): number =>
+    toolSeats[key] ?? tool.subscription?.seats ?? 1;
+
+  const setSeatCount = (key: string, n: number) =>
+    setToolSeats((s) => ({ ...s, [key]: Math.max(1, Math.min(500, Math.floor(n) || 1)) }));
+
+  const subscribeTool = async (key: string, edition: number, seats: number) => {
     setBusyTool(`${key}:${edition}`);
     try {
       const res = await fetch('/api/billing/tools', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key, edition, cycle }),
+        body: JSON.stringify({ key, edition, cycle, seats }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -356,6 +363,8 @@ export default function BillingPage() {
           {toolSubs.map((tool) => {
             const active = tool.subscription?.status === 'active';
             const activeEdition = tool.subscription?.edition;
+            const seats = seatCountFor(tool.key, tool);
+            const activeSeats = tool.subscription?.seats ?? 1;
             return (
               <div key={tool.key} className={`rounded-xl border p-5 flex flex-col ${active ? 'border-emerald-500/40' : ''}`} style={{ borderColor: active ? undefined : 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
                 <div className="flex items-start justify-between gap-2 mb-2">
@@ -368,21 +377,40 @@ export default function BillingPage() {
                 </div>
                 <p className="text-xs mb-3" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   {active
-                    ? `${tool.editions.find(e => e.level === activeEdition)?.name || 'Plan'} · renews ${formatDate(tool.subscription?.currentPeriodEnd || undefined)}`
-                    : `${tool.vertical} · from ₹${Math.min(...tool.editions.map(e => e.priceMonthlyInr))}/mo`}
+                    ? `${tool.editions.find(e => e.level === activeEdition)?.name || 'Plan'} · ${activeSeats} user${activeSeats > 1 ? 's' : ''} · renews ${formatDate(tool.subscription?.currentPeriodEnd || undefined)}`
+                    : `${tool.vertical} · from ₹${Math.min(...tool.editions.map(e => e.priceMonthlyInr))}/user/mo`}
                 </p>
+                {!active && (
+                  <div className="flex items-center justify-between rounded-lg border px-3 py-2 mb-2" style={{ borderColor: 'hsl(var(--border))' }}>
+                    <span className="text-xs font-medium" style={{ color: 'hsl(var(--foreground))' }}>Users</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setSeatCount(tool.key, seats - 1)} disabled={seats <= 1} className="w-6 h-6 rounded-md border text-sm font-bold disabled:opacity-40" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }}>−</button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={500}
+                        value={seats}
+                        onChange={(e) => setSeatCount(tool.key, Number(e.target.value))}
+                        className="w-12 rounded-md border bg-transparent text-center text-sm"
+                        style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }}
+                      />
+                      <button onClick={() => setSeatCount(tool.key, seats + 1)} disabled={seats >= 500} className="w-6 h-6 rounded-md border text-sm font-bold disabled:opacity-40" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }}>+</button>
+                    </div>
+                  </div>
+                )}
                 <div className="flex-1 space-y-2 mb-4">
                   {tool.editions.map((ed) => {
+                    const total = ed.priceMonthlyInr * seats;
                     return (
                       <div key={ed.level} className="flex items-center justify-between rounded-lg border px-3 py-2" style={{ borderColor: 'hsl(var(--border))' }}>
                         <div>
                           <p className="text-sm font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{ed.name}</p>
                           <p className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                            ₹{ed.priceMonthlyInr}/mo{cycle === 'annual' ? ' · billed yearly' : ''}
+                            ₹{ed.priceMonthlyInr}/user/mo · ₹{total}/mo{cycle === 'annual' ? ' · billed yearly' : ''}
                           </p>
                         </div>
                         <button
-                          onClick={() => subscribeTool(tool.key, ed.level)}
+                          onClick={() => subscribeTool(tool.key, ed.level, seats)}
                           disabled={busyTool === `${tool.key}:${ed.level}` || active}
                           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${active ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-60'}`}
                         >

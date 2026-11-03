@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
         key: String(x.key ?? ''),
         edition: Number(x.edition ?? 2) as ToolEdition,
         cycle: (x.cycle === 'annual' ? 'annual' : 'monthly') as ToolCycle,
+        seats: x.seats === undefined ? undefined : Number(x.seats),
       }))
       .filter((s) => s.key);
 
