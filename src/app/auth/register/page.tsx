@@ -439,7 +439,10 @@ export default function RegisterPage() {
       // provider call failed → fall back to the captcha flow below
     }
 
-    const MAX_ATTEMPTS = 3;
+    // The server now makes a single bounded (~18s) attempt that always returns
+    // before Render's edge gateway, so retries live here on the client. Each
+    // round-trip stays well under the 55s gateway ceiling — no raw 502s.
+    const MAX_ATTEMPTS = 2;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
         const res = await fetch('/api/gst-lookup', {
@@ -474,7 +477,7 @@ export default function RegisterPage() {
           return;
         }
       }
-      await new Promise(r => setTimeout(r, attempt * 4000));
+      await new Promise(r => setTimeout(r, 1500));
     }
     setFetchingGst(false);
   };

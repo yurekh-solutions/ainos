@@ -69,18 +69,24 @@ export async function POST(req: NextRequest) {
       }
 
       try {
+        // Keep EACH outbound call well under Render's ~55s edge-gateway window
+        // (single bounded attempt, 18s ceiling). Retrying lives on the client, so
+        // the gateway never kills this request mid-flight and returns a raw 502.
         const res = await fetchWithRetry(
           `${FLASK_URL}/api/v1/getCaptcha`,
-          { signal: AbortSignal.timeout(60000) },
-          3, // 3 attempts
-          4000 // 4s between attempts (covers cold start)
+          { signal: AbortSignal.timeout(18000) },
+          1, // single attempt server-side; the client handles retries
+          1200
         );
         if (!res.ok) {
-          console.error(`[GST] Captcha failed after retries: ${res.status}`);
+          console.warn(`[GST] Captcha upstream returned ${res.status}`);
+          // 200 + success:false so the browser shows a friendly "busy" message
+          // instead of a scary red 502 in the console. Feature is not disabled.
           return NextResponse.json({
-            error: 'GST portal is temporarily unavailable. Please try again in a few seconds.',
+            success: false,
+            error: 'GST portal is busy right now. Please try again in a few seconds.',
             retryable: true,
-          }, { status: 502 });
+          });
         }
         const data = await res.json();
         return NextResponse.json({
@@ -92,9 +98,10 @@ export async function POST(req: NextRequest) {
       } catch (err) {
         console.error('[GST] Captcha error:', err);
         return NextResponse.json({
-          error: 'Unable to connect to GST service. Please try again.',
+          success: false,
+          error: 'Unable to reach the GST portal right now. Please try again.',
           retryable: true,
-        }, { status: 503 });
+        });
       }
     }
 
@@ -116,17 +123,18 @@ export async function POST(req: NextRequest) {
               GSTIN: gstNumber.toUpperCase().trim(),
               captcha: captchaText.trim(),
             }),
-            signal: AbortSignal.timeout(30000),
+            signal: AbortSignal.timeout(18000),
           },
-          2, // 2 attempts for verify (session may expire)
-          3000
+          1, // single bounded attempt to stay well under the edge gateway
+          1200
         );
 
         if (!res.ok) {
           return NextResponse.json({
+            success: false,
             error: 'GST verification failed. The GSTN portal may be busy. Please try again.',
             retryable: true,
-          }, { status: 502 });
+          });
         }
 
         const data = await res.json();
