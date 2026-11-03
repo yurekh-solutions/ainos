@@ -317,7 +317,11 @@ export default function RegisterPage() {
     return () => clearInterval(id);
   }, []);
 
-  // ── Draft persistence: survive a refresh on the same step with data intact ──
+  // ── Draft persistence: survive a refresh, tab close, or browser restart and
+  //    resume on the same step with all data (incl. email-verified) intact. We
+  //    use localStorage (not sessionStorage) because the register page is often
+  //    reopened from a fresh tab / after a Render cold start, and sessionStorage
+  //    is wiped when the tab session ends — forcing a full restart from step 1.
   const DRAFT_KEY = 'ainos_register_draft_v1';
   const hydrated = useRef(false);
 
@@ -326,7 +330,7 @@ export default function RegisterPage() {
   // draft is never clobbered with empty defaults during the first commit.
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem(DRAFT_KEY);
+      const raw = localStorage.getItem(DRAFT_KEY);
       if (raw) {
         const s = JSON.parse(raw) as Record<string, unknown>;
         if (typeof s.step === 'number') setStep(s.step as number);
@@ -354,8 +358,8 @@ export default function RegisterPage() {
   useEffect(() => {
     if (!hydrated.current) return;
     try {
-      if (success) { sessionStorage.removeItem(DRAFT_KEY); return; }
-      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
+      if (success) { localStorage.removeItem(DRAFT_KEY); return; }
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
         step, name, userEmail, userPhone, password,
         companyName, companyType, companyEmail, companyPhone, companyAddress, country,
         gstNumber, gstStatus, gstVerified, emailVerified, emailProof, documents,
