@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession, signOut } from 'next-auth/react';
-import { ChevronLeft, ChevronRight, ChevronDown, LogOut, X, LayoutGrid } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, LogOut, X, LayoutGrid, Lock } from 'lucide-react';
 import { OPEN_SIDEBAR_EVENT } from './TopBar';
 import { BrandMark } from './BrandMark';
 import { DASHBOARD_NAV, NAV_GROUPS, NavGroup, isDashboardActive, isGroupActive, matchesPath } from './navigation';
@@ -42,7 +42,7 @@ function initialsOf(name?: string | null, email?: string | null) {
     .slice(0, 2);
 }
 
-function GroupNav({ group, collapsed, pathname }: { group: NavGroup; collapsed: boolean; pathname: string }) {
+function GroupNav({ group, collapsed, pathname, locked }: { group: NavGroup; collapsed: boolean; pathname: string; locked?: Set<string> }) {
   const Icon = group.icon;
   const active = isGroupActive(pathname, group);
   const onOverview = matchesPath(pathname, group.href);
@@ -96,6 +96,7 @@ function GroupNav({ group, collapsed, pathname }: { group: NavGroup; collapsed: 
                 const renderItem = (item: typeof group.items[number], idx: number) => {
                   const ItemIcon = item.icon;
                   const itemActive = matchesPath(pathname, item.href);
+                  const isLocked = locked?.has(item.href) ?? false;
                   return (
                     <Link
                       key={item.href}
@@ -107,7 +108,8 @@ function GroupNav({ group, collapsed, pathname }: { group: NavGroup; collapsed: 
                       <div className={`w-6 h-6 rounded-md flex items-center justify-center ${itemActive ? 'bg-white/20' : getIconBg(idx + 1)}`}>
                         <ItemIcon className="w-3.5 h-3.5 text-white" />
                       </div>
-                      <span className="truncate">{item.label}</span>
+                      <span className="truncate flex-1">{item.label}</span>
+                      {isLocked && <Lock className="w-3 h-3 text-white/40 flex-shrink-0" />}
                     </Link>
                   );
                 };
@@ -139,6 +141,9 @@ function NavList({ collapsed, pathname, verticalKey }: { collapsed: boolean; pat
   // fall back to the full navigation until the next session refresh.
   const allowed = session?.user?.verticals;
   let groups = allowed ? NAV_GROUPS.filter(g => allowed.includes(g.key)) : NAV_GROUPS;
+  // Locked capabilities from the entitlement engine (empty today — no plan
+  // populates capabilityAccess yet). Rendered as a lock icon on the row.
+  const locked = new Set(session?.user?.lockedCapabilities ?? []);
   // Inside a vertical workspace the sidebar shows only that vertical's tools.
   if (verticalKey) {
     const scoped = groups.filter(g => g.key === verticalKey);
@@ -155,7 +160,7 @@ function NavList({ collapsed, pathname, verticalKey }: { collapsed: boolean; pat
         {!collapsed && <span className="font-medium">{DASHBOARD_NAV.label}</span>}
       </Link>
       {groups.map(group => (
-        <GroupNav key={group.key} group={group} collapsed={collapsed} pathname={pathname} />
+        <GroupNav key={group.key} group={group} collapsed={collapsed} pathname={pathname} locked={locked} />
       ))}
     </nav>
   );

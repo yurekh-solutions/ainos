@@ -57,6 +57,11 @@ model Company {
   // VERTICAL WORKSPACES (empty = every vertical enabled for this company)
   enabledVerticals   String[]            @default([]) @map("enabled_verticals")
 
+  // UNIFIED ENTITLEMENT ENGINE (Phase 1) — per-tool capability grants:
+  //   { "<href>": { "level": 0|1|2|3, "until": "<ISO>" | null } }
+  // null / absent key = OPEN (nothing locked until a plan grants/locks it).
+  capabilityAccess   Json?               @map("capability_access")
+
   // SUBSCRIPTION STATUS
   subscriptionStatus String              @default("inactive") @map("subscription_status")
   subscriptionEndsAt DateTime?           @map("subscription_ends_at")

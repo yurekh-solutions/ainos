@@ -10,6 +10,7 @@ declare module 'next-auth' {
       role: string;
       companyId?: string;
       verticals?: string[];
+      lockedCapabilities?: string[];
     };
   }
 

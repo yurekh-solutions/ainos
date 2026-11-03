@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { isAdmin } from '@/lib/admin';
 import { findUserByEmail } from '@/lib/identity';
 import { getVerticalsForUser } from '@/lib/access';
+import { getLockedCapabilitiesForUser } from '@/lib/entitlements';
 
 export const authOptions: NextAuthOptions = {
   secret:
@@ -145,6 +146,10 @@ export const authOptions: NextAuthOptions = {
             // Workspace access is re-read on every session fetch, so grants
             // and company toggles apply without forcing a re-login.
             session.user.verticals = await getVerticalsForUser(dbUser, dbUser.email);
+            // Unified entitlement engine: capability keys the member can reach
+            // by vertical but that are locked/expired for the company. Empty
+            // today (no plan populates capabilityAccess yet) — purely additive.
+            session.user.lockedCapabilities = await getLockedCapabilitiesForUser(dbUser, dbUser.email);
           }
         } catch (error) {
           console.error('Session error:', error);
