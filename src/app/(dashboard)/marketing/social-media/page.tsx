@@ -153,7 +153,23 @@ export default function SocialMediaPage() {
       setTimeout(() => { cleanup(); resolve(frames); }, 10000);
     });
 
-  // Scan the media with AI and auto-fill topic + description
+  // Scan the media with AI and auto-fill topic + description (async job + poll)
+  const pollScanJob = async (jobId: string): Promise<{ topic?: string; description?: string; niche?: string; mood?: string; detectedObjects?: string[] }> => {
+    const deadline = Date.now() + 2 * 60 * 1000; // vision scan budget + buffer
+    await new Promise(r => setTimeout(r, 2000));
+    while (Date.now() < deadline) {
+      let resp: Response | null = null;
+      try { resp = await fetch(`/api/jobs/${jobId}`); } catch { resp = null; }
+      if (resp && resp.ok) {
+        const { job } = await resp.json();
+        if (job?.status === 'completed') return job.result as { topic?: string; description?: string; niche?: string; mood?: string; detectedObjects?: string[] };
+        if (job?.status === 'failed') throw new Error(job.error || 'scan failed');
+      }
+      await new Promise(r => setTimeout(r, 2000));
+    }
+    throw new Error('Scan is taking longer than usual');
+  };
+
   const autoFillFromMedia = async (base64: string, type: 'image' | 'video') => {
     setAnalyzing(true);
     setScanInfo(null);
@@ -161,7 +177,7 @@ export default function SocialMediaPage() {
       const res = await fetch('/api/social-caption/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64: base64, mediaType: type }),
+        body: JSON.stringify({ imageBase64: base64, mediaType: type, idempotencyKey: globalThis.crypto?.randomUUID?.() ?? String(Date.now()) }),
       });
       if (!res.ok) {
         const msg = res.status === 503
@@ -170,7 +186,10 @@ export default function SocialMediaPage() {
         showToast(msg, 'error');
         return;
       }
-      const data = await res.json();
+      const started = await res.json();
+      const data = started?.pending && started.jobId
+        ? await pollScanJob(started.jobId)
+        : started;
       if (data.topic) setTopic(data.topic);
       if (data.description) setVideoDescription(data.description);
       setScanInfo({ niche: data.niche, mood: data.mood, detectedObjects: data.detectedObjects });
