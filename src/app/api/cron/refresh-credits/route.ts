@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { expireToolSubscriptions } from '@/lib/tool-subscriptions';
 
 // POST/GET /api/cron/refresh-credits — monthly credit refill + expiry downgrade.
 //
@@ -102,7 +103,12 @@ async function run() {
     refilled++;
   }
 
-  return { expired: downgraded, refilled };
+  // 3) Expire per-tool subscriptions (Phase 4) past their period and re-sync the
+  //    entitlement engine so the Phase 1 locks reflect it. Purely additive — the
+  //    plan-bundle / int-flag path above is untouched.
+  const toolExpiry = await expireToolSubscriptions(now);
+
+  return { expired: downgraded, refilled, toolSubsExpired: toolExpiry.expired, toolSubsCompanies: toolExpiry.companies };
 }
 
 export async function GET(req: NextRequest) {

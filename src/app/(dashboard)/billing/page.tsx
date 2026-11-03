@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Receipt, Mail, Crown, CheckCircle, Clock, Coins, Workflow, ArrowRight, Star, TrendingUp, CreditCard, Copy, Check, MessageCircle, Landmark } from 'lucide-react';
+  Receipt, Mail, Crown, CheckCircle, Clock, Coins, Workflow, ArrowRight, Star, TrendingUp, CreditCard, Copy, Check, MessageCircle, Landmark, Zap } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -34,6 +34,16 @@ interface SubscriptionInfo {
   status: string;
   currentPeriodEnd?: string;
   trialEndsAt?: string;
+}
+
+interface ToolEditionInfo { level: number; name: string; priceMonthlyInr: number }
+interface ToolInfo {
+  key: string;
+  label: string;
+  vertical: string;
+  monthlyInr: number;
+  editions: ToolEditionInfo[];
+  subscription: { status: string; edition: number; billingCycle: string; currentPeriodEnd?: string | null } | null;
 }
 
 interface PaymentInfo {
@@ -150,6 +160,8 @@ export default function BillingPage() {
   const [creditPacks, setCreditPacks] = useState<CreditPack[]>([]);
   const [creditBalance, setCreditBalance] = useState(0);
   const [busyPlan, setBusyPlan] = useState<string | null>(null);
+  const [toolSubs, setToolSubs] = useState<ToolInfo[]>([]);
+  const [busyTool, setBusyTool] = useState<string | null>(null);
 
   // Marketing UI tiers map to the activate-tools plan keys (category-level plan).
   const MARKETING_PLAN_KEYS: Record<string, string> = {
@@ -165,6 +177,11 @@ export default function BillingPage() {
     ]);
     setSubscription((billData as { subscription?: SubscriptionInfo }).subscription || null);
     setCreditBalance((credData as { balance?: number }).balance || 0);
+  };
+
+  const refreshTools = async () => {
+    const data = await fetch('/api/billing/tools').then(r => r.ok ? r.json() : Promise.resolve({}));
+    setToolSubs(Array.isArray((data as { tools?: ToolInfo[] }).tools) ? (data as { tools: ToolInfo[] }).tools : []);
   };
 
   const subscribeMarketing = async (tier: string) => {
@@ -194,15 +211,53 @@ export default function BillingPage() {
     }
   };
 
+  const subscribeTool = async (key: string, edition: number) => {
+    setBusyTool(`${key}:${edition}`);
+    try {
+      const res = await fetch('/api/billing/tools', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, edition, cycle }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        await Promise.all([refreshTools(), loadSnapshot()]);
+        alert(data.directlyActivated
+          ? 'Tool activated — unlocked for your workspace.'
+          : 'Order created — complete the payment to activate.');
+      } else {
+        alert(data.error || 'Subscription failed');
+      }
+    } catch {
+      alert('Subscription failed');
+    } finally {
+      setBusyTool(null);
+    }
+  };
+
+  const cancelTool = async (key: string) => {
+    setBusyTool(`cancel:${key}`);
+    try {
+      const res = await fetch('/api/billing/tools/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key }),
+      });
+      if (res.ok) { await refreshTools(); } else { alert('Could not cancel'); }
+    } catch { alert('Could not cancel'); } finally { setBusyTool(null); }
+  };
+
   useEffect(() => {
     Promise.all([
       fetch('/api/billing').then(r => r.ok ? r.json() : Promise.resolve({})),
       fetch('/api/billing/credits').then(r => r.ok ? r.json() : Promise.resolve({})),
       fetch('/api/billing/checkout').then(r => r.ok ? r.json() : Promise.resolve([])),
-    ]).then(([billData, credData, packsData]) => {
+      fetch('/api/billing/tools').then(r => r.ok ? r.json() : Promise.resolve({})),
+    ]).then(([billData, credData, packsData, toolsData]) => {
       setSubscription((billData as { subscription?: SubscriptionInfo }).subscription || null);
       setCreditBalance((credData as { balance?: number }).balance || 0);
       setCreditPacks(Array.isArray(packsData) ? packsData as CreditPack[] : []);
+      setToolSubs(Array.isArray((toolsData as { tools?: ToolInfo[] }).tools) ? (toolsData as { tools: ToolInfo[] }).tools : []);
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
@@ -283,6 +338,72 @@ export default function BillingPage() {
         <div className="flex-1">
           <p className="text-xs uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>Credit Balance</p>
           <p className="text-2xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>{creditBalance.toLocaleString()} <span className="text-sm font-normal" style={{ color: 'hsl(var(--muted-foreground))' }}>credits (${(creditBalance * 0.01).toFixed(2)} value)</span></p>
+        </div>
+      </div>
+
+      {/* ── INDIVIDUAL TOOLS (à la carte) ─────────────────── */}
+      <div>
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-500/10">
+            <Zap className="w-5 h-5 text-purple-500" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>Individual Tools</h2>
+            <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Subscribe to just what you need — billed per tool, cancel anytime.</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {toolSubs.map((tool) => {
+            const active = tool.subscription?.status === 'active';
+            const activeEdition = tool.subscription?.edition;
+            return (
+              <div key={tool.key} className={`rounded-xl border p-5 flex flex-col ${active ? 'border-emerald-500/40' : ''}`} style={{ borderColor: active ? undefined : 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <h3 className="text-base font-bold" style={{ color: 'hsl(var(--foreground))' }}>{tool.label}</h3>
+                  {active && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
+                      <CheckCircle className="w-3 h-3" /> Active
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs mb-3" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  {active
+                    ? `${tool.editions.find(e => e.level === activeEdition)?.name || 'Plan'} · renews ${formatDate(tool.subscription?.currentPeriodEnd || undefined)}`
+                    : `${tool.vertical} · from ₹${Math.min(...tool.editions.map(e => e.priceMonthlyInr))}/mo`}
+                </p>
+                <div className="flex-1 space-y-2 mb-4">
+                  {tool.editions.map((ed) => {
+                    return (
+                      <div key={ed.level} className="flex items-center justify-between rounded-lg border px-3 py-2" style={{ borderColor: 'hsl(var(--border))' }}>
+                        <div>
+                          <p className="text-sm font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{ed.name}</p>
+                          <p className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                            ₹{ed.priceMonthlyInr}/mo{cycle === 'annual' ? ' · billed yearly' : ''}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => subscribeTool(tool.key, ed.level)}
+                          disabled={busyTool === `${tool.key}:${ed.level}` || active}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${active ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-60'}`}
+                        >
+                          {busyTool === `${tool.key}:${ed.level}` ? '…' : 'Select'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                {active && (
+                  <button
+                    onClick={() => cancelTool(tool.key)}
+                    disabled={busyTool === `cancel:${tool.key}`}
+                    className="w-full py-2 rounded-lg text-xs font-semibold border border-purple-500/30 text-purple-500 hover:bg-purple-500/10 transition-colors disabled:opacity-60"
+                  >
+                    {busyTool === `cancel:${tool.key}` ? 'Cancelling…' : 'Cancel renewal'}
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 

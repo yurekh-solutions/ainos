@@ -107,6 +107,7 @@ model Company {
   timesheets         Timesheet[]
   toolRuns           ToolRun[]
   toolActivations    ToolActivation[]
+  toolSubscriptions  ToolSubscription[]
   users              User[]
   vendors            Vendor[]
   warehouses         Warehouse[]
@@ -1073,6 +1074,41 @@ model CreditPurchase {
   @@index([companyId])
   @@index([status])
   @@map("credit_purchases")
+}
+
+// ══════════════════════════════════════════
+// PER-TOOL SUBSCRIPTIONS (Phase 4 — Zoho-style à la carte billing)
+// One row per individually-billed capability (key = the tool's NAV href, which
+// is exactly what the Phase 1 entitlement engine reads). status drives
+// Company.capabilityAccess via syncCompanyCapabilityAccess(); the engine treats
+// an absent key as OPEN, so existing customers are never affected.
+// ═══════════════════════════════════════════
+model ToolSubscription {
+  id                String    @id @default(uuid())
+  companyId         String    @map("company_id")
+  capabilityKey     String    @map("capability_key")   // NAV href, e.g. "/invoices"
+  label             String
+  edition           Int       @default(2)             // 1 basic, 2 standard, 3 premium
+  billingCycle      String    @default("monthly") @map("billing_cycle") // monthly | annual
+  priceMinor        Int       @map("price_minor")     // charged, paise
+  currency          String    @default("INR")
+  seats             Int?                              // reserved for per-seat parity; null = per-company flat
+  status            String    @default("pending")     // pending | active | cancelled | expired
+  orderId           String?   @map("order_id")        // Razorpay order; several rows may share one (consolidated invoice)
+  paymentId         String?   @map("payment_id")
+  currentPeriodEnd  DateTime? @map("current_period_end")
+  startedAt         DateTime? @map("started_at")
+  cancelledAt       DateTime? @map("cancelled_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, capabilityKey])
+  @@index([companyId])
+  @@index([status])
+  @@index([orderId])
+  @@map("tool_subscriptions")
 }
 
 model ConnectedWebsite {
