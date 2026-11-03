@@ -87,6 +87,23 @@ export interface AccessDecision {
   status?: number;
 }
 
+// Sellable capability href (ToolSubscription / Company.capabilityAccess key)
+// for each gated slug. When a company has an EXPLICIT grant for one of these
+// hrefs, run-level access is decided by that grant (Zoho-style per-product
+// licensing). Slugs/hrefs not listed here — and companies with no grant — fall
+// through to the legacy int-flag logic, so nothing changes for existing users.
+const CAPABILITY_BY_SLUG: Record<string, string> = {
+  invoiceGen: '/invoices',
+  crmAccess: '/crm/leads',
+  autoBlog: '/marketing/blog',
+  emailMarketing: '/marketing/campaigns',
+  seo: '/marketing/seo',
+  hrPayroll: '/hr/employees',
+  inventoryMgmt: '/inventory/stock',
+  aiAssistant: '/ai-assistant',
+  websiteGen: '/website-builder',
+};
+
 async function readLevels(companyId: string) {
   const company = await prisma.company.findUnique({
     where: { id: companyId },
@@ -99,9 +116,31 @@ async function readLevels(companyId: string) {
       emailMarketing: true,
       aiAssistant: true,
       websiteGen: true,
+      capabilityAccess: true,
     },
   });
   return company;
+}
+
+/**
+ * If the company has an explicit per-tool capability grant for this slug, return
+ * its effective level (0 = locked/expired, else the granted edition). Returns
+ * null when there is no grant so the caller keeps the legacy int-flag decision.
+ */
+function grantLevelForSlug(
+  company: { capabilityAccess: unknown } | null,
+  slug: string,
+): number | null {
+  const capKey = CAPABILITY_BY_SLUG[slug];
+  if (!capKey || !company) return null;
+  const map = company.capabilityAccess as
+    | Record<string, { level: number; until?: string | null }>
+    | null
+    | undefined;
+  const grant = map?.[capKey];
+  if (!grant) return null;
+  const ended = !!grant.until && new Date(grant.until).getTime() < Date.now();
+  return grant.level <= 0 || ended ? 0 : grant.level;
 }
 
 export async function resolveToolAccess(
@@ -144,6 +183,14 @@ export async function resolveToolAccess(
       const apps = await getActiveApps(companyId);
       if (apps.has('ai_studio')) level = ACCESS_LEVELS.SUBSCRIBED;
     }
+  }
+
+  // Per-tool entitlement override (Zoho-style): an explicit capability grant
+  // decides the run level; absence of a grant keeps the legacy int-flag result.
+  const grantLevel = grantLevelForSlug(company, slug);
+  if (grantLevel !== null) {
+    level = grantLevel;
+    if (grantLevel === 0) requiredPlan = CAPABILITY_BY_SLUG[slug] ?? requiredPlan;
   }
 
   if (level <= ACCESS_LEVELS.LOCKED) {
@@ -195,7 +242,7 @@ export async function summarizeAccess(companyId: string | null, email?: string) 
   // Developer/tester: mark everything unlocked regardless of company flags.
   if (isDeveloperEmail(email)) {
     return {
-      company: { autoBlog: 3, invoiceGen: 3, crmAccess: 3, inventoryMgmt: 3, hrPayroll: 3, emailMarketing: 3, aiAssistant: 3, websiteGen: 3 },
+      company: { autoBlog: 3, invoiceGen: 3, crmAccess: 3, inventoryMgmt: 3, hrPayroll: 3, emailMarketing: 3, aiAssistant: 3, websiteGen: 3, capabilityAccess: null },
       aiStudio: true,
       marketingLevel: ACCESS_LEVELS.PREMIUM,
       dev: true,
@@ -217,6 +264,8 @@ export type AccessSummary = NonNullable<Awaited<ReturnType<typeof summarizeAcces
 /** Given an access snapshot, return the effective level for a tool slug. */
 export function levelForSlug(slug: string, summary: AccessSummary): number {
   if (summary.dev) return ACCESS_LEVELS.PREMIUM;
+  const grantLevel = grantLevelForSlug(summary.company, slug);
+  if (grantLevel !== null) return grantLevel;
   if (isMarketingSlug(slug)) return summary.marketingLevel;
   const flag = FLAG_BY_SLUG[slug];
   if (flag) return (summary.company as unknown as Record<string, number>)[flag];
