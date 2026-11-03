@@ -56,9 +56,13 @@ export async function POST(req: NextRequest) {
           console.warn(`[GST] Captcha upstream returned ${res.status}`);
           // 200 + success:false so the browser shows a friendly "busy" message
           // instead of a scary red 502 in the console. Feature is not disabled.
+          // Prefer the scraper's specific reason (e.g. GSTN scheduled downtime)
+          // when it provides one, else fall back to the generic retry message.
+          const upstream = await res.json().catch(() => ({}) as { error?: string });
           return NextResponse.json({
             success: false,
-            error: 'The GST portal is briefly rate-limiting us. Please wait about a minute and try again.',
+            error: upstream?.error
+              || 'The GST portal is briefly rate-limiting us. Please wait about a minute and try again.',
             retryable: true,
           });
         }

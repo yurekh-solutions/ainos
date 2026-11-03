@@ -62,7 +62,29 @@ def getCaptcha():
         )
 
         captchaResponse = session.get(captcha, timeout=20)
-        captchaBase64 = base64.b64encode(captchaResponse.content).decode("utf-8")
+        captcha_bytes = captchaResponse.content
+
+        # GSTN sometimes answers with a 200 + an HTML page ("Scheduled Downtime",
+        # a WAF reject, or a busy notice) instead of the captcha PNG. Base64-ing
+        # that and labeling it image/png produced a BROKEN captcha in the UI, and
+        # the downstream verify then failed confusingly. Detect a non-image body
+        # and return a real 5xx so the caller shows a clean "portal busy, try
+        # again" message. This is purely protective — the GST feature stays fully
+        # enabled and the normal image path below is unchanged.
+        ct = (captchaResponse.headers.get("Content-Type") or "").lower()
+        is_png = captcha_bytes[:8].startswith(b"\x89PNG")
+        is_jpeg = captcha_bytes[:3] == b"\xff\xd8\xff"
+        if not (is_png or is_jpeg) or "html" in ct or "text" in ct:
+            print(
+                "[getCaptcha] GSTN did not return an image "
+                f"(status={captchaResponse.status_code}, ct={ct}, len={len(captcha_bytes)}): "
+                f"{captcha_bytes[:120]!r}"
+            )
+            return jsonify({
+                "error": "The GST portal is temporarily unavailable (scheduled downtime or busy). Please try again in a few minutes."
+            }), 503
+
+        captchaBase64 = base64.b64encode(captcha_bytes).decode("utf-8")
 
         # For Testing Purpose only
 
