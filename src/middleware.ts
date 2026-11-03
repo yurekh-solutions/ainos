@@ -3,6 +3,32 @@ import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { verticalForPath } from '@/lib/verticals';
 
+// Short-lived in-memory cache of the last GOOD vertical-access decision, keyed by
+// email + vertical. It lets the access check fail CLOSED on an error without
+// locking everyone out during a transient DB/dependency blip: on error we honor a
+// fresh cached decision if we have one, otherwise we deny. Node runtime keeps this
+// Map across requests within the same server process.
+const ACCESS_CACHE_TTL_MS = 60_000;
+const ACCESS_CACHE_MAX = 5000;
+const accessCache = new Map<string, { allowed: boolean; ts: number }>();
+
+function cachedAllow(cacheKey: string): boolean | null {
+  const hit = accessCache.get(cacheKey);
+  if (!hit || Date.now() - hit.ts >= ACCESS_CACHE_TTL_MS) return null;
+  return hit.allowed;
+}
+
+function rememberAccess(cacheKey: string, allowed: boolean): void {
+  if (accessCache.size >= ACCESS_CACHE_MAX) accessCache.clear();
+  accessCache.set(cacheKey, { allowed, ts: Date.now() });
+}
+
+function denyToVertical(request: NextRequest, verticalKey: string): NextResponse {
+  const dashUrl = new URL('/dashboard', request.url);
+  dashUrl.searchParams.set('no_access', verticalKey);
+  return NextResponse.redirect(dashUrl);
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -55,18 +81,25 @@ export async function middleware(request: NextRequest) {
   // requires the two-layer access (company ∩ user grants) from lib/access.
   const vertical = verticalForPath(pathname);
   if (vertical) {
+    const email = token.email as string;
+    const cacheKey = `${email}:${vertical.key}`;
     try {
       const { canAccessVertical } = await import('@/lib/access');
-      const allowed = await canAccessVertical(token.email as string, vertical.key);
+      const allowed = await canAccessVertical(email, vertical.key);
+      rememberAccess(cacheKey, allowed);
       if (!allowed) {
         // Send the user back to the shared dashboard with a reason flag.
-        const dashUrl = new URL('/dashboard', request.url);
-        dashUrl.searchParams.set('no_access', vertical.key);
-        return NextResponse.redirect(dashUrl);
+        return denyToVertical(request, vertical.key);
       }
     } catch (error) {
       console.error('Middleware vertical access check error:', error);
-      // On error, allow access (fail-open for now, can change to fail-closed)
+      // Fail-closed: deny unless a fresh cached decision says this user was
+      // allowed, so a transient dependency blip does not lock out active users
+      // but an unknown decision never silently grants access.
+      const lastKnown = cachedAllow(cacheKey);
+      if (lastKnown !== true) {
+        return denyToVertical(request, vertical.key);
+      }
     }
   }
 
