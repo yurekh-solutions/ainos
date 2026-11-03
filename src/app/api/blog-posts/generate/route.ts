@@ -1,19 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
-import { generateAIText } from '@/lib/ai-provider';
-import { getVerifiedBlogImage } from '@/lib/blog-images';
-import { tidyBlogContent, blogQualityIssue, blogExcerpt, cleanBlogTags } from '@/lib/blog-quality';
 import { prisma } from '@/lib/prisma';
-import { assertToolCredits, chargeToolRun } from '@/lib/tool-charge';
+import { assertToolCredits } from '@/lib/tool-charge';
+import { submitJob } from '@/lib/job-queue';
+// Import for side effect: registers the 'blog_generate' job handler so the
+// detached job runs in this same web process.
+import '@/lib/blog-generate-job';
 
-// AI Blog Agent - generates SEO-friendly blog posts with high-quality featured images
-// (Pexels → Unsplash → Pollinations fallback) via unified AI provider (Gemini first)
+// POST /api/blog-posts/generate — AI Blog Agent (SEO/AEO posts + featured image).
+//
+// The heavy generation (generateAIText up to 180s + multi-provider image check)
+// is handed to the async job queue so this request returns a jobId in <2s and the
+// client polls /api/jobs/[id] — eliminating the 55s gateway 502. Auth, validation
+// and credit-affordability stay inline so 401/400/402 remain instant, and credits
+// are charged only on success inside the handler.
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { topic, keywords, tone, length, industry, language } = await req.json();
+    const { topic, keywords, tone, length, industry, language, idempotencyKey } = await req.json();
     if (typeof topic !== 'string' || !topic.trim()) return NextResponse.json({ error: 'Topic is required' }, { status: 400 });
 
     const account = await prisma.user.findUnique({
@@ -29,148 +35,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const langName = language === 'hi' ? 'Hindi' : language === 'mr' ? 'Marathi' : 'English';
-    const wordCount = length === 'short' ? '400-500' : length === 'long' ? '1200-1500' : length === 'extra-long' ? '2800-3200' : '700-900';
+    const { jobId, status } = await submitJob(
+      'blog_generate',
+      {
+        companyId,
+        topic: topic.trim(),
+        keywords: typeof keywords === 'string' ? keywords : undefined,
+        tone: typeof tone === 'string' ? tone : undefined,
+        length: typeof length === 'string' ? length : undefined,
+        industry: typeof industry === 'string' ? industry : undefined,
+        language: typeof language === 'string' ? language : undefined,
+      },
+      {
+        companyId: companyId ?? undefined,
+        // A replayed submit (double-click / retry) returns the same job instead
+        // of generating (and charging) twice.
+        idempotencyKey: typeof idempotencyKey === 'string' ? idempotencyKey : undefined,
+      },
+    );
 
-    const systemPrompt = `You are an expert SEO and AEO (Answer Engine Optimization) content writer. You write highly engaging, SEO-optimized blog posts that rank on Google, get cited by AI (ChatGPT, Perplexity, Gemini), and drive organic traffic.
-
-CONTENT STRUCTURE (follow exactly):
-1. Start with a DIRECT ANSWER paragraph (2-3 sentences answering the main query — for AEO/AI citation)
-2. Then write the full article with this structure:
-   - Put the title only in the JSON title field, not an H1 inside content
-   - ## Introduction (engaging hook + what reader will learn)
-   - ## Main sections (H2) with ### subsections (H3) where needed
-   - ## FAQ section (3-5 questions with direct answers)
-   - ## Conclusion with strong CTA
-
-RULES:
-- Write in ${langName} language
-- Write in ${tone || 'professional'} tone
-- Target industry: ${industry || 'general business'}
-- Word count: ${wordCount} words
-- Each H2 section should be 150-300 words with actionable, specific content
-- Use specific practical examples. Never fabricate statistics, citations, company claims, or testimonials. Label hypothetical scenarios clearly.
-- Include a DIRECT ANSWER (40-60 words) right after the intro for AEO
-- Optimize for primary keyword and LSI/related terms naturally
-- Use EEAT signals: cite expertise, experience, data sources
-- FAQ answers should be concise (2-3 sentences) for AI citation
-- Write in CLEAN MARKDOWN: ## for H2, ### for H3. Include at least ${length === 'short' ? 3 : 4} useful H2 sections.
-- Use bullet points and numbered lists where appropriate
-- Include a strong CTA at the end
-
-CRITICAL: Do NOT include any image URLs or ![markdown images] in the content. Images are handled separately.
-
-You must respond in this exact JSON format (no other text):
-{
-  "title": "SEO-optimized compelling title with primary keyword (50-60 chars)",
-  "slug": "url-friendly-slug-with-keywords",
-  "excerpt": "Compelling meta description with primary keyword (150-160 chars)",
-  "content": "Full blog post in clean markdown. NO image URLs. Start with direct answer paragraph, then ## sections.",
-  "tags": ["primary-keyword", "related-term-1", "related-term-2", "related-term-3", "related-term-4"],
-  "category": "Most relevant category",
-  "seoScore": 85,
-  "seoTips": ["Specific actionable tip 1", "Specific actionable tip 2", "Specific actionable tip 3"]
-}`;
-
-    const userPrompt = `Write an SEO and AEO optimized blog post about: "${topic}"
-${keywords ? `Primary keywords: ${keywords}` : ''}
-${industry ? `Industry: ${industry}` : ''}
-
-PIPELINE:
-1. Research: Understand the topic deeply
-2. Direct Answer: Write a 40-60 word direct answer first (for AI citation)
-3. Outline: Create 4-6 H2 sections covering the topic comprehensively
-4. Content: Write 150-300 words per section with data, examples, actionable tips
-5. FAQ: Add 3-5 questions with concise answers
-6. CTA: Strong conclusion with call-to-action
-
-QUALITY CHECKS:
-- Every H2 section must have SPECIFIC, ACTIONABLE content (not fluff)
-- Include practical examples; only include statistics with a reliable source, never invent them
-- Use real-world examples relevant to ${industry || 'the industry'}
-- FAQ answers must be direct (2-3 sentences max)
-- NO generic filler content
-- NO image URLs in content`;
-
-    // Generate blog content via unified AI provider (Gemini first, Pollinations fallback)
-    let result;
-    try {
-      const aiRaw = await generateAIText(systemPrompt, userPrompt, { json: true, timeoutMs: 180_000 });
-      try {
-        result = JSON.parse(aiRaw);
-      } catch {
-        const jsonMatch = aiRaw.replace(/```(?:json)?/gi, '').match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          result = JSON.parse(jsonMatch[0]);
-        } else {
-          const slug = topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-          result = {
-            title: topic,
-            slug,
-            excerpt: aiRaw.substring(0, 160),
-            content: aiRaw,
-            tags: [topic.toLowerCase().split(' ')[0], 'blog', 'seo'],
-            category: industry || 'General Business',
-          };
-        }
-      }
-    } catch {
-      return NextResponse.json({ error: 'Article generation is unavailable right now. Please try again.' }, { status: 502 });
-    }
-
-    result.content = tidyBlogContent(result.content);
-    const issue = blogQualityIssue(result.content, length === 'short' ? 400 : 700, length === 'short' ? 3 : 4);
-    if (issue) return NextResponse.json({ error: `Article did not pass quality checks: ${issue}. Please retry.` }, { status: 502 });
-    result.tags = cleanBlogTags(result.tags);
-    result.title = typeof result.title === 'string' && result.title.trim() ? result.title.trim() : topic;
-    result.excerpt = typeof result.excerpt === 'string' && result.excerpt.trim().length >= 40
-      ? result.excerpt.trim().slice(0, 200) : blogExcerpt(result.content);
-
-    // This is a structural checklist score, not a predicted search ranking.
-    {
-      // Calculate basic SEO score
-      let score = 50;
-      const tips: string[] = [];
-      if (result.title && result.title.length >= 40 && result.title.length <= 60) { score += 10; } else { tips.push('Title should be 40-60 characters'); }
-      if (result.excerpt && result.excerpt.length >= 140 && result.excerpt.length <= 160) { score += 10; } else { tips.push('Meta description should be 140-160 characters'); }
-      if (result.content && result.content.includes('## ')) { score += 10; } else { tips.push('Add H2 headings for structure'); }
-      if (result.content && result.content.length > 1000) { score += 10; } else { tips.push('Content should be longer (800+ words)'); }
-      if (result.tags && result.tags.length >= 5) { score += 5; } else { tips.push('Add more tags (5-8 recommended)'); }
-      if (result.content && /FAQ|faq|frequently/i.test(result.content)) { score += 5; tips.push('Great: FAQ section detected for AEO'); } else { tips.push('Add FAQ section for AI citation (AEO)'); }
-      result.seoScore = Math.min(score, 98);
-      result.seoTips = tips.length > 0 ? tips : ['Looking good! All SEO checks passed.'];
-    }
-
-    // Enhance tags with keyword extraction from title and content
-    if (result.tags && Array.isArray(result.tags)) {
-      // Extract additional keywords from title
-      const titleWords: string[] = result.title?.split(/\s+/).filter((w: string) => w.length > 3) || [];
-      const stopWords = new Set(['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'how', 'what', 'why', 'when', 'where', 'which', 'this', 'that', 'with', 'from', 'your', 'their', 'complete', 'guide', 'ultimate']);
-      const keywordTags = titleWords
-        .map((w: string) => w.replace(/[^a-zA-Z0-9]/g, '').toLowerCase())
-        .filter((w: string) => w.length > 3 && !stopWords.has(w));
-
-      // Merge with existing tags, remove duplicates
-      const allTags = [...new Set([...result.tags, ...keywordTags])];
-      result.tags = allTags.slice(0, 10); // Max 10 tags for SEO
-    }
-
-    // Add hashtags to content for social media visibility
-    if (result.content && result.tags?.length) {
-      const hashtags = result.tags.slice(0, 5).map((t: string) => `#${t.replace(/\s+/g, '')}`).join(' ');
-      if (!result.content.includes('#')) {
-        result.content += `\n\n---\n\n**Share this article:** ${hashtags}`;
-      }
-    }
-
-    result.tags = cleanBlogTags(result.tags);
-    // A failed image check is an error, never a successful blog with a broken URL.
-    result.featuredImage = await getVerifiedBlogImage(topic, industry);
-
-    const charge = await chargeToolRun(companyId, 'ai-blog-generate', 'AI blog article');
-    return NextResponse.json({ ...result, creditsUsed: charge.cost, creditsBalance: charge.balance });
+    return NextResponse.json({ pending: true, jobId, status });
   } catch (error) {
-    console.error('Error generating blog post:', error);
-    return NextResponse.json({ error: 'Could not prepare a complete article and featured image. Please try again.' }, { status: 502 });
+    console.error('Error starting blog generation:', error);
+    return NextResponse.json({ error: 'Could not start generation. Please try again.' }, { status: 500 });
   }
 }

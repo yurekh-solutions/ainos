@@ -170,6 +170,7 @@ export default function BlogPage() {
   const [showReader, setShowReader] = useState<BlogPost | null>(null);
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState<GeneratedPost | null>(null);
+  const [genError, setGenError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [statusFilter, setStatusFilter] = useState('');
@@ -364,23 +365,54 @@ export default function BlogPage() {
   const totalSitePublished = websites.reduce((s, w) => s + w.publishedBlogs, 0);
   const totalSitePending = websites.reduce((s, w) => s + w.pendingBlogs, 0);
 
-  // AI Blog Generation
+  // AI Blog Generation — submits an async job then polls until it resolves.
+  const pollBlogJob = async (jobId: string): Promise<{ status: 'completed' | 'failed'; result?: GeneratedPost; error?: string }> => {
+    const deadline = Date.now() + 5 * 60 * 1000; // generation budget (180s) + image + buffer
+    await new Promise(r => setTimeout(r, 2500));
+    while (Date.now() < deadline) {
+      try {
+        const r = await fetch(`/api/jobs/${jobId}`);
+        if (r.ok) {
+          const { job } = await r.json();
+          if (job?.status === 'completed') return { status: 'completed', result: job.result as GeneratedPost };
+          if (job?.status === 'failed') return { status: 'failed', error: job.error || 'Generation failed.' };
+        }
+      } catch { /* transient network blip — keep polling until the deadline */ }
+      await new Promise(r => setTimeout(r, 2500));
+    }
+    return { status: 'failed', error: 'Generation is taking longer than usual. Please try again.' };
+  };
+
   const handleGenerate = async () => {
     if (!aiForm.topic.trim()) return;
     setGenerating(true);
     setGenerated(null);
+    setGenError(null);
     try {
       const res = await fetch('/api/blog-posts/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(aiForm),
+        body: JSON.stringify({ ...aiForm, idempotencyKey: globalThis.crypto?.randomUUID?.() ?? String(Date.now()) }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        setGenerated(data);
+      const started = await res.json().catch(() => ({}) as Record<string, unknown>);
+      if (!res.ok) {
+        setGenError(typeof started.error === 'string' ? started.error : 'Could not start generation.');
+        return;
       }
-    } catch (e) { console.error(e); }
-    finally { setGenerating(false); }
+      if (started.pending && typeof started.jobId === 'string') {
+        const outcome = await pollBlogJob(started.jobId);
+        if (outcome.status === 'completed' && outcome.result) setGenerated(outcome.result);
+        else setGenError(outcome.error || 'Generation failed.');
+      } else {
+        // Fallback for a fully synchronous response (should not happen now).
+        setGenerated(started as unknown as GeneratedPost);
+      }
+    } catch (e) {
+      console.error(e);
+      setGenError('Network error while generating. Please try again.');
+    } finally {
+      setGenerating(false);
+    }
   };
 
   // Save as draft
@@ -539,7 +571,7 @@ export default function BlogPage() {
         <div className="flex items-center gap-3">
           {activeTab === 'blogs' ? (
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={() => { setShowAI(true); setGenerated(null); }}
+              onClick={() => { setShowAI(true); setGenerated(null); setGenError(null); }}
               className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold text-white whitespace-nowrap bg-gradient-to-r from-purple-600 to-indigo-600 shadow-md shadow-purple-500/20 transition-all">
               <Wand2 className="w-3.5 h-3.5" /> Generate with AI
             </motion.button>
@@ -1068,6 +1100,13 @@ export default function BlogPage() {
                           <p>• Creating meta description & tags...</p>
                         </div>
                       </motion.div>
+                    )}
+
+                    {genError && (
+                      <div className="bg-red-50 rounded-xl p-4 border border-red-100">
+                        <p className="text-sm font-semibold text-red-700">{genError}</p>
+                        <p className="text-xs text-red-600/70 mt-0.5">No credits were used for this attempt.</p>
+                      </div>
                     )}
                   </div>
                 ) : (
