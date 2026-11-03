@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
           // instead of a scary red 502 in the console. Feature is not disabled.
           return NextResponse.json({
             success: false,
-            error: 'GST portal is busy right now. Please try again in a few seconds.',
+            error: 'The GST portal is briefly rate-limiting us. Please wait about a minute and try again.',
             retryable: true,
           });
         }

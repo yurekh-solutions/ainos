@@ -439,10 +439,10 @@ export default function RegisterPage() {
       // provider call failed → fall back to the captcha flow below
     }
 
-    // The server now makes a single bounded (~18s) attempt that always returns
-    // before Render's edge gateway, so retries live here on the client. Each
-    // round-trip stays well under the 55s gateway ceiling — no raw 502s.
-    const MAX_ATTEMPTS = 2;
+    // Single bounded attempt: the GSTN portal rate-limits bursts, so rapid
+    // auto-retries only prolong the cooldown. On failure we surface a friendly
+    // message plus a deliberate "Try again" button instead of hammering it.
+    const MAX_ATTEMPTS = 1;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
         const res = await fetch('/api/gst-lookup', {
@@ -1148,9 +1148,18 @@ export default function RegisterPage() {
 
                         {gstError && (
                           <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-                            className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200">
-                            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                            <p className="text-[13px] text-red-700"><span className="font-semibold">Error:</span> {gstError}</p>
+                            className="flex items-center justify-between gap-2 p-3 rounded-xl bg-red-50 border border-red-200">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                              <p className="text-[13px] text-red-700"><span className="font-semibold">Error:</span> {gstError}</p>
+                            </div>
+                            {gstNumber.length === 15 && (
+                              <button type="button" onClick={() => fetchCaptcha(gstNumber)} disabled={fetchingGst}
+                                className="flex-shrink-0 text-xs font-semibold px-3 h-8 rounded-lg border transition-colors disabled:opacity-50"
+                                style={{ borderColor: '#c4b5fd', color: '#4c1d95' }}>
+                                {fetchingGst ? 'Retrying…' : 'Try again'}
+                              </button>
+                            )}
                           </motion.div>
                         )}
 
