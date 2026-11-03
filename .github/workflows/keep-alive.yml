@@ -6,6 +6,9 @@ on:
     - cron: '*/5 * * * *'
     # Run daily at 9 AM UTC to auto-publish one blog per connected website
     - cron: '0 9 * * *'
+    # Run daily at 3 AM UTC: refresh monthly credits + expire subscriptions/tool-subs
+    # (Phase 6 reliable cron — no paid Render instance required)
+    - cron: '0 3 * * *'
   workflow_dispatch: # Allow manual trigger
 
 jobs:
@@ -60,4 +63,22 @@ jobs:
             echo "✅ Blog auto-publishing triggered"
           else
             echo "⚠️ Auto-publishing returned $response"
+          fi
+
+  billing-cron:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 3 * * *' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Run daily billing / credits / tool-subscription expiry cron
+        run: |
+          echo "Triggering /api/cron/refresh-credits (credit refill + subscription/tool-sub expiry)..."
+          response=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer ${{ secrets.CRON_SECRET || 'ainos-cron-2024' }}" https://ainos-ywu0.onrender.com/api/cron/refresh-credits)
+          code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          echo "Cron status: $code"
+          echo "Result: $body"
+          if [ "$code" = "200" ]; then
+            echo "✅ Billing cron completed"
+          else
+            echo "⚠️ Billing cron returned $code"
           fi
