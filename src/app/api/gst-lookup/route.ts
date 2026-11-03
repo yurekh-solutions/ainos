@@ -201,6 +201,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Legacy no-op shim: browser bundles cached from before the third-party
+    // provider removal still POST action:'lookupGst' first. Rather than returning
+    // a scary 400 (which surfaced as "Invalid action"), acknowledge it so those
+    // stale clients fall through to the working captcha flow. No provider/API is
+    // called here — this is purely backward-compatibility during cache transition.
+    if (action === 'lookupGst') {
+      return NextResponse.json({ success: false, providerAvailable: false });
+    }
+
     return NextResponse.json({ error: 'Invalid action. Use getCaptcha or verifyGST.' }, { status: 400 });
   } catch (error) {
     console.error('[GST] Lookup error:', error);
