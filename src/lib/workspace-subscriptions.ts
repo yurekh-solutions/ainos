@@ -4,6 +4,7 @@ import {
   getWorkspaceOffering,
   workspacePriceMinor,
   normWorkspaceSeats,
+  WORKSPACE_CURRENCY,
   type WorkspaceCycle,
   type WorkspaceOffering,
 } from '@/lib/workspace-pricing';
@@ -42,7 +43,7 @@ export interface WorkspaceCheckoutIntent {
   amountMinor: number;
   currency: string;
   keyId: string | null;
-  lineItems: { key: string; label: string; cycle: WorkspaceCycle; seats: number; monthlyInr: number; chargeInr: number }[];
+  lineItems: { key: string; label: string; cycle: WorkspaceCycle; seats: number; monthlyUsd: number; chargeUsd: number }[];
   directlyActivated: boolean;
 }
 
@@ -103,8 +104,8 @@ export async function createWorkspaceCheckout(
       label: offering.label,
       cycle,
       seats,
-      monthlyInr: offering.monthlyInr * seats,
-      chargeInr: chargeMinor / 100,
+      monthlyUsd: offering.monthlyUsd * seats,
+      chargeUsd: chargeMinor / 100,
       chargeMinor,
     };
   });
@@ -119,7 +120,7 @@ export async function createWorkspaceCheckout(
         label: li.label,
         billingCycle: li.cycle,
         priceMinor: li.chargeMinor,
-        currency: 'INR',
+        currency: WORKSPACE_CURRENCY,
         seats: li.seats,
         status: 'pending',
         orderId: null,
@@ -130,7 +131,7 @@ export async function createWorkspaceCheckout(
         label: li.label,
         billingCycle: li.cycle,
         priceMinor: li.chargeMinor,
-        currency: 'INR',
+        currency: WORKSPACE_CURRENCY,
         seats: li.seats,
         status: 'pending',
       },
@@ -144,7 +145,7 @@ export async function createWorkspaceCheckout(
     return {
       orderId: null,
       amountMinor: totalMinor,
-      currency: 'INR',
+      currency: WORKSPACE_CURRENCY,
       keyId: null,
       lineItems: lineItems.map(({ chargeMinor, ...rest }) => rest),
       directlyActivated: true,
@@ -163,7 +164,7 @@ export async function createWorkspaceCheckout(
   return {
     orderId: order.id,
     amountMinor: totalMinor,
-    currency: 'INR',
+    currency: WORKSPACE_CURRENCY,
     keyId: process.env.RAZORPAY_KEY_ID ?? null,
     lineItems: lineItems.map(({ chargeMinor, ...rest }) => rest),
     directlyActivated: false,
@@ -252,7 +253,7 @@ export async function expireWorkspaceSubscriptions(now = new Date()): Promise<{ 
 export interface WorkspaceSubscriptionView {
   key: string;
   label: string;
-  monthlyInr: number;
+  monthlyUsd: number;
   subscription: {
     status: string;
     billingCycle: string;
@@ -271,7 +272,7 @@ export async function listWorkspaceOfferingsForCompany(companyId: string): Promi
     return {
       key: o.key,
       label: o.label,
-      monthlyInr: o.monthlyInr,
+      monthlyUsd: o.monthlyUsd,
       subscription: s
         ? {
             status: live ? 'active' : s.status,

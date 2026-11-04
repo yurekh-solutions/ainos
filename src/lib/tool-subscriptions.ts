@@ -21,8 +21,8 @@ export interface ToolOffering {
   key: string;
   label: string;
   vertical: string;
-  /** INR per month for the Standard (edition 2) plan on a monthly cycle. */
-  baseMonthlyInr: number;
+  /** USD per month for the Standard (edition 2) plan on a monthly cycle. */
+  baseMonthlyUsd: number;
 }
 
 /** Editions a customer can buy per tool, and their price multiplier on base. */
@@ -39,14 +39,14 @@ const ANNUAL_MONTHS_CHARGED = 10;
  * engine + sidebar lock rendering resolve it (capabilityForKey guards at build).
  */
 export const TOOL_OFFERINGS: ToolOffering[] = [
-  { key: '/invoices', label: 'Invoicing', vertical: 'finance', baseMonthlyInr: 799 },
-  { key: '/finance/gst-reports', label: 'GST Reports', vertical: 'billing', baseMonthlyInr: 499 },
-  { key: '/crm/leads', label: 'CRM — Leads', vertical: 'crm', baseMonthlyInr: 799 },
-  { key: '/marketing/blog', label: 'AI Blog & Content', vertical: 'marketing', baseMonthlyInr: 599 },
-  { key: '/marketing/campaigns', label: 'Email Campaigns', vertical: 'marketing', baseMonthlyInr: 599 },
-  { key: '/marketing/seo', label: 'SEO Platform', vertical: 'marketing', baseMonthlyInr: 699 },
-  { key: '/hr/employees', label: 'People & Payroll', vertical: 'people', baseMonthlyInr: 799 },
-  { key: '/inventory/stock', label: 'Inventory', vertical: 'supply', baseMonthlyInr: 799 },
+  { key: '/invoices', label: 'Invoicing', vertical: 'finance', baseMonthlyUsd: 25 },
+  { key: '/finance/gst-reports', label: 'GST Reports', vertical: 'billing', baseMonthlyUsd: 15 },
+  { key: '/crm/leads', label: 'CRM — Leads', vertical: 'crm', baseMonthlyUsd: 25 },
+  { key: '/marketing/blog', label: 'AI Blog & Content', vertical: 'marketing', baseMonthlyUsd: 19 },
+  { key: '/marketing/campaigns', label: 'Email Campaigns', vertical: 'marketing', baseMonthlyUsd: 19 },
+  { key: '/marketing/seo', label: 'SEO Platform', vertical: 'marketing', baseMonthlyUsd: 22 },
+  { key: '/hr/employees', label: 'People & Payroll', vertical: 'people', baseMonthlyUsd: 25 },
+  { key: '/inventory/stock', label: 'Inventory', vertical: 'supply', baseMonthlyUsd: 25 },
 ];
 
 /** Guard: warn (never throw) if a catalog key isn't a known capability. */
@@ -54,17 +54,17 @@ function resolveCapability(key: string): Capability | null {
   return capabilityForKey(key);
 }
 
-/** Per-user monthly INR for an offering + edition (seats excluded). */
-export function toolMonthlyInr(offering: ToolOffering, edition: ToolEdition, seats = 1): number {
+/** Per-user monthly USD for an offering + edition (seats excluded). */
+export function toolMonthlyUsd(offering: ToolOffering, edition: ToolEdition, seats = 1): number {
   const mult = TOOL_EDITIONS.find((e) => e.level === edition)?.multiplier ?? 1;
-  return Math.round(offering.baseMonthlyInr * mult * seats);
+  return Math.round(offering.baseMonthlyUsd * mult * seats);
 }
 
-/** Amount charged, in paise, honouring the billing cycle and seat count. */
+/** Amount charged, in cents (USD minor units), honouring the billing cycle and seat count. */
 export function toolPriceMinor(offering: ToolOffering, edition: ToolEdition, cycle: ToolCycle, seats = 1): number {
-  const monthly = toolMonthlyInr(offering, edition, seats);
-  const inr = cycle === 'annual' ? monthly * ANNUAL_MONTHS_CHARGED : monthly;
-  return inr * 100;
+  const monthly = toolMonthlyUsd(offering, edition, seats);
+  const usd = cycle === 'annual' ? monthly * ANNUAL_MONTHS_CHARGED : monthly;
+  return Math.round(usd * 100);
 }
 
 /** Seat bound shared by checkout + UI. */
@@ -134,7 +134,7 @@ export interface CheckoutIntent {
   amountMinor: number;
   currency: string;
   keyId: string | null;
-  lineItems: { key: string; label: string; edition: ToolEdition; cycle: ToolCycle; seats: number; monthlyInr: number; chargeInr: number }[];
+  lineItems: { key: string; label: string; edition: ToolEdition; cycle: ToolCycle; seats: number; monthlyUsd: number; chargeUsd: number }[];
   directlyActivated: boolean;
 }
 
@@ -171,8 +171,8 @@ export async function createToolCheckout(
       edition: input.edition,
       cycle,
       seats,
-      monthlyInr: toolMonthlyInr(r.offering, input.edition, seats),
-      chargeInr: chargeMinor / 100,
+      monthlyUsd: toolMonthlyUsd(r.offering, input.edition, seats),
+      chargeUsd: chargeMinor / 100,
       chargeMinor,
     };
   });
@@ -189,7 +189,7 @@ export async function createToolCheckout(
         edition: li.edition,
         billingCycle: li.cycle,
         priceMinor: li.chargeMinor,
-        currency: 'INR',
+        currency: 'USD',
         seats: li.seats,
         status: 'pending',
         orderId: null,
@@ -201,7 +201,7 @@ export async function createToolCheckout(
         edition: li.edition,
         billingCycle: li.cycle,
         priceMinor: li.chargeMinor,
-        currency: 'INR',
+        currency: 'USD',
         seats: li.seats,
         status: 'pending',
       },
@@ -215,7 +215,7 @@ export async function createToolCheckout(
     return {
       orderId: null,
       amountMinor: totalMinor,
-      currency: 'INR',
+      currency: 'USD',
       keyId: null,
       lineItems: lineItems.map(({ chargeMinor, ...rest }) => rest),
       directlyActivated: true,
@@ -234,7 +234,7 @@ export async function createToolCheckout(
   return {
     orderId: order.id,
     amountMinor: totalMinor,
-    currency: 'INR',
+    currency: 'USD',
     keyId: process.env.RAZORPAY_KEY_ID ?? null,
     lineItems: lineItems.map(({ chargeMinor, ...rest }) => rest),
     directlyActivated: false,
@@ -332,8 +332,8 @@ export interface ToolSubscriptionView {
   key: string;
   label: string;
   vertical: string;
-  monthlyInr: number;
-  editions: { level: ToolEdition; name: string; priceMonthlyInr: number }[];
+  monthlyUsd: number;
+  editions: { level: ToolEdition; name: string; priceMonthlyUsd: number }[];
   subscription: {
     status: string;
     edition: number;
@@ -354,8 +354,8 @@ export async function listToolOfferingsForCompany(companyId: string): Promise<To
       key: o.key,
       label: o.label,
       vertical: o.vertical,
-      monthlyInr: o.baseMonthlyInr,
-      editions: TOOL_EDITIONS.map((e) => ({ level: e.level, name: e.name, priceMonthlyInr: toolMonthlyInr(o, e.level) })),
+      monthlyUsd: o.baseMonthlyUsd,
+      editions: TOOL_EDITIONS.map((e) => ({ level: e.level, name: e.name, priceMonthlyUsd: toolMonthlyUsd(o, e.level) })),
       subscription: s
         ? {
             status: live ? 'active' : s.status,

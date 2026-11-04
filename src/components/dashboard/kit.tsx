@@ -32,17 +32,18 @@ const TONES: Record<Tone, string> = {
   indigo: 'bg-indigo-50 text-indigo-600',
 };
 
-// Rich gradient faces — used for tool tiles, matching the sidebar icon style
+// Rich gradient faces — used for tool tiles. Kept inside the AINOS deep-violet
+// ramp (single accent, no rainbow) so every landing page stays on-brand.
 const GRADIENTS: Record<Tone, string> = {
   purple: 'from-violet-500 to-purple-600',
-  green: 'from-emerald-500 to-teal-600',
-  orange: 'from-orange-500 to-red-500',
-  blue: 'from-blue-500 to-indigo-600',
-  red: 'from-rose-500 to-pink-600',
-  grey: 'from-neutral-400 to-neutral-500',
-  cyan: 'from-cyan-500 to-sky-600',
-  pink: 'from-pink-500 to-rose-600',
-  indigo: 'from-indigo-500 to-violet-600',
+  green: 'from-violet-600 to-purple-700',
+  orange: 'from-purple-600 to-violet-700',
+  blue: 'from-violet-600 to-purple-700',
+  red: 'from-purple-600 to-violet-700',
+  grey: 'from-violet-500 to-purple-600',
+  cyan: 'from-purple-500 to-violet-600',
+  pink: 'from-purple-500 to-violet-600',
+  indigo: 'from-violet-500 to-purple-600',
 };
 
 export function IconCircle({ icon: Icon, tone = 'purple', size = 'md', variant = 'soft' }: { icon: React.ElementType; tone?: Tone; size?: 'sm' | 'md' | 'lg'; variant?: 'soft' | 'gradient' }) {

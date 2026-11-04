@@ -111,7 +111,7 @@ export default function DashboardPage() {
               const items = NAV_GROUPS.find(g => g.key === v.key)?.items ?? [];
               const preview = items.slice(0, 4);
               const locked = !!allowed && !allowed.includes(v.key);
-              const price = getWorkspaceOffering(v.key)?.monthlyInr ?? null;
+              const price = getWorkspaceOffering(v.key)?.monthlyUsd ?? null;
               const href = locked ? `/billing/workspaces/${v.key}` : v.landingHref;
               return (
                 <motion.div key={v.key} {...fadeUp(0.1 + i * 0.02)}
@@ -144,7 +144,7 @@ export default function DashboardPage() {
                     <div className="mt-auto flex items-center justify-between pt-0.5 sm:pt-1">
                       {locked ? (
                         <>
-                          <span className="text-[10px] sm:text-[11px] font-semibold text-neutral-500">{price != null ? `₹${price.toLocaleString('en-IN')}/mo` : 'Unlock'}</span>
+                          <span className="text-[10px] sm:text-[11px] font-semibold text-neutral-500">{price != null ? `$${price.toLocaleString('en-US')}/mo` : 'Unlock'}</span>
                           <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold" style={{ color: '#5b21b6' }}>
                             <span className="hidden sm:inline">Unlock</span> <ArrowRight className="w-3.5 h-3.5" />
                           </span>

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Building2, Plus, Upload, Link2, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
+import { Building2, Plus, Upload, Link2, CheckCircle2, Loader2, ArrowLeftRight } from 'lucide-react';
 
 interface TxnMatch {
   invoiceId: string; invoiceNumber: string; customerName: string | null;
@@ -132,7 +132,7 @@ function ReconcilePanel({ accounts, onChanged }: { accounts: Account[]; onChange
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-2xl p-6">
       <div className="flex items-center gap-2 mb-1">
-        <Sparkles className="w-5 h-5 text-purple-600" />
+        <ArrowLeftRight className="w-5 h-5 text-purple-600" />
         <h3 className="font-semibold text-lg" style={{ color: 'hsl(var(--foreground))' }}>Reconcile Bank Statement</h3>
       </div>
       <p className="text-sm mb-4" style={{ color: 'hsl(var(--muted-foreground))' }}>

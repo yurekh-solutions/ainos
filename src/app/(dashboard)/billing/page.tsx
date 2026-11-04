@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
-  Receipt, Mail, Crown, CheckCircle, Clock, Coins, Workflow, ArrowRight, Star, TrendingUp, CreditCard, Copy, Check, MessageCircle, Landmark, Zap, Layers } from 'lucide-react';
+  Receipt, Mail, Crown, CheckCircle, Clock, Coins, Workflow, ArrowRight, Star, TrendingUp, CreditCard, Copy, Check, MessageCircle, Landmark, Component, Layers } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -37,12 +37,12 @@ interface SubscriptionInfo {
   trialEndsAt?: string;
 }
 
-interface ToolEditionInfo { level: number; name: string; priceMonthlyInr: number }
+interface ToolEditionInfo { level: number; name: string; priceMonthlyUsd: number }
 interface ToolInfo {
   key: string;
   label: string;
   vertical: string;
-  monthlyInr: number;
+  monthlyUsd: number;
   editions: ToolEditionInfo[];
   subscription: { status: string; edition: number; billingCycle: string; currentPeriodEnd?: string | null; seats?: number } | null;
 }
@@ -50,7 +50,7 @@ interface ToolInfo {
 interface WorkspaceInfo {
   key: string;
   label: string;
-  monthlyInr: number;
+  monthlyUsd: number;
   subscription: { status: string; billingCycle: string; currentPeriodEnd?: string | null; seats: number } | null;
 }
 
@@ -401,7 +401,7 @@ export default function BillingPage() {
                     </span>
                   )}
                 </div>
-                <p className="text-sm font-bold mb-4" style={{ color: 'hsl(var(--foreground))' }}>₹{w.monthlyInr.toLocaleString('en-IN')}<span className="text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>/mo</span></p>
+                <p className="text-sm font-bold mb-4" style={{ color: 'hsl(var(--foreground))' }}>${w.monthlyUsd.toLocaleString('en-US')}<span className="text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>/mo</span></p>
                 <div className="mt-auto flex items-center gap-2">
                   <Link href={`/billing/workspaces/${w.key}`}
                     className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2 text-xs font-bold text-white"
@@ -426,7 +426,7 @@ export default function BillingPage() {
       <div>
         <div className="flex items-center gap-3 mb-5">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-500/10">
-            <Zap className="w-5 h-5 text-purple-500" />
+            <Component className="w-5 h-5 text-purple-500" />
           </div>
           <div>
             <h2 className="text-xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>Individual Tools</h2>
@@ -452,7 +452,7 @@ export default function BillingPage() {
                 <p className="text-xs mb-3" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   {active
                     ? `${tool.editions.find(e => e.level === activeEdition)?.name || 'Plan'} · ${activeSeats} user${activeSeats > 1 ? 's' : ''} · renews ${formatDate(tool.subscription?.currentPeriodEnd || undefined)}`
-                    : `${tool.vertical} · from ₹${Math.min(...tool.editions.map(e => e.priceMonthlyInr))}/user/mo`}
+                    : `${tool.vertical} · from $${Math.min(...tool.editions.map(e => e.priceMonthlyUsd))}/user/mo`}
                 </p>
                 {!active && (
                   <div className="flex items-center justify-between rounded-lg border px-3 py-2 mb-2" style={{ borderColor: 'hsl(var(--border))' }}>
@@ -474,13 +474,13 @@ export default function BillingPage() {
                 )}
                 <div className="flex-1 space-y-2 mb-4">
                   {tool.editions.map((ed) => {
-                    const total = ed.priceMonthlyInr * seats;
+                    const total = ed.priceMonthlyUsd * seats;
                     return (
                       <div key={ed.level} className="flex items-center justify-between rounded-lg border px-3 py-2" style={{ borderColor: 'hsl(var(--border))' }}>
                         <div>
                           <p className="text-sm font-semibold" style={{ color: 'hsl(var(--foreground))' }}>{ed.name}</p>
                           <p className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                            ₹{ed.priceMonthlyInr}/user/mo · ₹{total}/mo{cycle === 'annual' ? ' · billed yearly' : ''}
+                            ${ed.priceMonthlyUsd}/user/mo · ${total}/mo{cycle === 'annual' ? ' · billed yearly' : ''}
                           </p>
                         </div>
                         <button
