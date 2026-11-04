@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { expireToolSubscriptions } from '@/lib/tool-subscriptions';
+import { expireWorkspaceSubscriptions } from '@/lib/workspace-subscriptions';
 
 // POST/GET /api/cron/refresh-credits — monthly credit refill + expiry downgrade.
 //
@@ -108,7 +109,18 @@ async function run() {
   //    plan-bundle / int-flag path above is untouched.
   const toolExpiry = await expireToolSubscriptions(now);
 
-  return { expired: downgraded, refilled, toolSubsExpired: toolExpiry.expired, toolSubsCompanies: toolExpiry.companies };
+  // 4) Expire workspace subscriptions past their period and drop them from
+  //    Company.enabledVerticals so the à-la-carte workspaces re-lock.
+  const wsExpiry = await expireWorkspaceSubscriptions(now);
+
+  return {
+    expired: downgraded,
+    refilled,
+    toolSubsExpired: toolExpiry.expired,
+    toolSubsCompanies: toolExpiry.companies,
+    workspaceSubsExpired: wsExpiry.expired,
+    workspaceSubsCompanies: wsExpiry.companies,
+  };
 }
 
 export async function GET(req: NextRequest) {

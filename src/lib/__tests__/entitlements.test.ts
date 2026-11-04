@@ -12,6 +12,7 @@ import type { Capability } from '@/lib/capabilities';
 const invoices: Capability = { key: '/invoices', label: 'Invoices', href: '/invoices', vertical: 'finance' };
 
 const ADMIN = 'yurekhsolutions@gmail.com';
+const DEV = 'soniajaiswal2222@gmail.com'; // developer/owner allow-list — full access, no payment
 const NOW = Date.parse('2026-01-01T00:00:00.000Z');
 
 function access(overrides: Partial<Parameters<typeof decideAccess>[0]> = {}) {
@@ -76,6 +77,24 @@ describe('decideAccess — decision matrix', () => {
     expect(access({ company: { enabledVerticals: [] }, user: { role: 'member', allowedVerticals: [] } }))
       .toEqual({ allowed: true, level: 2, reason: 'open' });
   });
+
+  it('à-la-carte company with empty enabledVerticals locks every workspace', () => {
+    const company = { enabledVerticals: [], aLaCarteEnabled: true };
+    expect(access({ company, user: { role: 'owner' } }))
+      .toEqual({ allowed: false, level: 0, reason: 'vertical' });
+  });
+
+  it('à-la-carte company unlocks only a purchased vertical (no capability grant = open)', () => {
+    const company = { enabledVerticals: ['finance'], aLaCarteEnabled: true };
+    expect(access({ company, user: { role: 'owner' } }))
+      .toEqual({ allowed: true, level: 2, reason: 'open' });
+  });
+
+  it('developer/owner allow-list email bypasses the à-la-carte lock entirely', () => {
+    const company = { enabledVerticals: [], aLaCarteEnabled: true };
+    expect(access({ email: DEV, company, user: { role: 'owner' } }))
+      .toEqual({ allowed: true, level: 3, reason: 'admin' });
+  });
 });
 
 describe('getEffectiveVerticals', () => {
@@ -88,6 +107,15 @@ describe('getEffectiveVerticals', () => {
   });
   it('member is intersected with their allowed verticals', () => {
     expect(getEffectiveVerticals({ role: 'member', allowedVerticals: ['crm'] }, { enabledVerticals: ['finance', 'crm'] }, 'a@b.co')).toEqual(['crm']);
+  });
+  it('à-la-carte company with no purchases gets NO verticals (locked from signup)', () => {
+    expect(getEffectiveVerticals({ role: 'owner' }, { enabledVerticals: [], aLaCarteEnabled: true }, 'a@b.co')).toEqual([]);
+  });
+  it('legacy company (no à-la-carte flag) with empty set still means everything', () => {
+    expect(getEffectiveVerticals({ role: 'owner' }, { enabledVerticals: [] }, 'a@b.co').length).toBeGreaterThan(1);
+  });
+  it('developer/owner allow-list email sees all verticals regardless of company state', () => {
+    expect(getEffectiveVerticals({ role: 'owner' }, { enabledVerticals: [], aLaCarteEnabled: true }, DEV).length).toBeGreaterThan(1);
   });
 });
 

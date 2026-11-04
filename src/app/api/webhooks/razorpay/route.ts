@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyWebhookSignature } from '@/lib/razorpay';
+import { prisma } from '@/lib/prisma';
 import { settleCreditPurchase } from '@/lib/credit-purchases';
+import { settleToolSubscriptionsByOrder } from '@/lib/tool-subscriptions';
+import { settleWorkspaceSubscriptionsByOrder } from '@/lib/workspace-subscriptions';
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,20 +28,45 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: 'ignored', reason: 'missing_order' });
     }
 
-    const result = await settleCreditPurchase(orderId, payment.id, payment.amount);
+    // A single captured order may belong to a credit top-up OR a consolidated
+    // tool/workspace subscription invoice. Attempt each settlement path by order
+    // id (all are idempotent + keyed by order id, never amount) so the webhook
+    // is the authoritative grant even if the browser verify call never lands.
+    const credit = await settleCreditPurchase(orderId, payment.id, payment.amount);
 
-    if (!result.ok) {
-      // A 2xx stops Razorpay retrying a delivery we can never settle; the log
-      // line is what an operator needs to reconcile by hand.
-      console.error(`[razorpay-webhook] ${result.reason} for order ${orderId} payment ${payment.id}`);
-      return NextResponse.json({ status: 'ignored', reason: result.reason });
+    let toolActivated = 0;
+    const toolPending = await prisma.toolSubscription.findFirst({
+      where: { orderId, status: 'pending' },
+      select: { companyId: true },
+    });
+    if (toolPending) {
+      toolActivated = (await settleToolSubscriptionsByOrder(toolPending.companyId, orderId, payment.id)).activated;
+    }
+
+    let workspacesActivated = 0;
+    const wsPending = await prisma.workspaceSubscription.findFirst({
+      where: { orderId, status: 'pending' },
+      select: { companyId: true },
+    });
+    if (wsPending) {
+      workspacesActivated = (await settleWorkspaceSubscriptionsByOrder(wsPending.companyId, orderId, payment.id)).activated;
+    }
+
+    // Nothing this handler knows how to settle for that order → log for manual
+    // reconciliation but return 2xx so Razorpay stops retrying a delivery we can
+    // never settle locally.
+    if (!credit.ok && toolActivated === 0 && workspacesActivated === 0) {
+      console.error(`[razorpay-webhook] ${credit.reason} for order ${orderId} payment ${payment.id}`);
+      return NextResponse.json({ status: 'ignored', reason: credit.reason });
     }
 
     return NextResponse.json({
       status: 'ok',
-      credited: result.credits,
-      alreadyPaid: result.alreadyPaid,
-      balance: result.balance,
+      credited: credit.ok ? credit.credits : 0,
+      alreadyPaid: credit.ok ? credit.alreadyPaid : false,
+      balance: credit.ok ? credit.balance : undefined,
+      toolActivated,
+      workspacesActivated,
     });
   } catch (error) {
     console.error('Webhook error:', error);

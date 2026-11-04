@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { isAdmin } from '@/lib/admin';
+import { isDeveloperEmail } from '@/lib/dev-access';
 import { findUserByEmail } from '@/lib/identity';
 import { ALL_VERTICAL_KEYS } from '@/lib/verticals';
 import { CAPABILITIES, capabilityForKey, type Capability } from '@/lib/capabilities';
@@ -28,6 +29,18 @@ interface UserVerticalFields {
 }
 interface CompanyVerticalFields {
   enabledVerticals?: string[] | null;
+  aLaCarteEnabled?: boolean | null;
+}
+
+/**
+ * The set of workspaces a COMPANY is entitled to. The à-la-carte flag is the
+ * safe flip switch: legacy companies (flag false) keep today's "empty = all
+ * open" convention byte-for-byte; self-serve signups (flag true) start with
+ * NOTHING open and only a WorkspaceSubscription unlocks a vertical.
+ */
+function companyVerticalSet(company: CompanyVerticalFields | null): string[] {
+  if (company?.enabledVerticals?.length) return company.enabledVerticals;
+  return company?.aLaCarteEnabled ? [] : ALL_VERTICAL_KEYS;
 }
 
 export function getEffectiveVerticals(
@@ -35,8 +48,8 @@ export function getEffectiveVerticals(
   company: CompanyVerticalFields | null,
   email?: string | null,
 ): string[] {
-  const companySet = company?.enabledVerticals?.length ? company.enabledVerticals : ALL_VERTICAL_KEYS;
-  if (isAdmin(email)) return ALL_VERTICAL_KEYS;
+  if (isAdmin(email) || isDeveloperEmail(email)) return ALL_VERTICAL_KEYS;
+  const companySet = companyVerticalSet(company);
   if (user?.isAdmin || user?.role === 'owner' || user?.role === 'admin') return companySet;
   const userSet = user?.allowedVerticals?.length ? user.allowedVerticals : ALL_VERTICAL_KEYS;
   return companySet.filter(v => userSet.includes(v));
@@ -48,11 +61,12 @@ export async function getVerticalsForUser(
   email?: string | null,
 ): Promise<string[]> {
   if (!user) return ALL_VERTICAL_KEYS;
+  if (isAdmin(email) || isDeveloperEmail(email)) return ALL_VERTICAL_KEYS;
   let company: CompanyVerticalFields | null = null;
-  if (user.companyId && !isAdmin(email)) {
+  if (user.companyId) {
     company = await prisma.company.findUnique({
       where: { id: user.companyId },
-      select: { enabledVerticals: true },
+      select: { enabledVerticals: true, aLaCarteEnabled: true },
     });
   }
   return getEffectiveVerticals(user, company, email);
@@ -61,7 +75,7 @@ export async function getVerticalsForUser(
 /** Single vertical check used by middleware and APIs. */
 export async function canAccessVertical(email: string | null | undefined, verticalKey: string): Promise<boolean> {
   if (!email || !verticalKey) return false;
-  if (isAdmin(email)) return true;
+  if (isAdmin(email) || isDeveloperEmail(email)) return true;
   const user = await findUserByEmail(email);
   if (!user) return false;
   const verticals = await getVerticalsForUser(user, user.email);
@@ -102,7 +116,7 @@ export function decideAccess(input: {
   now?: number;
 }): AccessDecision {
   const now = input.now ?? Date.now();
-  if (isAdmin(input.email)) return { allowed: true, level: 3, reason: 'admin' };
+  if (isAdmin(input.email) || isDeveloperEmail(input.email)) return { allowed: true, level: 3, reason: 'admin' };
 
   // Unknown capability (not in the catalog) is never locked by this engine.
   if (!input.capability) return { allowed: true, level: 2, reason: 'unknown' };
@@ -110,7 +124,7 @@ export function decideAccess(input: {
   const { user, company, capability } = input;
 
   // 1) Vertical layer
-  const companySet = company?.enabledVerticals?.length ? company.enabledVerticals : ALL_VERTICAL_KEYS;
+  const companySet = companyVerticalSet(company);
   const verticalInCompany = companySet.includes(capability.vertical);
   const privileged = !!user?.isAdmin || user?.role === 'owner' || user?.role === 'admin';
   let verticalAllowed: boolean;
@@ -135,14 +149,14 @@ export async function resolveAccess(email: string | null | undefined, key: strin
   const capability = capabilityForKey(key);
   if (!capability) return { allowed: true, level: 2, reason: 'unknown' };
   if (!email) return { allowed: false, level: 0, reason: 'vertical' };
-  if (isAdmin(email)) return { allowed: true, level: 3, reason: 'admin' };
+  if (isAdmin(email) || isDeveloperEmail(email)) return { allowed: true, level: 3, reason: 'admin' };
   const user = await findUserByEmail(email);
   if (!user) return { allowed: false, level: 0, reason: 'vertical' };
   let company: CompanyAccessFields | null = null;
   if (user.companyId) {
     company = await prisma.company.findUnique({
       where: { id: user.companyId },
-      select: { enabledVerticals: true, capabilityAccess: true },
+      select: { enabledVerticals: true, capabilityAccess: true, aLaCarteEnabled: true },
     }) as CompanyAccessFields | null;
   }
   return decideAccess({ email, user, company, capability });
@@ -163,7 +177,7 @@ export function getLockedCapabilities(
   company: CompanyAccessFields | null,
   email?: string | null,
 ): string[] {
-  if (isAdmin(email)) return [];
+  if (isAdmin(email) || isDeveloperEmail(email)) return [];
   const verticals = getEffectiveVerticals(user, company, email);
   const locked: string[] = [];
   for (const c of CAPABILITIES) {
@@ -180,12 +194,12 @@ export async function getLockedCapabilitiesForUser(
   email?: string | null,
 ): Promise<string[]> {
   if (!user) return [];
-  if (isAdmin(email)) return [];
+  if (isAdmin(email) || isDeveloperEmail(email)) return [];
   let company: CompanyAccessFields | null = null;
   if (user.companyId) {
     company = await prisma.company.findUnique({
       where: { id: user.companyId },
-      select: { enabledVerticals: true, capabilityAccess: true },
+      select: { enabledVerticals: true, capabilityAccess: true, aLaCarteEnabled: true },
     }) as CompanyAccessFields | null;
   }
   return getLockedCapabilities(user, company, email);

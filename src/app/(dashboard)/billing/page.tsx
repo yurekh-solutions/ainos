@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import {
-  Receipt, Mail, Crown, CheckCircle, Clock, Coins, Workflow, ArrowRight, Star, TrendingUp, CreditCard, Copy, Check, MessageCircle, Landmark, Zap } from 'lucide-react';
+  Receipt, Mail, Crown, CheckCircle, Clock, Coins, Workflow, ArrowRight, Star, TrendingUp, CreditCard, Copy, Check, MessageCircle, Landmark, Zap, Layers } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -44,6 +45,13 @@ interface ToolInfo {
   monthlyInr: number;
   editions: ToolEditionInfo[];
   subscription: { status: string; edition: number; billingCycle: string; currentPeriodEnd?: string | null; seats?: number } | null;
+}
+
+interface WorkspaceInfo {
+  key: string;
+  label: string;
+  monthlyInr: number;
+  subscription: { status: string; billingCycle: string; currentPeriodEnd?: string | null; seats: number } | null;
 }
 
 interface PaymentInfo {
@@ -163,6 +171,8 @@ export default function BillingPage() {
   const [toolSubs, setToolSubs] = useState<ToolInfo[]>([]);
   const [busyTool, setBusyTool] = useState<string | null>(null);
   const [toolSeats, setToolSeats] = useState<Record<string, number>>({});
+  const [wsSubs, setWsSubs] = useState<WorkspaceInfo[]>([]);
+  const [busyWs, setBusyWs] = useState<string | null>(null);
 
   // Marketing UI tiers map to the activate-tools plan keys (category-level plan).
   const MARKETING_PLAN_KEYS: Record<string, string> = {
@@ -183,6 +193,11 @@ export default function BillingPage() {
   const refreshTools = async () => {
     const data = await fetch('/api/billing/tools').then(r => r.ok ? r.json() : Promise.resolve({}));
     setToolSubs(Array.isArray((data as { tools?: ToolInfo[] }).tools) ? (data as { tools: ToolInfo[] }).tools : []);
+  };
+
+  const refreshWorkspaces = async () => {
+    const data = await fetch('/api/billing/workspaces').then(r => r.ok ? r.json() : Promise.resolve({}));
+    setWsSubs(Array.isArray((data as { workspaces?: WorkspaceInfo[] }).workspaces) ? (data as { workspaces: WorkspaceInfo[] }).workspaces : []);
   };
 
   const subscribeMarketing = async (tier: string) => {
@@ -254,17 +269,31 @@ export default function BillingPage() {
     } catch { alert('Could not cancel'); } finally { setBusyTool(null); }
   };
 
+  const cancelWorkspace = async (key: string) => {
+    setBusyWs(`cancel:${key}`);
+    try {
+      const res = await fetch('/api/billing/workspaces/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key }),
+      });
+      if (res.ok) { await refreshWorkspaces(); } else { alert('Could not cancel'); }
+    } catch { alert('Could not cancel'); } finally { setBusyWs(null); }
+  };
+
   useEffect(() => {
     Promise.all([
       fetch('/api/billing').then(r => r.ok ? r.json() : Promise.resolve({})),
       fetch('/api/billing/credits').then(r => r.ok ? r.json() : Promise.resolve({})),
       fetch('/api/billing/checkout').then(r => r.ok ? r.json() : Promise.resolve([])),
       fetch('/api/billing/tools').then(r => r.ok ? r.json() : Promise.resolve({})),
-    ]).then(([billData, credData, packsData, toolsData]) => {
+      fetch('/api/billing/workspaces').then(r => r.ok ? r.json() : Promise.resolve({})),
+    ]).then(([billData, credData, packsData, toolsData, wsData]) => {
       setSubscription((billData as { subscription?: SubscriptionInfo }).subscription || null);
       setCreditBalance((credData as { balance?: number }).balance || 0);
       setCreditPacks(Array.isArray(packsData) ? packsData as CreditPack[] : []);
       setToolSubs(Array.isArray((toolsData as { tools?: ToolInfo[] }).tools) ? (toolsData as { tools: ToolInfo[] }).tools : []);
+      setWsSubs(Array.isArray((wsData as { workspaces?: WorkspaceInfo[] }).workspaces) ? (wsData as { workspaces: WorkspaceInfo[] }).workspaces : []);
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
@@ -345,6 +374,51 @@ export default function BillingPage() {
         <div className="flex-1">
           <p className="text-xs uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>Credit Balance</p>
           <p className="text-2xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>{creditBalance.toLocaleString()} <span className="text-sm font-normal" style={{ color: 'hsl(var(--muted-foreground))' }}>credits (${(creditBalance * 0.01).toFixed(2)} value)</span></p>
+        </div>
+      </div>
+
+      {/* ── WORKSPACES (à la carte unlock) ─────────────── */}
+      <div>
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-500/10">
+            <Layers className="w-5 h-5 text-purple-500" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>Workspaces</h2>
+            <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>Unlock a full workspace — every tool inside, billed monthly, cancel anytime.</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {wsSubs.map((w) => {
+            const active = w.subscription?.status === 'active';
+            return (
+              <div key={w.key} className="rounded-xl border p-5 flex flex-col" style={{ borderColor: active ? 'rgba(16,185,129,0.4)' : 'hsl(var(--border))', background: 'hsl(var(--card))' }}>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <h3 className="text-base font-bold" style={{ color: 'hsl(var(--foreground))' }}>{w.label}</h3>
+                  {active && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
+                      <CheckCircle className="w-3 h-3" /> Active
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm font-bold mb-4" style={{ color: 'hsl(var(--foreground))' }}>₹{w.monthlyInr.toLocaleString('en-IN')}<span className="text-xs font-medium" style={{ color: 'hsl(var(--muted-foreground))' }}>/mo</span></p>
+                <div className="mt-auto flex items-center gap-2">
+                  <Link href={`/billing/workspaces/${w.key}`}
+                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2 text-xs font-bold text-white"
+                    style={{ background: 'linear-gradient(90deg, #4c1d95, #6d28d9)' }}>
+                    {active ? 'Manage' : 'Unlock'} <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                  {active && (
+                    <button onClick={() => cancelWorkspace(w.key)} disabled={busyWs === `cancel:${w.key}`}
+                      className="rounded-lg border px-3 py-2 text-xs font-semibold disabled:opacity-60"
+                      style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}>
+                      {busyWs === `cancel:${w.key}` ? 'Cancelling…' : 'Cancel'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

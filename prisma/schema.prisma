@@ -75,6 +75,13 @@ model Company {
   // VERTICAL WORKSPACES (empty = every vertical enabled for this company)
   enabledVerticals   String[]            @default([]) @map("enabled_verticals")
 
+  // WORKSPACE A-LA-CARTE (locked-from-signup model):
+  //   false = legacy company — empty enabledVerticals means EVERYTHING open
+  //           (every pre-existing row keeps today's behaviour, grandfathered).
+  //   true  = self-serve signup — empty enabledVerticals means NOTHING open;
+  //           a WorkspaceSubscription adds its vertical key to open that workspace.
+  aLaCarteEnabled    Boolean             @default(false) @map("a_la_carte_enabled")
+
   // UNIFIED ENTITLEMENT ENGINE (Phase 1) — per-tool capability grants:
   //   { "<href>": { "level": 0|1|2|3, "until": "<ISO>" | null } }
   // null / absent key = OPEN (nothing locked until a plan grants/locks it).
@@ -126,6 +133,7 @@ model Company {
   toolRuns           ToolRun[]
   toolActivations    ToolActivation[]
   toolSubscriptions  ToolSubscription[]
+  workspaceSubscriptions WorkspaceSubscription[]
   users              User[]
   vendors            Vendor[]
   warehouses         Warehouse[]
@@ -1127,6 +1135,40 @@ model ToolSubscription {
   @@index([status])
   @@index([orderId])
   @@map("tool_subscriptions")
+}
+
+// ══════════════════════════════════════════
+// WORKSPACE SUBSCRIPTIONS (à la carte unlock at VERTICAL granularity).
+// One row per purchasable workspace (key = the vertical key the entitlement
+// engine gates on, e.g. "crm"). status drives Company.enabledVerticals: an
+// active row unions its vertical in (open); expiry drops it out (re-lock).
+// Only meaningful for aLaCarteEnabled companies — legacy rows stay open.
+// ═══════════════════════════════════════════
+model WorkspaceSubscription {
+  id                String    @id @default(uuid())
+  companyId         String    @map("company_id")
+  verticalKey       String    @map("vertical_key")   // e.g. "crm", "finance"
+  label             String
+  billingCycle      String    @default("monthly") @map("billing_cycle") // monthly | annual
+  priceMinor        Int       @map("price_minor")     // charged, paise
+  currency          String    @default("INR")
+  seats             Int       @default(1)
+  status            String    @default("pending")     // pending | active | cancelled | expired
+  orderId           String?   @map("order_id")        // Razorpay order; several rows may share one
+  paymentId         String?   @map("payment_id")
+  currentPeriodEnd  DateTime? @map("current_period_end")
+  startedAt         DateTime? @map("started_at")
+  cancelledAt       DateTime? @map("cancelled_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, verticalKey])
+  @@index([companyId])
+  @@index([status])
+  @@index([orderId])
+  @@map("workspace_subscriptions")
 }
 
 model ConnectedWebsite {

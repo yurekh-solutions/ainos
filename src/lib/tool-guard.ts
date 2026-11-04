@@ -50,23 +50,11 @@ export function isMarketingSlug(slug: string): boolean {
 }
 
 // Developer / tester allow-list: these accounts get full access to every tool,
-// bypassing subscription gating and credit deduction entirely. This is purely
-// for internal QA — remove or empty the list before public launch. Additional
-// emails can be appended at runtime via DEV_TOOL_ACCESS_EMAILS (comma-separated).
-const DEVELOPER_EMAILS: string[] = [
-  'soniajaiswal2222@gmail.com',
-  'info.ainosio@gmail.com',
-];
-
-export function isDeveloperEmail(email?: string | null): boolean {
-  if (!email) return false;
-  const e = email.toLowerCase().trim();
-  const fromEnv = (process.env.DEV_TOOL_ACCESS_EMAILS || '')
-    .split(',')
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-  return DEVELOPER_EMAILS.includes(e) || fromEnv.includes(e);
-}
+// bypassing subscription gating and credit deduction entirely. The list now lives
+// in @/lib/dev-access so the vertical entitlement engine honours the same accounts
+// without a circular import; re-exported here for existing callers.
+import { isDeveloperEmail } from '@/lib/dev-access';
+export { isDeveloperEmail } from '@/lib/dev-access';
 
 /**
  * A single, session-free access decision used by both the tool runner and the

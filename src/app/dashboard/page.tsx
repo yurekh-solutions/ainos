@@ -6,12 +6,13 @@ import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import {
-  ArrowRight, X } from 'lucide-react';
+  ArrowRight, X, Lock } from 'lucide-react';
 import {
   fadeUp,
 } from '@/components/dashboard/kit';
 import { VERTICALS, verticalByKey } from '@/lib/verticals';
 import { NAV_GROUPS } from '@/components/layout/navigation';
+import { getWorkspaceOffering } from '@/lib/workspace-pricing';
 
 const PLAN_LABELS: Record<string, string> = {
   starter: 'AINOS Starter',
@@ -32,9 +33,10 @@ export default function DashboardPage() {
   // Set by middleware when a workspace route was blocked for this member.
   const noAccess = verticalByKey(searchParams.get('no_access'));
   const [toastDismissed, setToastDismissed] = useState(false);
-  // Workspaces this member can open; undefined = legacy session, show all.
+  // Workspaces this member can open; undefined = legacy session, show all open.
+  // For an à-la-carte company this is the purchased set, so a missing key means
+  // the tile renders LOCKED (with its price + Unlock CTA) instead of hidden.
   const allowed = session?.user?.verticals;
-  const myVerticals = VERTICALS.filter(v => !allowed || allowed.includes(v.key));
 
   // Plan banner signal.
   const [plan, setPlan] = useState<PlanInfo | null>(null);
@@ -88,7 +90,7 @@ export default function DashboardPage() {
             {typeof plan?.credits === 'number' && (
               <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/15 border border-white/25">{plan.credits} credits</span>
             )}
-            {!plan && <span className="text-xs text-white/85">Explore every workspace, then pick your plan</span>}
+            {!plan && <span className="text-xs text-white/85">Unlock the workspaces your team needs</span>}
           </div>
           <Link href="/billing" className="inline-flex items-center gap-1 text-xs font-bold hover:underline whitespace-nowrap">
             {plan ? 'Manage plan' : 'View plans'} <ArrowRight className="w-3.5 h-3.5" />
@@ -104,16 +106,22 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-3">
-            {myVerticals.map((v, i) => {
+            {VERTICALS.map((v, i) => {
               const Icon = v.icon;
               const items = NAV_GROUPS.find(g => g.key === v.key)?.items ?? [];
               const preview = items.slice(0, 4);
+              const locked = !!allowed && !allowed.includes(v.key);
+              const price = getWorkspaceOffering(v.key)?.monthlyInr ?? null;
+              const href = locked ? `/billing/workspaces/${v.key}` : v.landingHref;
               return (
-                <motion.div key={v.key} {...fadeUp(0.1 + i * 0.02)} className="relative rounded-2xl bg-white border border-neutral-100 p-2.5 sm:p-4 shadow-[0_4px_20px_-8px_rgb(0_0_0_/_0.08)] hover:shadow-[0_12px_30px_-10px_rgb(109_40_217_/_0.22)] hover:border-purple-200 transition-all">
-                  <Link href={v.landingHref} className="flex flex-col gap-2 sm:gap-3 min-w-0 h-full">
+                <motion.div key={v.key} {...fadeUp(0.1 + i * 0.02)}
+                  className={`relative rounded-2xl bg-white border p-2.5 sm:p-4 shadow-[0_4px_20px_-8px_rgb(0_0_0_/_0.08)] transition-all ${locked ? 'border-neutral-200 opacity-95' : 'border-neutral-100 hover:shadow-[0_12px_30px_-10px_rgb(109_40_217_/_0.22)] hover:border-purple-200'}`}>
+                  <Link href={href} className="flex flex-col gap-2 sm:gap-3 min-w-0 h-full">
                     <div className="flex items-center sm:items-start gap-2 sm:gap-3">
-                      <span className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(76,29,149,0.08)' }}>
-                        <Icon className="w-4 h-4 sm:w-[22px] sm:h-[22px]" style={{ color: '#4c1d95' }} />
+                      <span className={`w-8 h-8 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${locked ? 'bg-neutral-100' : ''}`} style={locked ? undefined : { background: 'rgba(76,29,149,0.08)' }}>
+                        {locked
+                          ? <Lock className="w-4 h-4 sm:w-[22px] sm:h-[22px] text-neutral-400" />
+                          : <Icon className="w-4 h-4 sm:w-[22px] sm:h-[22px]" style={{ color: '#4c1d95' }} />}
                       </span>
                       <div className="min-w-0">
                         <h3 className="text-xs sm:text-sm font-bold text-neutral-900 truncate">
@@ -126,7 +134,7 @@ export default function DashboardPage() {
                     <div className="hidden sm:flex flex-wrap gap-1.5">
                       {preview.map(t => (
                         <span key={t.href} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-neutral-50 border border-neutral-100 text-[11px] font-medium text-neutral-600">
-                          <t.icon className="w-3 h-3" style={{ color: '#6d28d9' }} />{t.label}
+                          <t.icon className="w-3 h-3" style={{ color: locked ? '#9ca3af' : '#6d28d9' }} />{t.label}
                         </span>
                       ))}
                       {items.length > preview.length && (
@@ -134,10 +142,21 @@ export default function DashboardPage() {
                       )}
                     </div>
                     <div className="mt-auto flex items-center justify-between pt-0.5 sm:pt-1">
-                      <span className="text-[10px] sm:text-[11px] font-medium text-neutral-500">{items.length} tools</span>
-                      <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold" style={{ color: '#5b21b6' }}>
-                        <span className="hidden sm:inline">Open</span> <ArrowRight className="w-3.5 h-3.5" />
-                      </span>
+                      {locked ? (
+                        <>
+                          <span className="text-[10px] sm:text-[11px] font-semibold text-neutral-500">{price != null ? `₹${price.toLocaleString('en-IN')}/mo` : 'Unlock'}</span>
+                          <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold" style={{ color: '#5b21b6' }}>
+                            <span className="hidden sm:inline">Unlock</span> <ArrowRight className="w-3.5 h-3.5" />
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-[10px] sm:text-[11px] font-medium text-neutral-500">{items.length} tools</span>
+                          <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold" style={{ color: '#5b21b6' }}>
+                            <span className="hidden sm:inline">Open</span> <ArrowRight className="w-3.5 h-3.5" />
+                          </span>
+                        </>
+                      )}
                     </div>
                   </Link>
                 </motion.div>

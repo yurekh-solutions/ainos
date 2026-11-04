@@ -101,6 +101,9 @@ export const authOptions: NextAuthOptions = {
                 companyType: 'Private Limited',
                 onboardingStatus: 'pending',
                 createdBy: existingUser.email!,
+                // Workspace à-la-carte: OAuth auto-created companies are self-serve
+                // too, so they start locked and unlock via WorkspaceSubscription.
+                aLaCarteEnabled: true,
               },
             });
             companyId = company.id;

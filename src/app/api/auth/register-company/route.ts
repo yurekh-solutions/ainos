@@ -98,6 +98,10 @@ export async function POST(req: NextRequest) {
           emailMarketing: 1,
           aiAssistant: 1,
           websiteGen: 1,
+          // Workspace à-la-carte: self-serve signups start with NOTHING unlocked.
+          // A WorkspaceSubscription (paid) opens each vertical; enabledVerticals
+          // is empty here so the entitlement engine locks every workspace.
+          aLaCarteEnabled: true,
           subscriptionStatus: 'trialing',
           onboardingStatus: 'pending',
           // One-time token so the pre-approval document upload works without a session
