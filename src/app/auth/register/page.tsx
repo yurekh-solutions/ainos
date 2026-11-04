@@ -486,10 +486,15 @@ export default function RegisterPage() {
       }
     } catch { /* cache unavailable — continue to live captcha flow */ }
 
-    // Single bounded attempt: the GSTN portal rate-limits bursts, so rapid
-    // auto-retries only prolong the cooldown. On failure we surface a friendly
-    // message plus a deliberate "Try again" button instead of hammering it.
-    const MAX_ATTEMPTS = 1;
+    // Bounded retry. We keep this small on purpose: GSTN rate-limits bursts,
+    // so hammering only prolongs a real cooldown. But a single failure is most
+    // often our OWN scraper cold-starting (the free Render service sleeps when
+    // idle), which never reaches GSTN at all — a second gentle attempt a moment
+    // later rides out that boot window instead of showing the user a scary
+    // message. Two attempts, 3s apart, is enough to recover from a cold start
+    // without turning into a burst. On final failure we still surface a friendly
+    // message plus a deliberate "Try again" button.
+    const MAX_ATTEMPTS = 2;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
         const res = await fetch('/api/gst-lookup', {
@@ -524,7 +529,7 @@ export default function RegisterPage() {
           return;
         }
       }
-      await new Promise(r => setTimeout(r, 1500));
+      await new Promise(r => setTimeout(r, 3000));
     }
     setFetchingGst(false);
   };

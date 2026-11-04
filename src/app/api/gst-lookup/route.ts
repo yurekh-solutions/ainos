@@ -87,12 +87,14 @@ export async function POST(req: NextRequest) {
           // 200 + success:false so the browser shows a friendly "busy" message
           // instead of a scary red 502 in the console. Feature is not disabled.
           // Prefer the scraper's specific reason (e.g. GSTN scheduled downtime)
-          // when it provides one, else fall back to the generic retry message.
+          // when it provides one. Otherwise this is almost always our own
+          // free-tier scraper cold-starting (the request never reached GSTN), so
+          // we say that honestly instead of falsely claiming a rate limit.
           const upstream = await res.json().catch(() => ({}) as { error?: string });
           return NextResponse.json({
             success: false,
             error: upstream?.error
-              || 'The GST portal is briefly rate-limiting us. Please wait about a minute and try again.',
+              || 'The GST service is warming up. Please try again in a few seconds.',
             retryable: true,
           });
         }
