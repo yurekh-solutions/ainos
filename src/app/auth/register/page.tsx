@@ -74,15 +74,20 @@ function parseGst(gst: string): { stateName: string; entityType: string; entityL
 }
 
 // GST registration status as returned by GSTN (sts) — mapped to a pill style.
+// We show GSTN's EXACT wording verbatim (e.g. "Cancelled suo-moto") rather than
+// collapsing it to a single word, so the government's precise status is never
+// misrepresented. The category (key + colour) is still derived so the "not
+// active" warning keeps firing for cancelled/inactive/suspended registrations.
 function gstStatusBadge(raw: string | null): { key: string; label: string; cls: string } | null {
   if (!raw) return null;
   const v = raw.trim().toUpperCase();
-  if (v.includes('INACT')) return { key: 'inactive', label: 'Inactive', cls: 'bg-red-100 text-red-700 border-red-300' };
-  if (v.includes('CNL') || v.includes('CANCEL')) return { key: 'cancelled', label: 'Cancelled', cls: 'bg-red-100 text-red-700 border-red-300' };
-  if (v.includes('SUSP')) return { key: 'suspended', label: 'Suspended', cls: 'bg-orange-100 text-orange-700 border-orange-300' };
-  if (v.includes('PROVISION') || v === 'PRO') return { key: 'provisional', label: 'Provisional', cls: 'bg-amber-100 text-amber-700 border-amber-300' };
-  if (v.includes('ACT') || v.includes('VALID')) return { key: 'active', label: 'Active', cls: 'bg-green-100 text-green-700 border-green-300' };
-  return { key: 'unknown', label: raw.trim(), cls: 'bg-gray-100 text-gray-600 border-gray-300' };
+  const label = raw.trim();
+  if (v.includes('INACT')) return { key: 'inactive', label, cls: 'bg-red-100 text-red-700 border-red-300' };
+  if (v.includes('CNL') || v.includes('CANCEL')) return { key: 'cancelled', label, cls: 'bg-red-100 text-red-700 border-red-300' };
+  if (v.includes('SUSP')) return { key: 'suspended', label, cls: 'bg-orange-100 text-orange-700 border-orange-300' };
+  if (v.includes('PROVISION') || v === 'PRO') return { key: 'provisional', label, cls: 'bg-amber-100 text-amber-700 border-amber-300' };
+  if (v.includes('ACT') || v.includes('VALID')) return { key: 'active', label, cls: 'bg-green-100 text-green-700 border-green-300' };
+  return { key: 'unknown', label, cls: 'bg-gray-100 text-gray-600 border-gray-300' };
 }
 
 const DOCUMENT_REQUIREMENTS: Record<string, { name: string; optional?: boolean }[]> = {
