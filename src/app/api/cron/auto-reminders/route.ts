@@ -1,8 +1,20 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendEmail } from '@/lib/email';
 
-export async function GET() {
+// Locked down the same way as sibling cron routes: when CRON_SECRET is set the
+// caller must present `Authorization: Bearer <secret>`. Unset keeps the route
+// open so the existing scheduler URL keeps working until the secret is added.
+function authorized(req: NextRequest): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return true;
+  return req.headers.get('authorization') === `Bearer ${secret}`;
+}
+
+export async function GET(req: NextRequest) {
+  if (!authorized(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);

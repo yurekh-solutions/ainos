@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from '@/lib/auth';
 
 const TEMPLATE_EXTRACTOR_URL = process.env.TEMPLATE_EXTRACTOR_URL || 'http://localhost:5003';
 
 export async function POST(req: NextRequest) {
+  // Authenticated use only: this proxies an uploaded file to the internal
+  // extractor service, so gate it behind a signed-in session to stop anonymous
+  // abuse of the backend.
+  const session = await getServerSession(req);
+  if (!session?.user?.email) {
+    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File;
