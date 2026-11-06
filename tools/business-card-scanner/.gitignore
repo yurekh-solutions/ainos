@@ -1,0 +1,5 @@
+# Local-only artifacts — never commit
+__pycache__/
+*.pyc
+business_cards.xlsx
+_selftest_card.png

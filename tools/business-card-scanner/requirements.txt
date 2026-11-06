@@ -1,0 +1,7 @@
+# AINOS Business Card Scanner — local/offline OCR
+# Python packages (Tesseract binary must be installed separately — see scan_cards.py header)
+pytesseract>=0.3.10
+Pillow>=10.0.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+openpyxl>=3.1.0
