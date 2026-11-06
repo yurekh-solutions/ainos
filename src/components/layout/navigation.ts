@@ -1,4 +1,4 @@
-import { LayoutDashboard, Landmark, Radio, ScrollText, Contact2, Boxes, Coins, FileBarChart, ShoppingCart, PackageCheck, Sheet, BellRing, Paintbrush, Send, AtSign, SearchCheck, PenTool, MailOpen, ShoppingBag, Store, Package, ClipboardList, TrendingUp, Tag, MessageSquare, Users, Terminal, CreditCard, Receipt, UtensilsCrossed, Clock, Layers, Settings, Wrench, BarChart2, Truck, PackageSearch, Car, Warehouse, ShieldCheck, UserCheck, LifeBuoy, CalendarDays, Target, Hammer, KeyRound, CheckSquare, CalendarClock, ReceiptText } from 'lucide-react';
+import { LayoutDashboard, Landmark, Radio, ScrollText, Contact2, Boxes, Coins, FileBarChart, ShoppingCart, PackageCheck, Sheet, BellRing, Paintbrush, Send, AtSign, SearchCheck, PenTool, MailOpen, ShoppingBag, Store, Package, ClipboardList, TrendingUp, Tag, MessageSquare, Users, Terminal, CreditCard, Receipt, UtensilsCrossed, Clock, Layers, Settings, Wrench, BarChart2, Truck, PackageSearch, Car, Warehouse, ShieldCheck, UserCheck, LifeBuoy, CalendarDays, Target, Hammer, KeyRound, CheckSquare, CalendarClock, ReceiptText, ScanLine } from 'lucide-react';
 
 export interface NavItem {
   icon: React.ElementType;
@@ -105,6 +105,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { icon: Contact2, label: 'Customers', href: '/customers' },
       { icon: Coins, label: 'Expenses', href: '/finance/expenses' },
       { icon: BellRing, label: 'Pending Payments', href: '/finance/reminders' },
+      { icon: ScanLine, label: 'Business Card Scanner', href: '/finance/business-cards' },
       { icon: Boxes, label: 'Products', href: '/products', tier: 'advanced' },
       { icon: FileBarChart, label: 'Quotations', href: '/finance/quotes', tier: 'advanced' },
       { icon: ShoppingCart, label: 'Purchase Orders', href: '/finance/purchase-orders', tier: 'advanced' },
