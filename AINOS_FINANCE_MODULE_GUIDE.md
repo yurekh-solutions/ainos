@@ -264,6 +264,99 @@ Design custom invoice templates with your brand colors, fonts, and layout. Make 
 
 ---
 
+## 10. GST Reports (GSTR-1 / GSTR-3B)
+
+### What It Does
+Builds the return figures from the invoices, expenses and credit notes already in
+Finance, then packages them so the taxpayer can file on the GST portal themselves.
+
+**AINOS does not submit returns.** There is no public GSTN filing API, and the portal
+only accepts a submission signed with the taxpayer's own DSC / EVC / OTP. Everything
+here stops at *prepared and exported*.
+
+### Tabs
+| Tab | Purpose |
+|-----|---------|
+| **File It Yourself** | Validation check, due dates, late-fee estimate, portal JSON + CSV sheets, step-by-step portal checklist, ARN recording |
+| **GSTR-1** | Outward supplies (B2B / B2C / HSN) with the legacy export |
+| **GSTR-3B** | Summary of outward tax, ITC and net payable |
+| **2B Reconciliation** | Matches uploaded GSTR-2B JSON against booked purchase bills and flags credit at risk |
+| **Anomaly Check** | Data defects that would make the portal reject the return |
+
+### The Filing Pack (`/api/gst-reports/filing-pack`)
+| Part | What it produces |
+|------|------------------|
+| `validation` | Row-level blocking issues and warnings. Place of supply is taken from the recipient GSTIN when the invoice field is blank, so valid invoices are never falsely blocked. A range spanning two calendar months is flagged as a warning — a return is filed one period at a time |
+| `gstr1` | `GSTR1V1.0` portal JSON — `docdata` sections `b2b / b2cl / b2c / cdnrp / nil / exp / hsn4 / hsn6` with `txval / rt / iamt / camt / samt / kamt` tax heads |
+| `gstr3b` | Statutory table 3 / 4 / 5 / 6 splits, ITC set-off in the IGST → CGST → SGST order, cess always in cash. What is shown as payable is the **cash** left after the set-off — CGST/SGST credit cannot meet an IGST liability, and the unused balance is reported as carried forward to the credit ledger |
+| `due` + `fees` | Calendars for monthly, QRMP and composition; late fee ₹50/day (₹10 nil) with the turnover-based caps, and 18% interest on net tax |
+| `checklist` | The portal path, step by step |
+| `marketplaceSources` | Where Amazon / Flipkart / Meesho publish their sales reports and which section each one maps to |
+| Downloads | `?download=gstr1-json`, `?download=pack`, `?download=sheet&sheet=b2b\|b2c\|hsn\|3b-tables\|itc\|issues` |
+
+Credit notes are netted only inside the period they were issued in, so an April return is never
+reduced by a November return note. That is also why the tab defaults to the current calendar
+month instead of a rolling 30 days.
+
+Marketplace sales are **not** pulled in automatically — no marketplace offers a
+seller-side sales API. The reports must be exported from each seller dashboard and
+added as invoices, and the sheets exist so those figures can be keyed in by hand.
+
+### Closing a Period
+`POST /api/gst-reports/filing-pack` with `{ period, type, arn, challanNo }` stores the
+15-digit ARN in `GstFiling.payload` and marks the return `filed`. No schema change was
+needed, and nothing is sent to GSTN.
+
+---
+
+## 11. Business Card Scanner
+
+**Location:** Dashboard → Finance → Business Card Scanner
+
+### What It Does
+Photograph or upload a visiting card, read the details off it, and put the contact
+straight into **Customers** — while the upload is still running. Before this, the scanner
+only held the results in the browser tab: refresh the page and a whole stack of cards
+was lost. Export to Excel is still there for anyone who wants a spreadsheet instead.
+
+### Features
+
+| Feature | Description |
+|---------|-------------|
+| **Scan on upload** | Every card is read as soon as it is dropped; nothing has to be clicked twice |
+| **Auto-insert into Customers** | On by default, remembered per browser. Turned off, the scanner stays the session-only tool it was |
+| **GSTIN read off the card** | The 15-character number is now extracted, checked, and stored — so a scanned contact can be invoiced with GST details already filled |
+| **State from the GSTIN** | The first two digits decide the state, so the right place of supply is on the record without typing it |
+| **Pincode from the address** | The six-digit tail of the address is pulled into its own field |
+| **Second number and website kept** | Extras go into Notes as `Designation: … · Website: … · Other numbers: …` rather than being dropped |
+| **Duplicates folded, not doubled** | A card for someone already on file updates that row instead of creating a twin |
+| **Excel export** | Same sheet as before, now with the GSTIN column |
+
+### The two rules that make auto-insert safe
+
+1. **Dedupe key order** — GSTIN, then email (case-insensitive), then the *digits* of the
+   phone, then name + company. The phone is compared as digits, so `+91 98200 12345` and
+   `98200-12345` are recognised as one person; matching them inside a company only,
+   never across tenants.
+2. **Blanks are filled, typed data is never overwritten** — a card is only an OCR guess,
+   and may be a five-year-old card. If the customer already has an address, an email or a
+   phone that the seller entered, the card leaves it alone and reports
+   `Already in Customers` or `Filled a gap in Customers`.
+
+An invalid GSTIN (typo, truncation, bad checksum) is refused and the seller is warned,
+but the contact is still saved — a misread number must not lose a lead. A card with
+nothing readable on it is rejected with `422` and no blank row is created.
+
+### How to use
+1. Go to **Business Card Scanner**, leave **Add every scanned card to Customers** on
+2. Drop or select the card photos
+3. Watch each row fill in as it is read; the status changes to `Added to Customers`
+4. Correct anything wrong by typing into the row, then click **Save** on that row
+5. Use **Save all to Customers** for cards scanned with the switch off
+6. The contacts appear under **Finance → Customers** and can be invoiced directly
+
+---
+
 ## Technical Architecture
 
 ### Database Models (PostgreSQL)
@@ -282,6 +375,10 @@ Design custom invoice templates with your brand colors, fonts, and layout. Make 
 | `/api/barcode` | GET, POST | SVG barcode generation |
 | `/api/payment-reminders` | GET, PUT | Overdue tracking + WhatsApp |
 | `/api/invoice-templates` | GET, POST, PUT, DELETE | Template CRUD |
+| `/api/gst-reports` | GET, POST | GSTR-1 / GSTR-3B reports, exports, 2B reconciliation |
+| `/api/gst-reports/filing-pack` | GET, POST | Self-filing pack: portal JSON, CSV sheets, dates, fees, checklist, ARN record |
+| `/api/finance/business-cards/scan` | POST | Card image → vision scan → fields including GSTIN |
+| `/api/finance/business-cards/save` | POST | Card fields → dedupe + fill-blanks upsert into Customers |
 
 ### Zero External Cost
 - No SaaS subscriptions
@@ -296,7 +393,7 @@ Design custom invoice templates with your brand colors, fonts, and layout. Make 
 
 | Feature | Description | Status |
 |---------|-------------|--------|
-| GSTR Reports | GSTR-1, GSTR-2, GSTR-3B auto-generation | Planned |
+| GSTR Reports | GSTR-1 / GSTR-3B prepared and exported for self-filing on the portal | Live |
 | Credit/Debit Notes | Issue credit notes against invoices | Planned |
 | Recurring Invoices | Auto-generate monthly/weekly invoices | Planned |
 | Bank Reconciliation | Match bank statements with books | Planned |
@@ -336,6 +433,6 @@ Design custom invoice templates with your brand colors, fonts, and layout. Make 
 
 ---
 
-*Document Version: 1.0*
-*Last Updated: October 2026*
+*Document Version: 1.1*
+*Last Updated: November 2026*
 *Platform: AINOS Business Suite by Yurekh*

@@ -3,20 +3,14 @@ import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { analyzeMedia } from '@/lib/ai-provider';
 import { extractJson } from '@/lib/finance/ai';
+import type { BusinessCardFields } from '@/lib/finance/businessCard';
 
 // Business-card OCR: a card photo (base64 image) is read by the vision
 // provider and turned into structured contact fields the user can review,
-// edit and export to Excel. Mirrors the invoice/receipt scan pattern.
+// edit, save into the customer book and export to Excel. Mirrors the
+// invoice/receipt scan pattern.
 
-export interface BusinessCardFields {
-  name: string;
-  designation: string;
-  company: string;
-  phone: string;
-  email: string;
-  website: string;
-  address: string;
-}
+export type { BusinessCardFields };
 
 function str(v: unknown): string {
   return typeof v === 'string' ? v.trim() : '';
@@ -41,7 +35,8 @@ Return ONLY minified JSON in exactly this shape (no markdown):
   "phone": "phone number(s) or empty",
   "email": "email address(es) or empty",
   "website": "website / URL or empty",
-  "address": "office address or empty"
+  "address": "office address or empty",
+  "gstin": "15-character GSTIN if printed on the card, otherwise empty"
 }
 Read the text exactly as printed. If a field has multiple values (e.g. two phones), join them with " / ". Use "" for anything not present on the card. Never invent data.`;
 
@@ -63,6 +58,7 @@ Read the text exactly as printed. If a field has multiple values (e.g. two phone
       email: str(parsed.email),
       website: str(parsed.website ?? parsed.url),
       address: str(parsed.address),
+      gstin: str(parsed.gstin ?? parsed.gstNumber ?? parsed.gst),
     };
 
     return NextResponse.json({ fields });

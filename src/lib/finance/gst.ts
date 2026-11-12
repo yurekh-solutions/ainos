@@ -17,16 +17,22 @@ export interface GstSplit {
 const r2 = (n: number): number => Math.round((n + Number.EPSILON) * 100) / 100;
 
 // ── Indian state / UT codes (first 2 digits of a GSTIN) ──────────────────────
+// The CBIC state-code table. Names matter as much as the numbers here: the
+// e-way-bill and e-invoice adapters look a state name back up to its code, so
+// a mislabelled row silently sends a Maharashtra consignment out under code 26
+// (Dadra Nagar Haveli) and a Telangana invoice under Puducherry's code.
+// Codes 25, 28 and 30 are the pre-reorganisation legacy entries; they stay
+// listed because old GSTINs still carry them.
 export const GST_STATE_CODES: Record<string, string> = {
   '01': 'Jammu & Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab', '04': 'Chandigarh',
   '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi', '08': 'Rajasthan', '09': 'Uttar Pradesh',
   '10': 'Bihar', '11': 'Sikkim', '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur',
   '15': 'Mizoram', '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal',
   '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh', '24': 'Gujarat',
-  '25': 'Dadra & Nagar Haveli and Daman & Diu', '26': 'Maharashtra', '27': 'Goa',
-  '28': 'Chhattisgarh', '29': 'Karnataka', '30': 'Goa', '31': 'Ladakh', '32': 'Kerala',
-  '33': 'Tamil Nadu', '34': 'Telangana', '35': 'Andaman & Nicobar Islands', '36': 'Andhra Pradesh',
-  '37': 'Sikkim', '38': 'Lakshadweep', '99': 'Other Territory',
+  '25': 'Daman & Diu (old)', '26': 'Dadra & Nagar Haveli and Daman & Diu', '27': 'Maharashtra',
+  '28': 'Andhra Pradesh (old)', '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep', '32': 'Kerala',
+  '33': 'Tamil Nadu', '34': 'Puducherry', '35': 'Andaman & Nicobar Islands', '36': 'Telangana',
+  '37': 'Andhra Pradesh', '38': 'Ladakh', '99': 'Other Territory',
 };
 
 // Union Territories where intra-supply files as CGST + UTGST (not SGST).
@@ -210,6 +216,8 @@ export interface ReportInvoice {
   items?: Array<Record<string, unknown>> | null;
   supplyType?: string | null;
   status?: string | null;
+  isExport?: boolean | null;
+  isSez?: boolean | null;
 }
 
 export interface HsnRow {
