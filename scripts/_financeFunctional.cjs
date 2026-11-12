@@ -200,6 +200,49 @@ async function testGstCompliance() {
   const rec = await api('POST', '/api/gst-reports/reconcile', { rawJson: twoB, periodStart: '2026-10-01', periodEnd: '2026-10-31' });
   ok('2B reconcile accepts official JSON', rec.status === 201 && !!rec.data?.summary, rec.status);
   ok('2B reconcile flags ITC-at-risk for unmatched', (rec.data?.summary?.twobOnly ?? 0) >= 1 && (rec.data?.summary?.itcAtRisk ?? 0) > 0, JSON.stringify(rec.data?.summary));
+
+  console.log('\n--- FILE-IT-YOURSELF PACK ---');
+  const pack = await api('GET', '/api/gst-reports/filing-pack');
+  ok('Filing pack builds', pack.status === 200 && pack.data?.gstr1?.version === 'GSTR1V1.0', pack.status);
+  // Nothing in the seeded books should be flagged as a filing blocker. A false
+  // blocker here would stop a real taxpayer exporting a return.
+  ok('Pack is clean (no false blockers)', pack.data?.validation?.clean === true, JSON.stringify((pack.data?.validation?.blocking || []).slice(0, 2)));
+  ok('Pack covers both invoices', (pack.data?.summary?.invoiceCount ?? 0) >= 2, `count=${pack.data?.summary?.invoiceCount}`);
+  ok('Pack output tax = 2185', near(pack.data?.summary?.outputTax, 2185), pack.data?.summary?.outputTax);
+  ok('Net payable = output tax - eligible ITC', near(pack.data?.summary?.netTaxPayable, (pack.data?.summary?.outputTax || 0) - (pack.data?.summary?.itcEligible || 0)), `net=${pack.data?.summary?.netTaxPayable} itc=${pack.data?.summary?.itcEligible}`);
+  const dueForms = (pack.data?.due?.returns || []).map(r => r.form);
+  ok('Monthly calendar lists GSTR-1 + GSTR-3B', dueForms.join(',') === 'GSTR-1,GSTR-3B', dueForms.join(','));
+  ok('Due dates are the 11th and the 20th', /-11$/.test(pack.data?.due?.returns?.[0]?.dueDate || '') && /-20$/.test(pack.data?.due?.returns?.[1]?.dueDate || ''), `${pack.data?.due?.returns?.[0]?.dueDate} / ${pack.data?.due?.returns?.[1]?.dueDate}`);
+  ok('Current period is not late', (pack.data?.fees?.daysLate ?? -1) === 0 && near(pack.data?.fees?.total, 0), `late=${pack.data?.fees?.daysLate} total=${pack.data?.fees?.total}`);
+  ok('Nil return flagged false on a period with sales', pack.data?.summary?.isNil === false, String(pack.data?.summary?.isNil));
+
+  const qrmp = await api('GET', '/api/gst-reports/filing-pack?scheme=qrmp');
+  ok('QRMP calendar adds IFF', (qrmp.data?.due?.returns || []).map(r => r.form).join(',') === 'IFF,GSTR-1,GSTR-3B', JSON.stringify((qrmp.data?.due?.returns || []).map(r => r.form)));
+
+  // The portal upload file must never carry a blank place of supply: AINOS only
+  // stores it when the invoice form sends one, so it comes from the recipient GSTIN.
+  const up1 = await api('GET', '/api/gst-reports/filing-pack?download=gstr1-json');
+  const ub2b = up1.data?.docdata?.b2b || [];
+  ok('Upload GSTR-1 uses portal section keys', !!up1.data?.docdata && 'b2b' in up1.data.docdata && 'hsn6' in up1.data.docdata, up1.status);
+  ok('Upload rows all carry a 2-digit place of supply', ub2b.length >= 2 && ub2b.every(r => /^\d{2}$/.test(String(r.pos || ''))), JSON.stringify(ub2b.map(r => r.pos)));
+  ok('Upload tax heads use iamt/camt/samt/kamt', (() => { const i = ub2b[0]?.itms?.[0] || {}; return ['txval', 'rt', 'iamt', 'camt', 'samt', 'kamt'].every(k => k in i); })(), JSON.stringify(ub2b[0]?.itms?.[0]));
+
+  const issueCsv = await apiRaw('GET', '/api/gst-reports/filing-pack?download=sheet&sheet=issues');
+  // A clean period legitimately has no rows, so the issues sheet is empty by design.
+  ok('Issues sheet endpoint works', issueCsv.status === 200, issueCsv.status);
+  const b2bCsv = await apiRaw('GET', '/api/gst-reports/filing-pack?download=sheet&sheet=b2b');
+  ok('B2B sheet carries statutory column headers', b2bCsv.status === 200 && /invoice_no/.test(b2bCsv.text) && /place_of_supply/.test(b2bCsv.text) && /recipient_gstin/.test(b2bCsv.text), b2bCsv.status);
+  const whole = await apiRaw('GET', '/api/gst-reports/filing-pack?download=pack');
+  ok('Whole pack downloads with a checklist', whole.status === 200 && JSON.parse(whole.text).checklist?.length >= 5, `${whole.status}`);
+  ok('Pack lists marketplace sales sources for Amazon/Flipkart/Meesho', (() => { const s = (JSON.parse(whole.text).marketplaceSources || []).map(x => String(x.name || x.platform || '')).join(','); return /amazon/i.test(s) && /flipkart/i.test(s) && /meesho/i.test(s); })(), '');
+
+  // Closing the period stores the acknowledgement in GstFiling.payload.
+  const badArn = await api('POST', '/api/gst-reports/filing-pack', { period: '012099', type: 'GSTR1', arn: '12345' });
+  ok('Short ARN rejected (400)', badArn.status === 400, badArn.status);
+  const goodArn = await api('POST', '/api/gst-reports/filing-pack', { period: '012099', type: 'GSTR1', arn: '123456789012345', challanNo: 'CH-1' });
+  ok('15-digit ARN records the filing', goodArn.status === 201 && goodArn.data?.status === 'filed', `${goodArn.status} ${goodArn.data?.status}`);
+  ok('ARN stored without a schema change', goodArn.data?.payload?.arn === '123456789012345', JSON.stringify(goodArn.data?.payload));
+  await prisma.gstFiling.deleteMany({ where: { companyId: COMPANY_ID, period: '012099' } });
 }
 
 async function testBankReconcile() {
