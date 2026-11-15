@@ -1,7 +1,10 @@
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
-export type AuditEntity = 'rental' | 'approval' | 'shift' | 'survey' | 'event' | 'registration';
+// 'business_card' rows are how a feature that never shows a number on screen
+// still leaves a trail: one row per scan and one per save, so the questions
+// "how many cards come in" and "how many of them end up billed" have answers.
+export type AuditEntity = 'rental' | 'approval' | 'shift' | 'survey' | 'event' | 'registration' | 'business_card';
 
 export type AuditActor = { id?: string | null; email?: string | null };
 
@@ -12,7 +15,9 @@ type AuditInput = {
   action: string;
   actor: AuditActor;
   summary?: string | null;
-  changes?: Record<string, { from: unknown; to: unknown }> | null;
+  // diffFields() writes { from, to } pairs for record edits. Feature events
+  // carry plain counters and flags instead, so the column stays a loose object.
+  changes?: Record<string, unknown> | null;
 };
 
 function normalize(value: unknown): unknown {

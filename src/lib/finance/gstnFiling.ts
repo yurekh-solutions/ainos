@@ -59,31 +59,49 @@ export function resolvePlaceOfSupply(inv: {
 
 // ── GSTIN validation ────────────────────────────────────────────────────────
 // Format: 2 state digits + 10-char PAN + entity digit + Z + check char.
-// The check char is derived from a weighted mod-36 of the first 14 characters,
-// which catches transposition and typo errors before the portal rejects them.
 const GSTIN_ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-const GSTIN_WEIGHTS = [1, 3, 7, 9, 11, 13, 17, 19, 23, 29, 37, 41, 43, 47];
 
 function gstinCharValue(ch: string): number {
   return GSTIN_ALPHABET.indexOf(ch);
 }
 
+/**
+ * The 15th character is a Luhn-mod-36 check character over the first 14, on the
+ * 36-character codepoint series, walked right to left starting with a factor of
+ * 2. This is the rule GSTN published for its developer API.
+ *
+ * The previous version of this function used a weighted-prime series instead and
+ * agreed with none of the real GSTINs checked against it - had it been trusted,
+ * every genuine number would have been flagged as suspect.
+ *
+ * Still advisory only, whatever the rule: a bad check character means "this was
+ * probably misread", which is worth saying. It is never a reason to stop someone
+ * billing or filing.
+ */
 export function gstinCheckChar(first14: string): string {
+  const input = (first14 || '').trim().toUpperCase();
+  if (input.length !== 14) return '';
+  const mod = GSTIN_ALPHABET.length;
+  let factor = 2;
   let sum = 0;
-  for (let i = 0; i < 14; i++) {
-    const v = gstinCharValue(first14[i].toUpperCase());
-    if (v < 0) return '';
-    sum += v * GSTIN_WEIGHTS[i];
+  for (let i = input.length - 1; i >= 0; i--) {
+    const codePoint = gstinCharValue(input[i]);
+    if (codePoint < 0) return '';
+    let digit = factor * codePoint;
+    factor = factor === 2 ? 1 : 2;
+    digit = Math.floor(digit / mod) + (digit % mod);
+    sum += digit;
   }
-  return GSTIN_ALPHABET[(36 - (sum % 36)) % 36] ?? '';
+  return GSTIN_ALPHABET[(mod - (sum % mod)) % mod] ?? '';
 }
 
 export interface GstinVerdict {
   valid: boolean;
   reason?: string;
   stateCode?: string | null;
-  /** Format is certain per the GSTIN spec; the check digit uses a mod-36 series
-   *  that is advisory only, so a mismatch never blocks a filing. */
+  /** Format is certain per the GSTIN spec; the check character is computed by
+   *  the GSTN-published Luhn-mod-36 rule but stays advisory, so a mismatch
+   *  never blocks a filing. */
   checkDigitMismatch?: boolean;
 }
 

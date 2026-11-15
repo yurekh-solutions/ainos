@@ -335,6 +335,58 @@ async function testEwayBill() {
   ok('preview flags missing consignee state (not ready)', badPrev.data?.ready === false && (badPrev.data?.errors || []).some(e => /to-state/i.test(e)), JSON.stringify(badPrev.data?.errors));
 }
 
+async function testSupplyDerivation() {
+  console.log('\n=== SUPPLY TYPE: read off the GSTINs, not defaulted ===');
+  // The invoice form used to post "intra" whatever the two GSTINs said, and
+  // the API honoured the posted value over its own correct rule. Nothing is
+  // posted here, so the split has to come out of the state codes themselves.
+  const ITEM = [{ productName: 'Goods', price: 10000, quantity: 1, gstRate: 18, costPrice: 5000 }];
+
+  const inter = await api('POST', '/api/invoices', {
+    customerName: 'Derived Delhi', customerEmail: 'der.del@t.com', customerGst: '07ABCDE1234F1Z5',
+    status: 'sent', items: ITEM,
+  });
+  const i = inter.data || {};
+  ok('Delhi buyer, no supplyType sent → full IGST', near(i.igstAmount, 1800) && near(i.cgstAmount, 0), `igst=${i.igstAmount} cgst=${i.cgstAmount}`);
+  ok('the place of supply is stored instead of left null', i.placeOfSupply === '07', String(i.placeOfSupply));
+
+  const intra = await api('POST', '/api/invoices', {
+    customerName: 'Derived Mumbai', customerEmail: 'der.mum@t.com', customerGst: '27ABCDE1234F1Z5',
+    status: 'sent', items: ITEM,
+  });
+  const v = intra.data || {};
+  ok('same-state buyer → CGST + SGST, no IGST',
+    near(v.cgstAmount, 900) && near(v.sgstAmount, 900) && near(v.igstAmount, 0), `c=${v.cgstAmount} s=${v.sgstAmount} i=${v.igstAmount}`);
+  ok('place of supply read off the buyer GSTIN', v.placeOfSupply === '27', String(v.placeOfSupply));
+
+  // A seller registered in a union territory: the state half of an intra-state
+  // bill there is UTGST. Booking it as SGST puts that money in the wrong ledger
+  // head, and the return then disagrees with the challan paid against it.
+  const orig = await prisma.company.findUnique({ where: { id: COMPANY_ID } });
+  await prisma.company.update({ where: { id: COMPANY_ID }, data: { gstNumber: '34AABCS1234A1Z5', state: 'Puducherry' } });
+
+  const ut = await api('POST', '/api/invoices', {
+    customerName: 'Derived Puducherry', customerEmail: 'der.py@t.com', customerGst: '34ABCDE1234F1Z5',
+    status: 'sent', items: ITEM,
+  });
+  const u = ut.data || {};
+  ok('UT seller, intra bill → CGST + UTGST with SGST left at zero',
+    near(u.cgstAmount, 900) && near(u.utgstAmount, 900) && near(u.sgstAmount, 0),
+    `c=${u.cgstAmount} ut=${u.utgstAmount} s=${u.sgstAmount}`);
+
+  const utInter = await api('POST', '/api/invoices', {
+    customerName: 'Derived Mumbai II', customerEmail: 'der.mum2@t.com', customerGst: '27ABCDE1234F1Z5',
+    status: 'sent', items: ITEM,
+  });
+  const ui = utInter.data || {};
+  ok('UT seller billing a state → full IGST, no UTGST',
+    near(ui.igstAmount, 1800) && near(ui.utgstAmount, 0), `igst=${ui.igstAmount} ut=${ui.utgstAmount}`);
+
+  await prisma.company.update({ where: { id: COMPANY_ID }, data: { gstNumber: orig.gstNumber, state: orig.state } });
+  const back = await prisma.company.findUnique({ where: { id: COMPANY_ID } });
+  ok("the seller's own registration is put back afterwards", back?.gstNumber === '27AAACS1234A1Z5', back?.gstNumber);
+}
+
 async function cleanup() {
   console.log('\n=== CLEANUP test data ===');
   const models = ['invoice', 'customer', 'product', 'expense', 'quote', 'deliveryChallan', 'creditNote', 'debitNote', 'bankAccount', 'bankTransaction', 'recurringInvoice', 'invoiceTemplate', 'gstReconImport', 'gstFiling'];
@@ -363,6 +415,7 @@ async function cleanup() {
     await testGstCompliance();
     await testBankReconcile();
     await testEwayBill();
+    await testSupplyDerivation();
   } catch (e) {
     console.error('SCRIPT ERROR:', e.message);
   } finally {

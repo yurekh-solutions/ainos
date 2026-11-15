@@ -5,13 +5,14 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
   ScanLine, Upload, FileSpreadsheet, Trash2, Loader2, CheckCircle2,
-  AlertCircle, RefreshCw, ImagePlus, UserPlus, Users,
+  AlertCircle, RefreshCw, ImagePlus, UserPlus, Users, ExternalLink,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { PAGE, CONTAINER, CARD, fadeUp, IconCircle, PageHeader } from '@/components/dashboard/kit';
 
 type RowStatus = 'queued' | 'scanning' | 'done' | 'error';
 type SaveAction = 'created' | 'updated' | 'unchanged';
+type GstnCheck = 'verified' | 'attention' | 'unchecked';
 
 interface CardFields {
   name: string;
@@ -24,10 +25,18 @@ interface CardFields {
   gstin: string;
 }
 
+// What GSTN said about this number the last time this account asked for it.
+interface GstnInfo {
+  check: GstnCheck;
+  label: string;
+  detail: string;
+}
+
 interface SavedRef {
   action: SaveAction;
   id: string;
   name: string;
+  gstn?: GstnInfo;
 }
 
 interface CardRow {
@@ -62,6 +71,17 @@ const SAVED_LABEL: Record<SaveAction, string> = {
   updated: 'Filled a gap in Customers',
   unchanged: 'Already in Customers',
 };
+
+const GSTN_TONE: Record<GstnCheck, string> = {
+  verified: 'text-emerald-700',
+  attention: 'text-amber-700',
+  unchecked: 'text-neutral-500',
+};
+
+// The taxpayer search on the portal, for the numbers AINOS cannot confirm from
+// its own records. Reading a GSTIN off the portal takes a captcha and a human,
+// so the check is offered, not performed.
+const GSTN_SEARCH_URL = 'https://services.gst.gov.in/services/searchtp';
 
 const AUTO_ADD_KEY = 'ainos.businessCards.autoAdd';
 
@@ -143,7 +163,10 @@ export default function BusinessCardScannerPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not save this card');
-      const saved: SavedRef = { action: data.action as SaveAction, id: data.id, name: data.name };
+      const saved: SavedRef = {
+        action: data.action as SaveAction, id: data.id, name: data.name,
+        gstn: (data.gstn ?? undefined) as GstnInfo | undefined,
+      };
       patchRow(row.id, { saving: false, saved });
       return saved;
     } catch (err) {
@@ -246,6 +269,9 @@ export default function BusinessCardScannerPage() {
 
   const doneCount = rows.filter(r => r.status === 'done').length;
   const savedCount = rows.filter(r => r.saved).length;
+  // A card whose GSTIN AINOS could not stand behind is the one thing worth
+  // saying out loud, because that is the number invoices get raised against.
+  const needsLook = rows.filter(r => r.saved?.gstn?.check === 'attention').length;
 
   return (
     <div className={PAGE}>
@@ -299,6 +325,8 @@ export default function BusinessCardScannerPage() {
               <p className="text-xs text-neutral-500 mt-1">
                 As soon as a card is read it is saved under Finance › Customers. A contact you already
                 have is filled in, not copied twice — and anything you typed yourself is never overwritten.
+                Every GSTIN off the card is matched against the GST portal records this account already
+                holds, so a number that cannot be confirmed is flagged instead of quietly believed.
               </p>
             </div>
             <button
@@ -322,6 +350,11 @@ export default function BusinessCardScannerPage() {
                 <ScanLine className="w-4 h-4 text-[#6d28d9]" />
                 <h2 className="text-sm font-bold text-neutral-800">Scanned cards</h2>
                 <span className="text-xs text-neutral-500">· {doneCount} of {rows.length} ready{savedCount > 0 ? ` · ${savedCount} in Customers` : ''}</span>
+                {needsLook > 0 && (
+                  <span className="rounded-lg bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-amber-200">
+                    {needsLook} GSTIN to verify
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={clearAll} className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 px-3 py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-50">
@@ -359,7 +392,7 @@ export default function BusinessCardScannerPage() {
                             </div>
                           )}
                         </div>
-                        <StatusTag status={row.status} error={row.error} saving={row.saving} saved={row.saved} saveError={row.saveError} />
+                        <StatusTag status={row.status} error={row.error} saving={row.saving} saved={row.saved} saveError={row.saveError} gstin={row.fields.gstin} />
                       </td>
                       {FIELDS.map(f => (
                         <td key={f.key} className="px-3 py-3">
@@ -407,7 +440,7 @@ export default function BusinessCardScannerPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-neutral-500 truncate">{row.fileName}</p>
-                      <StatusTag status={row.status} error={row.error} saving={row.saving} saved={row.saved} saveError={row.saveError} />
+                      <StatusTag status={row.status} error={row.error} saving={row.saving} saved={row.saved} saveError={row.saveError} gstin={row.fields.gstin} />
                     </div>
                     <div className="flex items-center gap-1">
                       <SaveControl row={row} onSave={(r) => { void saveRow(r); }} />
@@ -458,8 +491,8 @@ export default function BusinessCardScannerPage() {
   );
 }
 
-function StatusTag({ status, error, saving, saved, saveError }: {
-  status: RowStatus; error: string; saving: boolean; saved: SavedRef | null; saveError: string;
+function StatusTag({ status, error, saving, saved, saveError, gstin }: {
+  status: RowStatus; error: string; saving: boolean; saved: SavedRef | null; saveError: string; gstin: string;
 }) {
   if (status === 'scanning' || status === 'queued') {
     return <p className="mt-1.5 text-[11px] text-neutral-400 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> {status === 'queued' ? 'Queued' : 'Reading…'}</p>;
@@ -476,10 +509,36 @@ function StatusTag({ status, error, saving, saved, saveError }: {
           <Users className="w-3 h-3" /> {SAVED_LABEL[saved.action]}
         </Link>
       )}
+      {saved && !saving && saved.gstn && <GstnNote gstn={saved.gstn} gstin={gstin} />}
       {saveError && !saving && (
         <p className="text-[11px] text-amber-700 flex items-start gap-1"><AlertCircle className="w-3 h-3 mt-0.5 shrink-0" /> <span className="line-clamp-2">{saveError}</span></p>
       )}
     </div>
+  );
+}
+
+// The GSTIN printed on a card is only cross-checked against the portal results
+// this account already holds, so an unconfirmed number is offered as something
+// to look at rather than stamped with a tick it has not earned. The sentence
+// sits behind a tap so the row stays narrow.
+function GstnNote({ gstn, gstin }: { gstn: GstnInfo; gstin: string }) {
+  const shown = gstin.trim();
+  return (
+    <details>
+      <summary className={`flex cursor-pointer list-none items-start gap-1 text-[11px] font-medium [&::-webkit-details-marker]:hidden ${GSTN_TONE[gstn.check]}`}>
+        {gstn.check === 'verified'
+          ? <CheckCircle2 className="w-3 h-3 mt-0.5 shrink-0" />
+          : <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />}
+        <span>{gstn.label}</span>
+      </summary>
+      <p className="mt-0.5 text-[11px] leading-snug text-neutral-500">{gstn.detail}</p>
+      {gstn.check !== 'verified' && shown && (
+        <a href={GSTN_SEARCH_URL} target="_blank" rel="noopener noreferrer"
+          className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-[#6d28d9] hover:underline">
+          <ExternalLink className="w-3 h-3 shrink-0" /> Check {shown.toUpperCase()} on the GST portal
+        </a>
+      )}
+    </details>
   );
 }
 

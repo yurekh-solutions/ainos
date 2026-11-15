@@ -36,7 +36,11 @@ export const GST_STATE_CODES: Record<string, string> = {
 };
 
 // Union Territories where intra-supply files as CGST + UTGST (not SGST).
-export const UT_STATE_CODES = new Set(['04', '31', '35', '38', '25']);
+// 26 (Dadra & Nagar Haveli and Daman & Diu) and 34 (Puducherry) were missing,
+// so sellers registered there were billing CGST + SGST — the state half of
+// their tax was being paid into the wrong ledger head.
+// Delhi (07) is deliberately not here: it is a state for GST purposes.
+export const UT_STATE_CODES = new Set(['04', '25', '26', '31', '34', '35', '38']);
 
 export function stateCodeFromGstin(gstin?: string | null): string | null {
   if (!gstin) return null;

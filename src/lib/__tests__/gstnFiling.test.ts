@@ -40,6 +40,25 @@ describe('validateGstin', () => {
     expect(v.checkDigitMismatch).toBeFalsy();
   });
 
+  // Pinned against GSTINs that independent validators publish as valid, not
+  // against this module's own output. Every other fixture here is built through
+  // gstinCheckChar(), so it agrees with any rule, right or wrong - which is how
+  // a weighted-prime series that matched none of these numbers got shipped.
+  it('reproduces the check character of GSTINs published elsewhere as valid', () => {
+    expect(gstinCheckChar('09AAAUP8175A1Z')).toBe('G');
+    expect(validateGstin('09AAAUP8175A1ZG').checkDigitMismatch).toBeFalsy();
+    expect(validateGstin('12AAACI1681G1Z0').checkDigitMismatch).toBeFalsy();
+  });
+
+  it('a single misread character breaks the check character', () => {
+    // What the check character is for: one slipped digit anywhere in the
+    // fourteen meaningful positions changes the expected fifteenth.
+    const misread = MAH_BUYER.slice(0, 8) + '5' + MAH_BUYER.slice(9);
+    expect(misread).not.toBe(MAH_BUYER);
+    expect(validateGstin(misread).valid).toBe(true);
+    expect(validateGstin(misread).checkDigitMismatch).toBe(true);
+  });
+
   it('rejects wrong length, broken PAN slot and a non-Z 14th character', () => {
     expect(validateGstin('27AAA').valid).toBe(false);
     expect(validateGstin('2711111111111ZZ').valid).toBe(false);   // PAN pattern broken

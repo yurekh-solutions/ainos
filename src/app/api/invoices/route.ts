@@ -241,7 +241,10 @@ export async function POST(req: NextRequest) {
         paymentMethod,
         payments,
         paidAmount,
-        placeOfSupply: body.placeOfSupply || null,
+        // Whatever the caller stated, otherwise the code just derived from the
+        // buyer's GSTIN. Leaving it null is what made GSTR-1 have to guess the
+        // place of supply row by row, and a guessed pos is a pos nobody checked.
+        placeOfSupply: body.placeOfSupply || placeOfSupplyCode || null,
         // Digital Signature
         signatureImage: body.signatureImage || null,
         signatureType: body.signatureType || null,

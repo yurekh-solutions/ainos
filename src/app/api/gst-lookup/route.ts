@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { GST_STATE_CODES } from '@/lib/finance/gst';
 
 // GST Scraper - Self-hosted Flask server on Render
 // Flow: getCaptcha → user solves captcha → verifyGST → real data
@@ -162,19 +163,6 @@ export async function POST(req: NextRequest) {
         const stateCode = gst.slice(0, 2);
         const pan = gst.slice(2, 12);
 
-        const STATE_CODES: Record<string, string> = {
-          '01': 'Jammu & Kashmir', '02': 'Himachal Pradesh', '03': 'Punjab',
-          '04': 'Chandigarh', '05': 'Uttarakhand', '06': 'Haryana', '07': 'Delhi',
-          '08': 'Rajasthan', '09': 'Uttar Pradesh', '10': 'Bihar', '11': 'Sikkim',
-          '12': 'Arunachal Pradesh', '13': 'Nagaland', '14': 'Manipur', '15': 'Mizoram',
-          '16': 'Tripura', '17': 'Meghalaya', '18': 'Assam', '19': 'West Bengal',
-          '20': 'Jharkhand', '21': 'Odisha', '22': 'Chhattisgarh', '23': 'Madhya Pradesh',
-          '24': 'Gujarat', '26': 'Dadra & Nagar Haveli', '27': 'Maharashtra',
-          '28': 'Andhra Pradesh', '29': 'Karnataka', '30': 'Goa', '31': 'Lakshadweep',
-          '32': 'Kerala', '33': 'Tamil Nadu', '34': 'Puducherry',
-          '35': 'Andaman & Nicobar', '36': 'Telangana', '37': 'Andhra Pradesh', '38': 'Ladakh',
-        };
-
         const PAN_ENTITY: Record<string, string> = {
           'A': 'proprietorship', 'B': 'partnership', 'C': 'pvt_ltd',
           'F': 'llp', 'G': 'government', 'H': 'huf', 'J': 'artificial',
@@ -182,7 +170,10 @@ export async function POST(req: NextRequest) {
         };
 
         const addr = data.pradr?.adr || '';
-        const stateName = STATE_CODES[stateCode] || 'Unknown';
+        // One state-code table for the whole app (lib/finance/gst). A second copy
+        // here is how a Maharashtra GSTIN used to end up labelled with somebody
+        // else's state, because only one of the two got corrected.
+        const stateName = GST_STATE_CODES[stateCode] || 'Unknown';
         const realEntityType = data.nba || data.ctb || '';
         const entityTypeMap: Record<string, string> = {
           'Proprietorship': 'proprietorship',

@@ -2,12 +2,14 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Plus, Trash2, Save, FileText, Building2, ChevronDown, IndianRupee, Truck, CreditCard, ScanLine, Loader2, LayoutGrid, ShieldCheck, FileSpreadsheet, Bell, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BUSINESS_PRESETS } from '@/lib/finance/business-presets';
+import { computeGstSplit } from '@/lib/finance/gst';
+import { decideSupply, type SupplyChoice } from '@/lib/finance/supply';
 
 interface InvoiceItem {
   id: string;
@@ -40,6 +42,7 @@ interface Company {
   phone: string;
   address: string;
   gstNumber: string;
+  state?: string;
   logoUrl?: string;
 }
 
@@ -87,7 +90,9 @@ export default function NewInvoicePage() {
   const [customerState, setCustomerState] = useState('');
   const [customerPan, setCustomerPan] = useState('');
   // Billing
-  const [supplyType, setSupplyType] = useState<'intra' | 'inter'>('intra');
+  // Intra or inter is read off the two GST state codes (lib/finance/supply);
+  // this only holds a deliberate manual change, which is shown as such.
+  const [supplyOverride, setSupplyOverride] = useState<SupplyChoice | null>(null);
   const [billingType, setBillingType] = useState<'gst' | 'non-gst' | 'mrp'>('gst');
   const [discountAmount, setDiscountAmount] = useState('0');
   const [discountType, setDiscountType] = useState<'flat' | 'percent'>('flat');
@@ -190,11 +195,9 @@ export default function NewInvoicePage() {
     setCustomerPan(c.panNumber || '');
     setCustomerSearch('');
     setShowCustomerResults(false);
-    // Auto-detect supply type from GST state match
-    if (c.gstNumber && c.state && company) {
-      // If customer state differs from company state, it's inter-state
-      setSupplyType('intra'); // default, will be overridden by user
-    }
+    // A different customer means a different place of supply, so any override
+    // left over from the previous one has to go back to following the GSTINs.
+    setSupplyOverride(null);
   };
 
   const filteredCustomers = customers.filter(c =>
@@ -296,9 +299,19 @@ export default function NewInvoicePage() {
 
   const totalAmount = subtotal + taxTotal - discount;
 
-  const cgst = supplyType === 'intra' ? taxTotal / 2 : 0;
-  const sgst = supplyType === 'intra' ? taxTotal / 2 : 0;
-  const igst = supplyType === 'inter' ? taxTotal : 0;
+  // The split is decided by the tax numbers on the page, not by a dropdown
+  // default. computeGstSplit is the same function the API uses when it stores
+  // the invoice, so what is previewed here is what gets saved.
+  const supply = useMemo(() => decideSupply({
+    companyGst: company?.gstNumber,
+    companyState: company?.state,
+    customerGst,
+    customerState,
+  }), [company, customerGst, customerState]);
+  const supplyType: SupplyChoice = supplyOverride ?? supply.supplyType;
+  const utIntra = supplyType === 'intra' && supply.sellerIsUt;
+  const split = computeGstSplit(taxTotal, 100, { supplyType, sellerStateCode: supply.sellerCode });
+  const { cgst, sgst, utgst, igst } = split;
 
   const profit = items.reduce((sum, item) => {
     const qty = parseFloat(item.quantity) || 0;
@@ -329,7 +342,11 @@ export default function NewInvoicePage() {
         body: JSON.stringify({
           customerName, customerEmail, customerPhone, customerAddress,
           customerGst, customerState, customerPan,
-          items: apiItems, supplyType, billingType,
+          items: apiItems, supplyType,
+          // Persist the code the tax split was decided from, so the GST return
+          // never has to guess the place of supply later.
+          placeOfSupply: supply.posCode || undefined,
+          billingType,
           currency: currency || 'INR',
           currencyRate: currency && currency !== 'INR' ? (parseFloat(currencyRate) || 1) : 1,
           discountAmount: parseFloat(discountAmount) || 0,
@@ -675,11 +692,27 @@ export default function NewInvoicePage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5">
               <div>
                 <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Invoice Type</label>
-                <select value={supplyType} onChange={e => setSupplyType(e.target.value as 'intra' | 'inter')}
+                <select value={supplyType} onChange={e => setSupplyOverride(e.target.value as SupplyChoice)}
                   className="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none" style={inputStyle}>
-                  <option value="intra">B2B Intra-State (CGST + SGST)</option>
+                  <option value="intra">{utIntra ? 'B2B Intra-State (CGST + UTGST)' : 'B2B Intra-State (CGST + SGST)'}</option>
                   <option value="inter">B2B Inter-State (IGST)</option>
                 </select>
+                {/* Why the box picked what it picked, in one line of plain words. */}
+                {billingType === 'gst' && (
+                  <p className="mt-1.5 text-[11px] leading-snug" style={{ color: supplyOverride ? '#b45309' : 'hsl(var(--muted-foreground))' }}>
+                    {supplyOverride
+                      ? (supply.decided
+                        ? 'You set this by hand. The GSTINs say ' + (supply.supplyType === 'inter' ? 'inter-state' : 'intra-state') + '.'
+                        : 'You set this by hand. Add the customer GSTIN or state and it can be decided for you.')
+                      : supply.note}
+                  </p>
+                )}
+                {supplyOverride && (
+                  <button type="button" onClick={() => setSupplyOverride(null)}
+                    className="mt-1 text-[11px] font-semibold text-[#6d28d9] hover:underline">
+                    Use the GSTINs
+                  </button>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Bill Type</label>
@@ -926,21 +959,27 @@ export default function NewInvoicePage() {
               {/* GST Breakdown */}
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--foreground))' }}>
-                  {supplyType === 'intra' ? 'CGST + SGST Breakdown' : 'IGST Breakdown'}
+                  {supplyType === 'inter' ? 'IGST Breakdown' : utIntra ? 'CGST + UTGST Breakdown' : 'CGST + SGST Breakdown'}
                 </h3>
                 <div className="flex justify-between text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
                   <span>Subtotal</span><span>₹{subtotal.toLocaleString('en-IN')}</span>
                 </div>
-                {supplyType === 'intra' ? (
-                  <>
-                    <div className="flex justify-between text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                      <span>CGST</span><span>₹{cgst.toLocaleString('en-IN')}</span>
-                    </div>
-                    <div className="flex justify-between text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
-                      <span>SGST</span><span>₹{sgst.toLocaleString('en-IN')}</span>
-                    </div>
-                  </>
-                ) : (
+                {supplyType === 'intra' && (
+                  <div className="flex justify-between text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                    <span>CGST</span><span>₹{cgst.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+                {supplyType === 'intra' && sgst > 0 && (
+                  <div className="flex justify-between text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                    <span>SGST</span><span>₹{sgst.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+                {supplyType === 'intra' && utgst > 0 && (
+                  <div className="flex justify-between text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                    <span>UTGST</span><span>₹{utgst.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+                {supplyType === 'inter' && (
                   <div className="flex justify-between text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
                     <span>IGST</span><span>₹{igst.toLocaleString('en-IN')}</span>
                   </div>

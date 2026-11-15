@@ -99,15 +99,15 @@ async function seedBooks() {
     return res;
   };
   await inv('B2B within state, 12%', {
-    customerName: 'Nexa Retail Pvt Ltd', customerGst: '27ABCDE1234F1Z5', supplyType: 'intra', status: 'paid',
+    customerName: 'Nexa Retail Pvt Ltd', customerGst: '27ABCDE1234F1Z0', supplyType: 'intra', status: 'paid',
     items: [{ productName: 'Cotton Kurti', price: 950, quantity: 40, gstRate: 12, hsnCode: '61091000' }],
   });
   const kerala = await inv('B2B other state, 18%', {
-    customerName: 'Kerala Super Bazaar', customerGst: '32CCCCC5678D1Z5', supplyType: 'inter', status: 'sent',
+    customerName: 'Kerala Super Bazaar', customerGst: '32CCCCC5678D1ZP', supplyType: 'inter', status: 'sent',
     items: [{ productName: 'Kitchen Containers', price: 1200, quantity: 25, gstRate: 18, hsnCode: '3924' }],
   });
   await inv('Export consignment', {
-    customerName: 'Dubai Home Supplies', customerGst: '07FGHIJ5678K1Z5', supplyType: 'inter', isExport: true, status: 'sent',
+    customerName: 'Dubai Home Supplies', customerGst: '07FGHIJ5678K1Z3', supplyType: 'inter', isExport: true, status: 'sent',
     items: [{ productName: 'Export Lot', price: 5000, quantity: 10, gstRate: 18, hsnCode: '61091000' }],
   });
   await inv('Nil-rated produce', {
@@ -180,8 +180,8 @@ async function main() {
   showPack('3. PACK BEFORE THE FIX — the tab flags what the portal would reject', first.data);
 
   console.log('\n=== 4. FIX THE FLAGGED ROW (what the "Fix" link takes you to) ===');
-  const fixed = await api('PUT', '/api/invoices', { id: broken.id, customerGstNumber: '27DDDDD2345E1Z5', placeOfSupply: '27' });
-  console.log(`  ${broken.invoiceNumber} now carries GSTIN 27DDDDD2345E1Z5 :: ${fixed.status === 200 ? 'saved' : 'FAILED'}`);
+  const fixed = await api('PUT', '/api/invoices', { id: broken.id, customerGstNumber: '27DDDDD2345E1ZP', placeOfSupply: '27' });
+  console.log(`  ${broken.invoiceNumber} now carries GSTIN 27DDDDD2345E1ZP :: ${fixed.status === 200 ? 'saved' : 'FAILED'}`);
 
   const second = await api('GET', `/api/gst-reports/filing-pack?${WIN}`);
   showPack('5. PACK AFTER THE FIX — ready to upload', second.data);

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { recordAudit } from '@/lib/audit';
 import { analyzeMedia } from '@/lib/ai-provider';
 import { extractJson } from '@/lib/finance/ai';
-import type { BusinessCardFields } from '@/lib/finance/businessCard';
+import { cleanGstin, type BusinessCardFields } from '@/lib/finance/businessCard';
 
 // Business-card OCR: a card photo (base64 image) is read by the vision
 // provider and turned into structured contact fields the user can review,
@@ -60,6 +61,25 @@ Read the text exactly as printed. If a field has multiple values (e.g. two phone
       address: str(parsed.address),
       gstin: str(parsed.gstin ?? parsed.gstNumber ?? parsed.gst),
     };
+
+    // Scans are counted as well as saves. Without the denominator there is no
+    // way to tell a feature people use from a feature people try once, and a
+    // scan has produced no record yet, so it is logged against a fixed key.
+    const usableGstin = cleanGstin(fields.gstin);
+    await recordAudit({
+      companyId: user.companyId,
+      entity: 'business_card',
+      entityId: 'scan',
+      action: 'scanned',
+      actor: { id: user.id, email: session.user.email },
+      summary: `Card read — ${Object.values(fields).filter(Boolean).length} field(s) found`,
+      changes: {
+        filled: Object.values(fields).filter(Boolean).length,
+        printedGstin: !!fields.gstin,
+        hasGstin: !!usableGstin,
+        stateCode: usableGstin.slice(0, 2) || null,
+      },
+    });
 
     return NextResponse.json({ fields });
   } catch (error) {

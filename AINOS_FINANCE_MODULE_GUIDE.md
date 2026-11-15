@@ -326,6 +326,7 @@ was lost. Export to Excel is still there for anyone who wants a spreadsheet inst
 | **Scan on upload** | Every card is read as soon as it is dropped; nothing has to be clicked twice |
 | **Auto-insert into Customers** | On by default, remembered per browser. Turned off, the scanner stays the session-only tool it was |
 | **GSTIN read off the card** | The 15-character number is now extracted, checked, and stored — so a scanned contact can be invoiced with GST details already filled |
+| **PAN derived from the GSTIN** | Characters 3–12 of a GSTIN *are* the holder's PAN, so the PAN is taken from the number itself instead of guessed from the OCR text |
 | **State from the GSTIN** | The first two digits decide the state, so the right place of supply is on the record without typing it |
 | **Pincode from the address** | The six-digit tail of the address is pulled into its own field |
 | **Second number and website kept** | Extras go into Notes as `Designation: … · Website: … · Other numbers: …` rather than being dropped |
@@ -343,9 +344,46 @@ was lost. Export to Excel is still there for anyone who wants a spreadsheet inst
    phone that the seller entered, the card leaves it alone and reports
    `Already in Customers` or `Filled a gap in Customers`.
 
-An invalid GSTIN (typo, truncation, bad checksum) is refused and the seller is warned,
-but the contact is still saved — a misread number must not lose a lead. A card with
-nothing readable on it is rejected with `422` and no blank row is created.
+A GSTIN that breaks the **format** (wrong length, a state code that does not exist,
+a PAN that cannot be a PAN) is refused and never written into the record, but the
+contact is still saved — a misread number must not lose a lead. A GSTIN that is
+perfectly shaped and fails only its **check character** is stored and flagged, not
+refused: the check character is a strong hint of a misreading, not proof of one.
+A card with nothing readable on it is rejected with `422` and no blank row is created.
+
+### The GSTN cross-check (a shaped number is not a registered number)
+
+OCR can produce a perfectly well-formed GSTIN that belongs to nobody. Each scanned
+number is therefore checked against `gst_lookup_cache` — the rows AINOS already holds
+from real portal lookups — and the result shows as a pill on the card row. Nothing is
+sent anywhere and no login is needed; this is purely evidence the account already has.
+
+| Pill | When it appears |
+|------|---------------|
+| `Matches GSTN` / `Seen on GSTN` | This exact GSTIN is in the cache with an Active registration |
+| `GSTN: Cancelled` | The number exists but the cached status reads cancelled / inactive / suspended / provisional / ineligible |
+| `GSTIN needs a look` | The number is *not* known, but a **different** GSTIN carrying the same PAN is. Catches the one-digit misread, which no same-number lookup can |
+| `GSTIN looks misread` | The number fails its own check character — 15 characters, every slot legal, and it does not add up. No portal needed, so this works on a supplier never looked up before |
+| `Not checked on GSTN` | Format is valid and the number adds up; this account has simply never seen it on the portal |
+| `Not checked` | AINOS could not reach its GSTIN records just now — says so rather than implying a pass |
+
+Order matters, and the tests pin it: portal evidence outranks arithmetic (a number this
+account has genuinely fetched is real whatever its tail looks like), then a known sibling
+PAN, because it can name the number the seller should have, then the check character,
+because it is a positive finding rather than the absence of one.
+
+The check character is the 15th character, computed from the fourteen before it by the
+Luhn-mod-36 rule GSTN published for its developer API. The first version of
+`gstinCheckChar` used a weighted-prime series instead and matched none of the GSTINs that
+independent validators publish as valid, so every real number would have been called
+suspect; it is now pinned against those published samples in `gstnFiling.test.ts`, which
+is the only way to catch that class of error — a fixture built through the function itself
+agrees with any rule, right or wrong. `scripts/_gstinChecksumProbe.cjs` re-checks it
+against live portal rows and lists any invented fixture GSTIN that fails.
+
+The sibling-PAN test runs as `substr(gst_number, 3, 10) = <pan>` against the cache, so a
+misread state code or check digit still surfaces. A pill never claims success on a miss,
+and every pill links to the public GSTIN search so the seller can confirm in one tap.
 
 ### How to use
 1. Go to **Business Card Scanner**, leave **Add every scanned card to Customers** on
@@ -354,6 +392,19 @@ nothing readable on it is rejected with `422` and no blank row is created.
 4. Correct anything wrong by typing into the row, then click **Save** on that row
 5. Use **Save all to Customers** for cards scanned with the switch off
 6. The contacts appear under **Finance → Customers** and can be invoiced directly
+
+### Measurement
+
+Scans and saves write `AuditLog` rows under entity `business_card` — `scan` events carry
+no id (they are the funnel's denominator), `save` events carry the resulting customer id
+plus `{ check, hasGstin, stateCode, panPeers, fields }`. No table was added.
+
+`node scripts/_cardValueReport.cjs [days] [--by-company]` answers whether the feature pays:
+how many cards were scanned, how many were saved, how many of those carried a GSTIN, how
+each GSTIN verified, and — joining customer ids to `Invoice` — how many scanned contacts
+were later billed and for what value. `--company=<id>` limits it to one tenant and
+`--json` prints the same funnel machine-readable, which is what the E2E harness asserts on
+so the numbers a person reads and the numbers a dashboard charts cannot drift apart.
 
 ---
 
@@ -420,7 +471,12 @@ nothing readable on it is rejected with `422` and no blank row is created.
 | Type | Tax Applied | When |
 |------|------------|------|
 | **Intra-State** | CGST + SGST | Buyer and seller in same state |
+| **Intra-State (UT)** | CGST + UTGST | Same state, and that state is a Union Territory with legislature |
 | **Inter-State** | IGST | Buyer and seller in different states |
+
+Supply type is derived from the two GSTIN state codes, not from a hand-picked dropdown.
+UT / territory codes are `04, 25, 26, 31, 34, 35, 38` (Delhi `07` is a state, not a UT),
+and UTGST is reported under the SGST head on GSTR-3B.
 
 ### Invoice Statuses
 | Status | Meaning |
@@ -433,6 +489,6 @@ nothing readable on it is rejected with `422` and no blank row is created.
 
 ---
 
-*Document Version: 1.1*
+*Document Version: 1.3*
 *Last Updated: November 2026*
 *Platform: AINOS Business Suite by Yurekh*

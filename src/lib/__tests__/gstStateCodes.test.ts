@@ -53,4 +53,14 @@ describe('GST_STATE_CODES', () => {
     expect(UT_STATE_CODES.has('07')).toBe(false);  // Delhi is a state for GST
     expect(UT_STATE_CODES.has('27')).toBe(false);
   });
+
+  it('includes the territories that were left out and billed SGST by mistake', () => {
+    // 26 and 34 were missing, so a seller registered in Dadra & Nagar Haveli
+    // and Daman & Diu or in Puducherry was charging CGST + SGST and paying the
+    // state half of their GST into the wrong head.
+    expect(UT_STATE_CODES.has('26')).toBe(true);
+    expect(UT_STATE_CODES.has('34')).toBe(true);
+    expect(UT_STATE_CODES.has('25')).toBe(true);   // the legacy Daman & Diu code
+    expect([...UT_STATE_CODES].sort()).toEqual(['04', '25', '26', '31', '34', '35', '38']);
+  });
 });

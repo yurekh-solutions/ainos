@@ -3,7 +3,7 @@
 // (v1.03-style) that an IRP / facilitator registration expects. Pure and
 // network-free so it is unit-testable and provider-agnostic.
 
-import { stateCodeFromGstin, GST_STATE_CODES } from '../gst';
+import { GST_STATE_CODES, UT_STATE_CODES, stateCodeFromGstin } from '../gst';
 
 export interface EinvoiceCompany {
   name: string;
@@ -92,21 +92,36 @@ function resolveStateCode(opts: { code?: string | null; gstin?: string | null; s
   return '99'; // Other Territory fallback
 }
 
-function splitLineTax(taxAmt: number, supplyType: string | null | undefined): { cgst: number; sgst: number; igst: number; utgst: number } {
+// Intra-state tax is CGST + SGST, except in the Union Territories, where the
+// state half is UTGST. The item lines and the summary below are built from the
+// same rule so the two can never disagree and get the payload rejected.
+function splitLineTax(
+  taxAmt: number,
+  supplyType: string | null | undefined,
+  ut = false,
+): { cgst: number; sgst: number; igst: number; utgst: number } {
   if (supplyType === 'inter') return { cgst: 0, sgst: 0, igst: r2(taxAmt), utgst: 0 };
   const half = r2(taxAmt / 2);
-  return { cgst: half, sgst: r2(taxAmt - half), igst: 0, utgst: 0 };
+  const other = r2(taxAmt - half);
+  if (ut) return { cgst: half, sgst: 0, igst: 0, utgst: other };
+  return { cgst: half, sgst: other, igst: 0, utgst: 0 };
 }
 
 /** Build the NICV JSON payload for a single invoice. */
 export function buildNicv(invoice: EinvoiceInvoice, company: EinvoiceCompany): NicvPayload {
   const items: EinvoiceItem[] = Array.isArray(invoice.items) ? (invoice.items as EinvoiceItem[]) : [];
   const inter = invoice.supplyType === 'inter';
+  const sellerStcd = resolveStateCode({
+    code: company.gstinStateCode,
+    gstin: company.gstNumber,
+    stateName: company.state,
+  });
+  const utIntra = !inter && UT_STATE_CODES.has(sellerStcd);
 
   const itemList = items.map((it, i) => {
     const taxable = r2(num(it.price) * num(it.quantity));
     const lineTax = num(it.taxAmount) || r2((taxable * num(it.gstRate)) / 100);
-    const sp = splitLineTax(lineTax, invoice.supplyType);
+    const sp = splitLineTax(lineTax, invoice.supplyType, utIntra);
     const rate = num(it.gstRate);
     return {
       ItmSeq: i + 1,
@@ -118,11 +133,11 @@ export function buildNicv(invoice: EinvoiceInvoice, company: EinvoiceCompany): N
       TaxableAmt: taxable,
       CgstRate: inter ? 0 : r2(rate / 2),
       CgstAmt: sp.cgst,
-      SgstRate: inter ? 0 : r2(rate / 2),
+      SgstRate: inter || utIntra ? 0 : r2(rate / 2),
       SgstAmt: sp.sgst,
       IgstRate: inter ? rate : 0,
       IgstAmt: sp.igst,
-      UtxRate: 0,
+      UtxRate: utIntra ? r2(rate / 2) : 0,
       UtxAmt: sp.utgst,
       CessRate: 0,
       CessAmt: 0,
@@ -137,11 +152,6 @@ export function buildNicv(invoice: EinvoiceInvoice, company: EinvoiceCompany): N
   const disc = r2(invoice.discountAmount ?? 0);
   const total = r2(invoice.totalAmount ?? taxableAmt + cgst + sgst + igst + utgst - disc);
 
-  const sellerStcd = resolveStateCode({
-    code: company.gstinStateCode,
-    gstin: company.gstNumber,
-    stateName: company.state,
-  });
   const buyerStcd = resolveStateCode({
     code: invoice.placeOfSupply,
     gstin: invoice.customerGstNumber,
