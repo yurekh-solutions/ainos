@@ -3,31 +3,32 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, ChevronDown } from 'lucide-react';
 import {
-  CARD, PAGE, CONTAINER, fadeUp, IconCircle, PageHeader, WidgetHeader, ViewAll, ToolItem,
-  FINANCE_TOOLS, useFinanceSummary, RecentInvoicesCard, CollectionsCard, GettingStartedCard,
+  CARD, PAGE, CONTAINER, fadeUp, IconCircle, PageHeader, WidgetHeader, ToolItem,
+  FINANCE_TOOLS, useFinanceSummary, RecentInvoicesCard, CollectionsCard, FinanceJourneyCard,
 } from '@/components/dashboard/kit';
 
 const QUICK_COUNT = 4;
-const PREVIEW_COUNT = 6;
 
 export default function FinanceOverviewPage() {
   const { data, loaded, collectionRate } = useFinanceSummary();
-  const [showAll, setShowAll] = useState(false);
+  const [showMore, setShowMore] = useState(false);
 
   const quick = FINANCE_TOOLS.slice(0, QUICK_COUNT);
-  const tools = showAll ? FINANCE_TOOLS : FINANCE_TOOLS.slice(0, PREVIEW_COUNT);
+  // Simple Mode: the daily loop first; everything else opens on demand.
+  const coreTools = FINANCE_TOOLS.filter(t => t.tier !== 'advanced');
+  const moreTools = FINANCE_TOOLS.filter(t => t.tier === 'advanced');
 
   const openAllTools = () => {
-    setShowAll(true);
+    setShowMore(true);
     document.getElementById('finance-tools')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   return (
     <div className={PAGE}>
       <div className={CONTAINER}>
-        <PageHeader title="Finance" subtitle="Manage your invoices, customers, products and more." />
+        <PageHeader title="Finance" subtitle="Bill, get paid, track spending and stay GST-ready — all in one place." />
 
         {/* Quick access */}
         <motion.section {...fadeUp(0.04)} className={`${CARD} p-2 sm:p-3`}>
@@ -72,22 +73,46 @@ export default function FinanceOverviewPage() {
           <CollectionsCard data={data} loaded={loaded} rate={collectionRate} />
         </motion.div>
 
-        <GettingStartedCard data={data} loaded={loaded} />
+        <FinanceJourneyCard data={data} loaded={loaded} />
 
         {/* All finance tools */}
         <motion.section id="finance-tools" {...fadeUp(0.2)} className={`${CARD} scroll-mt-6`}>
           <WidgetHeader
             title="Finance tools"
-            subtitle="Billing, GST and everyday accounts"
-            action={
-              FINANCE_TOOLS.length > PREVIEW_COUNT && (
-                <ViewAll onClick={() => setShowAll(!showAll)} label={showAll ? 'Show less' : 'View all'} />
-              )
-            }
+            subtitle="The daily loop first — extras open when you need them"
           />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 px-2 sm:px-3 pb-3">
-            {tools.map(tool => <ToolItem key={tool.title} tool={tool} />)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 px-2 sm:px-3 pb-2">
+            {coreTools.map(tool => <ToolItem key={tool.title} tool={tool} />)}
           </div>
+          {showMore ? (
+            <>
+              <div className="px-4 sm:px-5 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
+                Advanced — for the days you need them
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1 px-2 sm:px-3 pb-3">
+                {moreTools.map(tool => <ToolItem key={tool.title} tool={tool} />)}
+              </div>
+              <div className="px-3 pb-3">
+                <button
+                  type="button"
+                  onClick={() => setShowMore(false)}
+                  className="w-full flex items-center justify-center gap-2 h-10 rounded-xl bg-[#f7f5fb] hover:bg-[#f0ecf9] text-[13px] font-medium text-[#6d28d9] transition-colors"
+                >
+                  Show fewer tools <ChevronDown className="w-4 h-4 rotate-180" />
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="px-3 pb-3">
+              <button
+                type="button"
+                onClick={() => setShowMore(true)}
+                className="w-full flex items-center justify-center gap-2 h-10 rounded-xl bg-[#f7f5fb] hover:bg-[#f0ecf9] text-[13px] font-medium text-[#6d28d9] transition-colors"
+              >
+                More tools ({moreTools.length}) <ChevronDown className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </motion.section>
       </div>
     </div>

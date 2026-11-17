@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  ScrollText, Contact2, Boxes, Coins, FileBarChart, PackageCheck, Sheet, BellRing, Paintbrush, AtSign, SearchCheck, PenTool, MessageSquareText, MailOpen, Send, Receipt, CalendarClock, CheckCircle2, Circle, ChevronRight, ArrowRight, Plus } from 'lucide-react';
+  ScrollText, Contact2, Boxes, Coins, FileBarChart, FileCheck, PackageCheck, Sheet, BellRing, Paintbrush, AtSign, SearchCheck, PenTool, MessageSquareText, MailOpen, Send, Receipt, CalendarClock, CheckCircle2, ChevronRight, ArrowRight, ArrowUpRight, Plus } from 'lucide-react';
 
 // ── Surfaces ──
 export const CARD = 'bg-white rounded-2xl shadow-[0_1px_2px_rgba(16,24,40,0.04),0_2px_8px_-2px_rgba(16,24,40,0.06)]';
@@ -143,18 +143,22 @@ export interface Tool {
   icon: React.ElementType;
   href: string;
   tone?: Tone;
+  /** 'advanced' tools sit behind a More tools expander; core tools are the daily loop. */
+  tier?: 'core' | 'advanced';
 }
 
+// Ordered as the money journey runs: bill → collect → spend → file, then extras.
 export const FINANCE_TOOLS: Tool[] = [
-  { title: 'Invoices', short: 'Professional billing', description: 'Create GST-compliant invoices with automatic tax calculations and payment tracking.', icon: ScrollText, href: '/invoices', tone: 'purple' },
-  { title: 'Customers', short: 'Manage your clients', description: 'Store customer details with GSTIN, PAN and billing addresses for quick invoicing.', icon: Contact2, href: '/customers', tone: 'blue' },
-  { title: 'Products', short: 'Your product catalog', description: 'Manage products with HSN codes, GST rates, pricing and inventory tracking.', icon: Boxes, href: '/products', tone: 'green' },
-  { title: 'Expenses', short: 'Track business spending', description: 'Record and categorize expenses for software, salaries, marketing and operations.', icon: Coins, href: '/finance/expenses', tone: 'orange' },
-  { title: 'Quotations', short: 'Win more deals', description: 'Send professional quotes and convert approved quotes to invoices instantly.', icon: FileBarChart, href: '/finance/quotes', tone: 'red' },
-  { title: 'Delivery Challans', short: 'Shipping documents', description: 'Generate delivery challans for goods transport with sequential numbering.', icon: PackageCheck, href: '/finance/challans', tone: 'cyan' },
-  { title: 'Tally / Excel', short: 'Data import & export', description: 'Import existing data or export reports in Tally-compatible Excel format.', icon: Sheet, href: '/finance/tally', tone: 'indigo' },
-  { title: 'Payment Reminders', short: 'Collect payments faster', description: 'Send automated WhatsApp reminders for overdue invoices.', icon: BellRing, href: '/finance/reminders', tone: 'pink' },
-  { title: 'Template Designer', short: 'Custom invoice layouts', description: 'Design professional invoice templates with your brand colors and fonts.', icon: Paintbrush, href: '/finance/templates', tone: 'purple' },
+  { title: 'Invoices', short: 'Professional billing', description: 'Create GST-compliant invoices with automatic tax calculations and payment tracking.', icon: ScrollText, href: '/invoices', tone: 'purple', tier: 'core' },
+  { title: 'Customers', short: 'Manage your clients', description: 'Store customer details with GSTIN, PAN and billing addresses for quick invoicing.', icon: Contact2, href: '/customers', tone: 'blue', tier: 'core' },
+  { title: 'Expenses', short: 'Track business spending', description: 'Record and categorize expenses for software, salaries, marketing and operations.', icon: Coins, href: '/finance/expenses', tone: 'orange', tier: 'core' },
+  { title: 'Payment Reminders', short: 'Collect payments faster', description: 'Send automated WhatsApp reminders for overdue invoices.', icon: BellRing, href: '/finance/reminders', tone: 'pink', tier: 'core' },
+  { title: 'GST Reports', short: 'Filing-ready tax data', description: 'GSTR-1 and GSTR-3B summaries build themselves from the bills you already made.', icon: FileCheck, href: '/finance/gst-reports', tone: 'indigo', tier: 'core' },
+  { title: 'Products', short: 'Your product catalog', description: 'Manage products with HSN codes, GST rates, pricing and inventory tracking.', icon: Boxes, href: '/products', tone: 'green', tier: 'advanced' },
+  { title: 'Quotations', short: 'Win more deals', description: 'Send professional quotes and convert approved quotes to invoices instantly.', icon: FileBarChart, href: '/finance/quotes', tone: 'red', tier: 'advanced' },
+  { title: 'Delivery Challans', short: 'Shipping documents', description: 'Generate delivery challans for goods transport with sequential numbering.', icon: PackageCheck, href: '/finance/challans', tone: 'cyan', tier: 'advanced' },
+  { title: 'Tally / Excel', short: 'Data import & export', description: 'Import existing data or export reports in Tally-compatible Excel format.', icon: Sheet, href: '/finance/tally', tone: 'indigo', tier: 'advanced' },
+  { title: 'Template Designer', short: 'Custom invoice layouts', description: 'Design professional invoice templates with your brand colors and fonts.', icon: Paintbrush, href: '/finance/templates', tone: 'purple', tier: 'advanced' },
 ];
 
 export const marketingTools = (templateLabel: string): Tool[] => [
@@ -175,6 +179,25 @@ export function ToolItem({ tool }: { tool: Tool }) {
         <p className="text-[13px] text-neutral-500 font-light leading-relaxed mt-0.5 line-clamp-2">{tool.description}</p>
       </div>
       <ChevronRight className="w-4 h-4 mt-0.5 text-neutral-300 group-hover:text-[#6d28d9] transition-colors flex-shrink-0" />
+    </Link>
+  );
+}
+
+/** Professional grid tile: soft gradient card with an arrow affordance. */
+export function ToolCard({ tool }: { tool: Tool }) {
+  return (
+    <Link
+      href={tool.href}
+      className="group relative flex flex-col gap-3 p-4 sm:p-5 rounded-2xl border border-neutral-100 bg-gradient-to-br from-white to-[#faf8fd] hover:border-violet-200 hover:shadow-[0_16px_34px_-14px_rgba(76,29,149,0.32)] hover:-translate-y-0.5 transition-all duration-200 min-w-0 overflow-hidden"
+    >
+      <div className="relative flex items-center justify-between">
+        <IconCircle icon={tool.icon} tone={tool.tone} variant="gradient" size="lg" />
+        <ArrowUpRight className="w-4 h-4 text-neutral-300 group-hover:text-[#6d28d9] transition-colors" />
+      </div>
+      <div className="relative min-w-0">
+        <p className="text-[13px] sm:text-sm font-semibold text-neutral-900 group-hover:text-[#6d28d9] transition-colors leading-snug">{tool.title}</p>
+        <p className="text-[11px] sm:text-xs text-neutral-500 font-light mt-1 leading-relaxed line-clamp-2">{tool.short}</p>
+      </div>
     </Link>
   );
 }
@@ -491,37 +514,90 @@ export function CollectionsCard({ data, loaded, rate, className = '', appearance
   );
 }
 
-/** Onboarding checklist; renders nothing once every step is done. */
-export function GettingStartedCard({ data, loaded }: { data: FinanceSummary; loaded: boolean }) {
-  const steps = [
-    { label: 'Create your first invoice', href: '/invoices', done: data.invoiceCount > 0 },
-    { label: 'Add a customer profile', href: '/customers', done: data.customers > 0 },
-    { label: 'Add a product to your catalog', href: '/products', done: data.products > 0 },
+/** The money journey: four stages, lit by whatever the business has already done.
+ *  Stage four is a monthly ritual, never "complete" — it lights up as a habit, not a checkbox. */
+export function FinanceJourneyCard({ data, loaded }: { data: FinanceSummary; loaded: boolean }) {
+  const setupDone = loaded && data.customers > 0;
+  const billed = loaded && data.invoiceCount > 0;
+  const collectedAll = loaded && data.billed > 0 && data.outstanding <= 0;
+  const stages = [
+    {
+      key: 'setup',
+      title: 'Set up once',
+      promise: 'Type every customer and product one time — after this, bills build themselves.',
+      done: setupDone,
+      href: '/customers',
+      cta: setupDone ? 'Customers saved' : 'Add customers',
+    },
+    {
+      key: 'bill',
+      title: 'Bill your work',
+      promise: 'A professional GST bill in about a minute — tax calculated for you.',
+      done: billed,
+      href: '/invoices',
+      cta: billed ? 'Create the next invoice' : 'Create your first invoice',
+    },
+    {
+      key: 'collect',
+      title: 'Collect the money',
+      promise: 'See who owes what, and send a WhatsApp reminder in one tap.',
+      done: collectedAll,
+      href: '/finance/reminders',
+      cta: data.overdueCount > 0 ? `${plural(data.overdueCount, 'invoice')} overdue — remind` : 'Send reminders',
+    },
+    {
+      key: 'gst',
+      title: 'Stay GST-ready',
+      promise: 'GSTR-1 and 3B data builds itself from your bills — hand it to your CA ready.',
+      done: false,
+      href: '/finance/gst-reports',
+      cta: 'Open GST reports',
+    },
   ];
-  const doneCount = steps.filter(s => s.done).length;
-  if (!loaded || doneCount === steps.length) return null;
+  // The stage to work on now: the first of the three linear steps still open.
+  const current = stages.slice(0, 3).find(s => !s.done);
 
   return (
     <motion.section {...fadeUp(0.16)} className={CARD}>
-      <WidgetHeader title="Getting started" subtitle={`${doneCount} of ${steps.length} steps complete`} />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-1 md:gap-3 px-3 sm:px-4 pb-4">
-        {steps.map(step => (
-          <Link
-            key={step.label}
-            href={step.href}
-            className="group flex items-center gap-3 px-3 py-3 rounded-xl md:bg-[#f7f8fa] hover:bg-[#f7f5fb] transition-colors"
-          >
-            {step.done ? (
-              <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-[#6d28d9]" />
-            ) : (
-              <Circle className="w-5 h-5 flex-shrink-0 text-neutral-300 group-hover:text-violet-300 transition-colors" />
-            )}
-            <span className={`flex-1 text-sm ${step.done ? 'text-neutral-400 line-through font-light' : 'text-neutral-700'}`}>
-              {step.label}
-            </span>
-            {!step.done && <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-[#6d28d9] transition-colors" />}
-          </Link>
-        ))}
+      <WidgetHeader title="Your money journey" subtitle="Four steps — each one saves the work it names" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 px-3 sm:px-4 pb-4">
+        {stages.map((stage, i) => {
+          const isCurrent = current?.key === stage.key;
+          return (
+            <Link
+              key={stage.key}
+              href={stage.href}
+              className={`group flex flex-col gap-2 px-3.5 py-3.5 rounded-xl transition-colors ${
+                isCurrent
+                  ? 'bg-[#f3ecfe] ring-1 ring-[#c4b0f0]'
+                  : stage.done
+                    ? 'bg-[#f0faf4]'
+                    : 'bg-[#f7f8fa] hover:bg-[#f7f5fb]'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                {stage.done ? (
+                  <span className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                  </span>
+                ) : (
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-semibold flex-shrink-0 ${
+                    isCurrent ? 'bg-[#6d28d9] text-white' : 'bg-white text-neutral-400 ring-1 ring-neutral-200'
+                  }`}>
+                    {i + 1}
+                  </span>
+                )}
+                <span className={`text-[13px] font-semibold ${stage.done ? 'text-emerald-700' : isCurrent ? 'text-[#4c1d95]' : 'text-neutral-900'}`}>
+                  {stage.title}
+                </span>
+              </div>
+              <p className="text-xs text-neutral-500 font-light leading-relaxed flex-1">{stage.promise}</p>
+              <span className={`inline-flex items-center gap-1.5 text-[12px] font-medium ${stage.done ? 'text-emerald-600' : 'text-[#6d28d9]'}`}>
+                {stage.cta} <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" />
+              </span>
+            </Link>
+          );
+        })}
       </div>
     </motion.section>
   );

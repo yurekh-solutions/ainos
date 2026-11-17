@@ -49,6 +49,12 @@ function GroupNav({ group, collapsed, pathname, locked }: { group: NavGroup; col
   // Follows the route until the user toggles it manually
   const [toggled, setToggled] = useState<boolean | null>(null);
   const open = toggled ?? active;
+  // Simple Mode: the daily tools show first; advanced tools fold behind one click,
+  // and unfold themselves whenever the user is already on one of those pages.
+  const coreItems = group.items.filter(i => i.tier !== 'advanced');
+  const advancedItems = group.items.filter(i => i.tier === 'advanced');
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const advancedShown = advancedOpen || advancedItems.some(i => matchesPath(pathname, i.href));
 
   if (collapsed) {
     return (
@@ -91,8 +97,6 @@ function GroupNav({ group, collapsed, pathname, locked }: { group: NavGroup; col
           >
             <div className="ml-5 pl-3 my-1 border-l border-white/10 space-y-0.5">
               {(() => {
-                const core = group.items.filter(i => i.tier !== 'advanced');
-                const advanced = group.items.filter(i => i.tier === 'advanced');
                 const renderItem = (item: typeof group.items[number], idx: number) => {
                   const ItemIcon = item.icon;
                   const itemActive = matchesPath(pathname, item.href);
@@ -115,11 +119,19 @@ function GroupNav({ group, collapsed, pathname, locked }: { group: NavGroup; col
                 };
                 return (
                   <>
-                    {core.map(renderItem)}
-                    {advanced.length > 0 && (
+                    {coreItems.map(renderItem)}
+                    {advancedItems.length > 0 && (
                       <>
-                        <div className="pt-1.5 pb-0.5 pl-3 text-[10px] font-semibold uppercase tracking-wider text-white/35">Advanced</div>
-                        {advanced.map((item, i) => renderItem(item, core.length + i))}
+                        <button
+                          type="button"
+                          onClick={() => setAdvancedOpen(!advancedShown)}
+                          aria-expanded={advancedShown}
+                          className="mt-1.5 w-full flex items-center gap-1.5 px-3 h-7 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-colors text-white/35 hover:text-white/60 hover:bg-white/[0.04]"
+                        >
+                          <ChevronRight className={`w-3 h-3 transition-transform ${advancedShown ? 'rotate-90' : ''}`} />
+                          Advanced ({advancedItems.length})
+                        </button>
+                        {advancedShown && advancedItems.map((item, i) => renderItem(item, coreItems.length + i))}
                       </>
                     )}
                   </>
