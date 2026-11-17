@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2, CheckCircle2, TrendingUp, Bell, Mail, MessageCircle, CheckCircle, Loader2, ShieldCheck } from 'lucide-react';
+import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2, CheckCircle2, TrendingUp, Bell, Mail, MessageCircle, CheckCircle, Loader2, ShieldCheck, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
@@ -116,6 +116,7 @@ export default function InvoicesPage() {
   const [chasing, setChasing] = useState(false);
   const [einvoicing, setEinvoicing] = useState(false);
   const [einvBusy, setEinvBusy] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState('');
 
   const fetchData = useCallback(async () => {
     try {
@@ -785,6 +786,20 @@ export default function InvoicesPage() {
     } finally { setChasing(false); }
   };
 
+  const removeInvoice = async (invoice: Invoice) => {
+    setDeletingId('');
+    try {
+      const res = await fetch(`/api/invoices?id=${invoice.id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((data as { error?: string }).error || 'Could not delete this invoice');
+      // The cards above read off this list, so dropping the row updates them too.
+      setInvoices((prev) => prev.filter((i) => i.id !== invoice.id));
+      toast.success(`${invoice.invoiceNumber} deleted`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not delete this invoice');
+    }
+  };
+
   const renderActions = (invoice: Invoice) => (
     <div className="flex items-center gap-1">
       {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
@@ -826,6 +841,28 @@ export default function InvoicesPage() {
         title="Download PDF">
         <Download className="w-3.5 h-3.5" style={{ color: 'hsl(var(--primary))' }} />
       </button>
+      {deletingId === invoice.id ? (
+        <span className="inline-flex flex-col items-start gap-0.5 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1">
+          {(invoice.paidAmount || invoice.einvoiceStatus === 'registered') && (
+            <span className="text-[10px] font-medium leading-tight text-rose-700">
+              {invoice.paidAmount ? `${formatCurrency(invoice.paidAmount)} recorded as received` : ''}
+              {invoice.paidAmount && invoice.einvoiceStatus === 'registered' ? ' · ' : ''}
+              {invoice.einvoiceStatus === 'registered' ? 'E-invoice (IRN) already generated' : ''}
+            </span>
+          )}
+          <span className="flex items-center gap-1 text-xs font-semibold text-rose-700">
+            Delete?
+            <button type="button" onClick={() => removeInvoice(invoice)} className="underline">Yes</button>
+            <button type="button" onClick={() => setDeletingId('')} className="underline">No</button>
+          </span>
+        </span>
+      ) : (
+        <button type="button" onClick={() => setDeletingId(invoice.id)}
+          className="p-1.5 rounded-lg transition-colors hover:bg-rose-50"
+          title="Delete invoice">
+          <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+        </button>
+      )}
     </div>
   );
 

@@ -6,6 +6,7 @@ import {
   UT_STATE_CODES, type SupplyType,
 } from '@/lib/finance/gst';
 import { postInvoiceIssued, postInvoicePayment, removeSource } from '@/lib/finance/ledger';
+import { recordAudit } from '@/lib/audit';
 
 export async function GET(req: NextRequest) {
   try {
@@ -332,13 +333,36 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Invoice ID is required' }, { status: 400 });
     }
 
-    await prisma.invoice.delete({
-      where: { id, companyId: user.companyId },
-    });
+    // Read the row first: it keeps the delete scoped to this company, turns a
+    // missing or already-deleted invoice into a plain 404 instead of a Prisma
+    // error, and keeps the numbers that go into the history entry.
+    const invoice = await prisma.invoice.findFirst({ where: { id, companyId: user.companyId } });
+    if (!invoice) {
+      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+    }
+
+    await prisma.invoice.delete({ where: { id: invoice.id } });
 
     // Remove any journals posted for this invoice and its payment.
     await removeSource(prisma, 'INVOICE', id);
     await removeSource(prisma, 'INVOICE_PAYMENT', id);
+
+    // What was deleted, and what it was worth, so a removed bill is never
+    // simply gone from the books with no trace of it.
+    await recordAudit({
+      companyId: user.companyId,
+      entity: 'invoice',
+      entityId: invoice.id,
+      action: 'deleted',
+      actor: { id: user.id, email: session.user.email },
+      summary: `${invoice.invoiceNumber} deleted while ${invoice.status}`,
+      changes: {
+        customerName: invoice.customerName ?? null,
+        totalAmount: invoice.totalAmount ?? null,
+        paidAmount: invoice.paidAmount ?? null,
+        einvoiceStatus: invoice.einvoiceStatus ?? null,
+      },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
