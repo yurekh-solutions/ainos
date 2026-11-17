@@ -1,8 +1,0 @@
-fix(build): declare nodemailer module to unblock Render next build
-
-The Render `next build` failed at the TypeScript step: email.ts dynamically
-imports nodemailer, but @types/nodemailer resolution is unreliable in CI so TS
-fell through to the raw .js and errored with "Could not find a declaration file
-for module 'nodemailer'". next dev does not run this type-check, so it only
-surfaced on the deploy build. Add an ambient module declaration so the
-specifier resolves regardless of @types presence.

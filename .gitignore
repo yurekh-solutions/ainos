@@ -43,3 +43,17 @@ out*.txt
 tsc_*.txt  
 curl_test*.txt  
 debug.log 
+
+# local scratch that must never reach the repo again
+*.log
+commit_msg.txt
+_msg.txt
+signin_*.html
+test_doc.txt
+test_output.txt
+test_pan.pdf
+test-ai.cjs
+test_upload.cjs
+__pycache__/
+*.pyc
+.vercel-tmp/
