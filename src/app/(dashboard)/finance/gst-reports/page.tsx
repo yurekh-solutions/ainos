@@ -690,6 +690,15 @@ function FilingPackPanel({
         <p className="text-sm mb-5" style={{ color: 'hsl(var(--muted-foreground))' }}>
           The same sequence a filing agency runs for you. Menu names shift between portal releases, so go by the closest label you see.
         </p>
+        <div className="flex flex-wrap items-center gap-3 mb-5">
+          <a href="https://services.gst.gov.in/service/login" target="_blank" rel="noopener noreferrer"
+            className="btn-primary rounded-xl px-4 py-2.5 text-sm font-medium flex items-center gap-2">
+            <ExternalLink className="w-4 h-4" /> Open the portal and sign in
+          </a>
+          <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+            The sign-in OTP arrives on your own registered mobile and email — AINOS never sees it.
+          </p>
+        </div>
         <ol className="space-y-4">
           {pack.checklist.map(s => (
             <li key={s.n} className="flex gap-3">
@@ -707,6 +716,20 @@ function FilingPackPanel({
             </li>
           ))}
         </ol>
+      </div>
+
+      {/* Nil month over SMS */}
+      <div className="glass-card rounded-2xl p-6">
+        <h4 className="font-semibold mb-1" style={{ color: 'hsl(var(--foreground))' }}>No sales this month? Close it from your phone</h4>
+        <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          A month with nothing to report can be filed as a nil return by one text message from your registered mobile —
+          no sign-in, no upload. The exact message format sits on the portal under Services → Returns → Returns filing
+          through SMS. File it by SMS, then store the acknowledgement number below so AINOS marks the period closed.
+        </p>
+        <a href="https://www.gst.gov.in" target="_blank" rel="noopener noreferrer"
+          className="text-xs mt-3 inline-flex items-center gap-1.5 text-purple-700 font-medium">
+          <ExternalLink className="w-3 h-3" /> gst.gov.in → Services → Returns → Returns filing through SMS
+        </a>
       </div>
 
       {/* Marketplace sellers */}
