@@ -128,7 +128,7 @@ export default function GstReportsPage() {
   };
 
   const tabs: Array<{ id: Tab; label: string }> = [
-    { id: 'pack', label: 'File It Yourself' },
+    { id: 'pack', label: 'File your GST' },
     { id: 'gstr1', label: 'GSTR-1 (Outward)' },
     { id: 'gstr3b', label: 'GSTR-3B (Summary)' },
     { id: 'recon', label: '2B Reconciliation' },
@@ -508,11 +508,12 @@ function FilingPackPanel({
             <ListChecks className="w-5 h-5 text-purple-700" />
           </div>
           <div>
-            <h3 className="font-semibold text-lg" style={{ color: 'hsl(var(--foreground))' }}>Your return, ready to file</h3>
+            <h3 className="font-semibold text-lg" style={{ color: 'hsl(var(--foreground))' }}>Your return is done in three clicks</h3>
             <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
               AINOS works the return out from your invoices, expenses and credit notes and packages it for upload.
-              You submit it on gst.gov.in with your own OTP, EVC or digital signature — nothing is filed for you, and there is no
-              per-return charge from us for preparing it.
+              On filing day: download the file, upload it on gst.gov.in, enter the OTP the government sends to your own
+              mobile — done. The OTP is your signature, the same one every software asks for; the work before it is
+              already finished here, at no per-return charge from us.
             </p>
           </div>
         </div>
