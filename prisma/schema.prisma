@@ -182,8 +182,35 @@ model Company {
   surveys            Survey[]
   events             Event[]
   auditLogs          AuditLog[]
+  govPortalCredentials GovPortalCredential[]
 
   @@map("companies")
+}
+
+// One row per (company, portal, GSTIN): the taxpayer's own direct API credentials
+// from the government portal registration (EWB portal → Registration → API).
+// AINOS calls the government APIs with THESE credentials, so it never needs a
+// paid GSP and never holds a license — each business uses its own portal account.
+model GovPortalCredential {
+  id              String    @id @default(uuid())
+  companyId       String
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  portal          String    // 'EWB' (e-way bill) — 'IRP' (e-invoice) follows later
+  gstin           String    // the GSTIN the credentials belong to
+  username        String
+  password        String
+  clientId        String?
+  clientSecret    String?
+  verified        Boolean   @default(false) // true after a successful auth handshake
+  lastTestedAt    DateTime?
+  lastTestStatus  String?   // 'ok' | 'failed'
+  lastTestMessage String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([companyId, portal, gstin])
+  @@index([companyId])
+  @@map("gov_portal_credentials")
 }
 
 model User {

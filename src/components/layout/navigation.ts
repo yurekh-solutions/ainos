@@ -124,6 +124,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { icon: Sheet, label: 'Daybook', href: '/finance/daybook' },
       { icon: BarChart2, label: 'Profit & Reports', href: '/finance/reports' },
       { icon: FileBarChart, label: 'GST Reports', href: '/finance/gst-reports' },
+      { icon: KeyRound, label: 'Government portals', href: '/finance/portal-setup' },
       { icon: Receipt, label: 'Recurring Invoices', href: '/finance/recurring-invoices', tier: 'advanced' },
       { icon: Landmark, label: 'Bank Accounts', href: '/finance/bank-accounts', tier: 'advanced' },
       { icon: ScrollText, label: 'Credit Notes', href: '/finance/credit-notes', tier: 'advanced' },

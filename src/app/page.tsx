@@ -144,7 +144,7 @@ const TESTIMONIALS = [
     initials: 'MI',
   },
   {
-    quote: 'GST compliance used to take days. Now it is automated and our CA just reviews the final output.',
+    quote: 'GST compliance used to take days. Now the filing pack builds itself and we file in minutes.',
     name: 'Arjun Patel',
     role: 'Director, Patel & Co.',
     initials: 'AP',
@@ -182,7 +182,7 @@ const FAQS = [
   },
   {
     q: 'Do you support GST compliance?',
-    a: 'Yes. AINOS is GST-native with automatic CGST/SGST/IGST split on every invoice, GST-ready reports and Tally-compatible export for your CA.',
+    a: 'Yes. AINOS is GST-native with automatic CGST/SGST/IGST split on every invoice, GST-ready reports and a filing pack you can upload to the government portal yourself — or export to Tally format anytime.',
   },
   {
     q: 'What kind of support do you offer?',

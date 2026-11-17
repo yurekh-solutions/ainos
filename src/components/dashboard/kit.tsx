@@ -548,7 +548,7 @@ export function FinanceJourneyCard({ data, loaded }: { data: FinanceSummary; loa
     {
       key: 'gst',
       title: 'Stay GST-ready',
-      promise: 'GSTR-1 and 3B data builds itself from your bills — hand it to your CA ready.',
+      promise: 'GSTR-1 and 3B data builds itself from your bills — download the pack, upload on the portal, filed in minutes.',
       done: false,
       href: '/finance/gst-reports',
       cta: 'Open GST reports',

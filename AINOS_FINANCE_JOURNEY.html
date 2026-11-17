@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AINOS Finance — The Journey on One Page</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#17123a; --sub:#5d5878; --line:#e8e4f4; --bg:#f5f6f8;
+    --v1:#4c1d95; --v2:#6d28d9; --v3:#8b5cf6; --tint:#f3ecfe; --tint2:#faf8fd;
+    --ok:#059669; --okbg:#f0faf4; --amber:#b45309; --amberbg:#fff8ec;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Montserrat',system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .page{max-width:980px;margin:0 auto;padding:34px 22px 40px}
+
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .mark{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--v2),var(--v1));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;letter-spacing:.5px}
+  h1{font-size:22px;font-weight:800;letter-spacing:-.3px}
+  header p{font-size:12.5px;color:var(--sub);font-weight:400}
+  .badge{font-size:10.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--v2);background:var(--tint);padding:7px 13px;border-radius:999px}
+
+  /* ── the journey strip ── */
+  .journey{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
+  .stage{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 14px 14px;position:relative;min-width:0}
+  .stage.current{border-color:#c4b0f0;background:var(--tint);box-shadow:0 10px 24px -14px rgba(76,29,149,.35)}
+  .stage .num{width:26px;height:26px;border-radius:999px;background:linear-gradient(135deg,var(--v2),var(--v1));color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:9px}
+  .stage h2{font-size:14.5px;font-weight:700;letter-spacing:-.2px}
+  .stage .promise{font-size:11.5px;line-height:1.55;color:var(--sub);font-weight:400;margin-top:6px}
+  .stage ul{list-style:none;margin-top:10px;display:flex;flex-direction:column;gap:5px}
+  .stage li{font-size:11px;font-weight:600;color:var(--ink);display:flex;gap:6px;align-items:baseline}
+  .stage li::before{content:"";width:5px;height:5px;border-radius:99px;background:var(--v3);flex-shrink:0;transform:translateY(-2px)}
+  .stage .where{margin-top:11px;font-size:10px;font-weight:700;color:var(--v2);background:var(--tint2);border:1px solid var(--line);border-radius:999px;padding:4px 9px;display:inline-block}
+  .stage.done .num{background:linear-gradient(135deg,#10b981,#059669)}
+  .arrowline{display:flex;align-items:center;justify-content:center;height:0}
+  .arrowline span{font-size:16px;color:#c4b0f0;font-weight:800}
+
+  /* ── ledger band ── */
+  .band{margin-top:16px;background:linear-gradient(135deg,#221659,#17123a);border-radius:16px;padding:16px 18px;color:#fff}
+  .band h3{font-size:12px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#c9b8f7}
+  .band .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .band .chip{font-size:11px;font-weight:600;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);padding:6px 11px;border-radius:999px}
+  .band p{font-size:11px;color:#b9aee0;margin-top:10px;font-weight:400}
+
+  /* ── two columns ── */
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px 16px;min-width:0}
+  .card h3{font-size:13px;font-weight:800;display:flex;align-items:center;gap:8px}
+  .card h3 .dot{width:8px;height:8px;border-radius:99px;flex-shrink:0}
+  .card ul{list-style:none;margin-top:9px;display:flex;flex-direction:column;gap:6px}
+  .card li{font-size:11.5px;line-height:1.5;color:var(--sub);font-weight:400;padding-left:14px;position:relative}
+  .card li b{color:var(--ink);font-weight:600}
+  .card li::before{content:"";position:absolute;left:0;top:6px;width:6px;height:6px;border-radius:99px}
+  .card.auto .dot, .card.auto li::before{background:var(--v3)}
+  .card.you .dot, .card.you li::before{background:#f0a13a}
+
+  /* ── month-end row ── */
+  .monthrow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+  .mcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 14px;min-width:0}
+  .mcard h4{font-size:12.5px;font-weight:700;color:var(--v1)}
+  .mcard p{font-size:10.8px;color:var(--sub);line-height:1.5;margin-top:5px;font-weight:400}
+
+  /* ── corrections strip ── */
+  .strip{margin-top:16px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+  .strip h3{font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--sub)}
+  .strip .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .strip .chip{font-size:11px;font-weight:600;background:var(--tint2);border:1px solid var(--line);color:var(--ink);padding:6px 11px;border-radius:999px}
+  .strip .chip small{color:var(--sub);font-weight:400}
+
+  /* ── footer ── */
+  .summary{margin-top:16px;background:linear-gradient(135deg,var(--v2),var(--v1));border-radius:16px;padding:16px 18px;color:#fff;display:flex;gap:14px;align-items:center}
+  .summary .s-icon{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+  .summary p{font-size:13px;font-weight:600;line-height:1.55}
+  .summary p span{font-weight:300;color:#e4d9fb}
+  .tests{margin-top:12px;text-align:center;font-size:10.5px;color:var(--sub);font-weight:400}
+  .tests b{color:var(--v1);font-weight:700}
+
+  @media (max-width:760px){
+    .journey,.monthrow{grid-template-columns:1fr 1fr}
+    .cols{grid-template-columns:1fr}
+    h1{font-size:18px}
+  }
+  @media (max-width:480px){ .journey,.monthrow{grid-template-columns:1fr} }
+  @media print{ body{background:#fff} .page{padding:10px 0} }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="brand">
+      <div class="mark">AI</div>
+      <div>
+        <h1>AINOS Finance — The Journey</h1>
+        <p>How money moves through your business, and what each step does for you.</p>
+      </div>
+    </div>
+    <div class="badge">One page · whole module</div>
+  </header>
+
+  <!-- THE 4-STAGE JOURNEY -->
+  <section class="journey">
+    <div class="stage done">
+      <div class="num">1</div>
+      <h2>Set up once</h2>
+      <p class="promise">Type every customer and product one time — after this, bills build themselves.</p>
+      <ul>
+        <li>Customers — by hand, card scan, or Excel import</li>
+        <li>Products — HSN, GST rate, cost &amp; MRP</li>
+        <li>Bank accounts — opening balances</li>
+      </ul>
+      <span class="where">/customers · /products</span>
+    </div>
+    <div class="stage current">
+      <div class="num">2</div>
+      <h2>Bill your work</h2>
+      <p class="promise">A professional GST bill in about a minute — tax calculated for you.</p>
+      <ul>
+        <li>Customer auto-fill with GSTIN</li>
+        <li>Per-item GST · intra / inter-state split</li>
+        <li>Branded PDF from your template</li>
+      </ul>
+      <span class="where">/invoices</span>
+    </div>
+    <div class="stage">
+      <div class="num">3</div>
+      <h2>Collect the money</h2>
+      <p class="promise">See who owes what, and send a WhatsApp reminder in one tap.</p>
+      <ul>
+        <li>Pending payments list</li>
+        <li>Partial payments recorded</li>
+        <li>Recurring bills for regular work</li>
+      </ul>
+      <span class="where">/finance/reminders</span>
+    </div>
+    <div class="stage">
+      <div class="num">4</div>
+      <h2>Stay GST-ready</h2>
+      <p class="promise">GSTR-1 and 3B data builds itself from your bills — download, upload on the portal, filed in minutes.</p>
+      <ul>
+        <li>GSTR-1 / GSTR-3B data + filing pack</li>
+        <li>Tally-format Excel — take your books anywhere</li>
+        <li>Due-date calendar &amp; late-fee view</li>
+      </ul>
+      <span class="where">/finance/gst-reports</span>
+    </div>
+  </section>
+
+  <!-- WHAT HAPPENS BEHIND EVERY BILL -->
+  <section class="band">
+    <h3>Behind every bill — written automatically</h3>
+    <div class="chips">
+      <span class="chip">Sequential invoice number</span>
+      <span class="chip">CGST + SGST vs IGST split by place of supply</span>
+      <span class="chip">HSN codes carried from products</span>
+      <span class="chip">Profit recorded per bill</span>
+      <span class="chip">Double-entry journal + ledger written</span>
+      <span class="chip">Every company's data kept separate</span>
+    </div>
+    <p>Deleting a bill removes its ledger entries too and logs an audit row — the books never drift from the documents.</p>
+  </section>
+
+  <!-- WHO DOES WHAT -->
+  <section class="cols">
+    <div class="card auto">
+      <h3><span class="dot"></span>AINOS does — quietly, every time</h3>
+      <ul>
+        <li><b>Money in:</b> invoice numbering, GST math, PDF, email &amp; WhatsApp share</li>
+        <li><b>Money out:</b> expense entries, receipt photo read by AI (OCR)</li>
+        <li><b>People:</b> duplicate customers caught across scan, Excel and hand entry</li>
+        <li><b>Books:</b> daybook, profit, GSTR-1/3B data, filing pack, Tally export</li>
+        <li><b>Bank:</b> match suggestions between statement lines and bills</li>
+      </ul>
+    </div>
+    <div class="card you">
+      <h3><span class="dot"></span>You do — the judgement calls</h3>
+      <ul>
+        <li>Create the bill and check it looks right</li>
+        <li>Send it, and tap the reminder when money is late</li>
+        <li>Confirm the final bank posting</li>
+        <li>File GST on the government portal — <b>the upload file is ready in one click</b></li>
+        <li>E-Way Bill on the NIC portal for goods movement</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- MONTH-END -->
+  <section class="monthrow">
+    <div class="mcard"><h4>Daybook</h4><p>The day's every entry in one view — what came in, what went out.</p></div>
+    <div class="mcard"><h4>Profit &amp; Reports</h4><p>What you earned, what you spent, what you kept.</p></div>
+    <div class="mcard"><h4>GST Reports</h4><p>GSTR-1, GSTR-3B, HSN summary — built from the bills you already made.</p></div>
+    <div class="mcard"><h4>Tally / Excel</h4><p>Export your books as Tally-format Excel, or import a Tally sheet back into AINOS.</p></div>
+  </section>
+
+  <!-- CORRECTIONS & EXTRAS -->
+  <section class="strip">
+    <h3>Corrections &amp; extras — for the days you need them</h3>
+    <div class="chips">
+      <span class="chip">Credit Note <small>· bill was more than it should be</small></span>
+      <span class="chip">Debit Note <small>· bill was less than it should be</small></span>
+      <span class="chip">Delivery Challan <small>· goods move before billing</small></span>
+      <span class="chip">Quotation → Invoice <small>· one tap, pre-filled</small></span>
+      <span class="chip">Purchase Orders</span>
+      <span class="chip">Team roles <small>· who can do what</small></span>
+      <span class="chip">Invoice Design <small>· your letterhead, table, signature</small></span>
+    </div>
+  </section>
+
+  <!-- SUMMARY -->
+  <section class="summary">
+    <div class="s-icon">→</div>
+    <p>You only create bills and record spending.<span> Numbering, GST math, the ledger, profit, reports and filing-ready data happen underneath — when filing time comes, the portal upload file is ready in one click.</span></p>
+  </section>
+  <p class="tests">Proven continuously by <b>146</b> live finance checks, <b>57</b> filing-pack checks, <b>40</b> card-scan checks and <b>163</b> unit tests.</p>
+
+</div>
+</body>
+</html>
