@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Download, RefreshCw, CheckCircle2, Upload, FileJson, FileSpreadsheet, ShieldAlert, AlertTriangle, CalendarClock, ListChecks, ExternalLink, Save } from 'lucide-react';
+import { Download, RefreshCw, CheckCircle2, Upload, FileJson, FileSpreadsheet, ShieldAlert, AlertTriangle, CalendarClock, ListChecks, ExternalLink, Save, ChevronDown, ChevronUp } from 'lucide-react';
 
 type Tab = 'gstr1' | 'gstr3b' | 'recon' | 'anomaly' | 'pack';
 type Scheme = 'monthly' | 'qrmp' | 'composition';
@@ -478,6 +478,7 @@ function FilingPackPanel({
   recordFiled: (t: 'GSTR1' | 'GSTR3B') => void;
   inr: (n: number) => string;
 }) {
+  const [simple, setSimple] = useState(true);
   if (packLoading && !pack) {
     return <div className="glass-card rounded-2xl p-10 text-center text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>Reading your invoices and expenses for this period…</div>;
   }
@@ -570,6 +571,42 @@ function FilingPackPanel({
         </p>
       </div>
 
+      {/* Simple-mode actions */}
+      <div className="glass-card rounded-2xl p-6 space-y-4">
+        <div className="flex flex-wrap gap-2">
+          <button onClick={() => downloadPack({ download: 'gstr1-json' })} className="btn-primary rounded-xl px-4 py-2.5 text-sm font-medium flex items-center gap-2">
+            <FileJson className="w-4 h-4" /> Download the upload file
+          </button>
+          <a href="https://services.gst.gov.in/service/login" target="_blank" rel="noopener noreferrer"
+            className="btn-secondary rounded-xl px-4 py-2.5 text-sm font-medium flex items-center gap-2">
+            <ExternalLink className="w-4 h-4" /> Open the portal and sign in
+          </a>
+        </div>
+        <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+          Upload the file on the portal, verify the numbers, file with the OTP sent to your own mobile, then save the
+          acknowledgement number below. The screen-by-screen guide, dates, fees and marketplace tips sit under the button.
+        </p>
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--muted-foreground))' }}>Acknowledgement number</label>
+            <input value={arn} onChange={e => setArn(e.target.value.replace(/\D/g, '').slice(0, 15))} inputMode="numeric"
+              className="glass-input rounded-xl px-4 py-2.5 text-sm w-52" placeholder="15 digits" />
+          </div>
+          <button onClick={() => recordFiled('GSTR3B')} disabled={savingRecord || arn.length !== 15}
+            className="btn-primary rounded-xl px-4 py-2.5 text-sm font-medium flex items-center gap-2 disabled:opacity-50">
+            <Save className="w-4 h-4" /> Save against GSTR-3B
+          </button>
+          <button onClick={() => recordFiled('GSTR1')} disabled={savingRecord || arn.length !== 15}
+            className="btn-secondary rounded-xl px-4 py-2.5 text-sm font-medium flex items-center gap-2 disabled:opacity-50">
+            <Save className="w-4 h-4" /> Save against GSTR-1
+          </button>
+        </div>
+        <button onClick={() => setSimple(false)} className="text-xs font-medium text-purple-700 flex items-center gap-1.5">
+          <ChevronDown className="w-3 h-3" /> Show the detailed guide (dates, fees, marketplace, screen-by-screen steps)
+        </button>
+      </div>
+
+      {!simple && (<>
       {/* Due dates and the cost of missing them */}
       <div className="glass-card rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-4">
@@ -787,6 +824,12 @@ function FilingPackPanel({
           </button>
         </div>
       </div>
+
+      <button onClick={() => setSimple(true)} className="text-xs font-medium text-purple-700 mx-auto flex items-center gap-1.5">
+        <ChevronUp className="w-3 h-3" /> Back to the simple view
+      </button>
+      </>
+      )}
     </motion.div>
   );
 }
