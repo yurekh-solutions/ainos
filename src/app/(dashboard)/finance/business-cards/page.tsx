@@ -281,6 +281,16 @@ export default function BusinessCardScannerPage() {
           subtitle="Scan business cards and turn them into clean contact data — saved into Customers as you upload, or exported to Excel."
         />
 
+        {/* Most contact lists are already spreadsheets. Say so here, so nobody
+            photographs a card that was never on paper in the first place. */}
+        <p className="text-xs -mt-3">
+          <span style={{ color: 'hsl(var(--muted-foreground))' }}>Cards are optional — a list already in Excel goes into the same book through </span>
+          <Link href="/customers" className="font-semibold underline" style={{ color: 'hsl(var(--primary))' }}>
+            Customers → Import Excel
+          </Link>
+          <span style={{ color: 'hsl(var(--muted-foreground))' }}>.</span>
+        </p>
+
         {/* Upload zone */}
         <motion.section {...fadeUp(0.02)} className={CARD}>
           <div

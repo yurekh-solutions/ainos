@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { recordAudit } from '@/lib/audit';
 import {
   buildContactDraft,
-  duplicateCandidates,
-  fillBlanks,
-  normalisePhone,
   panFromGstin,
   summariseGstn,
   type BusinessCardFields,
   type CachedGstn,
   type ContactDraft,
 } from '@/lib/finance/businessCard';
+import { saveContact } from '@/lib/finance/customerBook';
 
 // Saves a scanned business card into the customer book.
 //
@@ -110,54 +107,27 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Strongest key first, so a GSTIN match beats a name-and-company collision.
-    let existing: { id: string } | null = null;
-    for (const clause of duplicateCandidates(draft)) {
-      existing = await prisma.customer.findFirst({
-        where: { companyId, AND: [clause as Prisma.CustomerWhereInput] },
-        select: { id: true },
+    // Recognition, creation and gap-filling live in customerBook, because the
+    // Excel import in Customers goes through exactly the same door.
+    const saved = await saveContact(companyId, draft);
+
+    if (saved.action === 'unchanged') {
+      await logSave(saved.id, 'unchanged', `Business card already in Customers as ${saved.name}`);
+      return NextResponse.json({
+        ok: true, action: 'unchanged', id: saved.id, name: saved.name, warnings, gstn,
       });
-      if (existing) break;
     }
-
-    // Phone needs the digits compared, not the string: "+91 98200 12345" and
-    // "98200-12345" are the same contact but no plain equality catches that.
-    if (!existing) {
-      const core = normalisePhone(draft.phone || '');
-      if (core.length >= 10) {
-        const hits = await prisma.$queryRaw<Array<{ id: string }>>`
-          SELECT id FROM customers
-          WHERE company_id = ${companyId}
-            AND phone IS NOT NULL
-            AND regexp_replace(phone, '\\D', '', 'g') LIKE ${'%' + core}
-          LIMIT 1`;
-        existing = hits[0] ?? null;
-      }
-    }
-
-    if (existing) {
-      const full = await prisma.customer.findUnique({ where: { id: existing.id } });
-      if (!full) return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
-
-      const patch = fillBlanks(full as Record<string, unknown>, draft);
-      if (!Object.keys(patch).length) {
-        await logSave(full.id, 'unchanged', `Business card already in Customers as ${full.name}`);
-        return NextResponse.json({
-          ok: true, action: 'unchanged', id: full.id, name: full.name, warnings, gstn,
-        });
-      }
-      const updated = await prisma.customer.update({ where: { id: full.id }, data: patch });
+    if (saved.action === 'updated') {
       await logSave(
-        updated.id, 'updated',
-        `Business card filled ${Object.keys(patch).length} blank field(s) for ${updated.name}`,
-        { filled: Object.keys(patch) },
+        saved.id, 'updated',
+        `Business card filled ${saved.filled.length} blank field(s) for ${saved.name}`,
+        { filled: saved.filled },
       );
-      return NextResponse.json({ ok: true, action: 'updated', id: updated.id, name: updated.name, warnings, gstn });
+      return NextResponse.json({ ok: true, action: 'updated', id: saved.id, name: saved.name, warnings, gstn });
     }
 
-    const created = await prisma.customer.create({ data: { ...draft, companyId } });
-    await logSave(created.id, 'created', `Business card added to Customers as ${created.name}`);
-    return NextResponse.json({ ok: true, action: 'created', id: created.id, name: created.name, warnings, gstn }, { status: 201 });
+    await logSave(saved.id, 'created', `Business card added to Customers as ${saved.name}`);
+    return NextResponse.json({ ok: true, action: 'created', id: saved.id, name: saved.name, warnings, gstn }, { status: 201 });
   } catch (error) {
     console.error('Business card save error:', error);
     const message = error instanceof Error ? error.message : 'Could not save the card';

@@ -387,6 +387,174 @@ async function testSupplyDerivation() {
   ok("the seller's own registration is put back afterwards", back?.gstNumber === '27AAACS1234A1Z5', back?.gstNumber);
 }
 
+async function testInvoiceDelete() {
+  console.log('\n=== INVOICE DELETE: row gone, ledger cleaned, history kept ===');
+  const made = await api('POST', '/api/invoices', {
+    customerName: 'Delete Co', customerEmail: 'del.co@t.com', customerGst: '27ABCDE1234F1Z5',
+    supplyType: 'intra', status: 'sent',
+    items: [{ productName: 'Delete Me', price: 10000, quantity: 1, gstRate: 18, costPrice: 6000 }],
+  });
+  const inv = made.data || {};
+  ok('invoice to delete created', made.status === 201 && !!inv.id, `status=${made.status}`);
+
+  // Post a payment first: the delete has to clean two sources, not just one.
+  await api('PUT', '/api/invoices', { id: inv.id, status: 'partially_paid', paidAmount: 5000 });
+  const beforeJournals = await prisma.journalEntry.count({ where: { OR: [{ reference: `INVOICE:${inv.id}` }, { reference: `INVOICE_PAYMENT:${inv.id}` }] } });
+  ok('invoice + payment journals exist before deletion', beforeJournals === 2, `count=${beforeJournals}`);
+
+  const del = await api('DELETE', `/api/invoices?id=${inv.id}`);
+  ok('DELETE returns 200 {success:true}', del.status === 200 && del.data?.success === true, `${del.status} ${JSON.stringify(del.data)}`);
+
+  ok('invoice row removed from database', !(await prisma.invoice.findUnique({ where: { id: inv.id } })));
+  const leftJournals = await prisma.journalEntry.count({ where: { OR: [{ reference: `INVOICE:${inv.id}` }, { reference: `INVOICE_PAYMENT:${inv.id}` }] } });
+  ok('both journals removed with the invoice', leftJournals === 0, `count=${leftJournals}`);
+  ok('no ledger lines orphaned', (await prisma.ledgerEntry.count({ where: { journal: { reference: { in: [`INVOICE:${inv.id}`, `INVOICE_PAYMENT:${inv.id}`] } } } })) === 0);
+
+  // A deleted bill must still be explainable afterwards, so it goes into history.
+  const log = await prisma.auditLog.findFirst({ where: { companyId: COMPANY_ID, entity: 'invoice', entityId: inv.id, action: 'deleted' } });
+  ok('deletion written to history', !!log, log?.summary || 'none');
+  ok('history names the bill and its worth', !!log && log.summary.includes(inv.invoiceNumber) && near(log.changes?.totalAmount, inv.totalAmount) && near(log.changes?.paidAmount, 5000), JSON.stringify(log?.changes));
+
+  // Double-click / stale tab: a plain 404, never a Prisma crash.
+  const again = await api('DELETE', `/api/invoices?id=${inv.id}`);
+  ok('re-delete of same id returns 404, not 500', again.status === 404, `${again.status} ${JSON.stringify(again.data)}`);
+  ok('DELETE without an id rejected as 400', (await api('DELETE', '/api/invoices')).status === 400);
+
+  // Tenant scoping: another company's invoice id is simply not ours to delete.
+  const other = await prisma.company.create({
+    data: { name: 'Other Co', email: `other_${STAMP}@ainos.test`, createdBy: `other_${STAMP}@ainos.test`, currency: 'INR' },
+  });
+  const foreign = await prisma.invoice.create({
+    data: { invoiceNumber: `FOR-${STAMP}`, companyId: other.id, customerName: 'Other Customer', status: 'sent', totalAmount: 1180 },
+  });
+  const steal = await api('DELETE', `/api/invoices?id=${foreign.id}`);
+  ok("cannot delete another company's invoice", steal.status === 404, `${steal.status}`);
+  ok('their invoice survives untouched', !!(await prisma.invoice.findUnique({ where: { id: foreign.id } })));
+  await prisma.invoice.deleteMany({ where: { companyId: other.id } });
+  await prisma.company.deleteMany({ where: { id: other.id } });
+}
+
+async function testTallyImport() {
+  console.log('\n=== TALLY IMPORT: real sheet shapes -> real bills ===');
+  // Written the way a Tally export actually looks: its own header words, a
+  // dd-mm-yyyy date, ₹ in a money cell, one bill over two lines, a taxable
+  // "Amount" with no rate, and a line that cannot become a bill at all.
+  const rows = [
+    { 'Voucher No': 'TAL-001', 'Voucher Date': '15-01-2024', 'Ledger Name': 'Tally Delhi Traders', 'GSTIN No': '07ABCDE1234F1Z5', 'Particulars': 'Goods', 'HSN/SAC': '7208', Qty: 2, Rate: '₹5,000', 'GST % Of Value': 18 },
+    { 'Voucher No': 'TAL-002', 'Voucher Date': '02-02-2024', 'Ledger Name': 'Tally Mumbai Mills', 'GSTIN No': '27ABCDE1234F1Z5', 'Particulars': 'Fabric', Qty: 1, Rate: 10000, 'GST % Of Value': 5 },
+    { 'Voucher No': 'TAL-002', 'Particulars': 'Thread', Qty: 10, Rate: 250, 'GST % Of Value': 12 },
+    { 'Voucher No': 'TAL-003', 'Voucher Date': '03-03-2024', 'Ledger Name': 'Tally Bengaluru Works', 'GSTIN No': '29AABCS1234F1Z5', 'Particulars': 'Service', Amount: 20000, 'GST % Of Value': 18, Status: 'Paid', 'Paid Amount': 23600 },
+    { 'Voucher No': 'TAL-004', 'Particulars': 'Mystery line', Qty: 1, Rate: 500 },
+  ];
+
+  const first = await api('POST', '/api/tally', { rows });
+  ok('sheet accepted', first.status === 200 && first.data?.success === true, `${first.status} ${JSON.stringify(first.data?.error || first.data?.created)}`);
+  ok('3 of the 4 vouchers became bills', first.data?.created === 3, `created=${first.data?.created}`);
+  ok('the party-less row is named, not silently dropped', first.data?.failed === 1 && /Row 6: Party name is empty/.test(first.data?.errorDetails?.[0]?.reason || ''), first.data?.errorDetails?.[0]?.reason);
+  ok("the accountant's own voucher numbers were kept", (first.data?.createdInvoices || []).join(',') === 'TAL-001,TAL-002,TAL-003', (first.data?.createdInvoices || []).join(','));
+
+  const one = await prisma.invoice.findFirst({ where: { companyId: COMPANY_ID, invoiceNumber: 'TAL-001' } });
+  ok('dd-mm-yyyy date read as 15 Jan 2024', one?.invoiceDate?.toISOString().slice(0, 10) === '2024-01-15', one?.invoiceDate?.toISOString());
+  ok('"₹5,000" with the symbol became 5000 x 2', near(one?.subtotal, 10000) && near(one?.taxTotal, 1800), `sub=${one?.subtotal} tax=${one?.taxTotal}`);
+  ok('Maharashtra seller to a Delhi buyer is full IGST', near(one?.igstAmount, 1800) && near(one?.cgstAmount, 0) && one?.placeOfSupply === '07', `igst=${one?.igstAmount} pos=${one?.placeOfSupply}`);
+  ok('imported bill sits in receivables, not as a draft', one?.status === 'sent', one?.status);
+
+  const two = await prisma.invoice.findFirst({ where: { companyId: COMPANY_ID, invoiceNumber: 'TAL-002' } });
+  ok('two sheet lines became one bill with two items', (two?.items || []).length === 2 && near(two?.subtotal, 12500), `items=${(two?.items || []).length} sub=${two?.subtotal}`);
+  ok('the bare second line inherited date and party', two?.customerName === 'Tally Mumbai Mills' && two?.invoiceDate?.toISOString().slice(0, 10) === '2024-02-02', two?.customerName);
+  ok('same-state buyer split CGST + SGST', near(two?.cgstAmount, 400) && near(two?.sgstAmount, 400) && near(two?.igstAmount, 0), `c=${two?.cgstAmount} s=${two?.sgstAmount}`);
+
+  const three = await prisma.invoice.findFirst({ where: { companyId: COMPANY_ID, invoiceNumber: 'TAL-003' } });
+  ok('Tally "Amount" read as taxable value, not as a grand total', near(three?.subtotal, 20000) && near(three?.totalAmount, 23600), `sub=${three?.subtotal} total=${three?.totalAmount}`);
+  ok('Status Paid and the amount received carried over', three?.status === 'paid' && near(three?.paidAmount, 23600), `status=${three?.status} paid=${three?.paidAmount}`);
+
+  // The same party under a longer legal name: GSTIN is the key, so no twin.
+  const renamed = await api('POST', '/api/tally', {
+    rows: [{ 'Voucher No': 'TAL-005', 'Voucher Date': '10-04-2024', 'Ledger Name': 'Tally Bengaluru Works Pvt Ltd', 'GSTIN No': '29AABCS1234F1Z5', 'Particulars': 'Support', Qty: 1, Rate: 5000, 'GST % Of Value': 18 }],
+  });
+  const five = await prisma.invoice.findFirst({ where: { companyId: COMPANY_ID, invoiceNumber: 'TAL-005' } });
+  ok('one GSTIN stays one customer, even under a different name spelling', renamed.data?.created === 1 && five?.customerId === three?.customerId, `customerId ${three?.customerId} -> ${five?.customerId}`);
+  ok('the bill still prints the name from the sheet', five?.customerName === 'Tally Bengaluru Works Pvt Ltd', five?.customerName);
+
+  // An imported bill has to be in the books, not only in the list.
+  const refs = [one, two, three, five].map(v => `INVOICE:${v.id}`).concat(`INVOICE_PAYMENT:${three.id}`);
+  ok('every imported bill posted its journal', (await prisma.journalEntry.count({ where: { reference: { in: refs } } })) === 5, `refs=${refs.length}`);
+  ok('each import left a history entry', (await prisma.auditLog.count({ where: { companyId: COMPANY_ID, entity: 'invoice', action: 'imported' } })) === 4);
+
+  // Uploading the same file twice is the likeliest accident.
+  const second = await api('POST', '/api/tally', { rows });
+  ok('same file twice adds nothing', second.data?.created === 0 && second.data?.skipped === 3, `created=${second.data?.created} skipped=${second.data?.skipped}`);
+  ok('the skip names the bill already there', /TAL-001 is already in AINOS/.test((second.data?.skippedDetails || []).map(d => d.reason).join('|')), second.data?.skippedDetails?.[0]?.reason);
+  ok('no duplicate rows in the database', (await prisma.invoice.count({ where: { companyId: COMPANY_ID, invoiceNumber: { startsWith: 'TAL-' } } })) === 4);
+
+  // Back-dated data only shows up if the range reads the bill date.
+  const fy24 = await api('GET', '/api/tally?from=2024-01-01&to=2024-12-31');
+  const nums = (fy24.data?.vouchers || []).map(v => v.voucherNumber);
+  ok('FY2024 range lists the imported bills by their own date', ['TAL-001', 'TAL-002', 'TAL-003'].every(n => nums.includes(n)), nums.join(','));
+
+  const legacy = await api('POST', '/api/tally', {
+    vouchers: [{ voucherNumber: 'LEG-001', date: '2024-05-05', partyName: 'Legacy Co', partyGst: '27ABCDE1234F1Z5', items: [{ name: 'Thing', quantity: 1, rate: 1000, gstRate: 18 }], grandTotal: 1180 }],
+  });
+  const leg = await prisma.invoice.findFirst({ where: { companyId: COMPANY_ID, invoiceNumber: 'LEG-001' } });
+  ok('the older vouchers payload still imports', legacy.data?.created === 1 && near(leg?.totalAmount, 1180), `${legacy.data?.created} total=${leg?.totalAmount}`);
+
+  const empty = await api('POST', '/api/tally', { rows: [] });
+  ok('an unreadable sheet is refused with a reason', empty.status === 400 && /column headings/i.test(empty.data?.error || ''), `${empty.status} ${empty.data?.error}`);
+}
+
+async function testCustomerImport() {
+  console.log('\n=== CUSTOMERS: Excel import (a card is not the only way in) ===');
+  // Most contact lists are already spreadsheets, so the same book has to accept
+  // one. What matters is that a row repeated in the same file, and a person
+  // who is already saved, are never counted twice.
+  const seed = await api('POST', '/api/customers', { name: 'Fill The Gap', phone: '9000044444' });
+  ok('a customer exists before the import', seed.status === 201, String(seed.status));
+
+  const rows = [
+    { Name: 'Import Ravi', Company: 'Ravi Traders', Email: 'ravi@ravitraders.in', Phone: '+91 90000 11111', 'GST No': '24AABCF1234M1Z8', 'Pin Code': '380015', Notes: 'Met at the Surat expo' },
+    { Name: 'Import Ravi', Email: 'ravi@ravitraders.in', Phone: '9000011111' },
+    { Name: 'Delhi Prospect', Phone: '9000022222', State: 'Delhi', Status: 'Prospect' },
+    { Phone: '9000033333' },
+    { Total: 5 },
+    { Name: 'Fill The Gap', Phone: '9000044444', Email: 'fill@gap.in' },
+  ];
+
+  const first = await api('POST', '/api/customers/import', { rows, source: 'customers.xlsx' });
+  ok('the import answers for every row', first.status === 200, String(first.status));
+  const r = first.data || {};
+  ok('two contacts were created', r.created === 2, `created=${r.created}`);
+  ok('the duplicate inside the same file was not counted twice', r.skipped === 1, `skipped=${r.skipped}`);
+  ok('an existing contact was completed', r.updated === 1, `updated=${r.updated}`);
+  ok('the row with no name is reported, not dropped', r.failed === 1, `failed=${r.failed}`);
+  ok('the report names the refusal', /No name, company or email/.test(r.errorDetails?.[0]?.reason || ''), r.errorDetails?.[0]?.reason || 'none');
+  ok('the totals line was ignored rather than failed', !JSON.stringify(r.errorDetails || []).includes('Total'), JSON.stringify(r.errorDetails || []));
+
+  const ravi = await prisma.customer.findFirst({ where: { companyId: COMPANY_ID, name: 'Import Ravi' } });
+  ok('the GSTIN came off the sheet', ravi?.gstNumber === '24AABCF1234M1Z8', ravi?.gstNumber || 'none');
+  ok('the state came from the GSTIN', ravi?.state === 'Gujarat', ravi?.state || 'none');
+  ok('the PAN came from the GSTIN', ravi?.panNumber === 'AABCF1234M', ravi?.panNumber || 'none');
+  ok('the pin code was kept', ravi?.pincode === '380015', ravi?.pincode || 'none');
+  ok('the notes column was kept', /Surat expo/.test(ravi?.notes || ''), ravi?.notes || 'none');
+  const raviCount = await prisma.customer.count({ where: { companyId: COMPANY_ID, name: 'Import Ravi' } });
+  ok('two spellings of one number made one contact', raviCount === 1, `count=${raviCount}`);
+
+  const prospect = await prisma.customer.findFirst({ where: { companyId: COMPANY_ID, name: 'Delhi Prospect' } });
+  ok('the sheet word "Prospect" became a lead', prospect?.status === 'lead', prospect?.status || 'none');
+  ok('the sheet state was used when no GSTIN decided it', prospect?.state === 'Delhi', prospect?.state || 'none');
+
+  const filled = await prisma.customer.findUnique({ where: { id: String(seed.data?.id) } });
+  ok('an existing contact was completed, not overwritten', filled?.email === 'fill@gap.in' && filled?.name === 'Fill The Gap', `${filled?.name} / ${filled?.email}`);
+
+  const again = await api('POST', '/api/customers/import', { rows, source: 'customers.xlsx' });
+  ok('importing the same file twice adds nobody', again.data?.created === 0, `created=${again.data?.created}, skipped=${again.data?.skipped}`);
+
+  const empty = await api('POST', '/api/customers/import', { rows: [] });
+  ok('an empty sheet is refused with a reason', empty.status === 400 && /headings/i.test(empty.data?.error || ''), `${empty.status} ${empty.data?.error}`);
+
+  const foreign = await api('POST', '/api/customers/import', { rows: [{ 'Sr No': 1, Amount: 500 }] });
+  ok('a sheet with no recognised column is refused', foreign.status === 400, `${foreign.status} ${foreign.data?.error}`);
+}
+
 async function cleanup() {
   console.log('\n=== CLEANUP test data ===');
   const models = ['invoice', 'customer', 'product', 'expense', 'quote', 'deliveryChallan', 'creditNote', 'debitNote', 'bankAccount', 'bankTransaction', 'recurringInvoice', 'invoiceTemplate', 'gstReconImport', 'gstFiling'];
@@ -402,6 +570,7 @@ async function cleanup() {
   }
   await prisma.journalEntry.deleteMany({ where: { companyId: COMPANY_ID } }).catch(() => {});
   await prisma.account.deleteMany({ where: { companyId: COMPANY_ID } }).catch(() => {});
+  await prisma.auditLog.deleteMany({ where: { companyId: COMPANY_ID } }).catch(() => {});
   await prisma.user.deleteMany({ where: { email: EMAIL } }).catch(() => {});
   await prisma.company.deleteMany({ where: { id: COMPANY_ID } }).catch(() => {});
   console.log('  cleaned');
@@ -416,6 +585,9 @@ async function cleanup() {
     await testBankReconcile();
     await testEwayBill();
     await testSupplyDerivation();
+    await testTallyImport();
+    await testInvoiceDelete();
+    await testCustomerImport();
   } catch (e) {
     console.error('SCRIPT ERROR:', e.message);
   } finally {

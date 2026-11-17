@@ -95,11 +95,11 @@ export function buildContactDraft(f: Partial<BusinessCardFields>): DraftResult {
 
   const name = str(f.name) || str(f.company) || (str(f.email).includes('@') ? str(f.email).split('@')[0] : '');
   if (!name) {
-    return { draft: null, warnings: ['Nothing readable on the card — type at least a name before saving.'] };
+    return { draft: null, warnings: ['Nothing readable — type at least a name before saving.'] };
   }
 
   const email = firstOf(str(f.email).replace(/,/g, '/'));
-  if (email && !email.includes('@')) warnings.push('The email on the card did not look valid, so it was skipped.');
+  if (email && !email.includes('@')) warnings.push('The email did not look valid, so it was skipped.');
 
   const gstRaw = str(f.gstin);
   const gstNumber = cleanGstin(gstRaw);

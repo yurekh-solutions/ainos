@@ -2,12 +2,35 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Users, Search, Mail, Phone, MapPin, X, TrendingUp, UserPlus, Building2 } from 'lucide-react';
+import {
+  Plus, Users, Search, Mail, Phone, MapPin, X, TrendingUp, UserPlus, Building2,
+  Upload, Download, Loader2, CheckCircle2, AlertCircle, AlertTriangle,
+} from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import type { Customer } from '@/types/customer';
 import { useToast } from '@/lib/toast';
 
 const COLORS = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6'];
+
+interface RowOutcome {
+  row: number;
+  name: string;
+  reason?: string;
+  filled?: string[];
+  warnings?: string[];
+}
+
+interface ImportReport {
+  created: number;
+  updated: number;
+  skipped: number;
+  failed: number;
+  details: RowOutcome[];
+  updatedDetails: RowOutcome[];
+  skippedDetails: RowOutcome[];
+  errorDetails: RowOutcome[];
+}
 
 export default function CustomersPage() {
   const { toast } = useToast();
@@ -16,6 +39,8 @@ export default function CustomersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ name: '', email: '', phone: '', address: '' });
+  const [importing, setImporting] = useState(false);
+  const [report, setReport] = useState<ImportReport | null>(null);
 
   useEffect(() => { fetchCustomers(); }, []);
 
@@ -53,6 +78,90 @@ export default function CustomersPage() {
     }
   };
 
+  const handleDownloadTemplate = () => {
+    // The column names the importer actually reads, with two rows that show
+    // the shape: one complete contact, and one that only carries a firm and a
+    // mobile — which is what most lists really look like.
+    const template = [
+      {
+        Name: 'Rajesh Mehta', Company: 'Rajesh Enterprises', Email: 'rajesh@rajesh.in',
+        Phone: '9820012345', GSTIN: '27AABCU9603R1ZM', PAN: 'AABCU9603R',
+        Address: '14 Linking Road, Bandra West, Mumbai', State: 'Maharashtra', Pincode: '400050',
+        Status: 'Active', Notes: 'Prefers WhatsApp',
+      },
+      {
+        Name: '', Company: 'Sharma Provision', Email: '', Phone: '+91 98111 22334',
+        GSTIN: '', PAN: '', Address: 'Shop 3, Karol Bagh, Delhi', State: 'Delhi', Pincode: '',
+        Status: 'Lead', Notes: '',
+      },
+    ];
+    const guide = [
+      { Column: 'Name', Use: 'Required unless Company or Email is filled — either is enough on its own.' },
+      { Column: 'Company', Use: 'Used as the name when your list only carries firms.' },
+      { Column: 'Email', Use: 'One address. Matched case-insensitively, so it never becomes two contacts.' },
+      { Column: 'Phone', Use: 'Any format. The last ten digits decide whether the person is already saved.' },
+      { Column: 'GSTIN', Use: '15 characters. Gives the buyer its state and PAN for invoicing.' },
+      { Column: 'PAN', Use: 'Optional. Taken from the GSTIN when left blank.' },
+      { Column: 'Address / State / Pincode', Use: 'Whatever the list has. A pin code is kept only if it is 6 digits.' },
+      { Column: 'Status', Use: 'Active, Lead, Inactive or Blocked. Blank means Active.' },
+      { Column: 'Notes', Use: 'Free text, kept as the contact note.' },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(template), 'Customers');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(guide), 'How To Fill');
+    XLSX.writeFile(wb, 'AINOS_Customer_Import_Template.xlsx');
+    toast.success('Template downloaded. Fill it in and import it back.');
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    setReport(null);
+    try {
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: '' });
+      if (rows.length === 0) throw new Error('That sheet has no rows to read.');
+
+      const res = await fetch('/api/customers/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows, source: file.name }),
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((result as { error?: string }).error || 'Import could not be completed');
+
+      const data = result as Partial<ImportReport>;
+      const next: ImportReport = {
+        created: data.created ?? 0,
+        updated: data.updated ?? 0,
+        skipped: data.skipped ?? 0,
+        failed: data.failed ?? 0,
+        details: data.details ?? [],
+        updatedDetails: data.updatedDetails ?? [],
+        skippedDetails: data.skippedDetails ?? [],
+        errorDetails: data.errorDetails ?? [],
+      };
+      setReport(next);
+
+      const added = next.created + next.updated;
+      const summary = `${next.created} added${next.updated ? `, ${next.updated} completed` : ''}` +
+        `${next.skipped ? `, ${next.skipped} already there` : ''}` +
+        `${next.failed ? `, ${next.failed} not readable` : ''}`;
+      if (added) toast.success(`Imported: ${summary}`);
+      else toast.error(next.errorDetails[0]?.reason || 'Nothing was imported - check the column names against the Template');
+
+      if (added) fetchCustomers();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Import failed');
+    }
+    setImporting(false);
+    e.target.value = '';
+  };
+
   const filteredCustomers = customers.filter(c =>
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.email?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -80,19 +189,95 @@ export default function CustomersPage() {
             <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'hsl(var(--foreground))' }}>Customers</h1>
             <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Manage your customer database</p>
           </div>
-          <motion.button 
-            whileHover={{ scale: 1.02 }} 
-            whileTap={{ scale: 0.98 }} 
-            onClick={() => setShowForm(true)}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-medium transition-all"
-            style={{ 
-              background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%)',
-              boxShadow: '0 4px 14px 0 hsl(var(--primary) / 0.39)'
-            }}
-          >
-            <Plus className="w-4 h-4" /> Add Customer
-          </motion.button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleDownloadTemplate}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+              style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}
+            >
+              <Download className="w-4 h-4" /> Template
+            </button>
+            <label
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer transition-all"
+              style={{ background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--primary))' }}
+              title="Import a list from Excel or CSV"
+            >
+              {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {importing ? 'Importing...' : 'Import Excel'}
+              <input type="file" accept=".xlsx,.xls,.csv" onChange={handleImport} className="hidden" disabled={importing} />
+            </label>
+            <motion.button 
+              whileHover={{ scale: 1.02 }} 
+              whileTap={{ scale: 0.98 }} 
+              onClick={() => setShowForm(true)}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-medium transition-all"
+              style={{ 
+                background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%)',
+                boxShadow: '0 4px 14px 0 hsl(var(--primary) / 0.39)'
+              }}
+            >
+              <Plus className="w-4 h-4" /> Add Customer
+            </motion.button>
+          </div>
         </div>
+
+        {/* What the last import actually did, row by row */}
+        {report && (
+          <div className="p-5 rounded-2xl"
+            style={{
+              background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--secondary)) 100%)',
+              border: '1px solid hsl(var(--border) / 0.5)',
+              boxShadow: '0 4px 20px -4px rgb(0 0 0 / 0.08), 0 2px 8px -2px rgb(0 0 0 / 0.04)',
+            }}>
+            <div className="flex items-start justify-between gap-4">
+              <h2 className="text-sm font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
+                Import result: {report.created} added
+                {report.updated ? `, ${report.updated} completed` : ''}
+                {report.skipped ? `, ${report.skipped} already there` : ''}
+                {report.failed ? `, ${report.failed} not read` : ''}
+              </h2>
+              <button onClick={() => setReport(null)} className="p-1 rounded-lg"
+                style={{ color: 'hsl(var(--muted-foreground))' }} title="Dismiss">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="mt-3 space-y-1.5 max-h-64 overflow-y-auto">
+              {report.details.map((d, i) => (
+                <div key={`ok-${i}`} className="flex items-start gap-2 text-xs">
+                  <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600" />
+                  <span style={{ color: 'hsl(var(--foreground))' }}>{d.name} <span style={{ color: 'hsl(var(--muted-foreground))' }}>· row {d.row}</span></span>
+                </div>
+              ))}
+              {report.updatedDetails.map((d, i) => (
+                <div key={`up-${i}`} className="flex items-start gap-2 text-xs">
+                  <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: 'hsl(var(--primary))' }} />
+                  <span style={{ color: 'hsl(var(--foreground))' }}>
+                    {d.name} <span style={{ color: 'hsl(var(--muted-foreground))' }}>· filled in {(d.filled ?? []).join(', ') || 'nothing'} · row {d.row}</span>
+                  </span>
+                </div>
+              ))}
+              {[...report.details, ...report.updatedDetails].flatMap((d, i) => (d.warnings ?? []).map((w, j) => (
+                <div key={`w-${i}-${j}`} className="flex items-start gap-2 text-xs ml-[22px]">
+                  <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: 'hsl(var(--primary))' }} />
+                  <span style={{ color: 'hsl(var(--muted-foreground))' }}>{w}</span>
+                </div>
+              )))}
+              {report.skippedDetails.map((d, i) => (
+                <div key={`skip-${i}`} className="flex items-start gap-2 text-xs">
+                  <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: 'hsl(var(--muted-foreground))' }} />
+                  <span style={{ color: 'hsl(var(--muted-foreground))' }}>{d.reason} — left as it is, so nobody is counted twice</span>
+                </div>
+              ))}
+              {report.errorDetails.map((d, i) => (
+                <div key={`err-${i}`} className="flex items-start gap-2 text-xs">
+                  <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: 'hsl(var(--destructive))' }} />
+                  <span style={{ color: 'hsl(var(--foreground))' }}>Row {d.row}: {d.reason}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Stats Row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
@@ -359,7 +544,9 @@ export default function CustomersPage() {
                 }}>
                 <Users className="w-12 h-12 mb-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
                 <p style={{ color: 'hsl(var(--foreground))' }}>No customers found</p>
-                <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>Add your first customer to get started</p>
+                <p className="text-sm mt-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  Add one by hand, import a list with Excel, or scan business cards — all three land here.
+                </p>
               </div>
             ) : (
               filteredCustomers.map((customer, index) => (
