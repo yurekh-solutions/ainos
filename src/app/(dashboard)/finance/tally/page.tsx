@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileSpreadsheet, Upload, Download, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { FileSpreadsheet, Upload, Download, CheckCircle2, AlertCircle, AlertTriangle, Loader2, X } from 'lucide-react';
+import Link from 'next/link';
 import * as XLSX from 'xlsx';
 
 interface Voucher {
@@ -22,11 +23,31 @@ interface Voucher {
   status: string;
 }
 
+interface ImportOutcome {
+  rows?: number[];
+  invoiceNumber?: string;
+  partyName?: string;
+  totalAmount?: number;
+  supplyType?: string;
+  reason?: string;
+  warnings?: string[];
+}
+
+interface ImportReport {
+  created: number;
+  skipped: number;
+  failed: number;
+  details: ImportOutcome[];
+  skippedDetails: ImportOutcome[];
+  errorDetails: ImportOutcome[];
+}
+
 export default function TallyPage() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [company, setCompany] = useState<{ name: string; gstNumber: string }>({ name: '', gstNumber: '' });
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
+  const [report, setReport] = useState<ImportReport | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -52,23 +73,44 @@ export default function TallyPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleDownloadTemplate = () => {
-    const template = [{
-      'Voucher No': 'INV-001',
-      'Date': '2026-01-15',
-      'Party Name': 'Rajesh Enterprises',
-      'Party GSTIN': '27AABCU9603R1ZM',
-      'Party State': 'Maharashtra',
-      'Item': 'Website Design',
-      'Qty': 1,
-      'Rate': 50000,
-      'GST%': 18,
-      'Amount': 59000,
-    }];
-    const ws = XLSX.utils.json_to_sheet(template);
+    // Written the way the importer reads: one line per item, the same
+    // "Voucher No" on both lines of a two-item bill, dates as dd-mm-yyyy.
+    const template = [
+      {
+        'Voucher No': 'INV-001', 'Date': '15-01-2026', 'Party Name': 'Rajesh Enterprises',
+        'Party GSTIN': '27AABCU9603R1ZM', 'Place of Supply': 'Maharashtra',
+        'Item': 'Website Design', 'HSN': '9983', 'Qty': 1, 'Rate': 50000, 'GST%': 18,
+        'Taxable Value': 50000, 'Status': 'Sent', 'Due Date': '14-02-2026', 'Paid Amount': 0,
+      },
+      {
+        'Voucher No': 'INV-001', 'Date': '15-01-2026', 'Party Name': 'Rajesh Enterprises',
+        'Item': 'Annual Maintenance', 'HSN': '9983', 'Qty': 12, 'Rate': 2500, 'GST%': 18,
+        'Taxable Value': 30000,
+      },
+      {
+        'Voucher No': 'INV-002', 'Date': '02-02-2026', 'Party Name': 'Delhi Traders',
+        'Party GSTIN': '07ABCDE1234F1Z5', 'Place of Supply': 'Delhi',
+        'Item': 'Consulting', 'HSN': '9983', 'Qty': 1, 'Rate': 40000, 'GST%': 18,
+        'Taxable Value': 40000, 'Status': 'Paid', 'Paid Amount': 47200,
+      },
+    ];
+    const guide = [
+      { Column: 'Voucher No', Use: 'Your bill number. Same number on the next line = one bill with two items.' },
+      { Column: 'Date', Use: 'dd-mm-yyyy, or a real Excel date. Leave empty for today.' },
+      { Column: 'Party Name', Use: 'Required. Matched to an existing customer by GSTIN first, then by name.' },
+      { Column: 'Party GSTIN', Use: 'Decides CGST+SGST vs IGST. Unregistered buyers: leave blank and give Place of Supply.' },
+      { Column: 'Place of Supply', Use: 'State name or 2-digit code, used when there is no buyer GSTIN.' },
+      { Column: 'Qty / Rate / GST%', Use: 'Taxable value = Qty x Rate. GST% may be 0, 5, 12, 18 or 28.' },
+      { Column: 'Taxable Value', Use: 'Optional. Overrides Qty x Rate when your sheet already has the value.' },
+      { Column: 'Status', Use: 'Sent, Paid, Partially Paid or Draft. Blank means Sent.' },
+      { Column: 'Paid Amount', Use: 'Already received against this bill.' },
+      { Column: 'Due Date', Use: 'Blank means 30 days after the bill date.' },
+    ];
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Import Template');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(template), 'Import Template');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(guide), 'How To Fill');
     XLSX.writeFile(wb, 'AINOS_Import_Template.xlsx');
-    setToast({ message: 'Template downloaded! Fill it and re-import.', type: 'success' });
+    setToast({ message: 'Template downloaded. Fill it in and import it back.', type: 'success' });
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -108,44 +150,49 @@ export default function TallyPage() {
     if (!file) return;
 
     setImporting(true);
+    setReport(null);
     try {
       const buffer = await file.arrayBuffer();
-      const wb = XLSX.read(buffer);
+      // cellDates keeps a real date cell as a date instead of the number
+      // 46037, which is what silently killed rows before.
+      const wb = XLSX.read(buffer, { cellDates: true });
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json(ws) as Record<string, unknown>[];
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: '' });
 
-      // Parse Excel rows into voucher format
-      const vouchers = data.map(row => ({
-        voucherNumber: String(row['Voucher No'] || row['Invoice No'] || ''),
-        date: String(row['Date'] || ''),
-        partyName: String(row['Party Name'] || row['Customer'] || ''),
-        partyGst: String(row['Party GSTIN'] || row['GSTIN'] || ''),
-        partyState: String(row['Party State'] || row['State'] || ''),
-        items: [{
-          name: String(row['Item'] || row['Product'] || 'Item'),
-          quantity: Number(row['Qty'] || row['Quantity'] || 1),
-          rate: Number(row['Rate'] || row['Price'] || 0),
-          gstRate: Number(row['GST%'] || row['GST Rate'] || 18),
-        }],
-        grandTotal: Number(row['Amount'] || row['Total'] || 0),
-      })).filter(v => v.partyName);
+      if (rows.length === 0) throw new Error('That sheet has no rows to read.');
 
       const res = await fetch('/api/tally', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vouchers }),
+        body: JSON.stringify({ rows, source: file.name }),
       });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((result as { error?: string }).error || 'Import could not be completed');
 
-      if (res.ok) {
-        const result = await res.json();
-        setToast({ message: `Imported ${result.created} invoices!`, type: 'success' });
-        fetchData();
-      }
-    } catch {
-      setToast({ message: 'Import failed', type: 'error' });
+      const reportData: ImportReport = {
+        created: (result as ImportReport).created ?? 0,
+        skipped: (result as ImportReport).skipped ?? 0,
+        failed: (result as ImportReport).failed ?? 0,
+        details: (result as ImportReport).details ?? [],
+        skippedDetails: (result as ImportReport).skippedDetails ?? [],
+        errorDetails: (result as ImportReport).errorDetails ?? [],
+      };
+      setReport(reportData);
+      const notes = reportData.details.flatMap((d) => d.warnings ?? []);
+      setToast({
+        message: reportData.created
+          ? `Imported ${reportData.created} invoice(s)` +
+            (reportData.skipped ? `, skipped ${reportData.skipped}` : '') +
+            (reportData.failed ? `, ${reportData.failed} not readable` : '')
+          : (notes[0] || 'Nothing was imported - check the sheet headings against the Template'),
+        type: reportData.created ? 'success' : 'error',
+      });
+      fetchData();
+    } catch (err) {
+      setToast({ message: err instanceof Error ? err.message : 'Import failed', type: 'error' });
     }
     setImporting(false);
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 5000);
     e.target.value = '';
   };
 
@@ -211,7 +258,65 @@ export default function TallyPage() {
               </p>
             </div>
           )}
+
+          {/* Without the seller's own registration nothing can tell an
+              intra-state bill from an inter-state one, so say it up front. */}
+          {company.name && !company.gstNumber && (
+            <div className="mt-4 flex items-start gap-2 rounded-xl p-3"
+              style={{ background: 'hsl(var(--primary) / 0.06)', border: '1px solid hsl(var(--primary) / 0.2)' }}>
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'hsl(var(--primary))' }} />
+              <p className="text-xs" style={{ color: 'hsl(var(--foreground))' }}>
+                No GSTIN is saved for {company.name}, so imported bills are booked as intra-state (CGST + SGST) even when the buyer is in another state.
+                {' '}<Link href="/company" className="font-semibold underline">Add your GSTIN</Link> before importing inter-state bills.
+              </p>
+            </div>
+          )}
         </div>
+
+        {/* What the last import actually did */}
+        {report && (
+          <div className="glass-card p-5">
+            <div className="flex items-start justify-between gap-4">
+              <h2 className="text-sm font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
+                Import result: {report.created} added{report.skipped ? `, ${report.skipped} already there` : ''}{report.failed ? `, ${report.failed} not read` : ''}
+              </h2>
+              <button onClick={() => setReport(null)} className="p-1 rounded-lg"
+                style={{ color: 'hsl(var(--muted-foreground))' }} title="Dismiss">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="mt-3 space-y-1.5 max-h-64 overflow-y-auto">
+              {report.details.map((d, i) => (
+                <div key={`ok-${i}`} className="flex items-start gap-2 text-xs">
+                  <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600" />
+                  <span style={{ color: 'hsl(var(--foreground))' }}>
+                    <span className="font-medium">{d.invoiceNumber}</span>
+                    {' '}{d.partyName} · ₹{Number(d.totalAmount ?? 0).toLocaleString('en-IN')} · {d.supplyType === 'inter' ? 'IGST' : 'CGST + SGST'}
+                  </span>
+                </div>
+              ))}
+              {report.details.flatMap((d, i) => (d.warnings ?? []).map((w, j) => (
+                <div key={`w-${i}-${j}`} className="flex items-start gap-2 text-xs ml-[22px]">
+                  <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: 'hsl(var(--primary))' }} />
+                  <span style={{ color: 'hsl(var(--muted-foreground))' }}>{w}</span>
+                </div>
+              )))}
+              {report.skippedDetails.map((d, i) => (
+                <div key={`skip-${i}`} className="flex items-start gap-2 text-xs">
+                  <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: 'hsl(var(--muted-foreground))' }} />
+                  <span style={{ color: 'hsl(var(--muted-foreground))' }}>{d.reason} — left as it is, so nothing was counted twice</span>
+                </div>
+              ))}
+              {report.errorDetails.map((d, i) => (
+                <div key={`err-${i}`} className="flex items-start gap-2 text-xs">
+                  <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: 'hsl(var(--destructive))' }} />
+                  <span style={{ color: 'hsl(var(--foreground))' }}>{d.reason}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Vouchers Table */}
         <div className="glass-card overflow-hidden">
@@ -264,8 +369,10 @@ export default function TallyPage() {
           ) : (
             <div className="p-12 text-center">
               <FileSpreadsheet className="w-16 h-16 mx-auto mb-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
-              <h3 className="text-lg font-medium mb-2" style={{ color: 'hsl(var(--foreground))' }}>No data</h3>
-              <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>Create invoices or import from Excel</p>
+              <h3 className="text-lg font-medium mb-2" style={{ color: 'hsl(var(--foreground))' }}>No data yet</h3>
+              <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                Bills you create in AINOS show up here, and bills from your old books come in through Import Excel.
+              </p>
             </div>
           )}
         </div>
