@@ -33,7 +33,7 @@ export const VERTICALS: Vertical[] = [
     icon: Target,
     gradient: 'from-violet-500 to-purple-600',
     landingHref: '/crm/leads',
-    routePrefixes: ['/crm'],
+    routePrefixes: ['/crm', '/dashboard/workspaces/crm'],
   },
   {
     key: 'supply',
@@ -43,7 +43,7 @@ export const VERTICALS: Vertical[] = [
     icon: Warehouse,
     gradient: 'from-blue-500 to-indigo-600',
     landingHref: '/inventory/stock',
-    routePrefixes: ['/inventory'],
+    routePrefixes: ['/inventory', '/dashboard/workspaces/supply'],
   },
   {
     key: 'people',
@@ -53,7 +53,7 @@ export const VERTICALS: Vertical[] = [
     icon: UserCheck,
     gradient: 'from-emerald-500 to-teal-600',
     landingHref: '/hr/employees',
-    routePrefixes: ['/hr', '/planning'],
+    routePrefixes: ['/hr', '/planning', '/dashboard/workspaces/people'],
   },
   {
     key: 'support',
@@ -63,7 +63,7 @@ export const VERTICALS: Vertical[] = [
     icon: LifeBuoy,
     gradient: 'from-cyan-500 to-blue-600',
     landingHref: '/support/helpdesk',
-    routePrefixes: ['/support'],
+    routePrefixes: ['/support', '/dashboard/workspaces/support'],
   },
   {
     key: 'workspace',
@@ -73,7 +73,7 @@ export const VERTICALS: Vertical[] = [
     icon: Layers,
     gradient: 'from-indigo-500 to-violet-600',
     landingHref: '/projects',
-    routePrefixes: ['/projects', '/calendar', '/team', '/automations', '/reports', '/approvals', '/compliance'],
+    routePrefixes: ['/projects', '/calendar', '/team', '/automations', '/reports', '/approvals', '/compliance', '/dashboard/workspaces/workspace'],
   },
   {
     key: 'finance',
@@ -87,6 +87,7 @@ export const VERTICALS: Vertical[] = [
       '/dashboard/finance', '/invoices', '/customers', '/products',
       '/finance/expenses', '/finance/reminders', '/finance/quotes',
       '/finance/purchase-orders', '/finance/challans', '/finance/tally', '/finance/templates',
+      '/dashboard/workspaces/finance',
     ],
   },
   {
@@ -101,6 +102,7 @@ export const VERTICALS: Vertical[] = [
       '/finance/daybook', '/finance/reports', '/finance/gst-reports',
       '/finance/recurring-invoices', '/finance/bank-accounts',
       '/finance/credit-notes', '/finance/debit-notes',
+      '/dashboard/workspaces/billing',
     ],
   },
   {
@@ -111,7 +113,7 @@ export const VERTICALS: Vertical[] = [
     icon: Radio,
     gradient: 'from-pink-500 to-rose-600',
     landingHref: '/dashboard/marketing',
-    routePrefixes: ['/dashboard/marketing', '/marketing'],
+    routePrefixes: ['/dashboard/marketing', '/marketing', '/dashboard/workspaces/marketing'],
   },
   {
     key: 'ecommerce',
@@ -121,7 +123,7 @@ export const VERTICALS: Vertical[] = [
     icon: ShoppingBag,
     gradient: 'from-teal-500 to-emerald-600',
     landingHref: '/ecommerce/stores',
-    routePrefixes: ['/ecommerce'],
+    routePrefixes: ['/ecommerce', '/dashboard/workspaces/ecommerce'],
   },
   {
     key: 'pos',
@@ -131,7 +133,7 @@ export const VERTICALS: Vertical[] = [
     icon: ReceiptText,
     gradient: 'from-sky-500 to-blue-600',
     landingHref: '/pos/sessions',
-    routePrefixes: ['/pos'],
+    routePrefixes: ['/pos', '/dashboard/workspaces/pos'],
   },
   {
     key: 'manufacturing',
@@ -141,7 +143,7 @@ export const VERTICALS: Vertical[] = [
     icon: Wrench,
     gradient: 'from-slate-500 to-gray-600',
     landingHref: '/manufacturing',
-    routePrefixes: ['/manufacturing'],
+    routePrefixes: ['/manufacturing', '/dashboard/workspaces/manufacturing'],
   },
   {
     key: 'operations',
@@ -151,7 +153,7 @@ export const VERTICALS: Vertical[] = [
     icon: Truck,
     gradient: 'from-orange-500 to-red-600',
     landingHref: '/operations/field-service',
-    routePrefixes: ['/operations', '/rental'],
+    routePrefixes: ['/operations', '/rental', '/dashboard/workspaces/operations'],
   },
 ];
 

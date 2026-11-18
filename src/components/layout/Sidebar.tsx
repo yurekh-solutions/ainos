@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession, signOut } from 'next-auth/react';
-import { ChevronLeft, ChevronRight, ChevronDown, LogOut, X, LayoutGrid, Lock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, LogOut, X, LayoutGrid, Lock, BookOpen } from 'lucide-react';
 import { OPEN_SIDEBAR_EVENT } from './TopBar';
 import { BrandMark } from './BrandMark';
 import { DASHBOARD_NAV, NAV_GROUPS, NavGroup, isDashboardActive, isGroupActive, matchesPath } from './navigation';
 import { verticalForPath, Vertical } from '@/lib/verticals';
+import { workspaceHref } from '@/lib/workspace-guides';
 
 // Deep indigo surface with one violet highlight for the active row
 const SURFACE = 'bg-gradient-to-b from-[#1d1752] via-[#18134a] to-[#120e36]';
@@ -44,7 +45,9 @@ function initialsOf(name?: string | null, email?: string | null) {
 
 function GroupNav({ group, collapsed, pathname, locked }: { group: NavGroup; collapsed: boolean; pathname: string; locked?: Set<string> }) {
   const Icon = group.icon;
-  const active = isGroupActive(pathname, group);
+  const guideHref = workspaceHref(group.key);
+  const onGuide = matchesPath(pathname, guideHref);
+  const active = isGroupActive(pathname, group) || onGuide;
   const onOverview = matchesPath(pathname, group.href);
   // Follows the route until the user toggles it manually
   const [toggled, setToggled] = useState<boolean | null>(null);
@@ -119,6 +122,17 @@ function GroupNav({ group, collapsed, pathname, locked }: { group: NavGroup; col
                 };
                 return (
                   <>
+                    <Link
+                      href={guideHref}
+                      className={`flex items-center gap-2.5 px-3 h-9 rounded-lg text-[13px] transition-colors ${
+                        onGuide ? 'bg-white/10 text-white font-medium' : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded-md flex items-center justify-center ${onGuide ? 'bg-white/20' : getIconBg(0)}`}>
+                        <BookOpen className="w-3.5 h-3.5 text-white" />
+                      </div>
+                      <span className="truncate flex-1">All tools &amp; guide</span>
+                    </Link>
                     {coreItems.map(renderItem)}
                     {advancedItems.length > 0 && (
                       <>

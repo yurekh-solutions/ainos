@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSession, signOut } from 'next-auth/react';
 import { LogOut, Settings, User, Menu, Search, CornerDownLeft } from 'lucide-react';
 import { NotificationsBell } from './NotificationsBell';
+import { PageGuideButton } from './PageGuideButton';
 import { BrandMark } from './BrandMark';
 import { DASHBOARD_NAV, NAV_GROUPS, NavItem } from './navigation';
 import { verticalForPath } from '@/lib/verticals';
@@ -167,6 +168,8 @@ export function TopBar() {
       </div>
 
       <div className="flex-1 lg:hidden" />
+
+      <PageGuideButton pathname={pathname} />
 
       <NotificationsBell />
 

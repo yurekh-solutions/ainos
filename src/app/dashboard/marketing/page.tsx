@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Send, PenTool, Megaphone, ArrowRight } from 'lucide-react';
 import {
   CARD, PAGE, CONTAINER, fadeUp, IconCircle, PageHeader, WidgetHeader, ViewAll, Skeleton, StatusPill, Tone,
-  marketingTools, useTemplateCount, formatDate,
+  marketingTools, useTemplateCount, formatDate, ToolCard,
 } from '@/components/dashboard/kit';
 
 interface Activity {
@@ -75,19 +75,7 @@ export default function MarketingOverviewPage() {
         {/* Tools */}
         <motion.section {...fadeUp(0.04)} className={`${CARD} p-3 sm:p-4`}>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
-            {tools.map(tool => (
-              <Link
-                key={tool.title}
-                href={tool.href}
-                className="group flex flex-col items-start gap-3 p-3.5 sm:p-5 rounded-2xl bg-[#faf9fc] hover:bg-white hover:shadow-[0_14px_30px_-12px_rgba(76,29,149,0.28)] hover:-translate-y-0.5 transition-all duration-200 min-w-0"
-              >
-                <IconCircle icon={tool.icon} tone={tool.tone} variant="gradient" size="lg" />
-                <div className="min-w-0 w-full">
-                  <p className="text-[13px] sm:text-sm font-semibold text-neutral-900 group-hover:text-[#6d28d9] transition-colors leading-snug">{tool.title}</p>
-                  <p className="text-[11px] sm:text-xs text-neutral-500 font-light mt-1 leading-relaxed line-clamp-2">{tool.short}</p>
-                </div>
-              </Link>
-            ))}
+            {tools.map(tool => <ToolCard key={tool.title} tool={tool} />)}
           </div>
         </motion.section>
 

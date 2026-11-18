@@ -13,6 +13,7 @@ import {
 import { VERTICALS, verticalByKey } from '@/lib/verticals';
 import { NAV_GROUPS } from '@/components/layout/navigation';
 import { getWorkspaceOffering } from '@/lib/workspace-pricing';
+import { workspaceHref } from '@/lib/workspace-guides';
 
 const PLAN_LABELS: Record<string, string> = {
   starter: 'AINOS Starter',
@@ -112,7 +113,7 @@ export default function DashboardPage() {
               const preview = items.slice(0, 4);
               const locked = !!allowed && !allowed.includes(v.key);
               const price = getWorkspaceOffering(v.key)?.monthlyUsd ?? null;
-              const href = locked ? `/billing/workspaces/${v.key}` : v.landingHref;
+              const href = locked ? `/billing/workspaces/${v.key}` : workspaceHref(v.key);
               return (
                 <motion.div key={v.key} {...fadeUp(0.1 + i * 0.02)}
                   className={`relative rounded-2xl bg-white border p-2.5 sm:p-4 shadow-[0_4px_20px_-8px_rgb(0_0_0_/_0.08)] transition-all ${locked ? 'border-neutral-200 opacity-95' : 'border-neutral-100 hover:shadow-[0_12px_30px_-10px_rgb(109_40_217_/_0.22)] hover:border-purple-200'}`}>

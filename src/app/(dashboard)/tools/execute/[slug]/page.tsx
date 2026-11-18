@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft, ArrowRight, Workflow, Coins, Play, Loader2, CheckCircle, AlertCircle, Lock, Send, Copy, Check, Download, Plus, Trash2, FileText, Mail, Users, BarChart3, Share2, PenLine, Table2, Upload, Star, Palette, Search, Megaphone, Rocket, ImageIcon, QrCode, Presentation, ShoppingBag, Briefcase, Scale, MessageCircle, BookOpen, MessageSquareText, Store, Package, UserCog, ExternalLink } from 'lucide-react';
+  ArrowLeft, ArrowRight, Workflow, Coins, Play, Loader2, CheckCircle, AlertCircle, Lock, Send, Copy, Check, Download, Plus, Trash2, FileText, Mail, Users, BarChart3, Share2, PenLine, Table2, Upload, Star, Palette, Search, Megaphone, Rocket, ImageIcon, QrCode, Presentation, ShoppingBag, Briefcase, Scale, MessageCircle, BookOpen, MessageSquareText, Store, Package, UserCog, History, Clock, Lightbulb, ExternalLink } from 'lucide-react';
+import { getToolGuide, type ToolGuide } from '@/lib/tool-guides';
 
 interface Tool {
   id: string;
@@ -16,6 +17,16 @@ interface Tool {
   accessible?: boolean;
   level?: number;
   requiredPlan?: string;
+}
+
+interface RunItem {
+  id: string;
+  tool: string | null;
+  toolName: string | null;
+  status: string;
+  createdAt: string;
+  headline: string | null;
+  inputHint: string | null;
 }
 
 interface InvoiceItem {
@@ -331,6 +342,12 @@ export default function ToolExecutePage() {
   const [copied, setCopied] = useState<string | null>(null);
   // Config-driven fields for the AI Studio tools (one state object, not 60)
   const [formValues, setFormValues] = useState<Record<string, string>>({});
+  // Per-tool dashboard tabs: run form, how-to guide, past runs
+  const [tab, setTab] = useState<'use' | 'guide' | 'history'>('use');
+  const [runs, setRuns] = useState<RunItem[]>([]);
+  // Which tool slug the loaded history belongs to — drives the loading state
+  // without setState inside the effect body (React compiler rule).
+  const [runsLoadedFor, setRunsLoadedFor] = useState<string | null>(null);
 
   const fields = TOOL_FIELDS[slug];
   const subscriptionTarget = SUBSCRIPTION_REDIRECTS[slug];
@@ -373,6 +390,18 @@ export default function ToolExecutePage() {
       .then(d => setAudience(typeof d.recipients === 'number' ? d.recipients : 0))
       .catch(() => setAudience(0));
   }, [slug]);
+
+  // Past runs load lazily when the History tab opens.
+  useEffect(() => {
+    if (tab !== 'history') return;
+    let active = true;
+    fetch(`/api/tools/runs?slug=${encodeURIComponent(slug)}&limit=15`)
+      .then(res => res.ok ? res.json() : { runs: [] })
+      .then(d => { if (active) setRuns(Array.isArray(d.runs) ? d.runs : []); })
+      .catch(() => { if (active) setRuns([]); })
+      .finally(() => { if (active) setRunsLoadedFor(slug); });
+    return () => { active = false; };
+  }, [tab, slug]);
 
   const buildInput = (): Record<string, unknown> => {
     // AI Studio tools submit the configured fields verbatim
@@ -455,6 +484,7 @@ export default function ToolExecutePage() {
 
   const Icon = SLUG_ICONS[slug] || Workflow;
   const out = result?.output;
+  const guide = getToolGuide(slug);
 
   // Subscription tools have no form — point the user at the live feature
   if (subscriptionTarget) {
@@ -490,6 +520,10 @@ export default function ToolExecutePage() {
             </button>
           </div>
         </motion.div>
+
+        <div className="mt-5">
+          <ToolGuidePanel guide={guide} />
+        </div>
       </div>
     );
   }
@@ -542,6 +576,29 @@ export default function ToolExecutePage() {
         )}
       </motion.div>
 
+      {/* Tabs — run form, guide, history */}
+      <div className="flex gap-1 p-1 bg-gray-100 rounded-xl mb-6 w-full sm:w-auto sm:inline-flex">
+        {([
+          { id: 'use', label: 'Use it', icon: Play },
+          { id: 'guide', label: 'How to use', icon: BookOpen },
+          { id: 'history', label: 'History', icon: History },
+        ] as const).map(t => {
+          const TabIcon = t.icon;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex-1 sm:flex-none sm:px-4 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                tab === t.id ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-800'
+              }`}
+            >
+              <TabIcon className="w-4 h-4" /> {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === 'use' && (<>
       {/* Input form — per tool */}
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-white border border-gray-100 rounded-2xl p-6 mb-6 shadow-sm">
         {(slug === 'ai-content-writer' || slug === 'social-media-generator' || (!SLUG_ICONS[slug])) && (
@@ -1164,6 +1221,12 @@ export default function ToolExecutePage() {
           )}
         </motion.div>
       )}
+
+      </>)}
+
+      {tab === 'guide' && <GuideStartNote onStart={() => setTab('use')} />}
+      {tab === 'guide' && <ToolGuidePanel guide={guide} />}
+      {tab === 'history' && <ToolHistoryPanel runs={runs} loading={runsLoadedFor !== slug} />}
     </div>
   );
 }
@@ -1274,6 +1337,138 @@ function StudioOutput({ out, copied, onCopy }: {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// ─── Per-tool dashboard: guide + history ────────────────────────────────────
+
+function GuideStartNote({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border border-purple-100 bg-purple-50 px-5 py-4 mb-4">
+      <p className="flex-1 text-sm text-purple-800">
+        Read the steps below, then come back whenever you are ready — your inputs stay on the form.
+      </p>
+      <button
+        onClick={onStart}
+        className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition-colors flex-shrink-0"
+      >
+        <Play className="w-4 h-4" /> Start now
+      </button>
+    </div>
+  );
+}
+
+function ToolGuidePanel({ guide }: { guide: ToolGuide }) {
+  return (
+    <div className="space-y-4 md:space-y-5">
+      {/* Summary card */}
+      <div className="bg-white border border-gray-100 rounded-2xl p-5 md:p-6 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center flex-shrink-0">
+            <BookOpen className="w-5 h-5 text-purple-600" />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-base md:text-lg font-bold text-gray-900">How to use this tool</h2>
+            <p className="text-sm text-gray-600 mt-1 leading-relaxed">{guide.summary}</p>
+            <div className="flex flex-wrap gap-2 mt-3">
+              <span className="px-2.5 py-1 rounded-full bg-gray-100 text-xs text-gray-600">Best for: {guide.bestFor}</span>
+              <span className="px-2.5 py-1 rounded-full bg-gray-100 text-xs text-gray-600 inline-flex items-center gap-1">
+                <Clock className="w-3 h-3" /> {guide.timeToRun}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-5 gap-4 md:gap-5">
+        {/* Steps */}
+        <div className="lg:col-span-3 bg-white border border-gray-100 rounded-2xl p-5 md:p-6 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 mb-4">Step by step</h3>
+          <ol className="space-y-4">
+            {guide.steps.map((s, i) => (
+              <li key={`${s.title}-${i}`} className="flex gap-3">
+                <span className="w-7 h-7 rounded-full bg-purple-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
+                  {i + 1}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">{s.title}</p>
+                  <p className="text-sm text-gray-600 leading-relaxed">{s.detail}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        {/* Outcome + tips */}
+        <div className="lg:col-span-2 space-y-4 md:space-y-5">
+          <div className="bg-white border border-gray-100 rounded-2xl p-5 md:p-6 shadow-sm">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">What you get</h3>
+            <ul className="space-y-2.5">
+              {guide.whatYouGet.map((w, i) => (
+                <li key={`${w}-${i}`} className="flex gap-2 text-sm text-gray-600 leading-relaxed">
+                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                  <span className="min-w-0">{w}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {guide.tips.length > 0 && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-5 md:p-6 shadow-sm">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3 inline-flex items-center gap-1.5">
+                <Lightbulb className="w-4 h-4 text-amber-500" /> Tips
+              </h3>
+              <ul className="space-y-2">
+                {guide.tips.map((t, i) => (
+                  <li key={`${t}-${i}`} className="text-sm text-gray-600 leading-relaxed">• {t}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ToolHistoryPanel({ runs, loading }: { runs: RunItem[]; loading: boolean }) {
+  if (loading) {
+    return <div className="h-40 bg-white border border-gray-100 rounded-2xl animate-pulse" />;
+  }
+  if (!runs.length) {
+    return (
+      <div className="bg-white border border-gray-100 rounded-2xl p-10 text-center shadow-sm">
+        <History className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+        <p className="font-semibold text-gray-700">No runs yet</p>
+        <p className="text-sm text-gray-400 mt-1">Run this tool once and every result will be listed here.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm divide-y divide-gray-50">
+      {runs.map(r => (
+        <div key={r.id} className="flex items-start gap-3 p-4 md:p-5">
+          <span
+            className={`mt-1.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+              r.status === 'completed' ? 'bg-green-500' : r.status === 'failed' ? 'bg-red-500' : 'bg-amber-400'
+            }`}
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-gray-900 truncate">{r.headline || r.inputHint || 'Completed run'}</p>
+            {r.headline && r.inputHint && <p className="text-xs text-gray-400 truncate">{r.inputHint}</p>}
+            <p className="text-xs text-gray-400 mt-1">
+              {new Date(r.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+            </p>
+          </div>
+          <span
+            className={`text-[11px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 capitalize ${
+              r.status === 'completed' ? 'bg-green-50 text-green-700' : r.status === 'failed' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700'
+            }`}
+          >
+            {r.status}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }
