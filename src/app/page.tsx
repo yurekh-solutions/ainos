@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { SEO_SUITES } from '@/lib/seo-catalog';
 import {
   ArrowRight, Users, MessageSquareText, ScrollText, Contact2, Megaphone, Package, Scale, Shield, Timer, Headphones, BarChart3, CheckCircle2, TrendingUp, Building2, Layers, UserPlus, LayoutGrid, FileSpreadsheet, Rocket, Loader2, ArrowDownRight, Quote, ChevronLeft, ChevronRight, ChevronDown, Star, Palette, Search, PenLine, Presentation, MessageSquare, QrCode, ShoppingBag, Wallet, UserCog, Boxes, LineChart } from 'lucide-react';
 
@@ -259,6 +260,7 @@ export default function AinosLandingPage() {
             <a href="#modules" className="text-sm text-neutral-700 hover:text-neutral-900 transition-colors" onClick={(e) => handleNavClick(e, '#modules')}>Modules</a>
             <a href="#workflow" className="text-sm text-neutral-700 hover:text-neutral-900 transition-colors" onClick={(e) => handleNavClick(e, '#workflow')}>Why AINOS</a>
             <a href="#about" className="text-sm text-neutral-700 hover:text-neutral-900 transition-colors" onClick={(e) => handleNavClick(e, '#about')}>About</a>
+            <Link href="/features" className="text-sm text-neutral-700 hover:text-neutral-900 transition-colors">Features</Link>
           </div>
 
           <div className="flex items-center gap-3">
@@ -296,6 +298,7 @@ export default function AinosLandingPage() {
               <a href="#modules" className="px-4 py-3 text-base font-medium text-gray-900 hover:bg-purple-50 rounded-lg transition-colors" onClick={(e) => { handleNavClick(e, '#modules'); setMenuOpen(false); }}>Modules</a>
               <a href="#workflow" className="px-4 py-3 text-base font-medium text-gray-900 hover:bg-purple-50 rounded-lg transition-colors" onClick={(e) => { handleNavClick(e, '#workflow'); setMenuOpen(false); }}>Why AINOS</a>
               <a href="#about" className="px-4 py-3 text-base font-medium text-gray-900 hover:bg-purple-50 rounded-lg transition-colors" onClick={(e) => { handleNavClick(e, '#about'); setMenuOpen(false); }}>About</a>
+              <Link href="/features" className="px-4 py-3 text-base font-medium text-gray-900 hover:bg-purple-50 rounded-lg transition-colors" onClick={() => setMenuOpen(false)}>Features</Link>
             </nav>
           </div>
 
@@ -1278,6 +1281,8 @@ export default function AinosLandingPage() {
                 <li><a href="#modules" onClick={(e) => handleNavClick(e, '#modules')} className="hover:text-[#4c1d95] transition-colors">Modules</a></li>
                 <li><a href="#how" onClick={(e) => handleNavClick(e, '#how')} className="hover:text-[#4c1d95] transition-colors">How it works</a></li>
                 <li><a href="#workflow" onClick={(e) => handleNavClick(e, '#workflow')} className="hover:text-[#4c1d95] transition-colors">Why AINOS</a></li>
+                <li><Link href="/features" className="hover:text-[#4c1d95] transition-colors">All features</Link></li>
+                <li><Link href="/blog" className="hover:text-[#4c1d95] transition-colors">Blog</Link></li>
               </ul>
             </div>
 
@@ -1288,6 +1293,8 @@ export default function AinosLandingPage() {
                 <li><a href="#about" onClick={(e) => handleNavClick(e, '#about')} className="hover:text-[#4c1d95] transition-colors">About</a></li>
                 <li><Link href="https://yurekh.com/" target="_blank" rel="noopener noreferrer" className="hover:text-[#4c1d95] transition-colors">Yurekh</Link></li>
                 <li><Link href="/auth/signin" className="hover:text-[#4c1d95] transition-colors">Sign In</Link></li>
+                <li><Link href="/privacy" className="hover:text-[#4c1d95] transition-colors">Privacy</Link></li>
+                <li><Link href="/terms" className="hover:text-[#4c1d95] transition-colors">Terms</Link></li>
               </ul>
             </div>
 
@@ -1299,6 +1306,14 @@ export default function AinosLandingPage() {
               </Link>
             </div>
           </div>
+
+          <nav aria-label="Suites" className="mb-8 flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-500">
+            {SEO_SUITES.map((s) => (
+              <Link key={s.slug} href={`/features/${s.slug}`} className="hover:text-[#4c1d95] transition-colors">
+                {s.name.replace(/^AINOS /, '')}
+              </Link>
+            ))}
+          </nav>
 
           <div className="pt-6 border-t border-gray-200 flex items-center justify-center text-sm text-gray-500">
             <p>© {new Date().getFullYear()} AINOS. All rights reserved. <Link href="https://yurekh.com/" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#4c1d95] hover:text-[#3b0f78] transition-colors">YUREKH</Link></p>

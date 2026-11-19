@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { Sidebar } from '@/components/layout/Sidebar';
@@ -7,6 +8,9 @@ import { TopBar } from '@/components/layout/TopBar';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { SessionKeepAlive } from '@/components/auth/SessionKeepAlive';
 import { AuthProvider } from '@/components/auth/AuthProvider';
+import { AppPageTitle } from '@/components/seo/AppPageTitle';
+
+export const metadata: Metadata = { title: 'Dashboard', robots: { index: false, follow: false } };
 
 export default async function DashboardLayout({
   children,
@@ -24,6 +28,7 @@ export default async function DashboardLayout({
 
   return (
     <AuthProvider>
+      <AppPageTitle />
       <SessionKeepAlive />
       <div className="flex h-screen bg-[#f5f6f8]">
         <Sidebar />

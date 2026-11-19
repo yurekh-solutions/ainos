@@ -17,7 +17,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const contentPreview = post.excerpt || post.content?.substring(0, 160) || post.title;
 
   return {
-    title: `${post.title} | AINOS Blog`,
+    // Absolute: the post title already carries the brand, so skip the root template.
+    title: { absolute: `${post.title} | AINOS Blog` },
     description: contentPreview,
     keywords: Array.isArray(post.tags) ? post.tags.join(', ') : '',
     authors: [{ name: 'AINOS AI Blog Agent' }],
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: post.featuredImage ? [{ url: post.featuredImage, width: 1200, height: 630 }] : [],
       type: 'article',
       publishedTime: post.publishedAt?.toISOString(),
-      modifiedTime: post.createdAt?.toISOString(),
+      modifiedTime: (post.updatedAt || post.createdAt)?.toISOString(),
       tags: Array.isArray(post.tags) ? post.tags as string[] : [],
     },
     twitter: {
@@ -94,7 +95,7 @@ export default async function BlogPostPage({ params }: Props) {
     description: post.excerpt || post.content?.substring(0, 160) || post.title,
     image: post.featuredImage ? [post.featuredImage] : [],
     datePublished: post.publishedAt?.toISOString() || post.createdAt?.toISOString(),
-    dateModified: post.createdAt?.toISOString(),
+    dateModified: (post.updatedAt || post.createdAt)?.toISOString(),
     author: (post as Record<string, unknown>).authorName ? {
       '@type': 'Person',
       name: (post as Record<string, unknown>).authorName as string,
