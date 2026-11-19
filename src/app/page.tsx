@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { SEO_SUITES } from '@/lib/seo-catalog';
+import { ToolsDirectory } from '@/components/seo/ToolsDirectory';
 import {
   ArrowRight, Users, MessageSquareText, ScrollText, Contact2, Megaphone, Package, Scale, Shield, Timer, Headphones, BarChart3, CheckCircle2, TrendingUp, Building2, Layers, UserPlus, LayoutGrid, FileSpreadsheet, Rocket, Loader2, ArrowDownRight, Quote, ChevronLeft, ChevronRight, ChevronDown, Star, Palette, Search, PenLine, Presentation, MessageSquare, QrCode, ShoppingBag, Wallet, UserCog, Boxes, LineChart } from 'lucide-react';
 
@@ -1307,13 +1307,7 @@ export default function AinosLandingPage() {
             </div>
           </div>
 
-          <nav aria-label="Suites" className="mb-8 flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-500">
-            {SEO_SUITES.map((s) => (
-              <Link key={s.slug} href={`/features/${s.slug}`} className="hover:text-[#4c1d95] transition-colors">
-                {s.name.replace(/^AINOS /, '')}
-              </Link>
-            ))}
-          </nav>
+          <ToolsDirectory className="mb-10 border-t border-gray-200 pt-10" />
 
           <div className="pt-6 border-t border-gray-200 flex items-center justify-center text-sm text-gray-500">
             <p>© {new Date().getFullYear()} AINOS. All rights reserved. <Link href="https://yurekh.com/" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#4c1d95] hover:text-[#3b0f78] transition-colors">YUREKH</Link></p>

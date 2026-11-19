@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { SEO_SUITES } from '@/lib/seo-catalog';
+import { ToolsDirectory } from '@/components/seo/ToolsDirectory';
 
 // Public marketing chrome for every /features page: server-rendered so crawlers
 // see real links to every suite and tool, no sign-in required.
@@ -27,24 +27,7 @@ export default function FeaturesLayout({ children }: { children: React.ReactNode
 
       <footer className="border-t border-gray-100 bg-gray-50/60">
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:grid-cols-5">
-            {SEO_SUITES.map(suite => (
-              <div key={suite.slug}>
-                <Link href={`/features/${suite.slug}`} className="text-sm font-semibold text-gray-900 hover:text-[#4c1d95]">
-                  {suite.name.replace(/^AINOS /, '')}
-                </Link>
-                <ul className="mt-2 space-y-1.5">
-                  {suite.tools.map(tool => (
-                    <li key={tool.slug}>
-                      <Link href={`/features/${suite.slug}/${tool.slug}`} className="text-xs text-gray-500 hover:text-[#4c1d95]">
-                        {tool.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
+          <ToolsDirectory />
           <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-gray-200 pt-6 text-sm text-gray-500 sm:flex-row">
             <p>© {new Date().getFullYear()} AINOS. All rights reserved.</p>
             <div className="flex gap-5">
