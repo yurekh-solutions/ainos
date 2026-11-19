@@ -17,8 +17,10 @@ jobs:
     steps:
       - name: Ping AINOS health endpoint
         run: |
-          echo "Pinging AINOS server to prevent cold start..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://ainos-ywu0.onrender.com/api/ping)
+          echo "Pinging AINOS server to prevent cold start (retry 3x, 90s each)..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            --retry 3 --retry-all-errors --retry-delay 10 --max-time 90 \
+            https://ainos-ywu0.onrender.com/api/ping)
           echo "Response status: $response"
           if [ "$response" = "200" ]; then
             echo "✅ AINOS server is alive"
@@ -28,8 +30,10 @@ jobs:
 
       - name: Ping GST Scraper service
         run: |
-          echo "Pinging GST Scraper health endpoint to prevent cold start (no GSTN call)..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://ainos-gst-scraper.onrender.com/api/v1/health)
+          echo "Pinging GST Scraper health endpoint to prevent cold start (retry 3x, 90s each, no GSTN call)..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            --retry 3 --retry-all-errors --retry-delay 10 --max-time 90 \
+            https://ainos-gst-scraper.onrender.com/api/v1/health)
           echo "Response status: $response"
           if [ "$response" = "200" ]; then
             echo "✅ GST Scraper is alive"
@@ -39,8 +43,10 @@ jobs:
       
       - name: Ping Template Extractor service
         run: |
-          echo "Pinging Template Extractor to prevent cold start..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://ainos-template-extractor.onrender.com/api/v1/health)
+          echo "Pinging Template Extractor to prevent cold start (retry 3x, 90s each)..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            --retry 3 --retry-all-errors --retry-delay 10 --max-time 90 \
+            https://ainos-template-extractor.onrender.com/api/v1/health)
           echo "Response status: $response"
           if [ "$response" = "200" ]; then
             echo "✅ Template Extractor is alive"
