@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession, signOut } from 'next-auth/react';
-import { ChevronLeft, ChevronRight, ChevronDown, LogOut, X, LayoutGrid, Lock, BookOpen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, LogOut, X, LayoutGrid, LayoutDashboard, Lock } from 'lucide-react';
 import { OPEN_SIDEBAR_EVENT } from './TopBar';
 import { BrandMark } from './BrandMark';
 import { DASHBOARD_NAV, NAV_GROUPS, NavGroup, isDashboardActive, isGroupActive, matchesPath } from './navigation';
@@ -45,13 +45,18 @@ function initialsOf(name?: string | null, email?: string | null) {
 
 function GroupNav({ group, collapsed, pathname, locked }: { group: NavGroup; collapsed: boolean; pathname: string; locked?: Set<string> }) {
   const Icon = group.icon;
-  const guideHref = workspaceHref(group.key);
-  const onGuide = matchesPath(pathname, guideHref);
-  const active = isGroupActive(pathname, group) || onGuide;
-  const onOverview = matchesPath(pathname, group.href);
+  // Every workspace has its own dashboard page that lists all of its tools,
+  // exactly like a Zoho app's home screen.
+  const homeHref = workspaceHref(group.key);
+  const onHome = matchesPath(pathname, homeHref);
+  // group.href is the numbers overview, unless a tool already owns that route.
+  const overviewHref = group.items.some(i => i.href === group.href) ? null : group.href;
+  const onOverview = !!overviewHref && matchesPath(pathname, overviewHref);
+  const inside = isGroupActive(pathname, group) || onHome;
+  const rowActive = onHome || onOverview;
   // Follows the route until the user toggles it manually
   const [toggled, setToggled] = useState<boolean | null>(null);
-  const open = toggled ?? active;
+  const open = toggled ?? inside;
   // Simple Mode: the daily tools show first; advanced tools fold behind one click,
   // and unfold themselves whenever the user is already on one of those pages.
   const coreItems = group.items.filter(i => i.tier !== 'advanced');
@@ -61,8 +66,8 @@ function GroupNav({ group, collapsed, pathname, locked }: { group: NavGroup; col
 
   if (collapsed) {
     return (
-      <Link href={group.href} title={group.title} className={`${ROW} justify-center ${active ? ROW_ACTIVE : ROW_IDLE}`}>
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${active ? 'bg-white/20' : getIconBg(0)}`}>
+      <Link href={homeHref} title={`${group.title} dashboard`} className={`${ROW} justify-center ${rowActive ? ROW_ACTIVE : inside ? 'bg-white/[0.06] text-white' : ROW_IDLE}`}>
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${inside ? 'bg-white/20' : getIconBg(0)}`}>
           <Icon className="w-4 h-4 text-white" />
         </div>
       </Link>
@@ -71,9 +76,9 @@ function GroupNav({ group, collapsed, pathname, locked }: { group: NavGroup; col
 
   return (
     <div>
-      <div className={`flex items-center rounded-xl transition-colors ${onOverview ? ROW_ACTIVE : active ? 'bg-white/[0.06] text-white' : ROW_IDLE}`}>
-        <Link href={group.href} className="flex-1 flex items-center gap-3 pl-3 h-11 text-sm font-medium min-w-0">
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${onOverview || active ? 'bg-white/20' : getIconBg(0)}`}>
+      <div className={`flex items-center rounded-xl transition-colors ${rowActive ? ROW_ACTIVE : inside ? 'bg-white/[0.06] text-white' : ROW_IDLE}`}>
+        <Link href={homeHref} className="flex-1 flex items-center gap-3 pl-3 h-11 text-sm font-medium min-w-0" title={`${group.title} dashboard`}>
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${inside ? 'bg-white/20' : getIconBg(0)}`}>
             <Icon className="w-4 h-4 text-white" />
           </div>
           <span className="truncate">{group.title}</span>
@@ -123,15 +128,15 @@ function GroupNav({ group, collapsed, pathname, locked }: { group: NavGroup; col
                 return (
                   <>
                     <Link
-                      href={guideHref}
+                      href={homeHref}
                       className={`flex items-center gap-2.5 px-3 h-9 rounded-lg text-[13px] transition-colors ${
-                        onGuide ? 'bg-white/10 text-white font-medium' : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
+                        onHome ? 'bg-white/10 text-white font-medium' : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
                       }`}
                     >
-                      <div className={`w-6 h-6 rounded-md flex items-center justify-center ${onGuide ? 'bg-white/20' : getIconBg(0)}`}>
-                        <BookOpen className="w-3.5 h-3.5 text-white" />
+                      <div className={`w-6 h-6 rounded-md flex items-center justify-center ${onHome ? 'bg-white/20' : getIconBg(0)}`}>
+                        <LayoutDashboard className="w-3.5 h-3.5 text-white" />
                       </div>
-                      <span className="truncate flex-1">All tools &amp; guide</span>
+                      <span className="truncate flex-1">Dashboard</span>
                     </Link>
                     {coreItems.map(renderItem)}
                     {advancedItems.length > 0 && (

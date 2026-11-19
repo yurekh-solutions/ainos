@@ -11,6 +11,7 @@ import { PageGuideButton } from './PageGuideButton';
 import { BrandMark } from './BrandMark';
 import { DASHBOARD_NAV, NAV_GROUPS, NavItem } from './navigation';
 import { verticalForPath } from '@/lib/verticals';
+import { workspaceHref } from '@/lib/workspace-guides';
 
 export const OPEN_SIDEBAR_EVENT = 'ainos:open-sidebar';
 
@@ -18,7 +19,7 @@ export const OPEN_SIDEBAR_EVENT = 'ainos:open-sidebar';
 const SEARCH_ITEMS: (NavItem & { group: string })[] = [
   { ...DASHBOARD_NAV, group: 'Workspace' },
   ...NAV_GROUPS.flatMap(g => [
-    { icon: g.icon, label: `${g.title} overview`, href: g.href, group: g.title },
+    { icon: g.icon, label: `${g.title} dashboard`, href: workspaceHref(g.key), group: g.title },
     ...g.items.map(item => ({ ...item, group: g.title })),
   ]),
   { icon: User, label: 'Company profile', href: '/company', group: 'Account' },

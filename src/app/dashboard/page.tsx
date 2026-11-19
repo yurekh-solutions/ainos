@@ -152,7 +152,7 @@ export default function DashboardPage() {
                         </>
                       ) : (
                         <>
-                          <span className="text-[10px] sm:text-[11px] font-medium text-neutral-500">{items.length} tools</span>
+                          <span className="text-[10px] sm:text-[11px] font-medium text-neutral-500">{items.length} {items.length === 1 ? 'tool' : 'tools'}</span>
                           <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold" style={{ color: '#5b21b6' }}>
                             <span className="hidden sm:inline">Open</span> <ArrowRight className="w-3.5 h-3.5" />
                           </span>

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { notFound, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, BookOpen, ChevronDown, Lightbulb, LayoutGrid, ListChecks } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Lightbulb, LayoutGrid, ListChecks } from 'lucide-react';
 import { CARD, PAGE, CONTAINER, fadeUp, IconCircle } from '@/components/dashboard/kit';
 import { NAV_GROUPS, type NavItem } from '@/components/layout/navigation';
 import { verticalByKey } from '@/lib/verticals';
@@ -14,6 +14,68 @@ const FALLBACK_GUIDE: PageGuide = {
   summary: 'Open the tool and follow the on-screen steps.',
   steps: ['Open the tool.', 'Add your first entry.', 'Save and review it in the list.'],
 };
+
+/**
+ * Every tool card opens the tool's own page (its own route), so each tool is a
+ * full page of its own — the same model as a Zoho app home.
+ */
+function ToolTile({ item, guide, open, onToggle }: {
+  item: NavItem;
+  guide: PageGuide;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className={`${CARD} flex flex-col min-w-0 overflow-hidden border transition-colors ${open ? 'border-purple-200' : 'border-transparent'}`}>
+      <Link href={item.href} className="group flex items-start gap-3 p-4 min-w-0 hover:bg-[#faf8ff] transition-colors">
+        <IconCircle icon={item.icon} variant="gradient" />
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-semibold text-neutral-900 truncate group-hover:text-[#5b21b6] transition-colors">{item.label}</h3>
+          <p className="text-xs text-neutral-500 mt-0.5 leading-relaxed line-clamp-2">{guide.summary}</p>
+        </div>
+        <ArrowUpRight className="w-4 h-4 text-neutral-300 group-hover:text-[#5b21b6] transition-colors flex-shrink-0 mt-0.5" />
+      </Link>
+
+      {open && (
+        <div className="mx-4 mb-3 rounded-xl bg-[#faf8ff] border border-purple-100 p-3.5">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-[#5b21b6] mb-2">How to use</p>
+          <ol className="space-y-2">
+            {guide.steps.map((step, i) => (
+              <li key={i} className="flex gap-2.5 text-[13px] text-neutral-700 leading-relaxed">
+                <span className="w-5 h-5 rounded-full bg-white border border-purple-200 text-[#5b21b6] text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
+                <span className="min-w-0">{step}</span>
+              </li>
+            ))}
+          </ol>
+          {guide.tip && (
+            <p className="flex gap-2 mt-3 pt-3 border-t border-purple-100 text-xs text-neutral-600 leading-relaxed">
+              <Lightbulb className="w-3.5 h-3.5 text-[#5b21b6] flex-shrink-0 mt-0.5" />
+              <span className="min-w-0">{guide.tip}</span>
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className="mt-auto flex gap-2 px-4 pb-4">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={open}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-xl border border-neutral-200 text-xs font-semibold text-neutral-700 hover:border-purple-200 hover:text-[#5b21b6] transition-colors"
+        >
+          <BookOpen className="w-3.5 h-3.5" /> How to use
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
+        <Link
+          href={item.href}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-xl bg-[#5b21b6] hover:bg-[#4c1d95] text-white text-xs font-semibold transition-colors"
+        >
+          Open <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 export default function WorkspaceDashboardPage() {
   const params = useParams<{ key: string }>();
@@ -30,8 +92,20 @@ export default function WorkspaceDashboardPage() {
     .map(href => group.items.find(i => i.href === href))
     .filter((i): i is NavItem => !!i);
   const firstTool = startItems[0] ?? group.items[0];
+  // Simple Mode: daily tools first, extras in a section of their own.
+  const coreItems = group.items.filter(i => i.tier !== 'advanced');
+  const advancedItems = group.items.filter(i => i.tier === 'advanced');
   // Finance and Marketing also have a numbers overview page of their own.
   const overviewHref = group.items.some(i => i.href === group.href) ? null : group.href;
+  const tile = (item: NavItem) => (
+    <ToolTile
+      key={item.href}
+      item={item}
+      guide={guideOf(item.href)}
+      open={openGuide === item.href}
+      onToggle={() => setOpenGuide(openGuide === item.href ? null : item.href)}
+    />
+  );
 
   return (
     <div className={PAGE}>
@@ -40,7 +114,7 @@ export default function WorkspaceDashboardPage() {
           <ArrowLeft className="w-3.5 h-3.5" /> All workspaces
         </Link>
 
-        {/* Workspace header */}
+        {/* Workspace dashboard header — the home screen of this tool set */}
         <motion.section {...fadeUp(0.02)} className={`${CARD} p-5 sm:p-6`}>
           <div className="flex flex-col md:flex-row md:items-center gap-5">
             <div className="flex items-start gap-4 min-w-0 flex-1">
@@ -97,73 +171,39 @@ export default function WorkspaceDashboardPage() {
           </motion.section>
         )}
 
-        {/* Every tool on its own card with its how-to guide */}
-        <motion.section {...fadeUp(0.1)} aria-label="All tools">
+        {/* Everyday tools — each one is its own page */}
+        <motion.section {...fadeUp(0.1)} aria-label="Everyday tools">
           <div className="mb-3">
-            <h2 className="text-base font-semibold text-neutral-900">All {vertical.shortTitle} tools</h2>
-            <p className="text-xs text-neutral-500 mt-0.5">Tap How to use for the steps. Inside each tool, the How to use button at the top shows them again.</p>
+            <h2 className="text-base font-semibold text-neutral-900">
+              {advancedItems.length > 0 ? 'Everyday tools' : `All ${vertical.shortTitle} tools`}
+            </h2>
+            <p className="text-xs text-neutral-500 mt-0.5">Open any tool below — it opens on its own page. How to use shows the steps.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 items-start">
-            {group.items.map(item => {
-              const guide = guideOf(item.href);
-              const open = openGuide === item.href;
-              return (
-                <div key={item.href} className={`${CARD} p-4 flex flex-col gap-3 min-w-0 border ${open ? 'border-purple-200' : 'border-transparent'}`}>
-                  <div className="flex items-start gap-3 min-w-0">
-                    <IconCircle icon={item.icon} variant="gradient" />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <h3 className="text-sm font-semibold text-neutral-900 truncate">{item.label}</h3>
-                        {item.tier === 'advanced' && (
-                          <span className="px-1.5 py-0.5 rounded-md bg-neutral-100 text-neutral-500 text-[10px] font-semibold flex-shrink-0">Advanced</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-neutral-500 mt-0.5 leading-relaxed">{guide.summary}</p>
-                    </div>
-                  </div>
-
-                  {open && (
-                    <div className="rounded-xl bg-[#faf8ff] border border-purple-100 p-3.5">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-[#5b21b6] mb-2">How to use</p>
-                      <ol className="space-y-2">
-                        {guide.steps.map((step, i) => (
-                          <li key={i} className="flex gap-2.5 text-[13px] text-neutral-700 leading-relaxed">
-                            <span className="w-5 h-5 rounded-full bg-white border border-purple-200 text-[#5b21b6] text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>
-                            <span className="min-w-0">{step}</span>
-                          </li>
-                        ))}
-                      </ol>
-                      {guide.tip && (
-                        <p className="flex gap-2 mt-3 pt-3 border-t border-purple-100 text-xs text-neutral-600 leading-relaxed">
-                          <Lightbulb className="w-3.5 h-3.5 text-[#5b21b6] flex-shrink-0 mt-0.5" />
-                          <span className="min-w-0">{guide.tip}</span>
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setOpenGuide(open ? null : item.href)}
-                      aria-expanded={open}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-xl border border-neutral-200 text-xs font-semibold text-neutral-700 hover:border-purple-200 hover:text-[#5b21b6] transition-colors"
-                    >
-                      <BookOpen className="w-3.5 h-3.5" /> How to use
-                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
-                    </button>
-                    <Link
-                      href={item.href}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-xl bg-[#5b21b6] hover:bg-[#4c1d95] text-white text-xs font-semibold transition-colors"
-                    >
-                      Open <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {coreItems.map(tile)}
           </div>
         </motion.section>
+
+        {/* Advanced tools — folded into their own section, opened on demand */}
+        {advancedItems.length > 0 && (
+          <motion.section {...fadeUp(0.14)} aria-label="Advanced tools">
+            <div className="mb-3">
+              <h2 className="text-base font-semibold text-neutral-900">Advanced tools</h2>
+              <p className="text-xs text-neutral-500 mt-0.5">For the special jobs — open one only when you need it.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              {advancedItems.map(tile)}
+            </div>
+          </motion.section>
+        )}
+
+        {/* Reminder strip: the same guide is available inside every tool */}
+        <motion.div {...fadeUp(0.18)} className="flex items-start gap-3 rounded-2xl bg-white border border-neutral-100 px-4 py-3.5">
+          <BookOpen className="w-4 h-4 text-[#5b21b6] flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-neutral-600 leading-relaxed min-w-0">
+            Inside any tool, the <span className="font-semibold text-neutral-800">How to use</span> button at the top shows the same steps — and the sidebar Dashboard link brings you back to this page.
+          </p>
+        </motion.div>
       </div>
     </div>
   );

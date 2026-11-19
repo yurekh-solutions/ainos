@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { Home, MoreHorizontal } from 'lucide-react';
 import { NAV_GROUPS, isDashboardActive, isGroupActive } from './navigation';
 import { OPEN_SIDEBAR_EVENT } from './TopBar';
+import { workspaceHref } from '@/lib/workspace-guides';
 
 const itemClass = (active: boolean) =>
   `flex-1 flex flex-col items-center justify-center gap-1 h-full text-[11px] font-medium transition-colors ${
@@ -35,8 +36,10 @@ export function MobileBottomNav() {
         </Link>
         {bottomGroups.map(group => {
           const Icon = group.icon;
+          const homeHref = workspaceHref(group.key);
+          const active = isGroupActive(pathname, group) || pathname.startsWith(homeHref);
           return (
-            <Link key={group.key} href={group.href} className={itemClass(isGroupActive(pathname, group))}>
+            <Link key={group.key} href={homeHref} className={itemClass(active)}>
               <Icon className="w-5 h-5" />
               {group.shortTitle || group.title}
             </Link>

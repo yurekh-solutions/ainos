@@ -88,7 +88,7 @@ export function PageGuideButton({ pathname }: { pathname: string }) {
             <div className="p-5 border-t border-neutral-100 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
               <Link href={workspaceHref(group.key)} onClick={close}
                 className="w-full inline-flex items-center justify-center gap-2 h-11 rounded-xl border border-purple-200 text-[#5b21b6] text-sm font-semibold hover:bg-purple-50 transition-colors">
-                See all {group.title} tools <ArrowRight className="w-4 h-4" />
+                Open the {workspaceTitle} dashboard <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </motion.aside>

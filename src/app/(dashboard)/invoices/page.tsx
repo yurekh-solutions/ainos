@@ -878,11 +878,11 @@ export default function InvoicesPage() {
               Manage and track your invoices
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:gap-3">
             {!company?.name ? (
               <Link
                 href="/company"
-                className="group relative inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl text-white text-sm font-medium transition-all shadow-lg overflow-hidden"
+                className="group relative col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl text-white text-sm font-medium transition-all shadow-lg overflow-hidden"
                 style={{ 
                   background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))',
                   boxShadow: '0 10px 30px -10px rgba(193, 122, 71, 0.6)'
@@ -950,7 +950,7 @@ export default function InvoicesPage() {
             {company?.name ? (
               <Link
                 href="/invoices/new"
-                className="group inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl text-white text-sm font-medium transition-all shadow-lg active:scale-95 hover:shadow-xl"
+                className="group col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl text-white text-sm font-medium transition-all shadow-lg active:scale-95 hover:shadow-xl"
                 style={{ 
                   background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)))',
                   boxShadow: '0 10px 30px -10px hsl(var(--primary) / 0.4)'

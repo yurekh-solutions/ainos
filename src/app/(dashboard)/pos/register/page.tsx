@@ -87,7 +87,7 @@ export default function POSRegisterPage() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Products grid */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 pb-24 md:pb-4">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 pb-[calc(10.5rem+env(safe-area-inset-bottom))] md:pb-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {filteredProducts.map(p => (
               <motion.button key={p.id} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => addToCart(p)}
@@ -147,9 +147,9 @@ export default function POSRegisterPage() {
         </div>
       </div>
 
-      {/* Mobile cart bar — fixed bottom, opens the cart sheet */}
+      {/* Mobile cart bar — sits above the app's bottom nav so both stay usable */}
       <button onClick={() => setCartOpen(true)} disabled={cart.length === 0}
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 flex items-center justify-between px-4 py-3 text-white disabled:opacity-60"
+        className="md:hidden fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] inset-x-0 z-40 flex items-center justify-between px-4 py-3 text-white disabled:opacity-60"
         style={{ background: 'linear-gradient(135deg, #6D28D9, #8B5CF6)' }}>
         <span className="flex items-center gap-2 text-sm font-semibold"><ShoppingCart className="w-4 h-4" />{cart.length} items in order</span>
         <span className="text-sm font-bold">₹{total.toFixed(2)} · View</span>
