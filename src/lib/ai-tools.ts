@@ -2,7 +2,9 @@
 // Every Yurekh service is DONE by an AINOS tool: the engine produces the actual
 // deliverable (logos, brand kits, social content, SEO packs, emails, press releases,
 // posters, QR codes, launch blueprints). Deterministic quality output guaranteed,
-// with best-effort free AI enrichment on top.
+// with best-effort AI enrichment on top.
+
+import { generateAIText } from './ai-provider';
 
 export type ToolId = 'logo' | 'brandkit' | 'social' | 'content' | 'seo' | 'email' | 'pr' | 'launch' | 'poster' | 'qr' | 'pitchdeck' | 'listing' | 'bizplan' | 'legal' | 'chatbot';
 
@@ -33,14 +35,16 @@ function img(prompt: string, w = 1024, h = 1024): string {
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&nologo=true&seed=${seed}`;
 }
 
+// Best-effort enrichment: the deterministic output already stands on its own, so
+// a provider failure here degrades to null instead of failing the tool. Text goes
+// through the unified provider layer instead of one anonymous endpoint.
 async function aiJson(prompt: string): Promise<Record<string, unknown> | null> {
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 10000);
-    const res = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}?json=true`, { signal: controller.signal });
-    clearTimeout(timer);
-    if (!res.ok) return null;
-    const text = await res.text();
+    const text = await generateAIText(
+      'You are a precise business content engine. Return ONLY a valid JSON object in the exact shape asked for — no markdown fences, no commentary.',
+      prompt,
+      { json: true, timeoutMs: 20000 }
+    );
     const a = text.indexOf('{');
     const b = text.lastIndexOf('}');
     if (a === -1 || b === -1) return null;

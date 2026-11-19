@@ -2,6 +2,7 @@ import { prisma } from './prisma'
 import { deductCredits, getCreditBalance } from './credits'
 import { resolveToolAccess } from './tool-guard'
 import { runTool as runAiTool, type ToolId } from './ai-tools'
+import { generateAIText, analyzeMedia } from './ai-provider'
 import { sendCampaignEmails } from './campaign-email'
 import { isEmailConfigured } from './email'
 
@@ -30,25 +31,35 @@ async function fetchImageAsBase64(url: string): Promise<string> {
     const res = await fetch(url, { signal: AbortSignal.timeout(10000) })
     if (!res.ok) return ''
     const buffer = await res.arrayBuffer()
-    return 'data:image/png;base64,' + Buffer.from(buffer).toString('base64')
+    // Keep the real media type — vision providers reject a JPEG labelled as PNG.
+    const mime = (res.headers.get('content-type') || 'image/png').split(';')[0].trim()
+    return `data:${mime};base64,` + Buffer.from(buffer).toString('base64')
   } catch {
     return ''
   }
 }
 
+// Every tool goes through the unified provider layer (Groq → Gemini → Cloudflare
+// → HuggingFace → Pollinations), so no single anonymous endpoint can sink a paid
+// tool. The system prompt keeps the contract the existing prompts depend on:
+// return the deliverable and nothing else.
+const AI_SYSTEM =
+  'You are AINOS, a precise business content engine. Follow the instruction exactly. ' +
+  'Return ONLY the requested content — no preamble, no explanation, no markdown fences.'
+
 async function aiText(prompt: string, attempt = 0): Promise<string> {
-  const res = await fetch('https://text.pollinations.ai/' + encodeURIComponent(prompt), {
-    signal: AbortSignal.timeout(60000),
-  })
-  if (!res.ok) {
-    // The public text endpoint rejects bursts with 402/429; one paced retry clears it.
-    if ((res.status === 402 || res.status === 429) && attempt < 2) {
+  try {
+    return (await generateAIText(AI_SYSTEM, prompt, { timeoutMs: 45000 })).trim()
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'AI provider error'
+    // The last-resort provider is anonymous and rate-limits per IP, so a burst
+    // can still surface a busy error; one paced retry clears it.
+    if (/402|429|busy|rate/i.test(message) && attempt < 1) {
       await new Promise(resolve => setTimeout(resolve, 1500 * (attempt + 1)))
       return aiText(prompt, attempt + 1)
     }
-    throw new Error('AI provider error (status ' + res.status + ')')
+    throw new Error(message)
   }
-  return (await res.text()).trim()
 }
 
 function escapeHtml(s: string): string {
@@ -113,8 +124,9 @@ const socialGenerator: ToolHandler = async input => {
   }
   const posts: { platform: string; content: string }[] = []
   const failed: { platform: string; error: string }[] = []
-  // The text provider rejects concurrent bursts, so the calls are paced one at a
-  // time. A platform that still fails is reported instead of sinking the batch.
+  // Platforms are generated one at a time so a slow or rate-limited provider
+  // never sinks the batch. A platform that still fails is reported alongside
+  // the ones that succeeded instead of throwing away the whole run.
   for (const [platform, rule] of Object.entries(rules)) {
     try {
       const content = await aiText(
@@ -352,47 +364,28 @@ const invoiceExtractor: ToolHandler = async (input, ctx) => {
 
   // ── MULTI-ENGINE EXTRACTION SYSTEM ──
   // Try multiple methods in order of reliability
-  
-  // METHOD 1: Gemini AI Vision (reads images directly, no OCR needed)
-  try {
-    const geminiKeys = (process.env.GEMINI_API_KEYS || '').split(',').filter(k => k.trim())
-    if (geminiKeys.length > 0) {
-      const apiKey = geminiKeys[Math.floor(Math.random() * geminiKeys.length)]
-      const imageData = base64 || (fileUrl ? await fetchImageAsBase64(fileUrl) : '')
-      
-      if (imageData) {
-        const visionRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{
-                parts: [
-                  { text: 'Extract all text from this invoice image. Return ONLY the raw text, no analysis.' },
-                  { inline_data: { mime_type: 'image/png', data: imageData.replace(/^data:image\/\w+;base64,/, '') } }
-                ]
-              }]
-            }),
-            signal: AbortSignal.timeout(30000),
-          }
-        )
-        
-        if (visionRes.ok) {
-          const visionData = await visionRes.json()
-          extractedText = visionData.candidates?.[0]?.content?.parts?.[0]?.text || ''
-          if (extractedText) {
-            extractionMethod = 'gemini-vision'
-          }
-        }
+
+  // METHOD 1: AI vision through the unified provider layer
+  // (Groq → Gemini → Cloudflare → HuggingFace → Pollinations)
+  const imageData = base64 || (fileUrl ? await fetchImageAsBase64(fileUrl) : '')
+
+  if (imageData) {
+    try {
+      const visionText = await analyzeMedia(
+        imageData.startsWith('data:') ? imageData : 'data:image/png;base64,' + imageData,
+        'Extract all text from this invoice image. Return ONLY the raw text, no analysis.'
+      )
+      if (visionText && visionText.trim()) {
+        extractedText = visionText.trim()
+        extractionMethod = 'ai-vision'
       }
+    } catch (err) {
+      // Vision layer failed, continue to OCR
+      console.log('AI vision failed, trying OCR:', err instanceof Error ? err.message : String(err))
     }
-  } catch (err) {
-    // Gemini failed, continue to next method
-    console.log('Gemini Vision failed, trying OCR:', err instanceof Error ? err.message : String(err))
   }
 
-  // METHOD 2: OCR.space (fallback if Gemini fails)
+  // METHOD 2: OCR.space (fallback if the AI vision layer fails)
   if (!extractedText) {
     try {
       const ocrApiKey = process.env.OCR_SPACE_API_KEY || 'helloworld'

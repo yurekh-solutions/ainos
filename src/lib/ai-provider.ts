@@ -87,23 +87,27 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function callGroq(
   messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }>,
-  options: { json?: boolean; timeoutMs?: number } = {}
+  options: { json?: boolean; timeoutMs?: number; model?: string; maxTokens?: number } = {}
 ): Promise<string> {
   const keys = groqKeys();
   if (!keys.length) throw new Error('No Groq API key');
 
+  // Vision requests must name the vision model: the text model rejects image
+  // content outright, which silently killed every vision call before.
+  const model = options.model ?? GROQ_TEXT_MODEL;
+
   // gpt-oss is a reasoning model — its hidden reasoning tokens count against
   // max_tokens. With strict JSON mode the visible JSON can then get cut off
   // and Groq answers 400 json_validate_failed. Keep reasoning minimal.
-  const isReasoningModel = /gpt-oss/i.test(GROQ_TEXT_MODEL);
+  const isReasoningModel = /gpt-oss/i.test(model);
 
   const buildBody = (jsonMode: boolean): Record<string, unknown> => {
     const body: Record<string, unknown> = {
-      model: GROQ_TEXT_MODEL,
+      model,
       messages,
       // openai/gpt-oss-20b has an 8k TPM limit — keep max_tokens small enough
       // that a single request stays under it, otherwise Groq returns 413.
-      max_tokens: 4096,
+      max_tokens: options.maxTokens ?? 4096,
     };
     if (isReasoningModel) body.reasoning_effort = 'low';
     if (jsonMode) body.response_format = { type: 'json_object' };
@@ -171,7 +175,11 @@ async function groqText(systemPrompt: string, userPrompt: string, options: { jso
 }
 
 async function groqVision(imageBase64: string, instruction: string): Promise<string> {
-  const imageUrl = imageBase64.startsWith('data:') ? imageBase64 : imageBase64;
+  // Groq needs a full data URL, and the vision model has a tighter per-request
+  // token cap than the text model, so raw base64 is wrapped and output kept short.
+  const imageUrl = imageBase64.startsWith('data:')
+    ? imageBase64
+    : `data:image/jpeg;base64,${imageBase64}`;
   return callGroq([
     {
       role: 'user',
@@ -180,7 +188,7 @@ async function groqVision(imageBase64: string, instruction: string): Promise<str
         { type: 'image_url', image_url: { url: imageUrl } },
       ],
     },
-  ]);
+  ], { model: GROQ_VISION_MODEL, maxTokens: 1024, timeoutMs: 45_000 });
 }
 
 // ─── Gemini helpers ─────────────────────────────────────────────────────────
