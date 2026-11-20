@@ -3,10 +3,15 @@ import { prisma } from '@/lib/prisma';
 import { liveNow } from '@/lib/site-health';
 import { SITE_URL } from '@/lib/seo';
 import { ainosBlogWhere } from '@/lib/ainos-blog';
+import { escapeXml, plainText } from '@/lib/xml';
+import { renderFeedPreview } from '@/lib/rss-preview';
+
+const CHANNEL_TITLE = 'AINOS Blog';
+const CHANNEL_DESCRIPTION = 'Guides on GST billing, CRM, SEO and AI automation for Indian businesses';
 
 // RSS Feed for blog syndication
-// Users can subscribe to this feed in their RSS readers
-export async function GET() {
+// Feed readers get the XML; a browser gets a readable preview of the same feed.
+export async function GET(request: Request) {
   try {
     const posts = await prisma.blogPost.findMany({
       where: { status: 'published', ...ainosBlogWhere, ...liveNow() },
@@ -15,32 +20,54 @@ export async function GET() {
     });
 
     const siteUrl = SITE_URL;
+    const acceptsHtml = (request.headers.get('accept') || '').includes('text/html');
+    const wantsXml = new URL(request.url).searchParams.get('format') === 'xml';
 
-    const rssItems = posts.map((post) => {
+    const items = posts.map((post) => {
       const postUrl = `${siteUrl}/blog/${post.slug}`;
       const pubDate = post.publishedAt?.toUTCString() || post.createdAt.toUTCString();
-      const description = post.excerpt || post.content?.substring(0, 200) || '';
+      const description = plainText(post.excerpt || post.content?.slice(0, 240) || '');
+      const tags = Array.isArray(post.tags) ? post.tags.filter(Boolean) : [];
+      const categories = [post.category, ...tags].filter(Boolean) as string[];
+      return { title: post.title, url: postUrl, pubDate, description, categories };
+    });
 
-      return `
+    if (acceptsHtml && !wantsXml) {
+      const preview = renderFeedPreview({
+        siteUrl,
+        title: CHANNEL_TITLE,
+        description: CHANNEL_DESCRIPTION,
+        lastBuildDate: new Date().toUTCString(),
+        items,
+      });
+      return new NextResponse(preview, {
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'public, max-age=3600',
+          Vary: 'Accept',
+        },
+      });
+    }
+
+    const lastBuildDate = new Date().toUTCString();
+    const rssItems = items.map((item) => `
     <item>
-      <title><![CDATA[${post.title}]]></title>
-      <link>${postUrl}</link>
-      <guid isPermaLink="true">${postUrl}</guid>
-      <pubDate>${pubDate}</pubDate>
-      <description><![CDATA[${description}]]></description>
-      ${post.category ? `<category>${post.category}</category>` : ''}
-      ${Array.isArray(post.tags) ? post.tags.map(tag => `<category>${tag}</category>`).join('') : ''}
-    </item>`;
-    }).join('');
+      <title>${escapeXml(item.title)}</title>
+      <link>${escapeXml(item.url)}</link>
+      <guid isPermaLink="true">${escapeXml(item.url)}</guid>
+      <pubDate>${item.pubDate}</pubDate>
+      <description>${escapeXml(item.description)}</description>
+${item.categories.map((category) => `      <category>${escapeXml(category)}</category>`).join('\n')}
+    </item>`).join('');
 
     const rssXml = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>AINOS Blog</title>
+    <title>${CHANNEL_TITLE}</title>
     <link>${siteUrl}/blog</link>
-    <description>Guides on GST billing, CRM, SEO and AI automation for Indian businesses</description>
+    <description>${CHANNEL_DESCRIPTION}</description>
     <language>en-in</language>
-    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
+    <lastBuildDate>${lastBuildDate}</lastBuildDate>
     <atom:link href="${siteUrl}/api/blog-rss" rel="self" type="application/rss+xml"/>
     ${rssItems}
   </channel>
@@ -48,8 +75,9 @@ export async function GET() {
 
     return new NextResponse(rssXml, {
       headers: {
-        'Content-Type': 'application/xml; charset=utf-8',
+        'Content-Type': 'application/rss+xml; charset=utf-8',
         'Cache-Control': 'public, max-age=3600',
+        Vary: 'Accept',
       },
     });
   } catch (error) {
