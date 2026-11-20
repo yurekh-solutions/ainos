@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Calendar, Clock, ArrowLeft, BookOpen, Tag, Layers, ArrowRight, Share2, Linkedin, Twitter, Facebook, Copy, Check, List, ChevronRight, Mail, X, Volume2, VolumeX, Rss, Sparkles } from 'lucide-react';
-import SocialLinks from '@/components/SocialLinks';
+import SiteFooter from '@/components/SiteFooter';
 
 interface BlogPost {
   id: string; title: string; slug: string; content: string; excerpt: string | null;
@@ -498,26 +498,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
         </section>
       )}
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-8 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0">
-              <Image src="/ainos-alpha.png" alt="" width={18} height={17} className="w-[18px] h-auto" />
-            </span>
-            <span className="text-sm font-semibold text-white">AINOS</span>
-          </div>
-          <p className="text-xs">AI-powered business suite for invoicing, GST, CRM, marketing and HR.</p>
-          <SocialLinks tone="dark" className="mt-4" />
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-4">
-            <Link href="/blog" className="text-xs hover:text-white transition-colors py-1">Blog</Link>
-            <Link href="/features" className="text-xs hover:text-white transition-colors py-1">Features</Link>
-            <Link href="/privacy" className="text-xs hover:text-white transition-colors py-1">Privacy Policy</Link>
-            <Link href="/terms" className="text-xs hover:text-white transition-colors py-1">Terms &amp; Conditions</Link>
-          </div>
-          <p className="text-xs mt-4">&copy; {new Date().getFullYear()} AINOS Business Suite. All rights reserved.</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

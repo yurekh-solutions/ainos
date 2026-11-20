@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Search, Calendar, Clock, ArrowRight, BookOpen, Rss } from 'lucide-react';
-import SocialLinks from '@/components/SocialLinks';
+import SiteFooter from '@/components/SiteFooter';
 
 export interface BlogPost {
   id: string; title: string; slug: string; content: string; excerpt: string | null;
@@ -267,25 +267,7 @@ export default function BlogListClient({ posts }: { posts: BlogPost[] }) {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-8 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0">
-              <Image src="/ainos-alpha.png" alt="" width={18} height={17} className="w-[18px] h-auto" />
-            </span>
-            <span className="text-sm font-semibold text-white">AINOS</span>
-          </div>
-          <p className="text-xs">AI-powered business suite for invoicing, GST, CRM, marketing and HR.</p>
-          <SocialLinks tone="dark" className="mt-4" />
-          <p className="text-xs mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-            <Link href="/privacy" className="hover:text-white transition-colors py-1">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-white transition-colors py-1">Terms &amp; Conditions</Link>
-            <Link href="/features" className="hover:text-white transition-colors py-1">Features</Link>
-          </p>
-          <p className="text-xs mt-2">&copy; {new Date().getFullYear()} AINOS Business Suite. All rights reserved.</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

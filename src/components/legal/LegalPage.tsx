@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { ReactNode } from 'react';
-import SocialLinks from '@/components/SocialLinks';
+import SiteFooter from '@/components/SiteFooter';
 
 export const LEGAL_CONTACT_EMAIL = 'info.ainosio@gmail.com';
 export const LEGAL_EFFECTIVE_DATE = '20 November 2026';
@@ -82,15 +82,9 @@ export function LegalPage({
           </div>
         </div>
 
-        <footer className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-8 text-sm">
-          <Link href="/" className="py-1 text-violet-700 hover:underline">Home</Link>
-          <Link href="/privacy" className="py-1 text-violet-700 hover:underline">Privacy Policy</Link>
-          <Link href="/terms" className="py-1 text-violet-700 hover:underline">Terms and Conditions</Link>
-          <Link href="/blog" className="py-1 text-violet-700 hover:underline">Blog</Link>
-        </footer>
-        <p className="text-center text-xs text-gray-500 mt-3">&copy; {new Date().getFullYear()} AINOS Business Suite. All rights reserved.</p>
-        <SocialLinks className="mt-4" />
       </main>
+
+      <SiteFooter />
     </div>
   );
 }

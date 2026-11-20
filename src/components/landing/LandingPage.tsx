@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ToolsDirectory } from '@/components/seo/ToolsDirectory';
-import SocialLinks from '@/components/SocialLinks';
+import SiteFooter from '@/components/SiteFooter';
 import {
   ArrowRight, Users, MessageSquareText, ScrollText, Contact2, Megaphone, Package, Scale, Shield, Timer, Headphones, BarChart3, CheckCircle2, TrendingUp, Building2, Layers, UserPlus, LayoutGrid, FileSpreadsheet, Rocket, Loader2, ArrowDownRight, Quote, ChevronLeft, ChevronRight, ChevronDown, Star, Palette, Search, PenLine, Presentation, MessageSquare, QrCode, ShoppingBag, Wallet, UserCog, Boxes, LineChart } from 'lucide-react';
 
@@ -1264,58 +1263,7 @@ export default function AinosLandingPage() {
       </section>
 
       {/* ─── FOOTER ──────────────────────────────────────────────── */}
-      <footer className="border-t border-gray-100 bg-gray-50/40">
-        <div className="max-w-7xl mx-auto py-14 px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-12 gap-8 md:gap-6 mb-10">
-            {/* Brand */}
-            <div className="col-span-2 md:col-span-5">
-              <Image src="/ainos-wordmark.png" alt="AINOS" width={100} height={34} className="h-7 w-auto object-contain" />
-              <p className="text-sm text-gray-500 leading-relaxed mt-3 max-w-xs">
-                The business operating suite — finance, CRM, HR, inventory and AI in one platform.
-              </p>
-            </div>
-
-            {/* Product */}
-            <div className="md:col-span-2">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Product</p>
-              <ul className="space-y-2.5 text-sm text-gray-600">
-                <li><a href="#modules" onClick={(e) => handleNavClick(e, '#modules')} className="hover:text-[#4c1d95] transition-colors">Modules</a></li>
-                <li><a href="#how" onClick={(e) => handleNavClick(e, '#how')} className="hover:text-[#4c1d95] transition-colors">How it works</a></li>
-                <li><a href="#workflow" onClick={(e) => handleNavClick(e, '#workflow')} className="hover:text-[#4c1d95] transition-colors">Why AINOS</a></li>
-                <li><Link href="/features" className="hover:text-[#4c1d95] transition-colors">All features</Link></li>
-                <li><Link href="/blog" className="hover:text-[#4c1d95] transition-colors">Blog</Link></li>
-              </ul>
-            </div>
-
-            {/* Company */}
-            <div className="md:col-span-2">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Company</p>
-              <ul className="space-y-2.5 text-sm text-gray-600">
-                <li><a href="#about" onClick={(e) => handleNavClick(e, '#about')} className="hover:text-[#4c1d95] transition-colors">About</a></li>
-                <li><Link href="https://yurekh.com/" target="_blank" rel="noopener noreferrer" className="hover:text-[#4c1d95] transition-colors">Yurekh</Link></li>
-                <li><Link href="/auth/signin" className="hover:text-[#4c1d95] transition-colors">Sign In</Link></li>
-                <li><Link href="/privacy" className="hover:text-[#4c1d95] transition-colors">Privacy</Link></li>
-                <li><Link href="/terms" className="hover:text-[#4c1d95] transition-colors">Terms</Link></li>
-              </ul>
-            </div>
-
-            {/* Get started */}
-            <div className="col-span-2 md:col-span-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Get started</p>
-              <Link href="/auth/register" className="inline-flex items-center gap-2 rounded-full bg-[#4c1d95] px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-purple-900/20 transition-colors hover:bg-[#3b0f78]">
-                Create account <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-
-          <ToolsDirectory className="mb-10 border-t border-gray-200 pt-10" />
-
-          <div className="pt-6 border-t border-gray-200 flex items-center justify-center text-sm text-gray-500">
-            <p>© {new Date().getFullYear()} AINOS. All rights reserved. <Link href="https://yurekh.com/" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#4c1d95] hover:text-[#3b0f78] transition-colors">YUREKH</Link></p>
-          </div>
-          <SocialLinks className="mt-4" />
-        </div>
-      </footer>
+      <SiteFooter onHome onNavigate={handleNavClick} />
     </div>
   );
 }

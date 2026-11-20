@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { ToolsDirectory } from '@/components/seo/ToolsDirectory';
-import SocialLinks from '@/components/SocialLinks';
+import SiteFooter from '@/components/SiteFooter';
 
 // Public marketing chrome for every /features page: server-rendered so crawlers
 // see real links to every suite and tool, no sign-in required.
@@ -26,20 +25,7 @@ export default function FeaturesLayout({ children }: { children: React.ReactNode
 
       <main>{children}</main>
 
-      <footer className="border-t border-gray-100 bg-gray-50/60">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-          <ToolsDirectory />
-          <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-gray-200 pt-6 text-sm text-gray-500 sm:flex-row">
-            <p>© {new Date().getFullYear()} AINOS. All rights reserved.</p>
-            <div className="flex gap-5">
-              <Link href="/privacy" className="hover:text-gray-900">Privacy</Link>
-              <Link href="/terms" className="hover:text-gray-900">Terms</Link>
-              <Link href="/blog" className="hover:text-gray-900">Blog</Link>
-            </div>
-          </div>
-          <SocialLinks className="mt-6" />
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
