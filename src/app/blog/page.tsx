@@ -2,7 +2,8 @@ import { prisma } from '@/lib/prisma';
 import { liveNow } from '@/lib/site-health';
 import { ainosBlogWhere } from '@/lib/ainos-blog';
 import { SITE_URL } from '@/lib/seo';
-import { JsonLd } from '@/components/seo/JsonLd';
+import { JsonLd, breadcrumbJsonLd } from '@/components/seo/JsonLd';
+import { BLOG_FAQ } from '@/lib/blog-topics';
 import BlogListClient, { type BlogPost } from './BlogListClient';
 
 // Rendered on the server so every guide is a real link in the HTML that crawlers
@@ -40,9 +41,27 @@ export default async function PublicBlogPage() {
     })),
   };
 
+  // Same list the page renders, so the visible answers and the structured data cannot drift.
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: BLOG_FAQ.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer },
+    })),
+  };
+
   return (
     <>
       <JsonLd data={blogJsonLd} />
+      <JsonLd data={faqJsonLd} />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: 'Home', url: `${SITE_URL}/` },
+          { name: 'Blog', url: `${SITE_URL}/blog` },
+        ])}
+      />
       <BlogListClient posts={items} />
     </>
   );

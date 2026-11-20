@@ -41,6 +41,9 @@ export default function SiteFooter({
   return (
     <footer className="border-t border-gray-100 bg-gray-50/40">
       <div className="max-w-7xl mx-auto py-14 px-4 sm:px-6 lg:px-8">
+        {/* Suite and tool directory sits above the columns so every tool page is one click away. */}
+        <ToolsDirectory className="mb-12 border-b border-gray-200 pb-12" />
+
         <div className="grid grid-cols-2 md:grid-cols-12 gap-8 md:gap-6 mb-10">
           {/* Brand */}
           <div className="col-span-2 md:col-span-5">
@@ -96,9 +99,6 @@ export default function SiteFooter({
             </Link>
           </div>
         </div>
-
-        <ToolsDirectory className="mb-10 border-t border-gray-200 pt-10" />
-
         <div className="pt-6 border-t border-gray-200 flex items-center justify-center text-sm text-gray-500">
           <p>© {new Date().getFullYear()} AINOS. All rights reserved. <Link href="https://yurekh.com/" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#4c1d95] hover:text-[#3b0f78] transition-colors">YUREKH</Link></p>
         </div>

@@ -217,6 +217,17 @@ body {
   background: hsl(var(--muted-foreground) / 0.5);
 }
 
+/* Rows that scroll sideways (topic chips) stay scrollable by wheel and touch, but the
+   bar itself is hidden so it never breaks the spacing under the row. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* ============================================
    Status Colors
    ============================================ */

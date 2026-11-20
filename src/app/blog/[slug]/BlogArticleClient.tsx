@@ -2,8 +2,10 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Calendar, Clock, ArrowLeft, BookOpen, Tag, Layers, ArrowRight, Share2, Linkedin, Twitter, Facebook, Copy, Check, List, ChevronRight, Mail, X, Volume2, VolumeX, Rss, Sparkles } from 'lucide-react';
+import { Calendar, Clock, ArrowLeft, BookOpen, Tag, Layers, ArrowRight, Share2, Linkedin, Twitter, Facebook, Copy, Check, List, ChevronRight, Mail, X, Volume2, VolumeX, Rss, ListChecks } from 'lucide-react';
 import SiteFooter from '@/components/SiteFooter';
+import { topicFor } from '@/lib/blog-topics';
+import { SITE_URL } from '@/lib/seo';
 
 interface BlogPost {
   id: string; title: string; slug: string; content: string; excerpt: string | null;
@@ -11,6 +13,11 @@ interface BlogPost {
   authorName: string | null; authorBio: string | null; authorImage: string | null;
   publishedAt: string | null; updatedAt?: string | null; tags: string[] | null; createdAt: string;
 }
+
+// Pinned to IST so the server-rendered date and the hydrated one always agree.
+const LONG_DATE = new Intl.DateTimeFormat('en-IN', {
+  day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata',
+});
 
 interface RelatedPost {
   id: string; title: string; slug: string; excerpt: string | null;
@@ -106,13 +113,14 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
   const takeaways = useMemo(() => toc.slice(0, 4).map(t => t.text), [toc]);
   const updatedLabel = useMemo(() => {
     const d = post.updatedAt || post.publishedAt;
-    return d ? new Date(d).toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' }) : null;
+    return d ? LONG_DATE.format(new Date(d)) : null;
   }, [post.updatedAt, post.publishedAt]);
   const contentWithCTAs = useMemo(() => injectCTAs(bodyMarkdown), [bodyMarkdown]);
   const shareUrls = useMemo(() => {
-    const url = typeof window !== 'undefined' ? window.location.href : '';
-    return getShareUrls(post.title, url);
-  }, [post.title]);
+    // The canonical URL, not window.location: a browser-only value makes the server
+    // and client markup disagree on the share links, which React reports as a hydration error.
+    return getShareUrls(post.title, `${SITE_URL}/blog/${post.slug}`);
+  }, [post.title, post.slug]);
 
   // Reading progress bar
   useEffect(() => {
@@ -273,7 +281,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
               <div className="flex items-center gap-2 mb-3">
                 {post.category && (
                   <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-white backdrop-blur-sm">
-                    {post.category}
+                    {topicFor(post.category)}
                   </span>
                 )}
               </div>
@@ -294,7 +302,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
             {post.publishedAt && (
               <span className="flex items-center gap-1.5">
                 <Calendar className="w-4 h-4" />
-                {new Date(post.publishedAt).toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' })}
+                {LONG_DATE.format(new Date(post.publishedAt))}
               </span>
             )}
             <span className="flex items-center gap-1.5">
@@ -304,7 +312,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
             {post.category && (
               <span className="flex items-center gap-1.5">
                 <Layers className="w-4 h-4" />
-                {post.category}
+                <Link href="/blog#topics" className="hover:text-purple-800">{topicFor(post.category)}</Link>
               </span>
             )}
           {/* Social Share Buttons */}
@@ -324,7 +332,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
         {(post.excerpt || takeaways.length > 0) && (
           <section id="aeo-answer" className="mb-10 rounded-2xl border border-violet-100 bg-violet-50/60 p-5 sm:p-6">
             <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-violet-700">
-              <Sparkles className="h-3.5 w-3.5" /> In short
+              <ListChecks className="h-3.5 w-3.5" /> In short
             </p>
             {post.excerpt && (
               <p className="mt-2 text-base leading-relaxed text-gray-800">{post.excerpt}</p>
