@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { generateAIText } from '@/lib/ai-provider';
+import { isAdmin } from '@/lib/admin';
 import { assertToolCredits, chargeToolRun } from '@/lib/tool-charge';
 
 // Multi-Language Blog Translation - translates blogs to Hindi, Marathi, Spanish, etc.
@@ -15,14 +16,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Blog ID and target language required' }, { status: 400 });
     }
 
-    const post = await prisma.blogPost.findUnique({ where: { id: blogId } });
-    if (!post) return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
-
     const account = await prisma.user.findUnique({
       where: { email: session.user.email },
       select: { companyId: true },
     });
     const companyId = account?.companyId ?? null;
+
+    // Tenant isolation: the post is picked by an id straight from the request,
+    // so it has to be confined to the caller's company. Platform admins keep
+    // the platform-wide view. Without this, any signed-in account could read
+    // and overwrite another company's unpublished article.
+    const scope = isAdmin(session.user.email) ? {} : { companyId: companyId ?? '__none__' };
+    const post = await prisma.blogPost.findFirst({ where: { id: blogId, ...scope } });
+    if (!post) return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
+
     const affordable = await assertToolCredits(companyId, 'ai-blog-translate');
     if (!affordable.ok) {
       return NextResponse.json(
@@ -68,7 +75,7 @@ ${content}`;
 
     // Check if translation already exists
     const existingSlug = `${post.slug}-${targetLang}`;
-    const existing = await prisma.blogPost.findUnique({ where: { slug: existingSlug } });
+    const existing = await prisma.blogPost.findFirst({ where: { slug: existingSlug, ...scope } });
 
     if (existing) {
       // Update existing translation

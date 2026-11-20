@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from '@/lib/auth';
+import { isAdmin } from '@/lib/admin';
+import { throttle } from '@/lib/security';
 
 // Track blog post view and engagement
 export async function POST(req: NextRequest) {
+  // Public event ingestion, so it is bounded per address rather than gated - a
+  // reader on a shared network must keep being counted.
+  const blocked = throttle(req, 'blog-analytics-ping', 300, 10 * 60_000);
+  if (blocked) return blocked;
+
   try {
     const { slug, eventType, data } = await req.json();
     if (!slug) return NextResponse.json({ error: 'Slug is required' }, { status: 400 });
@@ -74,15 +82,26 @@ export async function POST(req: NextRequest) {
 // Fetch analytics for a blog post or all posts
 export async function GET(req: NextRequest) {
   try {
+    const session = await getServerSession(req);
+    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { searchParams } = new URL(req.url);
     const slug = searchParams.get('slug');
-    const companyId = searchParams.get('companyId');
     const period = searchParams.get('period') || '30d'; // 7d, 30d, 90d, all
+
+    // Reporting numbers are private to a company, so the company comes from the
+    // session instead of the query string. Admins keep the cross-company view.
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const platform = isAdmin(session.user.email);
+    const ownCompanyId = account?.companyId ?? '__none__';
 
     if (slug) {
       // Get analytics for specific post
       const post = await prisma.blogPost.findFirst({
-        where: { slug, status: 'published' },
+        where: { slug, status: 'published', ...(platform ? {} : { companyId: ownCompanyId }) },
         select: {
           id: true,
           title: true,
@@ -111,7 +130,12 @@ export async function GET(req: NextRequest) {
 
     // Get analytics for all posts
     const where: Record<string, unknown> = { status: 'published' };
-    if (companyId) where.companyId = companyId;
+    if (platform) {
+      const requested = searchParams.get('companyId');
+      if (requested) where.companyId = requested;
+    } else {
+      where.companyId = ownCompanyId;
+    }
 
     const posts = await prisma.blogPost.findMany({
       where,

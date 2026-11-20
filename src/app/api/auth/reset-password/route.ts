@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { throttle } from '@/lib/security';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { createHash } from 'crypto';
 
 export async function POST(req: NextRequest) {
+  // Tokens are single-use and short-lived; this bounds how many guesses one
+  // address can make against them.
+  const blocked = throttle(req, 'reset-password', 30, 60 * 60_000);
+  if (blocked) return blocked;
+
   try {
     const { token, newPassword } = await req.json();
 

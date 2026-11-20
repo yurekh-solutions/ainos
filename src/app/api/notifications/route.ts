@@ -46,9 +46,19 @@ export async function PUT(req: NextRequest) {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+
     const body = await req.json();
     const { id, ...data } = body;
+    // A notification belongs to one person; ownership and re-assignment are
+    // decided server-side, never from the request body.
+    delete data.companyId;
+    delete data.userId;
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+
+    const owned = await prisma.notification.findFirst({ where: { id, userId: user.id }, select: { id: true } });
+    if (!owned) return NextResponse.json({ error: 'Notification not found' }, { status: 404 });
 
     const notification = await prisma.notification.update({ where: { id }, data });
     return NextResponse.json(notification);
@@ -63,9 +73,15 @@ export async function PATCH(req: NextRequest) {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+
     const body = await req.json();
     const { id } = body;
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+
+    const owned = await prisma.notification.findFirst({ where: { id, userId: user.id }, select: { id: true } });
+    if (!owned) return NextResponse.json({ error: 'Notification not found' }, { status: 404 });
 
     await prisma.notification.update({ where: { id }, data: { read: true } });
     return NextResponse.json({ success: true });

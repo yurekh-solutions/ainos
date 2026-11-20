@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { throttle } from '@/lib/security';
 
 // Newsletter subscription API - integrates with ConvertKit, Beehiiv, or Brevo
 export async function POST(req: NextRequest) {
+  // Every accepted address is forwarded to an external provider and lands on a
+  // mailing list, so a scripted run would poison the list and spend provider
+  // quota. One real visitor subscribes once - this budget is far above that.
+  const blocked = throttle(req, 'newsletter', 30, 60 * 60_000);
+  if (blocked) return blocked;
+
   try {
     const { email, name, source } = await req.json();
     if (!email) return NextResponse.json({ error: 'Email is required' }, { status: 400 });

@@ -2,6 +2,18 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { verticalForPath } from '@/lib/verticals';
+import {
+  API_LIMITS,
+  bodyTooLarge,
+  getSigningSecret,
+  ipRateLimit,
+  isAgentlessWrite,
+  isProbeRequest,
+  hiddenInProduction,
+  rejectedBody,
+  rejectedProbe,
+  tooMany,
+} from '@/lib/security';
 
 // Short-lived in-memory cache of the last GOOD vertical-access decision, keyed by
 // email + vertical. It lets the access check fail CLOSED on an error without
@@ -32,6 +44,47 @@ function denyToVertical(request: NextRequest, verticalKey: string): NextResponse
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Abuse defenses run first, on every path. Scanner probes looking for other
+  // stacks (.env, wp-login, phpmyadmin…), oversized bodies and traffic that
+  // carries attack tooling in its user agent never reach a handler.
+  if (isProbeRequest(request)) return rejectedProbe();
+  if (bodyTooLarge(request)) return rejectedBody();
+
+  // Development-only surfaces answer as a missing route on the live domain.
+  if (hiddenInProduction(pathname)) return rejectedProbe();
+
+  // API routes keep their own session checks, so middleware only throttles
+  // here - redirecting an /api call to the sign-in page would break every
+  // fetch() that expects JSON back.
+  if (pathname.startsWith('/api/')) {
+    // Scheduler and keep-alive traffic comes from shared CI runner addresses, and
+    // each of these routes authorizes the caller before touching the database,
+    // so they are left out of the per-IP bucket. Everything else is throttled.
+    const isScheduled =
+      pathname.startsWith('/api/cron/') ||
+      pathname === '/api/blog-agent/auto-generate' ||
+      pathname === '/api/ping';
+
+    if (!isScheduled) {
+      const isAuthRoute = pathname.startsWith('/api/auth');
+      const budget = isAuthRoute ? API_LIMITS.auth : API_LIMITS.api;
+      const hits = ipRateLimit(request, isAuthRoute ? 'auth' : 'api', budget.limit, budget.windowMs);
+      if (!hits.ok) return tooMany(hits.retryAfterSeconds);
+
+      if (isAgentlessWrite(request)) {
+        const scripted = ipRateLimit(
+          request,
+          'agentless-write',
+          API_LIMITS.agentlessWrite.limit,
+          API_LIMITS.agentlessWrite.windowMs,
+        );
+        if (!scripted.ok) return tooMany(scripted.retryAfterSeconds);
+      }
+    }
+
+    return NextResponse.next();
+  }
+
   // Public routes (no auth required)
   const publicRoutes = [
     '/',
@@ -43,6 +96,9 @@ export async function middleware(request: NextRequest) {
     '/pricing',
     '/api/auth',
     '/api/billing',
+    // Reachable without a session while developing, which is the whole point of
+    // the sign-in harness. hiddenInProduction() already 404s it when live.
+    '/test-auth',
   ];
 
   // Skip middleware for public routes
@@ -62,7 +118,9 @@ export async function middleware(request: NextRequest) {
   // Check authentication
   const token = await getToken({
     req: request,
-    secret: process.env.NEXTAUTH_SECRET,
+    // Same resolver the NextAuth configuration uses, so the two can never
+    // drift onto different signing keys.
+    secret: getSigningSecret(),
   });
 
   if (!token) {
@@ -108,6 +166,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/api/:path*',
+    '/test-auth',
     '/dashboard/:path*',
     '/crm/:path*',
     '/inventory/:path*',

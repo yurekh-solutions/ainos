@@ -7,11 +7,12 @@ import { isAdmin } from '@/lib/admin';
 import { findUserByEmail } from '@/lib/identity';
 import { getVerticalsForUser } from '@/lib/access';
 import { getLockedCapabilitiesForUser } from '@/lib/entitlements';
+import { getSigningSecret, loginGate, releaseLogin, requestIp } from '@/lib/security';
 
 export const authOptions: NextAuthOptions = {
-  secret:
-    process.env.NEXTAUTH_SECRET ||
-    'ainos-stable-signing-secret-9f2c71b4d8e64a0fb35d1c9e8a726453',
+  // Read through the resolver so a missing environment variable falls back to a
+  // random per-process key rather than a literal that is committed in the repo.
+  secret: getSigningSecret(),
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -22,6 +23,15 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Email and password are required');
+        }
+
+        // Cap sign-in attempts before any password comparison happens, so a
+        // stolen credential list cannot be run against this form either one
+        // account at a time or in a wide sweep from one machine.
+        const ip = await requestIp();
+        const gate = loginGate(ip, credentials.email);
+        if (!gate.allowed) {
+          throw new Error('TOO_MANY_ATTEMPTS');
         }
 
         // Case-insensitive: accounts are stored lowercase, but users type
@@ -36,6 +46,10 @@ export const authOptions: NextAuthOptions = {
         if (!isValid) {
           throw new Error('Invalid email or password');
         }
+
+        // Correct credentials clear the budget, so someone who mistyped a few
+        // times is never locked out of their own account.
+        releaseLogin(ip, credentials.email);
 
         // Check company approval status
         if (user.companyId) {

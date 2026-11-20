@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { isAdmin } from '@/lib/admin';
 
 // Smart Internal Linking - suggests relevant internal links based on keyword matching
 export async function POST(req: NextRequest) {
@@ -8,12 +9,20 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { blogId, companyId } = await req.json();
-    if (!blogId || !companyId) {
-      return NextResponse.json({ error: 'Blog ID and Company ID required' }, { status: 400 });
-    }
+    const { blogId } = await req.json();
+    if (!blogId) return NextResponse.json({ error: 'Blog ID required' }, { status: 400 });
 
-    const currentPost = await prisma.blogPost.findUnique({ where: { id: blogId } });
+    // The company comes from the session, never from the body. This endpoint
+    // returns article bodies and titles, so a caller-supplied companyId would
+    // have let one tenant dump another's content library.
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const companyId = account?.companyId ?? null;
+    const scope = isAdmin(session.user.email) ? {} : { companyId: companyId ?? '__none__' };
+
+    const currentPost = await prisma.blogPost.findFirst({ where: { id: blogId, ...scope } });
     if (!currentPost) return NextResponse.json({ error: 'Blog not found' }, { status: 404 });
 
     const currentContent = currentPost.content || '';
@@ -21,7 +30,7 @@ export async function POST(req: NextRequest) {
 
     // Get all published blogs from same company
     const allPosts = await prisma.blogPost.findMany({
-      where: { companyId, status: 'published', id: { not: blogId } },
+      where: { companyId: currentPost.companyId, status: 'published', id: { not: blogId } },
       select: { id: true, title: true, slug: true, content: true, tags: true, category: true }
     });
 

@@ -23,6 +23,9 @@ export async function PUT(
     if (body.price !== undefined) data.price = body.price;
     if (body.sku !== undefined) data.sku = body.sku;
 
+    const owned = await prisma.product.findFirst({ where: { id, companyId: user.companyId }, select: { id: true } });
+    if (!owned) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+
     const product = await prisma.product.update({ where: { id }, data });
     return NextResponse.json(product);
   } catch (error) {
@@ -40,7 +43,13 @@ export async function DELETE(
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+
     const { id } = await params;
+    const owned = await prisma.product.findFirst({ where: { id, companyId: user.companyId }, select: { id: true } });
+    if (!owned) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+
     await prisma.product.delete({ where: { id } });
     return NextResponse.json({ message: 'Product deleted successfully' });
   } catch (error) {

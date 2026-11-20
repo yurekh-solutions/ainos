@@ -227,6 +227,16 @@ export async function PUT(req: NextRequest) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    // Admins may edit any blog (platform view); everyone else only their own
+    // company's rows, so an id from another tenant cannot be written through.
+    const platform = isAdmin(session.user.email);
+    const owned = await prisma.blogPost.findFirst({
+      where: { id, ...(platform ? {} : { companyId: user?.companyId ?? '' }) },
+      select: { id: true },
+    });
+    if (!owned) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
     const body = await req.json();
     if (body.title && !body.slug) {
       body.slug = body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -295,12 +305,17 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
-    const post = await prisma.blogPost.findUnique({ where: { id } });
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    const platform = isAdmin(session.user.email);
+    const scope = platform ? {} : { companyId: user?.companyId ?? '' };
+
+    const post = await prisma.blogPost.findFirst({ where: { id, ...scope }, select: { id: true } });
     if (post) {
       await prisma.blogPost.delete({ where: { id } });
     } else {
-      // Queued (scheduled) blogs are BlogSchedule rows — delete those too
-      const schedule = await prisma.blogSchedule.findUnique({ where: { id } });
+      // Queued (scheduled) blogs are BlogSchedule rows — delete those too, but
+      // only when they belong to the caller's company.
+      const schedule = await prisma.blogSchedule.findFirst({ where: { id, ...scope }, select: { id: true } });
       if (!schedule) return NextResponse.json({ error: 'Not found' }, { status: 404 });
       await prisma.blogSchedule.delete({ where: { id } });
     }

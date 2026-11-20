@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
+import { requireSession } from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
 
-// PATCH /api/tasks/[id] — update task
+// Ownership is checked with { id, companyId } before any mutation, so a task id
+// belonging to another company cannot be changed or removed from here.
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(req);
-    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const ctx = await requireSession(req);
+    if (ctx.error) return ctx.error;
 
     const { id } = await params;
+    const owned = await prisma.task.findFirst({ where: { id, companyId: ctx.companyId }, select: { id: true } });
+    if (!owned) return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+
     const body = await req.json();
 
     const data: Record<string, unknown> = {};
@@ -37,10 +41,13 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(req);
-    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const ctx = await requireSession(req);
+    if (ctx.error) return ctx.error;
 
     const { id } = await params;
+    const owned = await prisma.task.findFirst({ where: { id, companyId: ctx.companyId }, select: { id: true } });
+    if (!owned) return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+
     await prisma.task.delete({ where: { id } });
     return NextResponse.json({ message: 'Task deleted successfully' });
   } catch (error) {

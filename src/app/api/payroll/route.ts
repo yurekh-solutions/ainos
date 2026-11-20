@@ -54,6 +54,13 @@ export async function PUT(req: NextRequest) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
+    // Marking a payroll run as paid is money-moving work, so the run has to
+    // belong to the caller's company.
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+    const owned = await prisma.payrollRun.findFirst({ where: { id, companyId: user.companyId }, select: { id: true } });
+    if (!owned) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
     const run = await prisma.payrollRun.update({
       where: { id },
       data: { status: 'paid' },

@@ -45,9 +45,18 @@ export async function PUT(req: NextRequest) {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+
     const body = await req.json();
     const { id, ...data } = body;
+    // companyId stays server-side: a client must not be able to move a row to
+    // another tenant by sending it in the body.
+    delete data.companyId;
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+
+    const owned = await prisma.knowledgeArticle.findFirst({ where: { id, companyId: user.companyId }, select: { id: true } });
+    if (!owned) return NextResponse.json({ error: 'Article not found' }, { status: 404 });
 
     const article = await prisma.knowledgeArticle.update({ where: { id }, data });
     return NextResponse.json(article);
@@ -62,9 +71,15 @@ export async function DELETE(req: NextRequest) {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+
+    const owned = await prisma.knowledgeArticle.findFirst({ where: { id, companyId: user.companyId }, select: { id: true } });
+    if (!owned) return NextResponse.json({ error: 'Article not found' }, { status: 404 });
 
     await prisma.knowledgeArticle.delete({ where: { id } });
     return NextResponse.json({ success: true });

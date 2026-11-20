@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { throttle } from '@/lib/security';
 import { prisma } from '@/lib/prisma';
 import { normalizeEmail, normalizePhone, findUserByEmail } from '@/lib/identity';
 import { issueOtp, OTP_TTL_MS, type OtpChannel, type OtpPurpose } from '@/lib/verification';
@@ -23,6 +24,11 @@ function clientIp(req: NextRequest): string | undefined {
 }
 
 export async function POST(req: NextRequest) {
+  // Budget per address on top of the per-target limits inside verification.ts:
+  // one browser can no longer spray code requests across many mailboxes.
+  const blocked = throttle(req, 'otp-request', 10, 10 * 60_000);
+  if (blocked) return blocked;
+
   try {
     const body = await req.json().catch(() => ({}));
     const purpose = resolvePurpose(body?.channel, body?.purpose);

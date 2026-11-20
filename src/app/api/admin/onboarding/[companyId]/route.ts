@@ -85,8 +85,10 @@ export async function POST(
     // If specific documents are being approved/rejected
     if (documentIds && documentIds.length > 0) {
       const docStatus = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'pending';
+      // Scoped to the company under review, so ids from another company's
+      // upload history can never be flipped through this request.
       await prisma.document.updateMany({
-        where: { id: { in: documentIds } },
+        where: { id: { in: documentIds }, companyId },
         data: {
           verificationStatus: docStatus,
           verifiedBy: session.user.email,

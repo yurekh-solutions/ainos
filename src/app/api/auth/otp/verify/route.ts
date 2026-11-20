@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { throttle } from '@/lib/security';
 import { normalizeEmail, normalizePhone } from '@/lib/identity';
 import {
   consumeOtp,
@@ -15,6 +16,11 @@ function resolvePurpose(channel: unknown, purpose: unknown): OtpPurpose | null {
 }
 
 export async function POST(req: NextRequest) {
+  // Each code already burns after 5 tries; this caps how many codes one address
+  // can try in a row, so a scripted run cannot cycle through the whole space.
+  const blocked = throttle(req, 'otp-verify', 20, 10 * 60_000);
+  if (blocked) return blocked;
+
   try {
     const body = await req.json().catch(() => ({}));
     const purpose = resolvePurpose(body?.channel, body?.purpose);

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { throttle } from '@/lib/security';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
@@ -10,6 +11,11 @@ import { startTrial } from '@/lib/billing';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
+  // This one provisions a tenant, a trial and welcome email in a single call,
+  // so an address gets a bounded hourly budget instead of unlimited creates.
+  const blocked = throttle(req, 'register-company', 12, 60 * 60_000);
+  if (blocked) return blocked;
+
   try {
     const body = await req.json();
     const {

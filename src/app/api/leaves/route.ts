@@ -50,11 +50,16 @@ export async function POST(req: NextRequest) {
     if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
 
     const body = await req.json();
-    const emp = body.employee ? await prisma.employee.findUnique({ where: { id: body.employee } }) : null;
+    // Company-scoped employee lookup: a leave request must not be attachable to
+    // another company's staff record.
+    const employeeRef = body.employee || body.employeeId ? String(body.employee || body.employeeId) : '';
+    const emp = employeeRef
+      ? await prisma.employee.findFirst({ where: { id: employeeRef, companyId: user.companyId } })
+      : null;
     const leave = await prisma.leaveRequest.create({
       data: {
-        employeeId: emp?.id || body.employeeId || null,
-        employeeName: body.employeeName || emp?.name || body.employee || null,
+        employeeId: emp?.id || null,
+        employeeName: body.employeeName || emp?.name || employeeRef || null,
         leaveType: body.leaveType || 'casual',
         startDate: body.startDate ? new Date(body.startDate) : new Date(),
         endDate: body.endDate ? new Date(body.endDate) : new Date(),

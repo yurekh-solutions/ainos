@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { throttle } from '@/lib/security';
 import { GST_STATE_CODES } from '@/lib/finance/gst';
 
 // GST Scraper - Self-hosted Flask server on Render
@@ -42,6 +43,15 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { action } = body;
+
+    // Public by design: the signup form auto-fills GST details before anyone is
+    // signed in. The feature is untouched, this only bounds one address - cheap
+    // reads from our own cache get a large allowance, everything that reaches
+    // the GSTN portal through the scraper gets a smaller one, which is also
+    // what stops the portal rate-limiting us for every tenant at once.
+    const fromCache = action === 'getCached';
+    const blocked = throttle(req, fromCache ? 'gst-cache' : 'gst-lookup', fromCache ? 200 : 60, 15 * 60_000);
+    if (blocked) return blocked;
 
     // Action 0: Return a cached GST lookup if one exists and is fresh, so the
     // client can auto-fill WITHOUT hitting GSTN at all. This is the resilience

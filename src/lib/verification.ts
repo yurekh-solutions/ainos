@@ -1,5 +1,6 @@
 import { createHash, createHmac, randomInt, timingSafeEqual } from 'crypto';
 import { prisma } from '@/lib/prisma';
+import { getSigningSecret } from '@/lib/security';
 
 export type OtpChannel = 'email' | 'phone';
 export type OtpPurpose = 'signup_email' | 'signup_phone' | 'reset_email';
@@ -12,7 +13,11 @@ const MAX_ATTEMPTS = 5;
 const PROOF_TTL_MS = 30 * 60 * 1000;
 
 function secret(): string {
-  return process.env.OTP_SECRET || process.env.NEXTAUTH_SECRET || 'ainos-dev-otp-secret';
+  // Same resolver as the session signer: when OTP_SECRET is absent the code
+  // hashes fall back to NEXTAUTH_SECRET, and only if that is missing too do
+  // they use a random per-process key. The old literal fallback was committed
+  // to the repository, which let anyone precompute valid OTP proofs.
+  return process.env.OTP_SECRET || getSigningSecret();
 }
 
 /** Cryptographically random 6-digit code, zero padded. */

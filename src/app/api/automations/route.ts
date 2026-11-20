@@ -86,6 +86,13 @@ export async function PUT(req: NextRequest) {
     const { id, ...data } = body;
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
+    // Confirm the automation belongs to the caller's company before writing, so
+    // an id from another tenant cannot be edited through this route.
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+    const owned = await prisma.automation.findFirst({ where: { id, companyId: user.companyId }, select: { id: true } });
+    if (!owned) return NextResponse.json({ error: 'Automation not found' }, { status: 404 });
+
     const automation = await prisma.automation.update({ where: { id }, data });
     return NextResponse.json(automation);
   } catch (error) {
@@ -103,6 +110,11 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+    const owned = await prisma.automation.findFirst({ where: { id, companyId: user.companyId }, select: { id: true } });
+    if (!owned) return NextResponse.json({ error: 'Automation not found' }, { status: 404 });
 
     await prisma.automation.delete({ where: { id } });
     return NextResponse.json({ success: true });

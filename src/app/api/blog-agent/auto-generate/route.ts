@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { generateScheduleNow } from '@/lib/schedule-generator';
 import { runHealthChecks } from '@/lib/site-health';
+import { cronAuthorized, cronRejected } from '@/lib/security';
 
 // POST /api/blog-agent/auto-generate
 // Called daily by cron - re-checks every connected website for the embed code
@@ -10,11 +11,12 @@ import { runHealthChecks } from '@/lib/site-health';
 // from the last 3 days
 export async function POST(req: NextRequest) {
   try {
-    // Verify cron secret (optional security)
-    const authHeader = req.headers.get('authorization');
-    if (authHeader && authHeader !== `Bearer ${process.env.CRON_SECRET || 'ainos-cron-2024'}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // The old check only compared the header when one was present, so calling
+    // this endpoint with no header at all sailed through - and the fallback
+    // token it compared against was published in the workflow file. Now the
+    // shared guard requires the secret, fail-closed in production.
+    const auth = cronAuthorized(req);
+    if (!auth.ok) return cronRejected(auth.reason);
 
     const health = await runHealthChecks().catch((err) => {
       console.error('[Auto-generate] health checks failed:', err);

@@ -25,6 +25,7 @@ const errorMessages: Record<string, string> = {
   GooglePendingApproval: 'Your account is pending admin approval. Please wait for verification.',
   GoogleRejected: 'Your application was rejected by the admin team. Reprocess your application to continue.',
   GoogleError: 'Google sign-in failed. Please try again in a moment.',
+  TOO_MANY_ATTEMPTS: 'Too many sign-in attempts from this device. Please wait a few minutes and try again.',
   Default: 'An error occurred during sign-in.',
 };
 
@@ -107,6 +108,8 @@ export default function SignInPage() {
           setAccountPopup('pending');
         } else if (result.error === 'ACCOUNT_REJECTED') {
           setAccountPopup('rejected');
+        } else if (result.error === 'TOO_MANY_ATTEMPTS') {
+          setError(errorMessages.TOO_MANY_ATTEMPTS);
         } else {
           setError('Invalid email or password');
         }

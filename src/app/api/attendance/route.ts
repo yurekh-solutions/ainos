@@ -71,7 +71,12 @@ export async function POST(req: NextRequest) {
     if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
 
     const body = await req.json();
-    const emp = body.employee ? await prisma.employee.findUnique({ where: { id: body.employee } }) : null;
+    // Employee ids arrive from the client, so the lookup is company-scoped -
+    // otherwise one tenant could write attendance against another's staff.
+    const employeeRef = body.employee || body.employeeId ? String(body.employee || body.employeeId) : '';
+    const emp = employeeRef
+      ? await prisma.employee.findFirst({ where: { id: employeeRef, companyId: user.companyId } })
+      : null;
     const baseDate = body.date ? new Date(body.date) : new Date();
     const parseTime = (t: unknown) => {
       if (typeof t !== 'string' || !t.trim()) return null;
@@ -86,8 +91,8 @@ export async function POST(req: NextRequest) {
     };
     const record = await prisma.attendance.create({
       data: {
-        employeeId: emp?.id || body.employeeId || null,
-        employeeName: body.employeeName || emp?.name || body.employee || null,
+        employeeId: emp?.id || null,
+        employeeName: body.employeeName || emp?.name || employeeRef || null,
         date: baseDate,
         checkIn: parseTime(body.checkIn),
         checkOut: parseTime(body.checkOut),

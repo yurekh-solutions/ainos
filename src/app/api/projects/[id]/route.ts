@@ -1,22 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth';
+import { requireSession } from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
 
-// GET /api/projects/[id] — project with its tasks
+// Every handler resolves the caller's company first and keys the lookup on
+// { id, companyId }. An id from another tenant therefore returns 404 instead of
+// handing over or mutating someone else's project.
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(req);
-    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const ctx = await requireSession(req);
+    if (ctx.error) return ctx.error;
 
     const { id } = await params;
-    const project = await prisma.project.findUnique({ where: { id } });
+    const project = await prisma.project.findFirst({ where: { id, companyId: ctx.companyId } });
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 });
 
     const tasks = await prisma.task.findMany({
-      where: { projectId: id },
+      where: { projectId: id, companyId: ctx.companyId },
       orderBy: [{ status: 'asc' }, { createdAt: 'asc' }]
     });
     return NextResponse.json({ project, tasks });
@@ -32,10 +34,13 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(req);
-    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const ctx = await requireSession(req);
+    if (ctx.error) return ctx.error;
 
     const { id } = await params;
+    const owned = await prisma.project.findFirst({ where: { id, companyId: ctx.companyId }, select: { id: true } });
+    if (!owned) return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+
     const body = await req.json();
 
     const data: Record<string, unknown> = {};
@@ -58,12 +63,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(req);
-    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const ctx = await requireSession(req);
+    if (ctx.error) return ctx.error;
 
     const { id } = await params;
-    // Delete tasks first, then project
-    await prisma.task.deleteMany({ where: { projectId: id } });
+    const owned = await prisma.project.findFirst({ where: { id, companyId: ctx.companyId }, select: { id: true } });
+    if (!owned) return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+
+    // Delete tasks first, then project — both scoped to the caller's company.
+    await prisma.task.deleteMany({ where: { projectId: id, companyId: ctx.companyId } });
     await prisma.project.delete({ where: { id } });
     return NextResponse.json({ message: 'Project deleted successfully' });
   } catch (error) {

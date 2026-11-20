@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { throttle } from '@/lib/security';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(req: NextRequest) {
+  // Account creation is the cheapest way to burn email quota and seed fake
+  // tenants, so one address gets a small hourly budget.
+  const blocked = throttle(req, 'register', 10, 60 * 60_000);
+  if (blocked) return blocked;
+
   try {
     const body = await req.json();
     const { name, email, password } = body;

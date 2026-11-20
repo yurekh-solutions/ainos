@@ -45,9 +45,16 @@ export async function PUT(req: NextRequest) {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+
     const body = await req.json();
     const { id, ...data } = body;
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+
+    // The id alone is not enough: an id from another company must not be editable.
+    const owned = await prisma.vendor.findFirst({ where: { id, companyId: user.companyId }, select: { id: true } });
+    if (!owned) return NextResponse.json({ error: 'Vendor not found' }, { status: 404 });
 
     const vendor = await prisma.vendor.update({ where: { id }, data });
     return NextResponse.json(vendor);
@@ -62,9 +69,15 @@ export async function DELETE(req: NextRequest) {
     const session = await getServerSession(req);
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+
+    const owned = await prisma.vendor.findFirst({ where: { id, companyId: user.companyId }, select: { id: true } });
+    if (!owned) return NextResponse.json({ error: 'Vendor not found' }, { status: 404 });
 
     await prisma.vendor.delete({ where: { id } });
     return NextResponse.json({ success: true });

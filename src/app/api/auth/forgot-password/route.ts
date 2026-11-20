@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { throttle } from '@/lib/security';
 import { prisma } from '@/lib/prisma';
 import { sendEmail, passwordResetEmailTemplate } from '@/lib/email';
 import { findUserByEmail, normalizeEmail } from '@/lib/identity';
@@ -22,6 +23,12 @@ function requestOrigin(req: NextRequest): string {
 const GENERIC_MESSAGE = 'If an account exists with that email, a reset link has been sent.';
 
 export async function POST(req: NextRequest) {
+  // Per-address budget alongside the existing one-email-per-15-minutes rule:
+  // together they stop a scripted run from burning the mail provider quota
+  // against a list of addresses.
+  const blocked = throttle(req, 'forgot-password', 20, 60 * 60_000);
+  if (blocked) return blocked;
+
   try {
     const { email } = await req.json();
 

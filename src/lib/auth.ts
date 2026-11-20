@@ -1,20 +1,16 @@
 import { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-
-// Use the same secret as NextAuth - must match NEXTAUTH_SECRET env var
-const SECRET = process.env.NEXTAUTH_SECRET;
+import { getSigningSecret } from '@/lib/security';
 
 export async function getServerSession(req: NextRequest) {
   try {
-    if (!SECRET) {
-      console.error('NEXTAUTH_SECRET is not set!');
-      return null;
-    }
-    
     // getToken automatically reads the next-auth.session-token cookie
     const token = await getToken({ 
       req,
-      secret: SECRET,
+      // Resolved the same way auth-options.ts signs cookies, so a missing
+      // environment variable can never split the reader and the writer onto
+      // different keys.
+      secret: getSigningSecret(),
       cookieName: 'next-auth.session-token'
     });
     

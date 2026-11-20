@@ -121,10 +121,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Save chat session
-    let chatSession = sessionId ? await prisma.aIChatSession.findUnique({ where: { id: sessionId } }) : null;
+    // The sessionId comes from the client, so it is only reused when it belongs
+    // to this account - otherwise one user could read and append to another
+    // user's conversation history.
+    let chatSession = sessionId
+      ? await prisma.aIChatSession.findFirst({ where: { id: sessionId, userId } })
+      : null;
     if (!chatSession) {
       chatSession = await prisma.aIChatSession.create({
-        data: { userId, messages: [], context: ['invoices', 'crm', 'hr', 'inventory'] },
+        data: { userId, companyId: companyId ?? null, messages: [], context: ['invoices', 'crm', 'hr', 'inventory'] },
       });
     }
     const existingMessages = (chatSession.messages as Array<Record<string, unknown>>) || [];
@@ -133,8 +138,8 @@ export async function POST(req: NextRequest) {
       { role: 'user', content: message, timestamp: new Date().toISOString() },
       { role: 'assistant', content: response, timestamp: new Date().toISOString() },
     ];
-    await prisma.aIChatSession.update({
-      where: { id: chatSession.id },
+    await prisma.aIChatSession.updateMany({
+      where: { id: chatSession.id, userId },
       data: { messages: updatedMessages as any },
     });
 

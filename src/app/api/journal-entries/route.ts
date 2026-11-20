@@ -58,6 +58,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Debit and credit must be equal' }, { status: 400 });
     }
 
+    // Chart-of-accounts rows belong to a company, so every posted accountId has
+    // to be one of the caller's. Otherwise any tenant could post into another
+    // company's ledger and move its balances.
+    const accountIds = Array.from(
+      new Set<string>(entries.map((e: { accountId?: unknown }) => String(e.accountId || ''))),
+    ).filter(Boolean);
+    if (accountIds.length === 0) {
+      return NextResponse.json({ error: 'Every ledger entry needs an account' }, { status: 400 });
+    }
+    const ownedAccounts = await prisma.account.findMany({
+      where: { id: { in: accountIds }, companyId: user.companyId },
+      select: { id: true },
+    });
+    if (ownedAccounts.length !== accountIds.length) {
+      return NextResponse.json({ error: 'One or more accounts do not belong to your company' }, { status: 403 });
+    }
+
     const journal = await prisma.journalEntry.create({
       data: {
         date: new Date(date),
@@ -76,10 +93,11 @@ export async function POST(req: NextRequest) {
       include: { entries: { include: { account: true } } },
     });
 
-    // Update account balances
+    // Update account balances - keyed on id + companyId, so a row that was
+    // moved to another tenant between the check and the write cannot be hit.
     for (const e of entries) {
-      await prisma.account.update({
-        where: { id: e.accountId },
+      await prisma.account.updateMany({
+        where: { id: String(e.accountId), companyId: user.companyId },
         data: { balance: { increment: (e.debit || 0) - (e.credit || 0) } },
       });
     }

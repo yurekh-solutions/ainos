@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { findUserByEmail, normalizeEmail } from '@/lib/identity';
+import { throttle } from '@/lib/security';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -15,6 +16,11 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * been claimed, so registration may continue (same rule as register-company).
  */
 export async function POST(req: NextRequest) {
+  // The answer is deliberately public for the signup flow, so the only thing to
+  // bound is how fast one address can sweep it against a list of emails.
+  const blocked = throttle(req, 'check-email', 40, 10 * 60_000);
+  if (blocked) return blocked;
+
   try {
     const body = await req.json().catch(() => ({}));
     const email = normalizeEmail(String(body?.email || ''));

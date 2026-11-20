@@ -62,10 +62,14 @@ export async function POST(req: NextRequest) {
 
     // Update session totals
     if (body.sessionId) {
-      const sessionOrders = await prisma.pOSOrder.findMany({ where: { sessionId: body.sessionId } });
+      // Both halves are keyed on companyId: an unknown sessionId simply matches
+      // nothing instead of recomputing another shop's till totals.
+      const sessionOrders = await prisma.pOSOrder.findMany({
+        where: { sessionId: String(body.sessionId), companyId: user.companyId },
+      });
       const totalSales = sessionOrders.reduce((a, o) => a + (o.total || 0), 0);
-      await prisma.pOSSession.update({
-        where: { id: body.sessionId },
+      await prisma.pOSSession.updateMany({
+        where: { id: String(body.sessionId), companyId: user.companyId },
         data: { totalSales, totalOrders: sessionOrders.length },
       });
     }

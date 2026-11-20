@@ -59,16 +59,26 @@ jobs:
     if: github.event.schedule == '0 9 * * *' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Trigger daily blog auto-publishing
+        env:
+          # Read from the repository secret only. The old inline fallback token
+          # was visible to everyone with read access to this repo, and the
+          # endpoints now fail closed without the real secret.
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::Repository secret CRON_SECRET is not set. Add it in Settings > Secrets and variables > Actions, with the same value as CRON_SECRET on Render."
+            exit 1
+          fi
           echo "Triggering daily blog auto-publishing..."
           response=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET || 'ainos-cron-2024' }}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
             https://ainossuite.com/api/blog-agent/auto-generate)
           echo "Auto-publish status: $response"
           if [ "$response" = "200" ]; then
             echo "✅ Blog auto-publishing triggered"
           else
             echo "⚠️ Auto-publishing returned $response"
+            exit 1
           fi
 
   billing-cron:
@@ -76,9 +86,15 @@ jobs:
     if: github.event.schedule == '0 3 * * *' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Run daily billing / credits / tool-subscription expiry cron
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::Repository secret CRON_SECRET is not set. Add it in Settings > Secrets and variables > Actions, with the same value as CRON_SECRET on Render."
+            exit 1
+          fi
           echo "Triggering /api/cron/refresh-credits (credit refill + subscription/tool-sub expiry)..."
-          response=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer ${{ secrets.CRON_SECRET || 'ainos-cron-2024' }}" https://ainossuite.com/api/cron/refresh-credits)
+          response=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $CRON_SECRET" https://ainossuite.com/api/cron/refresh-credits)
           code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
           echo "Cron status: $code"
@@ -87,4 +103,5 @@ jobs:
             echo "✅ Billing cron completed"
           else
             echo "⚠️ Billing cron returned $code"
+            exit 1
           fi

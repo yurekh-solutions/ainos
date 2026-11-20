@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from '@/lib/auth';
+import { isAdmin } from '@/lib/admin';
+import { throttle } from '@/lib/security';
 
 // Lead Conversion Tracking - Track CTA clicks, form submissions, signups
 export async function POST(req: NextRequest) {
+  // Public event ingestion, bounded per address instead of gated.
+  const blocked = throttle(req, 'conversion-ping', 300, 10 * 60_000);
+  if (blocked) return blocked;
+
   try {
     const { slug, conversionType, metadata } = await req.json();
     if (!slug || !conversionType) {
@@ -63,15 +70,26 @@ export async function POST(req: NextRequest) {
 // Fetch conversion analytics
 export async function GET(req: NextRequest) {
   try {
+    const session = await getServerSession(req);
+    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { searchParams } = new URL(req.url);
     const slug = searchParams.get('slug');
-    const companyId = searchParams.get('companyId');
     const period = searchParams.get('period') || '30d';
+
+    // Which company's funnel is being read comes from the session, never from
+    // the query string. Admins keep the cross-company view.
+    const account = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { companyId: true },
+    });
+    const platform = isAdmin(session.user.email);
+    const ownCompanyId = account?.companyId ?? '__none__';
 
     if (slug) {
       // Get conversions for specific post
       const post = await prisma.blogPost.findFirst({
-        where: { slug, status: 'published' },
+        where: { slug, status: 'published', ...(platform ? {} : { companyId: ownCompanyId }) },
       }) as Record<string, unknown> | null;
 
       if (!post) return NextResponse.json({ error: 'Post not found' }, { status: 404 });
@@ -104,7 +122,12 @@ export async function GET(req: NextRequest) {
 
     // Get conversions for all posts
     const where: Record<string, unknown> = { status: 'published' };
-    if (companyId) where.companyId = companyId;
+    if (platform) {
+      const requested = searchParams.get('companyId');
+      if (requested) where.companyId = requested;
+    } else {
+      where.companyId = ownCompanyId;
+    }
 
     const posts = await prisma.blogPost.findMany({
       where,

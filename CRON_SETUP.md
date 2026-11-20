@@ -15,12 +15,15 @@ AINOS has two automation endpoints that need to run daily:
 5. Configure:
    - **Name:** `Recurring Invoices`
    - **Schedule:** `0 9 * * *` (9 AM daily)
-   - **Command:** `curl https://ainossuite.com/api/cron/recurring-invoices`
+   - **Command:** `curl -H "Authorization: Bearer $CRON_SECRET" https://ainossuite.com/api/cron/recurring-invoices`
 6. Click "Save Changes"
 7. Repeat for Auto Reminders:
    - **Name:** `Auto Reminders`
    - **Schedule:** `0 10 * * *` (10 AM daily)
-   - **Command:** `curl https://ainossuite.com/api/cron/auto-reminders`
+   - **Command:** `curl -H "Authorization: Bearer $CRON_SECRET" https://ainossuite.com/api/cron/auto-reminders`
+
+`CRON_SECRET` has to exist in the service's environment (see Authorization at
+the end of this guide); Render expands it inside the command.
 
 ### Cost:
 - Render Cron: **Free** (included with all plans)
@@ -34,13 +37,13 @@ AINOS has two automation endpoints that need to run daily:
 2. Click "Create cronjob"
 3. Configure:
    - **Title:** `AINOS Recurring Invoices`
-   - **URL:** `https://ainossuite.com/api/cron/recurring-invoices`
+   - **URL:** `https://ainossuite.com/api/cron/recurring-invoices?key=<CRON_SECRET>`
    - **Schedule:** Daily at 9:00 AM
    - **Timezone:** Asia/Kolkata
 4. Click "Create"
 5. Repeat for Auto Reminders:
    - **Title:** `AINOS Auto Reminders`
-   - **URL:** `https://ainossuite.com/api/cron/auto-reminders`
+   - **URL:** `https://ainossuite.com/api/cron/auto-reminders?key=<CRON_SECRET>`
    - **Schedule:** Daily at 10:00 AM
 
 ### Cost:
@@ -56,7 +59,7 @@ AINOS has two automation endpoints that need to run daily:
 3. Configure:
    - **Monitor Type:** HTTP(s)
    - **Friendly Name:** `AINOS Recurring Invoices`
-   - **URL:** `https://ainossuite.com/api/cron/recurring-invoices`
+   - **URL:** `https://ainossuite.com/api/cron/recurring-invoices?key=<CRON_SECRET>`
    - **Monitoring Interval:** Every 30 minutes (or daily)
 4. Click "Create Monitor"
 5. Repeat for Auto Reminders
@@ -68,17 +71,20 @@ AINOS has two automation endpoints that need to run daily:
 
 ## Testing
 
-After setup, manually trigger once to verify:
+After setup, manually trigger once to verify (add the `Authorization` header or
+`?key=` shown further down once `CRON_SECRET` is configured):
 
 ```bash
 # Test recurring invoices
-curl https://ainossuite.com/api/cron/recurring-invoices
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  https://ainossuite.com/api/cron/recurring-invoices
 
 # Expected response:
 {"success":true,"generated":0,"errors":0,"total":0}
 
 # Test auto reminders
-curl https://ainossuite.com/api/cron/auto-reminders
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  https://ainossuite.com/api/cron/auto-reminders
 
 # Expected response:
 {"success":true,"remindersSent":0,"errors":0,"total":0}
@@ -120,6 +126,10 @@ Check cron execution logs:
 
 ## Troubleshooting
 
+### Cron returns 401 or 503:
+- `503` — `CRON_SECRET` is not set on the deployment. Add it in Render env.
+- `401` — the scheduler is sending a different value than the deployed secret.
+
 ### Cron returns 404:
 - Production deploy not complete. Check Render build logs.
 - Trigger manual deploy: Render Dashboard → Manual Deploy → "Deploy latest commit"
@@ -140,24 +150,59 @@ Check cron execution logs:
 
 ---
 
-## Security Note
+## Authorization (required in production)
 
-These endpoints have no auth (designed for cron services). If you want to add auth:
+Every cron endpoint (`/api/cron/recurring-invoices`, `/api/cron/auto-reminders`,
+`/api/cron/refresh-credits`) and `/api/blog-agent/auto-generate` is guarded by
+`cronAuthorized()` in `src/lib/security.ts`. They generate invoices, refill
+credits and email customers, so an unauthenticated call is money-moving work:
 
-1. Add `CRON_SECRET` to .env:
-   ```
-   CRON_SECRET=your-random-secret-here
-   ```
+- On the live deployment the routes **fail closed** — with `CRON_SECRET` missing
+  they answer `503`, not `200`. Locally, with no secret set, they stay open so
+  the existing scheduler URL keeps working while you build.
+- The guard accepts either form below. Prefer the header; the query parameter
+  exists for schedulers that can only hit a URL (cron-job.org, UptimeRobot).
 
-2. Update both cron routes to check:
-   ```typescript
-   const authHeader = req.headers.get('authorization');
-   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-   }
-   ```
+### 1. Set the secret once, in three places
 
-3. Update cron job commands:
-   ```bash
-   curl -H "Authorization: Bearer your-random-secret-here" https://ainossuite.com/api/cron/recurring-invoices
-   ```
+```bash
+# Generate one strong value
+openssl rand -hex 32
+```
+
+| Place | Key | Value |
+| --- | --- | --- |
+| Render → Environment | `CRON_SECRET` | the generated value |
+| GitHub → Settings → Secrets and variables → Actions | `CRON_SECRET` | **the same** value |
+| Local `.env` (optional) | `CRON_SECRET` | anything, only for testing |
+
+### 2. Header form (Render Cron Jobs, GitHub Actions, Vercel Cron)
+
+Render Cron Jobs run a real command inside the service, so the secret is
+already in the environment:
+
+```bash
+curl -fsS -H "Authorization: Bearer $CRON_SECRET" \
+  https://ainossuite.com/api/cron/recurring-invoices
+```
+
+### 3. Query form (URL-only schedulers such as cron-job.org)
+
+```text
+https://ainossuite.com/api/cron/auto-reminders?key=<CRON_SECRET>
+```
+
+The key lands in access logs on the scheduler's side, so use the header form
+whenever the tool allows it.
+
+### Verifying
+
+```bash
+# Expected: 401 (wrong/absent secret) or 503 (CRON_SECRET not configured)
+curl -o /dev/null -w "%{http_code}\n" https://ainossuite.com/api/cron/recurring-invoices
+
+# Expected: 200
+curl -o /dev/null -w "%{http_code}\n" \
+  -H "Authorization: Bearer <CRON_SECRET>" \
+  https://ainossuite.com/api/cron/recurring-invoices
+```

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { expireToolSubscriptions } from '@/lib/tool-subscriptions';
 import { expireWorkspaceSubscriptions } from '@/lib/workspace-subscriptions';
+import { cronAuthorized, cronRejected } from '@/lib/security';
 
 // POST/GET /api/cron/refresh-credits — monthly credit refill + expiry downgrade.
 //
@@ -11,8 +12,9 @@ import { expireWorkspaceSubscriptions } from '@/lib/workspace-subscriptions';
 //   2. Plans past `currentPeriodEnd` that weren't renewed are marked expired and
 //      every tool flag drops to 0 (locked) — the "darwaza band" case.
 //
-// The existing cron routes are open GETs; we mirror that but honour an optional
-// CRON_SECRET so this can be locked down without changing the scheduler URL.
+// The guard is the shared cron one: this rewrites billing state, so on the live
+// deployment it refuses to run until CRON_SECRET is configured. Locally, with
+// no secret set, it stays open so the scheduler URL keeps working.
 const ALL_TOOL_FLAGS = [
   'autoBlog',
   'invoiceGen',
@@ -23,12 +25,6 @@ const ALL_TOOL_FLAGS = [
   'aiAssistant',
   'websiteGen',
 ] as const;
-
-function authorized(req: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return true; // no secret configured → open, like sibling crons
-  return req.headers.get('authorization') === `Bearer ${secret}`;
-}
 
 async function run() {
   const now = new Date();
@@ -124,7 +120,8 @@ async function run() {
 }
 
 export async function GET(req: NextRequest) {
-  if (!authorized(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const auth = cronAuthorized(req);
+  if (!auth.ok) return cronRejected(auth.reason);
   try {
     const result = await run();
     return NextResponse.json({ ok: true, ...result });
