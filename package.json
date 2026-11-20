@@ -7,9 +7,10 @@
   },
   "scripts": {
     "predev": "rmdir /s /q .next 2>nul || echo Skipping .next cleanup",
-    "dev": "cross-env NODE_OPTIONS=--max-old-space-size=12288 next dev --turbopack",
+    "dev": "cross-env NODE_OPTIONS=--max-old-space-size=12288 next dev --webpack",
     "prebuild": "prisma generate && prisma db push --accept-data-loss --skip-generate",
-    "build": "NODE_OPTIONS=--max-old-space-size=12288 next build",
+    "build": "NODE_OPTIONS=--max-old-space-size=12288 next build --webpack",
+    "build:win": "set NODE_OPTIONS=--max-old-space-size=12288&& next build --webpack",
     "start": "node server.js",
     "lint": "eslint",
     "test": "vitest run",
