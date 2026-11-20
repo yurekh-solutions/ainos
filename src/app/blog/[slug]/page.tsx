@@ -3,9 +3,17 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/seo';
 import { liveNow } from '@/lib/site-health';
-import { ainosBlogWhere, isAinosPost, seoTitleFor } from '@/lib/ainos-blog';
+import { ainosBlogWhere, isAinosPost, seoTitleFor, AINOS_BLOG_AUTHOR } from '@/lib/ainos-blog';
 import { JsonLd, breadcrumbJsonLd } from '@/components/seo/JsonLd';
 import BlogArticleClient from './BlogArticleClient';
+
+// Entity links that let Google and answer engines connect AINOS articles to the
+// company behind them instead of treating the byline as an anonymous account.
+const PUBLISHER_SAME_AS = [
+  'https://www.linkedin.com/company/yurekh-solutions-private-limited/',
+  'https://www.instagram.com/yurekhsolutions',
+  'https://yurekh.com/',
+];
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -33,13 +41,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Search results cut titles at roughly 60 characters, so only add the brand when it fits.
   const searchTitle = seoTitleFor(post.slug, post.title);
   const branded = `${searchTitle} | AINOS Blog`;
+  const tags = Array.isArray(post.tags) ? (post.tags as string[]) : [];
 
   return {
     // Absolute: skip the root "| AINOS" template, the brand is handled above.
     title: { absolute: branded.length <= 60 ? branded : searchTitle },
     description: contentPreview,
-    keywords: Array.isArray(post.tags) ? post.tags.join(', ') : '',
-    authors: [{ name: post.authorName || post.author || 'AINOS' }],
+    keywords: [...tags, post.category, 'AINOS', 'India'].filter(Boolean).join(', '),
+    authors: [{ name: post.authorName || post.author || AINOS_BLOG_AUTHOR }],
     openGraph: {
       title: post.title,
       description: contentPreview,
@@ -49,7 +58,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: 'article',
       publishedTime: post.publishedAt?.toISOString(),
       modifiedTime: (post.updatedAt || post.createdAt)?.toISOString(),
-      tags: Array.isArray(post.tags) ? post.tags as string[] : [],
+      section: post.category || undefined,
+      authors: [post.authorName || post.author || AINOS_BLOG_AUTHOR],
+      tags,
     },
     twitter: {
       card: 'summary_large_image',
@@ -61,7 +72,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       canonical: postUrl,
     },
     // Customer-site posts live on the customer's own site; this copy exists for previews and shares only.
-    ...(isAinosPost(post) ? {} : { robots: { index: false, follow: true } }),
+    ...(isAinosPost(post)
+      ? {
+          robots: {
+            index: true,
+            follow: true,
+            'max-image-preview': 'large' as const,
+            'max-snippet': -1,
+            'max-video-preview': -1,
+          },
+        }
+      : { robots: { index: false, follow: true } }),
   };
 }
 
@@ -107,7 +128,7 @@ export default async function BlogPostPage({ params }: Props) {
     }
   }
 
-  // JSON-LD Schema.org structured data for Google
+  // JSON-LD Schema.org structured data for Google and answer engines
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
@@ -123,12 +144,15 @@ export default async function BlogPostPage({ params }: Props) {
       description: ((post as Record<string, unknown>).authorBio as string) || '',
     } : {
       '@type': 'Organization',
-      name: website?.name || post.author || 'AINOS',
+      name: website?.name || AINOS_BLOG_AUTHOR,
       url: website?.url || siteUrl,
+      sameAs: website?.url ? [website.url] : PUBLISHER_SAME_AS,
     },
     publisher: {
       '@type': 'Organization',
-      name: website?.name || 'AINOS',
+      name: website?.name || 'AINOS Business Suite',
+      url: website?.url || siteUrl,
+      sameAs: website?.url ? [website.url] : PUBLISHER_SAME_AS,
       logo: {
         '@type': 'ImageObject',
         url: `${siteUrl}/icon.png`,
@@ -140,6 +164,15 @@ export default async function BlogPostPage({ params }: Props) {
     },
     keywords: Array.isArray(post.tags) ? post.tags.join(', ') : '',
     articleSection: post.category || 'General',
+    about: Array.isArray(post.tags)
+      ? (post.tags as string[]).map((tag) => ({ '@type': 'Thing', name: tag }))
+      : [],
+    isAccessibleForFree: true,
+    // Tell assistant-style readers which part of the page is the direct answer.
+    speakable: {
+      '@type': 'SpeakableSpecification',
+      cssSelector: ['#aeo-answer', 'article h1'],
+    },
     wordCount: (post.content || '').split(/\s+/).length,
     inLanguage: 'en-IN',
   };

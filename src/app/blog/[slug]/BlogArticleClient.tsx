@@ -2,13 +2,14 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Calendar, Clock, ArrowLeft, BookOpen, Tag, Layers, ArrowRight, Share2, Linkedin, Twitter, Facebook, Copy, Check, List, ChevronRight, Mail, X, Volume2, VolumeX, Rss } from 'lucide-react';
+import { Calendar, Clock, ArrowLeft, BookOpen, Tag, Layers, ArrowRight, Share2, Linkedin, Twitter, Facebook, Copy, Check, List, ChevronRight, Mail, X, Volume2, VolumeX, Rss, Sparkles } from 'lucide-react';
+import SocialLinks from '@/components/SocialLinks';
 
 interface BlogPost {
   id: string; title: string; slug: string; content: string; excerpt: string | null;
   featuredImage: string | null; category: string | null; author: string | null;
   authorName: string | null; authorBio: string | null; authorImage: string | null;
-  publishedAt: string | null; tags: string[] | null; createdAt: string;
+  publishedAt: string | null; updatedAt?: string | null; tags: string[] | null; createdAt: string;
 }
 
 interface RelatedPost {
@@ -22,7 +23,7 @@ function renderMarkdown(md: string): string {
   return md
     .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre class="bg-gray-900 text-gray-100 rounded-xl p-4 overflow-x-auto text-sm my-6"><code>$2</code></pre>')
     .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" class="w-full rounded-xl my-6 shadow-md" loading="lazy" />')
-    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-purple-600 hover:text-purple-800 underline font-medium" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-purple-600 hover:text-purple-800 underline font-medium py-1" target="_blank" rel="noopener noreferrer">$1</a>')
     .replace(/^> (.*$)/gm, '<blockquote class="border-l-4 border-purple-500 pl-4 py-2 my-4 bg-purple-50 rounded-r-lg text-gray-700 italic">$1</blockquote>')
     .replace(/^---$/gm, '<hr class="my-8 border-gray-200" />')
     .replace(/^### (.*$)/gm, '<h3 id="$1" class="text-lg font-bold mt-8 mb-3 text-gray-900">$1</h3>')
@@ -92,7 +93,22 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const toc = useMemo(() => extractTOC(post.content || ''), [post.content]);
-  const contentWithCTAs = useMemo(() => injectCTAs(post.content || ''), [post.content]);
+  // Many drafts open with "# Same as the title". The page already prints that as the
+  // single h1, so drop the duplicate before it becomes a second heading.
+  const bodyMarkdown = useMemo(() => {
+    const content = post.content || '';
+    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+    const match = content.match(/^\s*#\s+(.+)\r?\n+/);
+    return match && norm(match[1]) === norm(post.title) ? content.slice(match[0].length) : content;
+  }, [post.content, post.title]);
+  // Answer engines quote the first screen of a page, so the section headings
+  // double as a plain-language takeaway list right under the intro.
+  const takeaways = useMemo(() => toc.slice(0, 4).map(t => t.text), [toc]);
+  const updatedLabel = useMemo(() => {
+    const d = post.updatedAt || post.publishedAt;
+    return d ? new Date(d).toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' }) : null;
+  }, [post.updatedAt, post.publishedAt]);
+  const contentWithCTAs = useMemo(() => injectCTAs(bodyMarkdown), [bodyMarkdown]);
   const shareUrls = useMemo(() => {
     const url = typeof window !== 'undefined' ? window.location.href : '';
     return getShareUrls(post.title, url);
@@ -269,16 +285,10 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
       {/* Article Content */}
       <article className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
         {/* Title & Meta */}
-        <header className="mb-10">
+        <header className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-5 leading-tight">
             {post.title}
           </h1>
-
-          {post.excerpt && (
-            <p className="text-lg text-gray-500 leading-relaxed mb-6 border-l-4 border-purple-500 pl-4 italic">
-              {post.excerpt}
-            </p>
-          )}
 
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 pb-6 border-b border-gray-200">
             {post.publishedAt && (
@@ -309,6 +319,31 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
           </div>
           </div>
         </header>
+
+        {/* Answer-first summary: one direct answer plus the article's key points. */}
+        {(post.excerpt || takeaways.length > 0) && (
+          <section id="aeo-answer" className="mb-10 rounded-2xl border border-violet-100 bg-violet-50/60 p-5 sm:p-6">
+            <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-violet-700">
+              <Sparkles className="h-3.5 w-3.5" /> In short
+            </p>
+            {post.excerpt && (
+              <p className="mt-2 text-base leading-relaxed text-gray-800">{post.excerpt}</p>
+            )}
+            {takeaways.length > 0 && (
+              <ul className="mt-4 space-y-1.5">
+                {takeaways.map((item) => (
+                  <li key={item} className="flex items-start gap-2 text-sm leading-relaxed text-gray-700">
+                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-violet-600" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="mt-4 text-xs text-gray-500">
+              Written by the AINOS editorial team{updatedLabel ? ` \u00b7 Updated ${updatedLabel}` : ''}
+            </p>
+          </section>
+        )}
 
         {/* Body */}
         <div
@@ -354,7 +389,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
         )}
 
         {/* Author Bio */}
-        {post.authorName && (
+        {post.authorName ? (
           <div className="mt-10 bg-white rounded-2xl border border-gray-200 p-6">
             <div className="flex items-start gap-4">
               {post.authorImage ? (
@@ -382,6 +417,24 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
               </div>
             </div>
           </div>
+        ) : (
+          <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-violet-50 ring-1 ring-violet-100">
+                <Image src="/ainos-alpha.png" alt="AINOS" width={28} height={27} className="h-7 w-auto" />
+              </span>
+              <div className="min-w-0">
+                <h3 className="text-lg font-bold text-gray-900">AINOS Editorial Team</h3>
+                <p className="mt-1 text-sm leading-relaxed text-gray-600">
+                  Guides written and reviewed by the AINOS team at Yurekh Solutions Private Limited, Mumbai.
+                  Every article is checked against current GST and DPDP guidance before it is published.
+                </p>
+                {updatedLabel && (
+                  <p className="mt-3 text-xs text-gray-500">Last updated {updatedLabel}</p>
+                )}
+              </div>
+            </div>
+          </div>
         )}
 
         {/* About AINOS / CTA */}
@@ -397,7 +450,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
               </p>
               <Link
                 href="/features"
-                className="inline-flex items-center gap-1 text-sm font-semibold text-purple-600 hover:text-purple-700 transition-colors"
+                className="inline-flex items-center gap-1 py-2 min-h-[36px] text-sm font-semibold text-purple-600 hover:text-purple-700 transition-colors"
               >
                 Explore AINOS <ArrowRight className="w-4 h-4" />
               </Link>
@@ -455,6 +508,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
             <span className="text-sm font-semibold text-white">AINOS</span>
           </div>
           <p className="text-xs">AI-powered business suite for invoicing, GST, CRM, marketing and HR.</p>
+          <SocialLinks tone="dark" className="mt-4" />
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-4">
             <Link href="/blog" className="text-xs hover:text-white transition-colors py-1">Blog</Link>
             <Link href="/features" className="text-xs hover:text-white transition-colors py-1">Features</Link>

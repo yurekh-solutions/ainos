@@ -12,14 +12,34 @@ const PRIVATE_PREFIXES = [
   '/operations', '/rental', '/services', '/websites', '/auth/reset-password', '/auth/error', '/e/', '/s/',
 ];
 
+// Answer engines that power AI Overviews, ChatGPT search, Perplexity and Claude.
+// They get the same public surface as normal crawlers, so AINOS guides can be
+// quoted with a citation instead of being summarised from a competitor's page.
+const AI_ANSWER_ENGINES = [
+  'GPTBot',
+  'OAI-SearchBot',
+  'ChatGPT-User',
+  'PerplexityBot',
+  'ClaudeBot',
+  'Google-Extended',
+  'Bingbot',
+];
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/api/blog-rss', '/api/blog-sitemap'],
+        allow: ['/', '/api/blog-rss', '/api/blog-sitemap', '/llms.txt'],
         disallow: PRIVATE_PREFIXES,
       },
+      // Answer engines (AI Overviews, ChatGPT search, Perplexity, Claude) are
+      // welcome on the public pages so AINOS guides can be quoted with a citation.
+      ...AI_ANSWER_ENGINES.map((userAgent) => ({
+        userAgent,
+        allow: ['/', '/api/blog-rss', '/api/blog-sitemap', '/llms.txt'],
+        disallow: PRIVATE_PREFIXES,
+      })),
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
     host: SITE_URL,

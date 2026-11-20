@@ -1,15 +1,9 @@
 // The public AINOS blog (/blog, its sitemap and RSS) only lists AINOS's own articles.
-// Posts written for customer websites are published on those sites through the embed
-// script; their /blog/[slug] pages stay reachable for previews and shares but are noindex.
+// Posts written for customer websites are delivered to those customers and published on
+// their own sites; their /blog/[slug] pages stay reachable for previews and shares but are noindex.
 export const AINOS_BLOG_AUTHOR = 'AINOS Editorial Team';
 
 export const ainosBlogWhere = { author: AINOS_BLOG_AUTHOR } as const;
-
-// Everything else is a post written for a customer website (older rows may have no author).
-// Prisma's NOT drops NULL rows, so the NULL branch is listed explicitly.
-export const clientBlogWhere = {
-  OR: [{ author: null }, { author: { not: AINOS_BLOG_AUTHOR } }],
-};
 
 export function isAinosPost(post: { author?: string | null }): boolean {
   return post.author === AINOS_BLOG_AUTHOR;

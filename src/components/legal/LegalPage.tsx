@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { ReactNode } from 'react';
+import SocialLinks from '@/components/SocialLinks';
 
 export const LEGAL_CONTACT_EMAIL = 'info.ainosio@gmail.com';
 export const LEGAL_EFFECTIVE_DATE = '20 November 2026';
@@ -88,6 +89,7 @@ export function LegalPage({
           <Link href="/blog" className="py-1 text-violet-700 hover:underline">Blog</Link>
         </footer>
         <p className="text-center text-xs text-gray-500 mt-3">&copy; {new Date().getFullYear()} AINOS Business Suite. All rights reserved.</p>
+        <SocialLinks className="mt-4" />
       </main>
     </div>
   );

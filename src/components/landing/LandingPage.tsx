@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ToolsDirectory } from '@/components/seo/ToolsDirectory';
+import SocialLinks from '@/components/SocialLinks';
 import {
   ArrowRight, Users, MessageSquareText, ScrollText, Contact2, Megaphone, Package, Scale, Shield, Timer, Headphones, BarChart3, CheckCircle2, TrendingUp, Building2, Layers, UserPlus, LayoutGrid, FileSpreadsheet, Rocket, Loader2, ArrowDownRight, Quote, ChevronLeft, ChevronRight, ChevronDown, Star, Palette, Search, PenLine, Presentation, MessageSquare, QrCode, ShoppingBag, Wallet, UserCog, Boxes, LineChart } from 'lucide-react';
 
@@ -1312,6 +1313,7 @@ export default function AinosLandingPage() {
           <div className="pt-6 border-t border-gray-200 flex items-center justify-center text-sm text-gray-500">
             <p>© {new Date().getFullYear()} AINOS. All rights reserved. <Link href="https://yurekh.com/" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#4c1d95] hover:text-[#3b0f78] transition-colors">YUREKH</Link></p>
           </div>
+          <SocialLinks className="mt-4" />
         </div>
       </footer>
     </div>

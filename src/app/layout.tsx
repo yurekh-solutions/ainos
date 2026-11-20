@@ -67,8 +67,22 @@ const ORG_JSON_LD = {
       "@type": "Organization",
       "@id": `${SITE_URL}/#organization`,
       name: "AINOS",
+      legalName: "Yurekh Solutions Private Limited",
       url: SITE_URL,
       logo: `${SITE_URL}/icon.png`,
+      // sameAs is what lets Google and AI answers treat these profiles as the
+      // same company, so brand mentions off-site reinforce one entity.
+      sameAs: [
+        "https://www.linkedin.com/company/yurekh-solutions-private-limited/",
+        "https://www.instagram.com/yurekhsolutions",
+        "https://yurekh.com/",
+      ],
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Mumbai",
+        addressRegion: "Maharashtra",
+        addressCountry: "IN",
+      },
     },
     {
       "@type": "WebSite",
