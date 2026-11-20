@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { ArrowLeft, Copy, Check, Code, Store, Workflow, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { SITE_URL } from '@/lib/seo';
 
 const STEPS = [
   {
@@ -33,7 +34,7 @@ Now add this code to your website. If you know how to edit your website, paste i
 If you\u2019re not comfortable editing your website, just send the code to the person who set it up for you and ask them to add it there.
 
 Not sure where to put it? Pick your website type below for simple step-by-step help.`,
-    code: `<script src="https://ainos-ywu0.onrender.com/embed.js"></script>
+    code: `<script src="${SITE_URL}/embed.js"></script>
 <div id="ainos-blog" data-limit="6" data-site="YOUR_WEBSITE_URL"></div>`,
     platforms: [
       {
@@ -132,7 +133,7 @@ export default function BlogIntegrationGuide() {
   const [openPlatform, setOpenPlatform] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const embedCode = `<script src="https://ainos-ywu0.onrender.com/embed.js"></script>
+  const embedCode = `<script src="${SITE_URL}/embed.js"></script>
 <div id="ainos-blog" data-limit="6" data-site="https://yourbusiness.com"></div>`;
 
   const handleCopy = () => {

@@ -7,7 +7,7 @@
 ## 1. System Overview — What Happens Behind the Scenes
 
 ```
-AINOS Dashboard (ainos-ywu0.onrender.com)
+AINOS Dashboard (ainossuite.com)
   │
   ├─ AI Blog Agent generates articles (topic → AI → markdown + image + tags)
   ├─ You review → Publish / Schedule / Save as Draft
@@ -33,7 +33,7 @@ AINOS Dashboard (ainos-ywu0.onrender.com)
 ### The Code You Paste
 
 ```html
-<script src="https://ainos-ywu0.onrender.com/embed.js"></script>
+<script src="https://ainossuite.com/embed.js"></script>
 <div id="ainos-blog" data-limit="6" data-style="grid"></div>
 ```
 
@@ -134,7 +134,7 @@ All customization is done through HTML attributes on the `<div>` — no CSS know
 ### Example: Fully Customized
 
 ```html
-<script src="https://ainos-ywu0.onrender.com/embed.js"></script>
+<script src="https://ainossuite.com/embed.js"></script>
 <div id="ainos-blog"
   data-limit="9"
   data-style="grid"
@@ -247,7 +247,7 @@ Toggle between **Grid View** (cards) and **Calendar View** (monthly calendar) us
 
 ### If You See Nothing At All
 - Check: Did you paste both lines? (the `<script>` AND the `<div>`)
-- Check: Is the script URL correct? `https://ainos-ywu0.onrender.com/embed.js`
+- Check: Is the script URL correct? `https://ainossuite.com/embed.js`
 - Open browser DevTools (F12) → Console tab → Look for "AINOS Blog Widget Error"
 
 ### Browser Console Debugging
@@ -259,7 +259,7 @@ console.log(window.AINOSBlog);  // Should show { load: fn, refresh: fn }
 window.AINOSBlog.refresh();
 
 // Check what the API returns
-fetch('https://ainos-ywu0.onrender.com/api/blog-embed?site=yoursite.com&format=json')
+fetch('https://ainossuite.com/api/blog-embed?site=yoursite.com&format=json')
   .then(r => r.json())
   .then(data => console.log(data.posts));
 ```
@@ -289,19 +289,19 @@ Every blog embedded on your website gets:
 ### RSS Feed
 For platforms that support RSS (WordPress, email newsletters, etc.):
 ```
-https://ainos-ywu0.onrender.com/api/blog-rss
+https://ainossuite.com/api/blog-rss
 ```
 
 ### XML Sitemap
 Submit to Google Search Console for indexing:
 ```
-https://ainos-ywu0.onrender.com/api/blog-sitemap
+https://ainossuite.com/api/blog-sitemap
 ```
 
 ### JSON API
 For custom integrations:
 ```
-https://ainos-ywu0.onrender.com/api/blog-embed?site=yoursite.com&limit=10&format=json
+https://ainossuite.com/api/blog-embed?site=yoursite.com&limit=10&format=json
 ```
 
 Returns:

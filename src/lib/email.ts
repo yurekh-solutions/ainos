@@ -9,6 +9,7 @@
  * Set SMTP_USER + SMTP_APP_PASSWORD (or GMAIL_USER + GMAIL_APP_PASSWORD) to
  * switch to SMTP without touching any call site.
  */
+import { SITE_URL } from './seo';
 
 export interface SendEmailOptions {
   to: string;
@@ -56,7 +57,7 @@ function publicBaseUrl(preferred?: string): string {
     process.env.NEXT_PUBLIC_APP_URL,
     process.env.NEXTAUTH_URL_BASE,
     process.env.NEXTAUTH_URL,
-    'https://ainos-ywu0.onrender.com',
+    SITE_URL,
   ];
 
   for (const raw of candidates) {
@@ -65,7 +66,7 @@ function publicBaseUrl(preferred?: string): string {
     if (/^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?$/i.test(base)) continue;
     return base;
   }
-  return 'https://ainos-ywu0.onrender.com';
+  return SITE_URL;
 }
 
 function brandLogoUrl(preferred?: string): string {

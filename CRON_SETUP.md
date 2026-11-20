@@ -15,12 +15,12 @@ AINOS has two automation endpoints that need to run daily:
 5. Configure:
    - **Name:** `Recurring Invoices`
    - **Schedule:** `0 9 * * *` (9 AM daily)
-   - **Command:** `curl https://ainos-ywu0.onrender.com/api/cron/recurring-invoices`
+   - **Command:** `curl https://ainossuite.com/api/cron/recurring-invoices`
 6. Click "Save Changes"
 7. Repeat for Auto Reminders:
    - **Name:** `Auto Reminders`
    - **Schedule:** `0 10 * * *` (10 AM daily)
-   - **Command:** `curl https://ainos-ywu0.onrender.com/api/cron/auto-reminders`
+   - **Command:** `curl https://ainossuite.com/api/cron/auto-reminders`
 
 ### Cost:
 - Render Cron: **Free** (included with all plans)
@@ -34,13 +34,13 @@ AINOS has two automation endpoints that need to run daily:
 2. Click "Create cronjob"
 3. Configure:
    - **Title:** `AINOS Recurring Invoices`
-   - **URL:** `https://ainos-ywu0.onrender.com/api/cron/recurring-invoices`
+   - **URL:** `https://ainossuite.com/api/cron/recurring-invoices`
    - **Schedule:** Daily at 9:00 AM
    - **Timezone:** Asia/Kolkata
 4. Click "Create"
 5. Repeat for Auto Reminders:
    - **Title:** `AINOS Auto Reminders`
-   - **URL:** `https://ainos-ywu0.onrender.com/api/cron/auto-reminders`
+   - **URL:** `https://ainossuite.com/api/cron/auto-reminders`
    - **Schedule:** Daily at 10:00 AM
 
 ### Cost:
@@ -56,7 +56,7 @@ AINOS has two automation endpoints that need to run daily:
 3. Configure:
    - **Monitor Type:** HTTP(s)
    - **Friendly Name:** `AINOS Recurring Invoices`
-   - **URL:** `https://ainos-ywu0.onrender.com/api/cron/recurring-invoices`
+   - **URL:** `https://ainossuite.com/api/cron/recurring-invoices`
    - **Monitoring Interval:** Every 30 minutes (or daily)
 4. Click "Create Monitor"
 5. Repeat for Auto Reminders
@@ -72,13 +72,13 @@ After setup, manually trigger once to verify:
 
 ```bash
 # Test recurring invoices
-curl https://ainos-ywu0.onrender.com/api/cron/recurring-invoices
+curl https://ainossuite.com/api/cron/recurring-invoices
 
 # Expected response:
 {"success":true,"generated":0,"errors":0,"total":0}
 
 # Test auto reminders
-curl https://ainos-ywu0.onrender.com/api/cron/auto-reminders
+curl https://ainossuite.com/api/cron/auto-reminders
 
 # Expected response:
 {"success":true,"remindersSent":0,"errors":0,"total":0}
@@ -159,5 +159,5 @@ These endpoints have no auth (designed for cron services). If you want to add au
 
 3. Update cron job commands:
    ```bash
-   curl -H "Authorization: Bearer your-random-secret-here" https://ainos-ywu0.onrender.com/api/cron/recurring-invoices
+   curl -H "Authorization: Bearer your-random-secret-here" https://ainossuite.com/api/cron/recurring-invoices
    ```

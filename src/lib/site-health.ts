@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { SITE_URL } from '@/lib/seo';
 import type { ConnectedWebsite } from '@prisma/client';
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
@@ -149,7 +150,7 @@ async function fetchPage(value: string): Promise<{ ok: boolean; html: string }> 
       if (!url || signal.aborted) return { ok: false, html: '' };
       const res = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; AINOS-ConnectionCheck/1.0; +https://ainos-ywu0.onrender.com)',
+        'User-Agent': `Mozilla/5.0 (compatible; AINOS-ConnectionCheck/1.0; +${SITE_URL})`,
         Accept: 'text/html,application/xhtml+xml',
       },
       redirect: 'manual',

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { sendEmail, passwordResetEmailTemplate } from '@/lib/email';
 import { findUserByEmail, normalizeEmail } from '@/lib/identity';
 import { isResetThrottled, markResetRequested } from '@/lib/verification';
+import { SITE_URL } from '@/lib/seo';
 import { randomBytes, createHash } from 'crypto';
 
 /**
@@ -14,7 +15,7 @@ function requestOrigin(req: NextRequest): string {
   const proto = req.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http');
   const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
   if (host) return `${proto}://${host}`;
-  const fallback = process.env.NEXTAUTH_URL_BASE || process.env.NEXTAUTH_URL || 'https://ainos-ywu0.onrender.com';
+  const fallback = process.env.NEXTAUTH_URL_BASE || process.env.NEXTAUTH_URL || SITE_URL;
   return fallback.replace(/\/+$/, '');
 }
 

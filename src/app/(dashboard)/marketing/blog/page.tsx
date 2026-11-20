@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import { isAdmin } from '@/lib/admin';
+import { SITE_URL } from '@/lib/seo';
 import BlogCalendar from '@/components/blog/BlogCalendar';
 import {
   X, FileText, Eye, Calendar, Star, Wand2, Search, Clock, Trash2, Edit3, CheckCircle, Send, ArrowLeft, Layers, ExternalLink, Store, Network, CalendarRange, TrendingUp, Shield, Workflow, Code, Copy, Check, Map, Palette, RefreshCw, BarChart3, Share2, Target, Award, Link2, Loader2, AlertCircle, ArrowRight, ChevronDown, Radar, PlugZap, Unplug, CircleDashed, CalendarDays, LayoutGrid } from 'lucide-react';
@@ -238,15 +239,18 @@ export default function BlogPage() {
   const { data: session } = useSession();
   const isAdminUser = isAdmin(session?.user?.email);
   
-  // Initialize baseUrl with the correct production URL
+  // Embed snippets get pasted onto customer websites, so they must carry a real
+  // production origin. The Render subdomain now redirects every request to
+  // ainossuite.com, and a redirecting script URL is both an extra hop for the
+  // widget and a link that keeps the old host alive in search results.
   const baseUrl = (() => {
     if (typeof window !== 'undefined') {
       const origin = window.location.origin;
-      if (origin.includes('onrender.com') || origin.includes('vercel.app')) {
+      if (!/localhost|127\.0\.0\.1|0\.0\.0\.0/.test(origin) && !/onrender\.com|vercel\.app/.test(origin)) {
         return origin;
       }
     }
-    return 'https://ainos-ywu0.onrender.com';
+    return SITE_URL;
   })();
 
   // Live embed snippet — 'auto' is a single head tag (like GA); 'manual' keeps the script + div.

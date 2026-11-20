@@ -12,7 +12,7 @@
  * value stay on the client's website.
  *
  * Usage:
- * <script src="https://ainos-ywu0.onrender.com/embed.js"></script>
+ * <script src="https://ainossuite.com/embed.js"></script>
  * <div id="ainos-blog" data-limit="6" data-style="grid"></div>
  *
  * Optional attributes: data-limit, data-style (grid|list), data-category,
@@ -26,7 +26,7 @@
   // Dynamically detect the API URL based on where embed.js is hosted
   const currentScript = document.currentScript || document.querySelector('script[src*="embed.js"]');
   const scriptSrc = currentScript?.src || '';
-  const baseUrl = scriptSrc ? new URL(scriptSrc).origin : 'https://ainos-ywu0.onrender.com';
+  const baseUrl = scriptSrc ? new URL(scriptSrc).origin : 'https://ainossuite.com';
   const AINOS_API = `${baseUrl}/api/blog-embed`;
   const WIDGET_PING_API = `${baseUrl}/api/blog-agent/widget-ping`;
 

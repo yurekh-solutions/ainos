@@ -1,6 +1,7 @@
 import { initializeApp, cert, getApps, type App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { randomBytes } from 'crypto';
+import { SITE_URL } from './seo';
 
 // Firebase Admin SDK singleton — used for password reset emails.
 // Firebase delivers to ANY inbox (Gmail, Yahoo, Outlook, corporate) with no
@@ -37,7 +38,7 @@ function getFirebaseAdmin(): App {
   return app;
 }
 
-const BASE_URL = process.env.NEXTAUTH_URL_BASE || 'https://ainos-ywu0.onrender.com';
+const BASE_URL = process.env.NEXTAUTH_URL_BASE || SITE_URL;
 
 /**
  * Sends a Firebase password reset email to the user.
