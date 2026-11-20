@@ -1,10 +1,26 @@
 import { prisma } from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { SITE_URL } from '@/lib/seo';
+import { liveNow } from '@/lib/site-health';
+import { ainosBlogWhere, isAinosPost, seoTitleFor } from '@/lib/ainos-blog';
+import { JsonLd, breadcrumbJsonLd } from '@/components/seo/JsonLd';
 import BlogArticleClient from './BlogArticleClient';
 
 interface Props {
   params: Promise<{ slug: string }>;
+}
+
+/** Plain-text summary for meta tags: strips markdown and cuts on a word boundary. */
+function summarize(text: string, max = 158): string {
+  const plain = text
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/[#*_>`~|-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (plain.length <= max) return plain;
+  return `${plain.slice(0, plain.lastIndexOf(' ', max - 1) || max - 1)}…`;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -12,22 +28,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = await prisma.blogPost.findUnique({ where: { slug, status: 'published' } });
   if (!post) return { title: 'Not Found' };
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ainos-ywu0.onrender.com';
-  const postUrl = `${siteUrl}/blog/${post.slug}`;
-  const contentPreview = post.excerpt || post.content?.substring(0, 160) || post.title;
+  const postUrl = `${SITE_URL}/blog/${post.slug}`;
+  const contentPreview = summarize(post.excerpt || post.content || post.title);
+  // Search results cut titles at roughly 60 characters, so only add the brand when it fits.
+  const searchTitle = seoTitleFor(post.slug, post.title);
+  const branded = `${searchTitle} | AINOS Blog`;
 
   return {
-    // Absolute: the post title already carries the brand, so skip the root template.
-    title: { absolute: `${post.title} | AINOS Blog` },
+    // Absolute: skip the root "| AINOS" template, the brand is handled above.
+    title: { absolute: branded.length <= 60 ? branded : searchTitle },
     description: contentPreview,
     keywords: Array.isArray(post.tags) ? post.tags.join(', ') : '',
-    authors: [{ name: 'AINOS AI Blog Agent' }],
+    authors: [{ name: post.authorName || post.author || 'AINOS' }],
     openGraph: {
       title: post.title,
       description: contentPreview,
       url: postUrl,
       siteName: 'AINOS Blog',
-      images: post.featuredImage ? [{ url: post.featuredImage, width: 1200, height: 630 }] : [],
+      images: post.featuredImage ? [{ url: post.featuredImage, width: 1200, height: 630 }] : ['/opengraph-image'],
       type: 'article',
       publishedTime: post.publishedAt?.toISOString(),
       modifiedTime: (post.updatedAt || post.createdAt)?.toISOString(),
@@ -37,11 +55,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: 'summary_large_image',
       title: post.title,
       description: contentPreview,
-      images: post.featuredImage ? [post.featuredImage] : [],
+      images: post.featuredImage ? [post.featuredImage] : ['/opengraph-image'],
     },
     alternates: {
       canonical: postUrl,
     },
+    // Customer-site posts live on the customer's own site; this copy exists for previews and shares only.
+    ...(isAinosPost(post) ? {} : { robots: { index: false, follow: true } }),
   };
 }
 
@@ -67,7 +87,7 @@ export default async function BlogPostPage({ params }: Props) {
   if (!post) notFound();
 
   const website = post.schedules?.[0]?.subscription?.connectedWebsite;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ainos-ywu0.onrender.com';
+  const siteUrl = SITE_URL;
   const postUrl = `${siteUrl}/blog/${post.slug}`;
 
   // Extract FAQ questions from content for FAQPage schema
@@ -92,7 +112,7 @@ export default async function BlogPostPage({ params }: Props) {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
     headline: post.title,
-    description: post.excerpt || post.content?.substring(0, 160) || post.title,
+    description: summarize(post.excerpt || post.content || post.title),
     image: post.featuredImage ? [post.featuredImage] : [],
     datePublished: post.publishedAt?.toISOString() || post.createdAt?.toISOString(),
     dateModified: (post.updatedAt || post.createdAt)?.toISOString(),
@@ -103,7 +123,7 @@ export default async function BlogPostPage({ params }: Props) {
       description: ((post as Record<string, unknown>).authorBio as string) || '',
     } : {
       '@type': 'Organization',
-      name: website?.name || 'AINOS AI Blog Agent',
+      name: website?.name || post.author || 'AINOS',
       url: website?.url || siteUrl,
     },
     publisher: {
@@ -121,15 +141,19 @@ export default async function BlogPostPage({ params }: Props) {
     keywords: Array.isArray(post.tags) ? post.tags.join(', ') : '',
     articleSection: post.category || 'General',
     wordCount: (post.content || '').split(/\s+/).length,
-    inLanguage: 'en-US',
+    inLanguage: 'en-IN',
   };
 
-  // Get related posts (same category, excluding current)
+  // Related posts stay within the same publisher. AINOS articles link to each other across
+  // categories; customer posts stay within their own company and category.
   const relatedPosts = await prisma.blogPost.findMany({
     where: {
       status: 'published',
+      ...liveNow(),
       id: { not: post.id },
-      ...(post.category ? { category: post.category } : {}),
+      ...(isAinosPost(post)
+        ? ainosBlogWhere
+        : { companyId: post.companyId, ...(post.category ? { category: post.category } : {}) }),
     },
     select: {
       id: true, title: true, slug: true, excerpt: true,
@@ -152,16 +176,15 @@ export default async function BlogPostPage({ params }: Props) {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      <JsonLd data={jsonLd} />
+      {faqJsonLd && <JsonLd data={faqJsonLd} />}
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: 'Home', url: `${siteUrl}/` },
+          { name: 'Blog', url: `${siteUrl}/blog` },
+          { name: post.title, url: postUrl },
+        ])}
       />
-      {faqJsonLd && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-        />
-      )}
       <BlogArticleClient post={JSON.parse(JSON.stringify(post))} relatedPosts={JSON.parse(JSON.stringify(relatedPosts))} />
     </>
   );

@@ -1,17 +1,19 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { liveNow } from '@/lib/site-health';
+import { SITE_URL } from '@/lib/seo';
+import { ainosBlogWhere } from '@/lib/ainos-blog';
 
 // XML Sitemap for blog posts - helps Google index all blog pages
 export async function GET() {
   try {
     const posts = await prisma.blogPost.findMany({
-      where: { status: 'published', ...liveNow() },
+      where: { status: 'published', ...ainosBlogWhere, ...liveNow() },
       select: { slug: true, publishedAt: true, createdAt: true },
       orderBy: { publishedAt: 'desc' },
     });
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ainos-ywu0.onrender.com';
+    const siteUrl = SITE_URL;
 
     const sitemapUrls = posts.map((post) => {
       const postUrl = `${siteUrl}/blog/${post.slug}`;

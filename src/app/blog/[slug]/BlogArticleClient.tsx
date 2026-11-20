@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Calendar, Clock, ArrowLeft, Star, BookOpen, Tag, Layers, ArrowRight, Share2, Linkedin, Twitter, Facebook, Copy, Check, List, ChevronRight, Mail, X, Volume2, VolumeX } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { Calendar, Clock, ArrowLeft, BookOpen, Tag, Layers, ArrowRight, Share2, Linkedin, Twitter, Facebook, Copy, Check, List, ChevronRight, Mail, X, Volume2, VolumeX, Rss } from 'lucide-react';
 
 interface BlogPost {
   id: string; title: string; slug: string; content: string; excerpt: string | null;
@@ -25,7 +27,8 @@ function renderMarkdown(md: string): string {
     .replace(/^---$/gm, '<hr class="my-8 border-gray-200" />')
     .replace(/^### (.*$)/gm, '<h3 id="$1" class="text-lg font-bold mt-8 mb-3 text-gray-900">$1</h3>')
     .replace(/^## (.*$)/gm, '<h2 id="$1" class="text-xl font-bold mt-10 mb-4 text-gray-900 scroll-mt-20">$1</h2>')
-    .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold mt-10 mb-4 text-gray-900">$1</h1>')
+    // The post title is the page's only <h1>; a top-level heading in the body becomes an <h2>.
+    .replace(/^# (.*$)/gm, '<h2 class="text-2xl font-bold mt-10 mb-4 text-gray-900">$1</h2>')
     .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/`(.*?)`/g, '<code class="px-1.5 py-0.5 bg-gray-100 rounded text-sm font-mono text-purple-700">$1</code>')
@@ -84,8 +87,6 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
   const [showToc, setShowToc] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showNewsletter, setShowNewsletter] = useState(true);
-  const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const articleRef = useRef<HTMLDivElement>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -120,15 +121,6 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
       await navigator.share({ title: post.title, text: post.excerpt || '', url: window.location.href });
     } else {
       await handleCopyLink();
-    }
-  };
-
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email) {
-      setSubscribed(true);
-      // In production: POST /api/newsletter/subscribe
-      console.log('[Newsletter] Subscribe:', email);
     }
   };
 
@@ -184,18 +176,18 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
       {/* Navigation */}
       <nav className="bg-white/95 backdrop-blur-md border-b border-gray-200 sticky top-1 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <a href="/blog/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center">
-                <Star className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-lg font-bold text-gray-900">AINOS Blog</span>
-            </a>
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-3 h-16">
+            <Link href="/blog" className="flex items-center gap-2.5 min-w-0">
+              <span className="w-9 h-9 rounded-full bg-violet-50 ring-1 ring-violet-100 flex items-center justify-center shrink-0">
+                <Image src="/ainos-alpha.png" alt="AINOS" width={20} height={19} className="w-5 h-auto" priority />
+              </span>
+              <span className="text-lg font-bold text-gray-900 whitespace-nowrap">AINOS Blog</span>
+            </Link>
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {/* Audio Player */}
               <button
                 onClick={toggleAudio}
-                className={`text-sm transition-colors flex items-center gap-1 px-3 py-1.5 rounded-full ${
+                className={`text-sm transition-colors flex items-center gap-1 px-3 py-2 min-h-[36px] rounded-full ${
                   isPlaying 
                     ? 'bg-purple-100 text-purple-700' 
                     : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
@@ -209,15 +201,15 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
               {toc.length > 3 && (
                 <button
                   onClick={() => setShowToc(!showToc)}
-                  className="text-sm text-gray-600 hover:text-purple-600 transition-colors flex items-center gap-1"
+                  className="text-sm text-gray-600 hover:text-purple-600 transition-colors flex items-center gap-1 p-2 min-h-[36px]"
                   aria-label="Table of contents"
                 >
                   <List className="w-4 h-4" /> <span className="hidden sm:inline">Contents</span>
                 </button>
               )}
-              <a href="/blog/" className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1">
-                <ArrowLeft className="w-4 h-4" /> All Articles
-              </a>
+              <Link href="/blog" aria-label="All articles" className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center gap-1 p-2 whitespace-nowrap">
+                <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">All Articles</span>
+              </Link>
             </div>
           </div>
         </div>
@@ -292,7 +284,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
             {post.publishedAt && (
               <span className="flex items-center gap-1.5">
                 <Calendar className="w-4 h-4" />
-                {new Date(post.publishedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                {new Date(post.publishedAt).toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' })}
               </span>
             )}
             <span className="flex items-center gap-1.5">
@@ -337,32 +329,27 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
           </div>
         )}
 
-        {/* Newsletter Signup */}
+        {/* Follow the blog */}
         {showNewsletter && (
-          <div className="mt-10 bg-gradient-to-br from-purple-600 to-indigo-700 rounded-2xl p-6 text-center relative">
-            <button onClick={() => setShowNewsletter(false)} className="absolute top-3 right-3 text-white/50 hover:text-white"><X className="w-4 h-4" /></button>
-            <Mail className="w-8 h-8 text-white/80 mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-white mb-2">Get weekly SEO & growth tips</h3>
-            <p className="text-sm text-white/70 mb-4">Join 5,000+ business owners getting actionable insights every Thursday.</p>
-            {subscribed ? (
-              <div className="flex items-center justify-center gap-2 text-white font-semibold">
-                <Check className="w-5 h-5 text-green-300" /> You&apos;re in! Check your inbox.
-              </div>
-            ) : (
-              <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  required
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-white/20 text-white placeholder-white/50 text-sm focus:outline-none focus:ring-2 focus:ring-white/50"
-                />
-                <button type="submit" className="px-5 py-2.5 rounded-lg bg-white text-purple-700 text-sm font-semibold hover:bg-gray-100 transition-colors">
-                  Subscribe
-                </button>
-              </form>
-            )}
+          <div className="mt-10 bg-gradient-to-br from-purple-600 to-indigo-700 rounded-2xl p-6 sm:p-8 text-center relative">
+            <button
+              onClick={() => setShowNewsletter(false)}
+              className="absolute top-2 right-2 p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <Rss className="w-8 h-8 text-white/80 mx-auto mb-3" />
+            <h3 className="text-lg font-bold text-white mb-2">Follow new AINOS guides</h3>
+            <p className="text-sm text-white/70 mb-4 max-w-md mx-auto">
+              Add the AINOS blog to your RSS reader to get every new guide as it is published.
+            </p>
+            <Link
+              href="/api/blog-rss"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white text-purple-700 text-sm font-semibold hover:bg-gray-100 transition-colors"
+            >
+              <Rss className="w-4 h-4" /> Open RSS feed
+            </Link>
           </div>
         )}
 
@@ -385,7 +372,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
                 <div className="flex items-center gap-4 mt-3">
                   <span className="text-xs text-gray-500 flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
-                    {post.publishedAt && new Date(post.publishedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    {post.publishedAt && new Date(post.publishedAt).toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' })}
                   </span>
                   <span className="text-xs text-gray-500 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
@@ -397,23 +384,23 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
           </div>
         )}
 
-        {/* Author / CTA */}
-        <div className="mt-10 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-6 border border-purple-100">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
-              <Star className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-900 mb-1">Powered by AINOS AI Blog Agent</h3>
+        {/* About AINOS / CTA */}
+        <div className="mt-10 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-5 sm:p-6 border border-purple-100">
+          <div className="flex flex-col sm:flex-row items-start gap-4">
+            <span className="w-12 h-12 rounded-full bg-white ring-1 ring-violet-200 flex items-center justify-center flex-shrink-0">
+              <Image src="/ainos-alpha.png" alt="AINOS" width={28} height={27} className="w-7 h-auto" />
+            </span>
+            <div className="min-w-0">
+              <h3 className="font-bold text-gray-900 mb-1">About AINOS</h3>
               <p className="text-sm text-gray-600 mb-3">
-                This article was generated and published using AINOS AI Blog Agent — the AI-powered content engine that researches, writes, and publishes SEO-optimized blog posts automatically.
+                AINOS is an AI-powered business suite for Indian businesses, covering GST invoicing, accounting, CRM, marketing and HR in one place.
               </p>
-              <a
-                href="/"
+              <Link
+                href="/features"
                 className="inline-flex items-center gap-1 text-sm font-semibold text-purple-600 hover:text-purple-700 transition-colors"
               >
-                Get Started with AINOS <ArrowRight className="w-4 h-4" />
-              </a>
+                Explore AINOS <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
           </div>
         </div>
@@ -427,7 +414,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
             {relatedPosts.map((rp) => (
               <a
                 key={rp.id}
-                href={`/blog/${rp.slug}/`}
+                href={`/blog/${rp.slug}`}
                 className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300"
               >
                 <div className="aspect-[16/9] overflow-hidden bg-gray-100">
@@ -441,14 +428,14 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
                 </div>
                 <div className="p-4">
                   {rp.category && (
-                    <span className="text-[10px] font-semibold text-purple-600 uppercase">{rp.category}</span>
+                    <span className="text-xs font-semibold text-purple-600 uppercase">{rp.category}</span>
                   )}
                   <h3 className="font-semibold text-sm text-gray-900 mt-1 line-clamp-2 group-hover:text-purple-600 transition-colors">
                     {rp.title}
                   </h3>
                   {rp.publishedAt && (
-                    <p className="text-xs text-gray-400 mt-2">
-                      {new Date(rp.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    <p className="text-xs text-gray-500 mt-2">
+                      {new Date(rp.publishedAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
                   )}
                 </div>
@@ -462,15 +449,17 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
       <footer className="bg-gray-900 text-gray-400 py-8 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-3">
-            <div className="w-6 h-6 rounded bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
-              <Star className="w-3 h-3 text-white" />
-            </div>
+            <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0">
+              <Image src="/ainos-alpha.png" alt="" width={18} height={17} className="w-[18px] h-auto" />
+            </span>
             <span className="text-sm font-semibold text-white">AINOS</span>
           </div>
-          <p className="text-xs">AI-Powered Business Suite. Generate, publish & grow with SEO-optimized content.</p>
-          <div className="flex items-center justify-center gap-4 mt-4">
-            <a href="/blog/" className="text-xs hover:text-white transition-colors">Blog</a>
-            <a href="/" className="text-xs hover:text-white transition-colors">Dashboard</a>
+          <p className="text-xs">AI-powered business suite for invoicing, GST, CRM, marketing and HR.</p>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-4">
+            <Link href="/blog" className="text-xs hover:text-white transition-colors py-1">Blog</Link>
+            <Link href="/features" className="text-xs hover:text-white transition-colors py-1">Features</Link>
+            <Link href="/privacy" className="text-xs hover:text-white transition-colors py-1">Privacy Policy</Link>
+            <Link href="/terms" className="text-xs hover:text-white transition-colors py-1">Terms &amp; Conditions</Link>
           </div>
           <p className="text-xs mt-4">&copy; {new Date().getFullYear()} AINOS Business Suite. All rights reserved.</p>
         </div>

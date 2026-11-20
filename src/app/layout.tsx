@@ -5,6 +5,7 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ToastProvider } from "@/lib/toast";
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,7 +17,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const DEFAULT_TITLE = "AINOS Business Suite — CRM, Finance, HR, Marketing & AI in One Platform";
+// Kept under ~60 characters so Google shows it untruncated.
+const DEFAULT_TITLE = "AINOS — GST Billing, CRM, HR & AI Business Suite";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -96,15 +98,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en-IN" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(ORG_JSON_LD) }}
-        />
+        <JsonLd data={ORG_JSON_LD} />
         <ThemeProvider>
           <AuthProvider>
             <ToastProvider>

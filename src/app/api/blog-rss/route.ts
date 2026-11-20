@@ -1,18 +1,20 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { liveNow } from '@/lib/site-health';
+import { SITE_URL } from '@/lib/seo';
+import { ainosBlogWhere } from '@/lib/ainos-blog';
 
 // RSS Feed for blog syndication
 // Users can subscribe to this feed in their RSS readers
 export async function GET() {
   try {
     const posts = await prisma.blogPost.findMany({
-      where: { status: 'published', ...liveNow() },
+      where: { status: 'published', ...ainosBlogWhere, ...liveNow() },
       orderBy: { publishedAt: 'desc' },
       take: 50,
     });
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ainos-ywu0.onrender.com';
+    const siteUrl = SITE_URL;
 
     const rssItems = posts.map((post) => {
       const postUrl = `${siteUrl}/blog/${post.slug}`;
@@ -36,8 +38,8 @@ export async function GET() {
   <channel>
     <title>AINOS Blog</title>
     <link>${siteUrl}/blog</link>
-    <description>AI-powered SEO insights and growth strategies</description>
-    <language>en-us</language>
+    <description>Guides on GST billing, CRM, SEO and AI automation for Indian businesses</description>
+    <language>en-in</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
     <atom:link href="${siteUrl}/api/blog-rss" rel="self" type="application/rss+xml"/>
     ${rssItems}

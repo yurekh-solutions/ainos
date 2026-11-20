@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { SEO_SUITES, toolBySlugs } from '@/lib/seo-catalog';
-import { pageMetadata, absoluteUrl } from '@/lib/seo';
+import { pageMetadata, absoluteUrl, metaDescription } from '@/lib/seo';
 import { JsonLd, breadcrumbJsonLd } from '@/components/seo/JsonLd';
 
 interface Props {
@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { suite, tool } = found;
   return pageMetadata({
     title: `${tool.name} — ${suite.name.replace(/^AINOS /, '')} Software`,
-    description: tool.summary,
+    description: metaDescription(tool.summary, tool.features.map(f => f.charAt(0).toLowerCase() + f.slice(1))),
     path: `/features/${suite.slug}/${tool.slug}`,
     keywords: [...tool.keywords, ...suite.keywords.slice(0, 2)],
   });
@@ -83,7 +83,8 @@ export default async function ToolPage({ params }: Props) {
             <Link href="/auth/register" className="inline-flex items-center gap-2 rounded-full bg-[#5b21b6] px-6 py-3 text-sm font-semibold text-white hover:bg-[#4c1d95]">
               Start using {tool.name} <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link href={tool.appHref} className="inline-flex items-center rounded-full border border-gray-200 px-6 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-50">
+            {/* The app screen sits behind sign-in and is blocked in robots.txt. */}
+            <Link href={tool.appHref} rel="nofollow" className="inline-flex items-center rounded-full border border-gray-200 px-6 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-50">
               Open in AINOS
             </Link>
           </div>

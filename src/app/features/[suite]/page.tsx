@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { SEO_SUITES, suiteBySlug } from '@/lib/seo-catalog';
-import { pageMetadata, absoluteUrl } from '@/lib/seo';
+import { pageMetadata, absoluteUrl, metaDescription } from '@/lib/seo';
 import { JsonLd, breadcrumbJsonLd } from '@/components/seo/JsonLd';
 
 interface Props {
@@ -20,8 +20,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const suite = suiteBySlug((await params).suite);
   if (!suite) return {};
   return pageMetadata({
-    title: `${suite.name.replace(/^AINOS /, '')} Software — ${suite.headline}`,
-    description: suite.summary,
+    title: `${suite.name.replace(/^AINOS /, '')} Software for Indian Businesses`,
+    description: metaDescription(suite.summary, suite.tools.map(t => t.name)),
     path: `/features/${suite.slug}`,
     keywords: suite.keywords,
   });

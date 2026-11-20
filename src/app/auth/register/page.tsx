@@ -1087,7 +1087,7 @@ export default function RegisterPage() {
                             <input type={showPw ? 'text' : 'password'} value={password} onChange={e => { setPassword(e.target.value); clearFieldError('password'); }} placeholder="Min 8 characters"
                               aria-invalid={Boolean(fieldErrors.password)}
                               className={`${inputBase} pl-11 pr-10 ${fieldErrors.password ? 'border-red-400 ring-1 ring-red-400' : 'border-gray-200'}`} />
-                            <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" aria-label={showPw ? 'Hide password' : 'Show password'}>
+                            <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-1 top-1/2 -translate-y-1/2 rounded-md p-2 text-gray-400 hover:text-gray-600 transition-colors" aria-label={showPw ? 'Hide password' : 'Show password'}>
                               {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </button>
                           </div>
@@ -1103,7 +1103,7 @@ export default function RegisterPage() {
                             <input type={showPw2 ? 'text' : 'password'} value={confirmPassword} onChange={e => { setConfirmPassword(e.target.value); clearFieldError('confirmPassword'); }} placeholder="Re-enter password"
                               aria-invalid={Boolean(fieldErrors.confirmPassword)}
                               className={`${inputBase} pl-11 pr-10 ${fieldErrors.confirmPassword ? 'border-red-400 ring-1 ring-red-400' : 'border-gray-200'}`} />
-                            <button type="button" onClick={() => setShowPw2(!showPw2)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" aria-label={showPw2 ? 'Hide password' : 'Show password'}>
+                            <button type="button" onClick={() => setShowPw2(!showPw2)} className="absolute right-1 top-1/2 -translate-y-1/2 rounded-md p-2 text-gray-400 hover:text-gray-600 transition-colors" aria-label={showPw2 ? 'Hide password' : 'Show password'}>
                               {showPw2 ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </button>
                           </div>

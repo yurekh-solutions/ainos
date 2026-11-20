@@ -8,7 +8,7 @@ import { JsonLd, breadcrumbJsonLd } from '@/components/seo/JsonLd';
 const TOOL_COUNT = SEO_SUITES.reduce((n, s) => n + s.tools.length, 0);
 
 export const metadata: Metadata = pageMetadata({
-  title: 'All Features — Finance, CRM, HR, Inventory, Marketing & AI Tools',
+  title: 'Features — Finance, CRM, HR, Inventory & AI Tools',
   description: `Explore all ${SEO_SUITES.length} AINOS suites and ${TOOL_COUNT} business tools: GST invoicing, accounting, CRM, HR & payroll, inventory, POS, eCommerce, operations and AI.`,
   path: '/features',
   keywords: ['business software features', 'all-in-one business suite', 'ERP features India'],

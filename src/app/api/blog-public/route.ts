@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { liveNow } from '@/lib/site-health';
+import { ainosBlogWhere, clientBlogWhere } from '@/lib/ainos-blog';
 
 // Public API - no auth required. Returns only published posts past their go-live date.
 export async function GET(req: NextRequest) {
@@ -9,7 +10,9 @@ export async function GET(req: NextRequest) {
     const category = searchParams.get('category');
     const search = searchParams.get('search');
     const slug = searchParams.get('slug');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '50') || 50, 1), 100);
+    // scope=clients lists posts written for customer websites; the default is the AINOS blog.
+    const scope = searchParams.get('scope') === 'clients' ? 'clients' : 'ainos';
 
     // Single post by slug
     if (slug) {
@@ -22,7 +25,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(post);
     }
 
-    const where: Record<string, unknown> = { status: 'published', AND: [liveNow()] };
+    const publisherWhere = scope === 'clients' ? clientBlogWhere : ainosBlogWhere;
+    const where: Record<string, unknown> = { status: 'published', AND: [publisherWhere, liveNow()] };
 
     if (category && category !== 'All') {
       where.category = category;
@@ -40,16 +44,28 @@ export async function GET(req: NextRequest) {
       where,
       orderBy: { publishedAt: 'desc' },
       take: limit,
+      // Client cards show which website the article was written for.
+      ...(scope === 'clients'
+        ? { include: { schedules: { select: { connectedWebsite: { select: { name: true, url: true } } } } } }
+        : {}),
     });
 
     // Get distinct categories
     const allPublished = await prisma.blogPost.findMany({
-      where: { status: 'published', ...liveNow() },
+      where: { status: 'published', AND: [publisherWhere, liveNow()] },
       select: { category: true },
     });
     const categories = [...new Set(allPublished.map((p: { category: string | null }) => p.category).filter(Boolean))] as string[];
 
-    return NextResponse.json({ posts, categories });
+    const shaped = posts.map((p) => {
+      const { schedules, ...rest } = p as Record<string, unknown> & {
+        schedules?: { connectedWebsite?: { name: string; url: string } }[];
+      };
+      const site = schedules?.[0]?.connectedWebsite;
+      return site ? { ...rest, site: { name: site.name, url: site.url } } : rest;
+    });
+
+    return NextResponse.json({ posts: shaped, categories, scope });
   } catch (error) {
     console.error('Error in public blog API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
