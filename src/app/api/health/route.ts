@@ -54,11 +54,29 @@ export async function GET() {
     (c) => c.status === 'healthy' || c.status === 'not_configured'
   );
 
+  // Presence flags only - never the values. Lets a deploy be diagnosed
+  // remotely without opening the hosting dashboard.
+  let nextAuthHost: string | null = null;
+  if (process.env.NEXTAUTH_URL) {
+    try {
+      nextAuthHost = new URL(process.env.NEXTAUTH_URL).host;
+    } catch {
+      nextAuthHost = 'invalid';
+    }
+  }
+
+  const config = {
+    databaseUrl: Boolean(process.env.DATABASE_URL),
+    redis: Boolean(process.env.REDIS_URL && process.env.REDIS_TOKEN),
+    nextAuthHost,
+  };
+
   return NextResponse.json(
     {
       status: allHealthy ? 'healthy' : 'degraded',
       timestamp: new Date().toISOString(),
       checks,
+      config,
       uptime: process.uptime(),
       memory: process.memoryUsage(),
     },
