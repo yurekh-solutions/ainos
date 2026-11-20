@@ -2,13 +2,14 @@
   "name": "yurekh-automation",
   "version": "0.1.0",
   "private": true,
+  "main": "server.js",
   "engines": {
     "node": ">=20.0.0"
   },
   "scripts": {
     "predev": "rmdir /s /q .next 2>nul || echo Skipping .next cleanup",
     "dev": "cross-env NODE_OPTIONS=--max-old-space-size=12288 next dev --webpack",
-    "prebuild": "prisma generate && prisma db push --accept-data-loss --skip-generate",
+    "prebuild": "prisma generate",
     "build": "NODE_OPTIONS=--max-old-space-size=12288 next build --webpack",
     "build:win": "set NODE_OPTIONS=--max-old-space-size=12288&& next build --webpack",
     "start": "node server.js",
@@ -46,6 +47,7 @@
     "next-auth": "^4.24.13",
     "nodemailer": "^7.0.13",
     "pdfjs-dist": "^6.4.299",
+    "prisma": "^6.0.0",
     "qrcode": "^1.5.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -60,7 +62,6 @@
     "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
-    "prisma": "^6.0.0",
     "vitest": "^2.1.9"
   }
 }
