@@ -9,14 +9,17 @@
 const crypto = require('crypto');
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const { qaPassword } = require('./qaEnv.cjs');
 
 const prisma = new PrismaClient();
 const BASE = 'http://localhost:3000';
 const MODE = process.argv[2] || 'full';
 
-// Must match the values the dev server was started with.
-const WEBHOOK_SECRET = 'whsec_saleflow_local';
-const KEY_SECRET = 'rzp_secret_saleflow_local';
+// Must match the values the dev server was started with. These are invented
+// local stubs, never Razorpay account credentials, but the real ones from .env
+// take over when the suite is pointed at a server started with them.
+const WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || 'whsec_saleflow_local';
+const KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'rzp_secret_saleflow_local';
 
 // Payment ids are globally unique forever, so each run needs its own set —
 // reusing them is exactly what the payment_reused guard is there to stop.
@@ -99,7 +102,7 @@ async function login(email, password) {
 async function seedTenant() {
   const stamp = Date.now();
   const email = `saleflow${stamp}@example.com`;
-  const password = 'testpass123';
+  const password = qaPassword();
   const hash = await bcrypt.hash(password, 10);
   const company = await prisma.company.create({
     data: {

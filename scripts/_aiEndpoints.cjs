@@ -2,12 +2,13 @@
 // deliberately excluded. Run: node --env-file=.env scripts/_aiEndpoints.cjs
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const { qaPassword } = require('./qaEnv.cjs');
 
 const prisma = new PrismaClient();
 const BASE = 'http://localhost:3000';
 const stamp = Date.now();
 const EMAIL = `ai.audit.${stamp}@ainos-test.com`;
-const PASSWORD = 'AiAudit12345';
+const PASSWORD = qaPassword();
 let cookie = '';
 
 async function call(method, pathname, body, timeoutMs = 120000) {

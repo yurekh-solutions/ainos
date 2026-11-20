@@ -2,6 +2,7 @@
 // Run: node --env-file=.env scripts/_odooAppsE2E.cjs
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const { qaPassword } = require('./qaEnv.cjs');
 
 const prisma = new PrismaClient();
 const BASE = 'http://localhost:3000';
@@ -9,7 +10,7 @@ const stamp = Date.now();
 const OWNER_EMAIL = `qa.apps.${stamp}@ainos-test.com`;
 const PLAIN_EMAIL = `qa.apps.plain.${stamp}@ainos-test.com`;
 const MANAGER_EMAIL = `qa.apps.manager.${stamp}@ainos-test.com`;
-const PASSWORD = 'AppsQa12345';
+const PASSWORD = qaPassword();
 const results = [];
 let cookie = '';
 

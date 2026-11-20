@@ -2,8 +2,10 @@
 // Run: node --env-file=.env scripts/_fullTest.cjs
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const { qaPassword } = require('./qaEnv.cjs');
 const prisma = new PrismaClient();
 const BASE = 'http://localhost:3000';
+const PASSWORD = qaPassword();
 const results = [];
 let cookie = '';
 let csrf = '';
@@ -48,7 +50,7 @@ const P = { name: 'Test Item', title: 'Test Item', email: `t${stamp}@example.com
 async function main() {
   // 1. Seed an approved tenant + owner directly. Registration now requires an
   //    emailed OTP, which is unrelated to the API surface under test here.
-  const passwordHash = await bcrypt.hash('testpass123', 10);
+  const passwordHash = await bcrypt.hash(PASSWORD, 10);
   const company = await prisma.company.create({
     data: {
       name: `AITEST Co ${stamp}`,
@@ -86,7 +88,7 @@ async function main() {
   const loginRes = await fetch(BASE + '/api/auth/callback/credentials', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', Cookie: Object.entries(jar).map(([k, v]) => `${k}=${v}`).join('; ') },
-    body: new URLSearchParams({ csrfToken: csrf, email: TEST_EMAIL, password: 'testpass123', callbackUrl: BASE + '/dashboard', json: 'true' }),
+    body: new URLSearchParams({ csrfToken: csrf, email: TEST_EMAIL, password: PASSWORD, callbackUrl: BASE + '/dashboard', json: 'true' }),
     redirect: 'manual',
   });
   for (const c of loginRes.headers.getSetCookie()) { const [kv] = c.split(';'); const [k, ...v] = kv.split('='); jar[k.trim()] = v.join('='); }

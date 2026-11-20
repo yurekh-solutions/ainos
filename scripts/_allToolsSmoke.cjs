@@ -4,13 +4,14 @@ const fs = require('fs');
 const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const { qaPassword } = require('./qaEnv.cjs');
 
 const prisma = new PrismaClient();
 const BASE = 'http://localhost:3000';
 const APP_DIR = path.join(__dirname, '..', 'src', 'app');
 const stamp = Date.now();
 const EMAIL = `smoke.${stamp}@ainos-test.com`;
-const PASSWORD = 'SmokeTest12345';
+const PASSWORD = qaPassword();
 const PLACEHOLDER = '00000000-0000-0000-0000-000000000000';
 
 const pageFails = [];

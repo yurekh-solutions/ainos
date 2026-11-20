@@ -4,12 +4,13 @@ const fs = require('fs');
 const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const { qaPassword } = require('./qaEnv.cjs');
 
 const prisma = new PrismaClient();
 const BASE = 'http://localhost:3000';
 const stamp = Date.now();
 const EMAIL = `tool.audit.${stamp}@ainos-test.com`;
-const PASSWORD = 'ToolAudit12345';
+const PASSWORD = qaPassword();
 
 let cookie = '';
 

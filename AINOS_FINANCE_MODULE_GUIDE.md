@@ -378,8 +378,10 @@ Luhn-mod-36 rule GSTN published for its developer API. The first version of
 independent validators publish as valid, so every real number would have been called
 suspect; it is now pinned against those published samples in `gstnFiling.test.ts`, which
 is the only way to catch that class of error — a fixture built through the function itself
-agrees with any rule, right or wrong. `scripts/_gstinChecksumProbe.cjs` re-checks it
-against live portal rows and lists any invented fixture GSTIN that fails.
+agrees with any rule, right or wrong. The published samples pinned in
+`gstnFiling.test.ts` are therefore the standing check; the one-off probe script
+that used to re-check them against live portal rows went with the scratch
+helpers it sat among.
 
 The sibling-PAN test runs as `substr(gst_number, 3, 10) = <pan>` against the cache, so a
 misread state code or check digit still surfaces. A pill never claims success on a miss,
@@ -399,12 +401,12 @@ Scans and saves write `AuditLog` rows under entity `business_card` — `scan` ev
 no id (they are the funnel's denominator), `save` events carry the resulting customer id
 plus `{ check, hasGstin, stateCode, panPeers, fields }`. No table was added.
 
-`node scripts/_cardValueReport.cjs [days] [--by-company]` answers whether the feature pays:
-how many cards were scanned, how many were saved, how many of those carried a GSTIN, how
-each GSTIN verified, and — joining customer ids to `Invoice` — how many scanned contacts
-were later billed and for what value. `--company=<id>` limits it to one tenant and
-`--json` prints the same funnel machine-readable, which is what the E2E harness asserts on
-so the numbers a person reads and the numbers a dashboard charts cannot drift apart.
+The same funnel is readable straight from `AuditLog`: count the `scan` events, count the
+`save` events, then join the saved customer ids to `Invoice` for billed value, with
+`entity`/`action` plus `companyId` as the only filters needed. The one-off script that
+printed this in text and `--json` form (the E2E harness asserted on that same output) has
+been removed along with the other scratch helpers, so the event shape above is the
+contract to query against.
 
 ---
 
