@@ -61,6 +61,11 @@ else
 fi
 chown -R "$APP_USER:$APP_USER" "$APP_DIR"
 
+if [ ! -f "$APP_DIR/.env" ] && [ -f /root/ainos.env ]; then
+  mv /root/ainos.env "$APP_DIR/.env"
+  log "found /root/ainos.env - moved it into place"
+fi
+
 if [ ! -f "$APP_DIR/.env" ]; then
   cat <<MSG
 
@@ -68,7 +73,7 @@ $(warn ".env is missing - stopping here")
 
 Upload it from your Windows PC (PowerShell), then run this script again:
 
-  scp "C:\\Users\\yurek\\OneDrive\\Desktop\\yuvraj\\ainos\\.env" root@<VPS_IP>:$APP_DIR/.env
+  scp "C:\\Users\\yurek\\OneDrive\\Desktop\\yuvraj\\ainos\\.env" root@<VPS_IP>:/root/ainos.env
 
 MSG
   exit 2
