@@ -322,7 +322,7 @@ export default function AinosLandingPage() {
           <div className="flex flex-col items-center lg:items-start max-w-xl w-full lg:w-auto lg:flex-1 lg:min-w-0">
             <Link href="/auth/register" className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-full px-4 py-1.5 text-sm hover:bg-purple-100 transition-colors">
               <span className="flex items-center gap-2 text-purple-700">
-                <span className="text-sm font-medium">Introducing AINOS OS</span>
+                <span className="text-sm font-medium">Introducing AINOS SUITE</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </span>
             </Link>
