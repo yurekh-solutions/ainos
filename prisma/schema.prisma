@@ -33,6 +33,8 @@ model Company {
   gstStatus          String?             @map("gst_status")
   taxId              String?             @map("tax_id")
   address            String?
+  city               String?
+  pincode            String?
   email              String?
   phone              String?
   website            String?
@@ -48,6 +50,14 @@ model Company {
   bankName           String?             @map("bank_name")
   bankAccountNumber  String?             @map("bank_account_number")
   bankIfscCode       String?             @map("bank_ifsc_code")
+  // The name the bank account is in. Printing it on the invoice footer is what
+  // makes a customer's transfer to our own account succeed first time.
+  accountHolder      String?             @map("account_holder")
+  // UPI id (VPA) of the business itself, e.g. businessname@okhdfcbank. This is what
+  // a collect-payment link points at, so money goes straight to the company's own
+  // UPI handle and no payment gateway or third party sits in between.
+  upiId              String?             @map("upi_id")
+  upiPayeeName       String?             @map("upi_payee_name")
   createdBy          String              @map("created_by")
   createdAt          DateTime            @default(now()) @map("created_at")
   updatedAt          DateTime            @updatedAt @map("updated_at")
@@ -122,6 +132,7 @@ model Company {
   payrollRuns        PayrollRun[]
   payrollConfig      PayrollConfig?
   payslips           Payslip[]
+  paymentLinks       PaymentLink[]
   products           Product[]
   projects           Project[]
   purchaseOrders     PurchaseOrder[]
@@ -450,11 +461,46 @@ model Invoice {
   signatureDate     DateTime? @map("signature_date")
   // Custom dynamic fields from template
   customFields      Json?     @map("custom_fields") // {poNumber: "PO-123", validityDate: "2026-12-31", ...}
+  paymentLinks      PaymentLink[]
   company           Company?  @relation(fields: [companyId], references: [id])
 
   @@index([companyId])
   @@index([createdBy])
   @@map("invoices")
+}
+
+// COLLECT PAYMENT - a shareable link a customer opens without an account.
+// It is not a gateway: the payer sends the money to the business's own UPI id,
+// the link stores the reference the payer typed, and confirming that the money
+// actually landed in the bank is what updates the invoice. That keeps the flow
+// zero-config and free of any per-transaction fee, while the invoice still only
+// moves to paid once a human has checked the bank.
+model PaymentLink {
+  id          String    @id @default(uuid())
+  token       String    @unique // random url-safe secret; the only thing a payer needs
+  invoiceId   String    @map("invoice_id")
+  companyId   String    @map("company_id")
+  amount      Float // rupees due, frozen when the link was made
+  currency    String    @default("INR")
+  label       String? // "Full payment" | "Advance" | "Balance payment"
+  status      String    @default("active") // active | claimed | paid | revoked | expired
+  payerName   String?   @map("payer_name")
+  payerUpiId  String?   @map("payer_upi_id")
+  payerRef    String?   @map("payer_ref") // UPI reference the payer entered after sending
+  claimedAt   DateTime? @map("claimed_at")
+  paidAt      DateTime? @map("paid_at")
+  expiresAt   DateTime? @map("expires_at")
+  views       Int       @default(0)
+  notes       String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  company     Company?  @relation(fields: [companyId], references: [id])
+  invoice     Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([invoiceId])
+  @@index([status])
+  @@map("payment_links")
 }
 
 model Quote {

@@ -21,17 +21,21 @@ interface CompanyData {
   bankAccount: string;
   ifscCode: string;
   accountHolder: string;
+  upiId: string;
+  upiPayeeName: string;
   logoUrl: string;
 }
 
 export default function CompanyPage() {
   const [company, setCompany] = useState<CompanyData>({
     name: '', email: '', phone: '', address: '', city: '', state: '', pincode: '', country: 'India',
-    website: '', gstNumber: '', panNumber: '', bankName: '', bankAccount: '', ifscCode: '', accountHolder: '', logoUrl: '',
+    website: '', gstNumber: '', panNumber: '', bankName: '', bankAccount: '', ifscCode: '', accountHolder: '',
+    upiId: '', upiPayeeName: '', logoUrl: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -42,10 +46,19 @@ export default function CompanyPage() {
     try {
       const res = await fetch('/api/company');
       if (res.ok) {
-        const data = await res.json();
-        if (data) {
-          setCompany({ ...company, ...data });
-        }
+        const d = await res.json();
+        // The database column names are not the same as the labels on this
+        // screen, so the saved values are mapped back into their own boxes.
+        setCompany((prev) => ({
+          ...prev,
+          name: d.name ?? '', email: d.email ?? '', phone: d.phone ?? '',
+          address: d.address ?? '', city: d.city ?? '', state: d.state ?? '',
+          pincode: d.pincode ?? '', country: d.country ?? 'India', website: d.website ?? '',
+          gstNumber: d.gstNumber ?? '', panNumber: d.taxId ?? '', bankName: d.bankName ?? '',
+          bankAccount: d.bankAccountNumber ?? '', ifscCode: d.bankIfscCode ?? '',
+          accountHolder: d.accountHolder ?? '', upiId: d.upiId ?? '',
+          upiPayeeName: d.upiPayeeName ?? '', logoUrl: d.logoUrl ?? '',
+        }));
       }
     } catch (error) {
       console.error('Error:', error);
@@ -57,32 +70,51 @@ export default function CompanyPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    
-    // Get form data
+    setError(null);
+
     const formData = new FormData(e.currentTarget as HTMLFormElement);
-    const data: Partial<CompanyData> = {};
-    
-    formData.forEach((value, key) => {
-      if (key !== 'logo') {
-        (data as Record<string, string>)[key] = value as string;
-      }
-    });
-    
-    // Add logo
-    data.logoUrl = company.logoUrl;
-    
+    const text = (key: string) => String(formData.get(key) ?? '').trim();
+
+    const payload = {
+      name: text('name'),
+      email: text('email'),
+      phone: text('phone'),
+      website: text('website'),
+      gstNumber: text('gstNumber'),
+      // Same values, stored under the column names Finance actually reads.
+      taxId: text('panNumber'),
+      address: text('address'),
+      city: text('city'),
+      state: text('state'),
+      pincode: text('pincode'),
+      country: text('country'),
+      bankName: text('bankName'),
+      bankAccountNumber: text('bankAccount'),
+      bankIfscCode: text('ifscCode'),
+      accountHolder: text('accountHolder'),
+      upiId: text('upiId'),
+      upiPayeeName: text('upiPayeeName'),
+      logoUrl: company.logoUrl,
+    };
+
     try {
+      // PUT updates our own company. POST creates a company, which used to
+      // leave a second, empty one behind and re-point the login at it.
       const res = await fetch('/api/company', {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
-      if (res.ok) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(typeof data?.error === 'string' ? data.error : 'Could not save. Please try again.');
+        return;
       }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
     } catch (error) {
       console.error('Error:', error);
+      setError('Network problem. Check your connection and try again.');
     } finally {
       setSaving(false);
     }
@@ -424,7 +456,7 @@ export default function CompanyPage() {
             className="glass-card p-5"
           >
             <h2 className="font-semibold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--foreground))' }}>
-              <Landmark className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} /> Bank Account Details
+              <Landmark className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} /> Bank &amp; UPI Details
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -452,6 +484,25 @@ export default function CompanyPage() {
                 <FormInput name="ifscCode" defaultValue={company.ifscCode} placeholder="SBIN0001234" className="uppercase" />
                 <p className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))', opacity: 0.7 }}>11 characters</p>
               </div>
+              <div className="md:col-span-2 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <CreditCard className="w-3.5 h-3.5" /> UPI ID
+                </label>
+                <FormInput name="upiId" defaultValue={company.upiId} placeholder="businessname@bank" />
+                {/* The share-and-collect link is only as good as this handle: it is
+                    where a customer's QR payment actually lands. */}
+                <p className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))', opacity: 0.7 }}>
+                  Needed to send a customer a payment link. Money lands directly in this UPI account.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  <Building2 className="w-3.5 h-3.5" /> UPI Name
+                </label>
+                <FormInput name="upiPayeeName" defaultValue={company.upiPayeeName} placeholder="Name shown in the customer's UPI app" />
+                <p className="text-[11px]" style={{ color: 'hsl(var(--muted-foreground))', opacity: 0.7 }}>Leave blank to use the business name</p>
+              </div>
             </div>
           </motion.div>
 
@@ -460,8 +511,13 @@ export default function CompanyPage() {
             initial={{ opacity: 0, y: 20 }} 
             animate={{ opacity: 1, y: 0 }} 
             transition={{ delay: 0.5 }}
-            className="flex justify-end"
+            className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3"
           >
+            {error && (
+              <p className="text-xs leading-relaxed sm:mr-auto" style={{ color: 'hsl(0 84% 60%)' }} role="alert">
+                {error}
+              </p>
+            )}
             <motion.button 
               type="submit" 
               whileHover={{ scale: 1.02 }} 

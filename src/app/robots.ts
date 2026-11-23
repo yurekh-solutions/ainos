@@ -10,6 +10,9 @@ const PRIVATE_PREFIXES = [
   '/projects', '/calendar', '/team', '/automations', '/reports', '/approvals', '/compliance',
   '/invoices', '/customers', '/products', '/finance', '/marketing', '/ecommerce', '/pos',
   '/operations', '/rental', '/services', '/websites', '/auth/reset-password', '/auth/error', '/e/', '/s/',
+  // A customer's pay link is a private URL even though it needs no login: the
+  // token in it is the whole credential, so it must never reach an index.
+  '/pay/',
 ];
 
 // Answer engines that power AI Overviews, ChatGPT search, Perplexity and Claude.

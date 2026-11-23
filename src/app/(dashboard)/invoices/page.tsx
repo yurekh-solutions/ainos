@@ -2,11 +2,12 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2, CheckCircle2, TrendingUp, Bell, Mail, MessageCircle, CheckCircle, Loader2, ShieldCheck, Trash2 } from 'lucide-react';
+import { FileText, Plus, Search, Filter, Download, ArrowUpRight, Eye, Building2, CheckCircle2, TrendingUp, Bell, Mail, MessageCircle, CheckCircle, Loader2, ShieldCheck, Trash2, QrCode } from 'lucide-react';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
 import { useToast } from '@/lib/toast';
+import CollectPaymentDialog from './CollectPaymentDialog';
 
 interface Invoice {
   id: string;
@@ -56,10 +57,14 @@ interface Company {
   state: string;
   pincode: string;
   gstNumber: string;
-  panNumber: string;
+  taxId: string;
   bankName: string;
-  bankAccount: string;
-  ifscCode: string;
+  bankAccountNumber: string;
+  bankIfscCode: string;
+  accountHolder?: string;
+  // Printed in the bank block so a customer can pay by UPI without asking.
+  upiId?: string;
+  upiPayeeName?: string;
   logoUrl?: string;
 }
 
@@ -117,6 +122,7 @@ export default function InvoicesPage() {
   const [einvoicing, setEinvoicing] = useState(false);
   const [einvBusy, setEinvBusy] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState('');
+  const [collect, setCollect] = useState<Invoice | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -277,7 +283,7 @@ export default function InvoicesPage() {
     y += 4;
 
     // ── PAYMENT CONDITIONS BOX ──
-    if (showBankDetails && company?.bankName) {
+    if (showBankDetails && (company?.bankName || company?.upiId)) {
       doc.setDrawColor(220, 220, 220);
       doc.setFillColor(248, 248, 248);
       doc.setLineWidth(0.3);
@@ -293,18 +299,18 @@ export default function InvoicesPage() {
       doc.setFont(fontFamily, 'normal');
       doc.setTextColor(50, 50, 50);
       doc.text('Anticipated wire transfer', M + 30, y + 5);
-      doc.text(company.bankName, M + 30, y + 12);
-      doc.text(`${company.city || ''} - Main Branch`, M + 30, y + 18);
+      doc.text((company.accountHolder || company.name || '-').substring(0, 26), M + 30, y + 12);
+      doc.text(company.bankName || '-', M + 30, y + 18);
 
       doc.setFont(fontFamily, 'bold');
       doc.text('A/C NUMBER', M + 100, y + 5);
       doc.text('IFSC CODE', M + 100, y + 12);
-      doc.text('SWIFT CODE', M + 100, y + 18);
+      doc.text('UPI ID', M + 100, y + 18);
 
       doc.setFont(fontFamily, 'normal');
-      doc.text(company.bankAccount || '-', M + 125, y + 5);
-      doc.text(company.ifscCode || '-', M + 125, y + 12);
-      doc.text('-', M + 125, y + 18);
+      doc.text(company.bankAccountNumber || '-', M + 125, y + 5);
+      doc.text(company.bankIfscCode || '-', M + 125, y + 12);
+      doc.text(company.upiId || '-', M + 125, y + 18);
 
       y += 28;
     }
@@ -841,6 +847,15 @@ export default function InvoicesPage() {
         title="Download PDF">
         <Download className="w-3.5 h-3.5" style={{ color: 'hsl(var(--primary))' }} />
       </button>
+      {/* One button for the whole money-collection flow: link, QR, WhatsApp text
+          and revoke live inside the panel instead of crowding this row. */}
+      {invoice.status !== 'draft' && invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
+        <button onClick={() => setCollect(invoice)}
+          className="p-1.5 rounded-lg transition-colors hover:bg-purple-50"
+          title="Share & collect by UPI">
+          <QrCode className="w-3.5 h-3.5 text-purple-600" />
+        </button>
+      )}
       {deletingId === invoice.id ? (
         <span className="inline-flex flex-col items-start gap-0.5 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1">
           {(invoice.paidAmount || invoice.einvoiceStatus === 'registered') && (
@@ -1236,6 +1251,26 @@ export default function InvoicesPage() {
               <button onClick={() => { setPayInvoice(null); setPayAmount(''); }}
                 className="w-full py-2 text-sm hover:opacity-80" style={{ color: 'hsl(var(--muted-foreground))' }}>Cancel</button>
             </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+
+    <AnimatePresence>
+      {collect && (
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setCollect(null)}
+        >
+          <motion.div
+            initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <CollectPaymentDialog
+              invoice={collect}
+              onClose={() => { setCollect(null); fetchData(); }}
+            />
           </motion.div>
         </motion.div>
       )}

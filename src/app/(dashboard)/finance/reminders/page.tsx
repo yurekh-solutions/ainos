@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Clock, AlertTriangle, CheckCircle2, MessageCircle, IndianRupee, Filter } from 'lucide-react';
+import { Bell, Clock, AlertTriangle, CheckCircle2, MessageCircle, IndianRupee, Filter, QrCode, Loader2, X } from 'lucide-react';
 
 interface Reminder {
   id: string;
@@ -19,10 +19,37 @@ interface Reminder {
   whatsappLink: string | null;
 }
 
+// A payer has said "I sent it through UPI" on one of our collect links. The
+// money is not real to the books until the owner confirms it here.
+interface Claim {
+  id: string;
+  amount: number;
+  label: string | null;
+  claimedAt: string | null;
+  payerName: string | null;
+  payerUpiId: string | null;
+  payerRef: string | null;
+  invoiceNumber: string | null;
+  customerName: string | null;
+}
+
 export default function RemindersPage() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [claims, setClaims] = useState<Claim[]>([]);
   const [loading, setLoading] = useState(true);
+  const [claimBusy, setClaimBusy] = useState<string | null>(null);
+  const [claimError, setClaimError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'overdue' | 'upcoming'>('all');
+
+  const fetchClaims = useCallback(async () => {
+    try {
+      const res = await fetch('/api/payment-links');
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) setClaims(Array.isArray(data.claims) ? data.claims : []);
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
@@ -36,10 +63,34 @@ export default function RemindersPage() {
     }
   }, [filter]);
 
+  // Both effects exist to read server state the moment the screen opens: the
+  // overdue list and, above it, the UPI claims waiting on this owner.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchData(); }, [fetchData]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { fetchClaims(); }, [fetchClaims]);
 
   const totalPending = reminders.reduce((s, r) => s + r.pendingAmount, 0);
   const overdueCount = reminders.filter(r => r.isOverdue).length;
+
+  const resolveClaim = async (claim: Claim, action: 'confirm' | 'reject') => {
+    setClaimBusy(claim.id);
+    setClaimError(null);
+    try {
+      const res = await fetch('/api/payment-links/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: claim.id, action, bankReference: claim.payerRef }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || 'Could not update this payment.');
+      await Promise.all([fetchClaims(), fetchData()]);
+    } catch (error) {
+      setClaimError(error instanceof Error ? error.message : 'Could not update this payment.');
+    } finally {
+      setClaimBusy(null);
+    }
+  };
 
   const handleMarkPaid = async (id: string, totalAmount: number) => {
     try {
@@ -69,6 +120,77 @@ export default function RemindersPage() {
             Track overdue payments and send reminders
           </p>
         </div>
+
+        {/* Claims queue: the one place a UPI link payment becomes real. */}
+        {claims.length > 0 && (
+          <div className="glass-card p-5">
+            <div className="flex items-center gap-2">
+              <QrCode className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
+              <h2 className="text-sm font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
+                Waiting for your confirmation
+              </h2>
+              <span
+                className="px-2 py-0.5 rounded-full text-[10px] font-medium"
+                style={{ background: 'hsl(var(--primary) / 0.12)', color: 'hsl(var(--primary))' }}
+              >
+                {claims.length}
+              </span>
+            </div>
+            <p className="text-xs mt-1 leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>
+              These customers say they paid by UPI. Match the reference in your bank statement, then confirm. Only a
+              confirmed payment moves the invoice to paid.
+            </p>
+
+            <div className="mt-4 space-y-3">
+              {claims.map((c) => (
+                <div key={c.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl p-4" style={{ background: 'hsl(var(--muted))' }}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate" style={{ color: 'hsl(var(--foreground))' }}>
+                      ₹{c.amount.toLocaleString('en-IN')}
+                      <span className="font-normal" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                        {c.invoiceNumber ? ` · Invoice ${c.invoiceNumber}` : ''}
+                      </span>
+                    </p>
+                    <p className="text-xs mt-1 truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                      {c.payerName || c.customerName || 'Payer'}
+                      {c.claimedAt ? ` · claimed ${new Date(c.claimedAt).toLocaleDateString('en-IN')}` : ''}
+                    </p>
+                    <p className="text-xs mt-0.5 font-mono truncate" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                      Ref {c.payerRef || 'not given'}{c.payerUpiId ? ` · ${c.payerUpiId}` : ''}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => resolveClaim(c, 'confirm')}
+                      disabled={claimBusy === c.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-60"
+                      style={{ background: 'hsl(142 76% 36% / 0.12)', color: 'hsl(142 76% 30%)' }}
+                    >
+                      {claimBusy === c.id
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <CheckCircle2 className="w-3.5 h-3.5" />}
+                      Money received
+                    </button>
+                    <button
+                      onClick={() => resolveClaim(c, 'reject')}
+                      disabled={claimBusy === c.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-60"
+                      style={{ background: 'hsl(0 72% 51% / 0.1)', color: 'hsl(0 72% 45%)' }}
+                    >
+                      <X className="w-3.5 h-3.5" /> Not received
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {claimError && (
+              <p className="mt-3 text-xs leading-relaxed" style={{ color: 'hsl(0 72% 45%)' }} role="alert">
+                {claimError}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
