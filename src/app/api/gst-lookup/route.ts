@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { throttle } from '@/lib/security';
 import { GST_STATE_CODES } from '@/lib/finance/gst';
+import { wakeGstScraper } from '@/lib/gst-warm';
 
 // GST Scraper - Self-hosted Flask server on Render
 // Flow: getCaptcha → user solves captcha → verifyGST → real data
@@ -44,6 +45,13 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { action } = body;
 
+    // Start the scraper booting the moment any GST request arrives. The wake is
+    // detached, so it costs this route nothing and runs while we read our own
+    // cache below - by the time a live portal call is made the service is
+    // usually already up instead of paying a ~28s cold start in front of the
+    // user's 18s wait.
+    wakeGstScraper();
+
     // Public by design: the signup form auto-fills GST details before anyone is
     // signed in. The feature is untouched, this only bounds one address - cheap
     // reads from our own cache get a large allowance, everything that reaches
@@ -84,13 +92,15 @@ export async function POST(req: NextRequest) {
       }
 
       try {
-        // Keep EACH outbound call well under Render's ~55s edge-gateway window
-        // (single bounded attempt, 18s ceiling). Retrying lives on the client, so
-        // the gateway never kills this request mid-flight and returns a raw 502.
+        // Keep EACH outbound call well under Render's ~55s edge-gateway window.
+        // Two bounded 18s attempts fit (18 + 1.2 + 18 ≈ 37s), and the gap between
+        // them is exactly the window the detached wake above needs: a scraper
+        // that was asleep fails the first attempt on purpose and answers the
+        // second, instead of the user staring at "warming up".
         const res = await fetchWithRetry(
           `${FLASK_URL}/api/v1/getCaptcha`,
           { signal: AbortSignal.timeout(18000) },
-          1, // single attempt server-side; the client handles retries
+          2, // one retry server-side; the client still retries on top of this
           1200
         );
         if (!res.ok) {
