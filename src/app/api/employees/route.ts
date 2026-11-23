@@ -15,6 +15,30 @@ function asDate(value: unknown): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+// Payslip and bank-transfer values are identifiers, so they are normalised here
+// once: no spaces, uppercase IFSC. A bad IFSC makes the bank reject the whole
+// salary batch, so a clearly malformed one is refused instead of being stored.
+function asAccountNumber(value: unknown): string | null {
+  const text = String(value ?? '').replace(/[^A-Za-z0-9]/g, '');
+  return text.length ? text.slice(0, 20) : null;
+}
+
+function asIfsc(value: unknown): string | null {
+  const text = String(value ?? '').replace(/\s+/g, '').toUpperCase();
+  return text.length ? text.slice(0, 11) : null;
+}
+
+const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+
+/** Returns an error message, or null when every payroll identity field is usable. */
+function payrollFieldError(body: Record<string, unknown>): string | null {
+  const ifsc = asIfsc(body.bankIfscCode);
+  if (ifsc && !IFSC_PATTERN.test(ifsc)) {
+    return 'IFSC code looks incomplete. It is 11 characters, like HDFC0001234.';
+  }
+  return null;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(req);
@@ -48,6 +72,9 @@ export async function POST(req: NextRequest) {
     if (!user?.companyId) return NextResponse.json({ error: 'Company not found' }, { status: 404 });
 
     const body = await req.json();
+    const invalid = payrollFieldError(body);
+    if (invalid) return NextResponse.json({ error: invalid }, { status: 400 });
+
     const employee = await prisma.employee.create({
       data: {
         name: body.name || 'Unnamed Employee',
@@ -55,10 +82,24 @@ export async function POST(req: NextRequest) {
         phone: body.phone || null,
         department: body.department || null,
         position: body.position || null,
-        salary: body.salary !== undefined && body.salary !== '' ? Number(body.salary) : null,
+        // An empty salary stays empty rather than becoming 0, so the payroll
+        // engine reports "no salary set" instead of "salary is zero".
+        salary: body.salary === null || body.salary === undefined || body.salary === ''
+          ? null
+          : Number(body.salary),
         joinDate: body.joinDate ? new Date(body.joinDate) : null,
         status: body.status || 'active',
         address: body.address || null,
+        // Payroll identity - optional, so adding them never breaks an existing form.
+        employeeCode: asText(body.employeeCode),
+        bankName: asText(body.bankName),
+        bankAccountNumber: asAccountNumber(body.bankAccountNumber),
+        bankIfscCode: asIfsc(body.bankIfscCode),
+        pfNumber: asText(body.pfNumber),
+        esiNumber: asText(body.esiNumber),
+        salaryStructure: body.salaryStructure
+          ? (body.salaryStructure as Prisma.InputJsonValue)
+          : Prisma.DbNull,
         companyId: user.companyId,
       }
     });
@@ -84,6 +125,9 @@ export async function PUT(req: NextRequest) {
     // Tenant isolation: an employee can only be edited from the company that owns it.
     const existing = await prisma.employee.findFirst({ where: { id, companyId: user.companyId } });
     if (!existing) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+
+    const invalid = payrollFieldError(body);
+    if (invalid) return NextResponse.json({ error: invalid }, { status: 400 });
 
     const data: Prisma.EmployeeUncheckedUpdateInput = {};
 
@@ -131,6 +175,20 @@ export async function PUT(req: NextRequest) {
     if (body.address !== undefined) data.address = asText(body.address);
     if (body.bankDetails !== undefined) {
       data.bankDetails = body.bankDetails ? (body.bankDetails as Prisma.InputJsonValue) : Prisma.DbNull;
+    }
+
+    // Only fields the caller actually sent are touched, so editing a phone number
+    // cannot wipe the salary structure that payroll depends on.
+    if (body.employeeCode !== undefined) data.employeeCode = asText(body.employeeCode);
+    if (body.bankName !== undefined) data.bankName = asText(body.bankName);
+    if (body.bankAccountNumber !== undefined) data.bankAccountNumber = asAccountNumber(body.bankAccountNumber);
+    if (body.bankIfscCode !== undefined) data.bankIfscCode = asIfsc(body.bankIfscCode);
+    if (body.pfNumber !== undefined) data.pfNumber = asText(body.pfNumber);
+    if (body.esiNumber !== undefined) data.esiNumber = asText(body.esiNumber);
+    if (body.salaryStructure !== undefined) {
+      data.salaryStructure = body.salaryStructure
+        ? (body.salaryStructure as Prisma.InputJsonValue)
+        : Prisma.DbNull;
     }
 
     if (Object.keys(data).length === 0) return NextResponse.json(existing);

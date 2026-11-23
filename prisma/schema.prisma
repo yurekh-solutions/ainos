@@ -120,6 +120,8 @@ model Company {
   leaveRequests      LeaveRequest[]
   notifications      Notification[]
   payrollRuns        PayrollRun[]
+  payrollConfig      PayrollConfig?
+  payslips           Payslip[]
   products           Product[]
   projects           Project[]
   purchaseOrders     PurchaseOrder[]
@@ -331,10 +333,23 @@ model Employee {
   status      String    @default("active")
   address     String?
   bankDetails Json?     @map("bank_details")
+
+  // PAYROLL IDENTITY - what a statutory payslip and a bank salary file need.
+  // All optional: an existing employee keeps working with nothing filled in.
+  employeeCode      String? @map("employee_code")
+  bankName          String? @map("bank_name")
+  bankAccountNumber String? @map("bank_account_number")
+  bankIfscCode      String? @map("bank_ifsc_code")
+  pfNumber          String? @map("pf_number")
+  esiNumber         String? @map("esi_number")
+  // Per-employee overrides of the company defaults, e.g. { "basic": 18000, "tds": 1200 }.
+  salaryStructure   Json?   @map("salary_structure")
+
   companyId   String?   @map("company_id")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   company     Company?  @relation(fields: [companyId], references: [id])
+  payslips    Payslip[]
 
   @@index([companyId])
   @@map("employees")
@@ -855,16 +870,144 @@ model PayrollRun {
   period      String
   startDate   DateTime @map("start_date")
   endDate     DateTime @map("end_date")
+  // totalAmount stays what it always was - the amount the company pays out -
+  // so every existing screen and report keeps reading the same number.
   totalAmount Float    @map("total_amount")
+  // Breakdown added for payslips. Zero on legacy rows, which is honest: an old
+  // run only ever stored one number.
+  totalEarnings   Float @default(0) @map("total_earnings")
+  totalDeductions Float @default(0) @map("total_deductions")
+  totalNet        Float @default(0) @map("total_net")
+  employeeCount   Int   @default(0) @map("employee_count")
+  notes           String?
   status      String   @default("draft")
   processedBy String?  @map("processed_by")
   companyId   String?  @map("company_id")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
   company     Company? @relation(fields: [companyId], references: [id])
+  payslips    Payslip[]
 
   @@index([companyId])
   @@map("payroll_runs")
+}
+
+// One payslip per employee per run. Every component is stored, not just the
+// net figure, because a payslip is a statutory document: it has to show what
+// was paid, what was deducted and where it went, and it must not change after
+// it has been issued. Amounts are monthly rupees rounded to paise.
+model Payslip {
+  id           String   @id @default(uuid())
+  payrollRunId String   @map("payroll_run_id")
+  employeeId   String   @map("employee_id")
+  companyId    String?  @map("company_id")
+  period       String
+  startDate    DateTime @map("start_date")
+  endDate      DateTime @map("end_date")
+
+  // Snapshot of the employee, so a payslip still reads correctly after the
+  // employee leaves or their salary changes.
+  employeeName  String  @map("employee_name")
+  designatory   String?
+  department    String?
+  employeeCode  String? @map("employee_code")
+  uanNumber     String? @map("uan_number")
+  esiNumber     String? @map("esi_number")
+  bankAccountNumber String? @map("bank_account_number")
+  bankIfscCode      String? @map("bank_ifsc_code")
+  bankName          String? @map("bank_name")
+  joinedAt      DateTime? @map("joined_at")
+
+  // EARNINGS
+  basic            Float @default(0)
+  hra              Float @default(0)
+  specialAllowance Float @default(0) @map("special_allowance")
+  conveyance       Float @default(0)
+  overtime         Float @default(0)
+  bonus            Float @default(0)
+  arrears          Float @default(0)
+  otherEarnings    Float @default(0) @map("other_earnings")
+  grossEarnings    Float @default(0) @map("gross_earnings")
+
+  // DEDUCTIONS
+  pfEmployee      Float @default(0) @map("pf_employee")
+  esiEmployee     Float @default(0) @map("esi_employee")
+  professionalTax Float @default(0) @map("professional_tax")
+  incomeTax       Float @default(0) @map("income_tax")
+  loanDeduction   Float @default(0) @map("loan_deduction")
+  advanceDeduction Float @default(0) @map("advance_deduction")
+  lossOfPay       Float @default(0) @map("loss_of_pay")
+  otherDeductions Float @default(0) @map("other_deductions")
+  totalDeductions Float @default(0) @map("total_deductions")
+
+  netPay          Float @default(0) @map("net_pay")
+
+  // EMPLOYER CONTRIBUTIONS - not deducted from the employee, printed for the
+  // statutory record and used when payroll is posted to the ledger.
+  pfEmployer      Float @default(0) @map("pf_employer")
+  esiEmployer     Float @default(0) @map("esi_employer")
+  employerTotal   Float @default(0) @map("employer_total")
+
+  totalWorkingDays Float @default(26) @map("total_working_days")
+  daysPresent      Float @default(26) @map("days_present")
+
+  status   String  @default("pending") // pending | paid
+  paidAt   DateTime? @map("paid_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  payrollRun PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  employee   Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  company    Company?   @relation(fields: [companyId], references: [id])
+
+  @@unique([payrollRunId, employeeId])
+  @@index([companyId])
+  @@index([employeeId])
+  @@index([payrollRunId])
+  @@map("payslips")
+}
+
+// Company payroll settings. Nothing here is required: the defaults are the
+// national statutory numbers, so a new company gets correct payslips on the
+// first run and only changes a value when its own PF/ESI registration says so.
+model PayrollConfig {
+  id        String  @id @default(uuid())
+  companyId String  @unique @map("company_id")
+
+  // How a monthly gross is split. 50% basic / 40% of basic as HRA is the
+  // common structure; the remainder becomes a special allowance so the parts
+  // always add back up to the gross salary.
+  basicPercentage  Float @default(50) @map("basic_percentage")
+  hraPercentage    Float @default(40) @map("hra_percentage")
+
+  // EPF: 12% of basic, employee and employer, on wages up to the ceiling.
+  pfEnabled            Boolean @default(true) @map("pf_enabled")
+  pfEmployeePercentage Float   @default(12) @map("pf_employee_percentage")
+  pfEmployerPercentage Float   @default(12) @map("pf_employer_percentage")
+  pfWageCeiling        Float   @default(15000) @map("pf_wage_ceiling")
+
+  // ESIC: employee 0.75%, employer 3.25%, only while gross is at or below 21,000.
+  esiEnabled             Boolean @default(true) @map("esi_enabled")
+  esiEmployeePercentage  Float   @default(0.75) @map("esi_employee_percentage")
+  esiEmployerPercentage  Float   @default(3.25) @map("esi_employer_percentage")
+  esiWageCeiling         Float   @default(21000) @map("esi_wage_ceiling")
+
+  // Professional tax is a state subject, so it stays 0 until the company
+  // enters its own slab - a wrong default would print a wrong payslip.
+  professionalTax Float @default(0) @map("professional_tax")
+
+  workingDaysPerMonth Int @default(26) @map("working_days_per_month")
+
+  pfNumber  String? @map("pf_number")
+  esiNumber String? @map("esi_number")
+  companyCode String? @map("company_code")
+  payslipFooterNote String? @map("payslip_footer_note")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("payroll_configs")
 }
 
 model LeaveRequest {
