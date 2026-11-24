@@ -206,3 +206,69 @@ curl -o /dev/null -w "%{http_code}\n" \
   -H "Authorization: Bearer <CRON_SECRET>" \
   https://ainossuite.com/api/cron/recurring-invoices
 ```
+ 
+---
+
+# Keeping The Server Awake (no Render loading screen)
+
+## The problem in one line
+
+Render's free instances go to sleep after 15 minutes with no traffic. The next
+visitor then sees **Render's own** "application loading" screen while the app
+boots. That screen is served by Render before our code starts, so nothing inside
+`ainos/` can hide or restyle it — the only fix is to make sure the server never
+sleeps.
+
+## What keeps it awake now (three independent sources)
+
+| Source | File | How often | Covers |
+| --- | --- | --- | --- |
+| Non-stop Actions loop | `.github/workflows/warm-loop.yml` | every 60s, run after run, 24/7 | main app + GST scraper + template extractor |
+| Open browser tabs | `src/components/KeepAppAlive.tsx` (mounted in `src/app/layout.tsx`) | every 60s per open tab, plus the moment a tab is shown | all three, through `/api/ping` |
+| Old 5-minute job | `.github/workflows/keep-alive.yml` | whenever GitHub's scheduler actually fires it (often 3–8 hours late) | second opinion + the daily crons |
+
+The loop replaced the old job as the main warmer because the scheduler proved
+unreliable: a `*/5 * * * *` cron was firing only about five times a day.
+
+## Do this once (2 minutes, costs nothing, makes it near-bulletproof)
+
+GitHub can switch heavy scheduled Actions off. Two extra watchers from a service
+that has nothing to do with GitHub remove that single point of failure.
+
+1. Open <https://cron-job.org> and make an account.
+2. **Create cronjob** → *Execute URL* → paste each URL below → set **every 1
+   minute** → save. Repeat three times, one per line:
+
+   ```text
+   https://ainossuite.com/api/ping
+   https://ainos-gst-scraper.onrender.com/api/v1/health
+   https://ainos-template-extractor.onrender.com/api/v1/health
+   ```
+
+3. Optional second watcher: <https://uptimerobot.com> → Add New Monitor →
+   HTTP(s) → same three URLs → 5 minutes.
+
+No password and no secret is needed — `/api/ping` answers `OK` and touches no
+database. These URLs are safe to make public.
+
+## Check it is working
+
+```bash
+node _warmdiag.cjs
+```
+
+It prints how long each endpoint takes and lists the recent keep-alive runs.
+Warm endpoints answer in under a second; a cold one takes 30–60s. You can also
+open GitHub → Actions → **Warm AINOS Non-Stop** and see one run in progress with
+an `alive - N ticks done` line every 10 minutes.
+
+## Honest limits
+
+- With the loop plus the watchers, visitors should not see the loading screen.
+  It is not a 100% guarantee: if every source goes down together for more than
+  15 minutes, Render shows its screen again for the first request.
+- The only 100% guarantee is a paid Render instance (Starter), which never
+  sleeps. Ask for that if the screen ever comes back and matters commercially.
+- If GitHub warns about Actions usage, delete `warm-loop.yml` and rely on the
+  cron-job.org watchers — they alone keep the app awake at 1-minute intervals.
+

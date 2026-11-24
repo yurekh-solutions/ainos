@@ -7,7 +7,6 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { SessionKeepAlive } from '@/components/auth/SessionKeepAlive';
-import { KeepScraperAlive } from '@/components/KeepScraperAlive';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { AppPageTitle } from '@/components/seo/AppPageTitle';
 
@@ -32,7 +31,6 @@ export default async function DashboardLayout({
     <AuthProvider>
       <AppPageTitle />
       <SessionKeepAlive />
-      <KeepScraperAlive />
       <div className="flex h-screen bg-gray-50">
         <Sidebar />
         <div className="flex-1 min-w-0 flex flex-col overflow-hidden">

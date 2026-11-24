@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ToastProvider } from "@/lib/toast";
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from "@/lib/seo";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { KeepAppAlive } from "@/components/KeepAppAlive";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -118,6 +119,11 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <JsonLd data={ORG_JSON_LD} />
+        {/* Mounted once at the root so the public marketing pages, the account
+            screens and the dashboard all keep the Render instances awake. A
+            visitor reading the home page for two minutes is enough to stop the
+            next person from hitting a cold start. */}
+        <KeepAppAlive />
         <ThemeProvider>
           <AuthProvider>
             <ToastProvider>

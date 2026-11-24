@@ -1,0 +1,76 @@
+name: Warm AINOS Non-Stop
+
+# Why this exists: the '*/5 * * * *' job in keep-alive.yml looks like a 5-minute
+# heartbeat, but GitHub's free scheduler only started it a handful of times a day
+# (observed gaps of 3-8 hours). Render's free instances sleep after 15 idle
+# minutes, so the app slept for hours and every visitor met Render's own
+# "application loading" screen - which no code in this repo can hide, because
+# Render serves it before Next.js starts.
+#
+# This workflow does not trust the scheduler to be frequent. Each run keeps
+# itself alive for ~5.5 hours of pinging, and the concurrency queue starts the
+# next run the moment the previous one exits, so the three services stay warm
+# continuously. Public repository = free unlimited Linux runner minutes.
+on:
+  schedule:
+    # Only has to fire once to (re)start the chain; every later run is picked up
+    # from the queue. Kept at 5 minutes as a cheap safety net after a failure.
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Manual start
+
+concurrency:
+  # One loop at a time across the repo. Later scheduled runs queue instead of
+  # stacking, which is what makes the coverage gapless without burning dozens of
+  # parallel runners.
+  group: ainos-warm-loop
+  cancel-in-progress: false
+
+jobs:
+  loop:
+    if: github.repository == 'yurekh-solutions/ainos'
+    runs-on: ubuntu-latest
+    # GitHub hard-kills a job at 6h. Stopping early lets the queued run take
+    # over cleanly instead of being cut mid-sleep-window.
+    timeout-minutes: 340
+    steps:
+      - name: Keep all three Render services awake
+        run: |
+          set -u
+
+          # /api/ping answers instantly with no DB or Redis call, and wakes the
+          # scraper + extractor on the server side. The two Flask services are
+          # pinged directly too, because while the main app is asleep its ping
+          # route cannot run at all.
+          TARGETS="
+          https://ainossuite.com/api/ping
+          https://ainos-gst-scraper.onrender.com/api/v1/health
+          https://ainos-template-extractor.onrender.com/api/v1/health
+          "
+
+          INTERVAL=60
+          # Render sleeps after ~15 idle minutes; a 60s tick is 15x inside that.
+          DEADLINE=$(( $(date +%s) + 330 * 60 ))
+          echo "Warm loop started $(date -u '+%H:%M:%S') - 1 ping/min until $(date -u -d "@${DEADLINE}" '+%H:%M:%S') UTC"
+
+          tick=0
+          while [ "$(date +%s)" -lt "${DEADLINE}" ]; do
+            tick=$(( tick + 1 ))
+            for url in ${TARGETS}; do
+              # --max-time 75 covers a cold boot (measured ~30s) with headroom.
+              # The assignment form keeps a failed curl from appending a second
+              # "000" to the one curl already printed for no response.
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 75 "${url}") || code='000'
+              if [ "${code}" != '200' ]; then
+                echo "$(date -u '+%H:%M:%S') WARN ${url} -> ${code}"
+              fi
+            done
+
+            # One heartbeat line every 10 minutes keeps the log readable.
+            if [ $(( tick % 10 )) -eq 0 ]; then
+              echo "$(date -u '+%H:%M:%S') alive - ${tick} ticks done"
+            fi
+
+            sleep "${INTERVAL}"
+          done
+
+          echo "Warm loop finishing at $(date -u '+%H:%M:%S') - the queued run takes over immediately."

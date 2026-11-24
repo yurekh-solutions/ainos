@@ -2,7 +2,9 @@ name: Keep AINOS Server Alive
 
 on:
   schedule:
-    # Run every 5 minutes to prevent Render free tier from sleeping
+    # Secondary wake source only. GitHub's scheduler is slow to fire these
+    # '*/5' runs (see warm-loop.yml), so the continuous warming lives there;
+    # this short job stays as a cheap second opinion plus the daily crons below.
     - cron: '*/5 * * * *'
     # Run daily at 9 AM UTC to auto-publish one blog per connected website
     - cron: '0 9 * * *'
