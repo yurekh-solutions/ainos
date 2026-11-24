@@ -16,6 +16,12 @@ on:
     # Only has to fire once to (re)start the chain; every later run is picked up
     # from the queue. Kept at 5 minutes as a cheap safety net after a failure.
     - cron: '*/5 * * * *'
+  push:
+    branches: [main]
+    # Every deploy starts the loop on the spot instead of waiting for GitHub's
+    # scheduler, which is the part that used to fail. A push while a loop is
+    # already running just queues one follow-up run, it never cancels the
+    # active one (cancel-in-progress: false below).
   workflow_dispatch: # Manual start
 
 concurrency:
