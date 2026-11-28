@@ -6,91 +6,60 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import SiteFooter from '@/components/SiteFooter';
+import SiteHeader from '@/components/marketing/SiteHeader';
+import { HOME_FAQS } from '@/lib/faqs';
 import {
-  ArrowRight, Users, MessageSquareText, ScrollText, Contact2, Megaphone, Package, Scale, Shield, Timer, Headphones, BarChart3, CheckCircle2, TrendingUp, Building2, Layers, UserPlus, LayoutGrid, FileSpreadsheet, Rocket, Loader2, ArrowDownRight, Quote, ChevronLeft, ChevronRight, ChevronDown, Star, Palette, Search, PenLine, Presentation, MessageSquare, QrCode, ShoppingBag, Wallet, UserCog, Boxes, LineChart } from 'lucide-react';
+  ArrowRight, Users, MessageSquareText, ScrollText, Contact2, Megaphone, Package, Scale, Shield, Headphones, BarChart3, CheckCircle2, TrendingUp, Building2, Layers, UserPlus, LayoutGrid, FileSpreadsheet, Rocket, Loader2, ArrowDownRight, ChevronDown, Palette, Search, PenLine, Presentation, MessageSquare, Wallet, UserCog, Boxes, LineChart, SlidersHorizontal, Workflow, LayoutDashboard, Blocks, Gauge, Clock } from 'lucide-react';
 
 const MODULES = [
   {
     icon: Wallet,
     title: 'Finance & Billing',
     desc: 'GST-compliant invoicing, quotations and expense tracking.',
-    bg: 'from-violet-500 to-purple-600',
-    shadow: 'shadow-violet-500/30',
     points: ['GST invoices & quotations', 'CGST/SGST/IGST tax split', 'Tally import & export', 'Delivery challans & barcodes'],
   },
   {
     icon: Contact2,
     title: 'CRM & Sales',
     desc: 'Leads, contacts and deals in one clear sales pipeline.',
-    bg: 'from-blue-500 to-indigo-600',
-    shadow: 'shadow-blue-500/30',
     points: ['Lead & contact management', 'Visual sales pipeline', 'Deal stage automation', 'Activity timelines'],
   },
   {
     icon: Megaphone,
     title: 'Marketing Suite',
     desc: 'AI content, email campaigns and social media together.',
-    bg: 'from-pink-500 to-rose-600',
-    shadow: 'shadow-pink-500/30',
     points: ['AI blogs, captions & creatives', 'Email campaign management', 'Social media management', 'AI Media Studio'],
   },
   {
     icon: UserCog,
     title: 'HR & Payroll',
     desc: 'People, attendance, leave and payroll without spreadsheets.',
-    bg: 'from-emerald-500 to-teal-600',
-    shadow: 'shadow-emerald-500/30',
     points: ['Employee records', 'Attendance tracking', 'Leave management', 'Payroll processing'],
   },
   {
     icon: Boxes,
     title: 'Inventory Control',
     desc: 'Real-time stock across warehouses, barcode ready.',
-    bg: 'from-amber-500 to-orange-600',
-    shadow: 'shadow-amber-500/30',
     points: ['Live stock levels', 'Warehouse transfers', 'Purchase orders', 'Barcode scanning'],
   },
   {
     icon: MessageSquareText,
     title: 'AI Assistant',
     desc: 'Smart automation and AI help across every module.',
-    bg: 'from-indigo-500 to-violet-600',
-    shadow: 'shadow-indigo-500/30',
     points: ['AI writing & analysis', 'Predictive insights', 'Workflow automation', 'AI concierge chat'],
   },
   {
     icon: Scale,
     title: 'Legal Operations',
     desc: 'Contracts, compliance and legal workflows organised.',
-    bg: 'from-rose-500 to-red-600',
-    shadow: 'shadow-rose-500/30',
     points: ['Contract management', 'Compliance tracking', 'Document vault', 'Legal workflow tracking'],
   },
   {
     icon: LineChart,
     title: 'Analytics',
     desc: 'Live dashboards and reports behind every module.',
-    bg: 'from-cyan-500 to-blue-600',
-    shadow: 'shadow-cyan-500/30',
     points: ['Real-time dashboards', 'Sales & revenue reports', 'Custom date ranges', 'One-click export'],
   },
-];
-
-const WORKFLOWS = [
-  { icon: ScrollText, tag: 'Finance', title: 'Invoice in under a minute', desc: 'Raise a GST invoice with automatic CGST/SGST/IGST split and share it with your customer the same moment.' },
-  { icon: FileSpreadsheet, tag: 'Finance', title: 'Bring your Tally data along', desc: 'Import customers, ledgers and stock from Tally — no retyping, no lost history.' },
-  { icon: BarChart3, tag: 'Analytics', title: 'Watch cash flow live', desc: 'Revenue, invoices, clients and tasks update in real time on one dashboard.' },
-  { icon: Star, tag: 'AI Studio', title: 'Put AI to work', desc: 'Blogs, captions, creatives and insights generated from a single brief in the AI Media Studio.' },
-  { icon: Palette, tag: 'Branding', title: 'Logo & brand kit in seconds', desc: 'Generate a logo, colour palette and complete brand kit with AI — ready for invoices, social and web.' },
-  { icon: Search, tag: 'Marketing', title: 'SEO audit on demand', desc: 'Scan your website for ranking issues and get a clear, prioritised fix list in minutes.' },
-  { icon: PenLine, tag: 'Marketing', title: 'Content & email copy', desc: 'Blogs, captions and campaign emails written in your brand voice from one short brief.' },
-  { icon: Presentation, tag: 'Business', title: 'Pitch deck & business plan', desc: 'Investor-ready decks and detailed business plans built from your company data.' },
-  { icon: MessageSquare, tag: 'Support', title: 'AI chatbot for your website', desc: 'Train a custom chatbot on your business and answer customer queries around the clock.' },
-  { icon: QrCode, tag: 'Design', title: 'Posters, flyers & QR codes', desc: 'Design on-brand posters and custom QR codes for menus, payments and events.' },
-  { icon: ShoppingBag, tag: 'E-commerce', title: 'Marketplace-ready listings', desc: 'Optimise product titles, descriptions and keywords for Amazon, Flipkart and more.' },
-  { icon: Users, tag: 'HR', title: 'Payroll without the mess', desc: 'Attendance, leave and salary processing connected end to end for your whole team.' },
-  { icon: Package, tag: 'Inventory', title: 'Stock that stays accurate', desc: 'Every sale, purchase and transfer updates inventory instantly, across every warehouse.' },
-  { icon: Scale, tag: 'Legal', title: 'Legal docs in a few clicks', desc: 'NDAs, agreements and policies drafted from verified templates and stored securely.' },
 ];
 
 const AI_TOOLS = [
@@ -106,7 +75,7 @@ const STEPS = [
   {
     icon: UserPlus,
     title: 'Create your business account',
-    desc: 'Register your company in minutes with tax, contact and document details — one time only.',
+    desc: 'Register the company once with tax, contact and document details that every app reuses.',
   },
   {
     icon: LayoutGrid,
@@ -125,116 +94,109 @@ const STEPS = [
   },
 ];
 
-const TESTIMONIALS = [
+const TEAM_ROLES = [
   {
-    quote: 'We replaced four different apps with AINOS. Invoicing, CRM, inventory and payroll — finally in one place.',
-    name: 'Priya Sharma',
-    role: 'Founder, Acme Industries',
-    initials: 'PS',
+    icon: Building2,
+    role: 'Founder / owner',
+    title: 'One view of the business',
+    desc: 'Revenue, receivables, stock and team activity in one dashboard instead of five separate status updates.',
+    href: '/features/workspace',
   },
   {
-    quote: 'The AI assistant drafts our weekly reports in minutes. What used to take hours now happens automatically.',
-    name: 'Rahul Mehta',
-    role: 'CFO, Northwind Trading',
-    initials: 'RM',
+    icon: BarChart3,
+    role: 'Accounts',
+    title: 'Books that close without retyping',
+    desc: 'GST invoices, payments and reports stay connected to the sales records they came from.',
+    href: '/features/accounting',
   },
   {
-    quote: 'Onboarding took two minutes. Within a week our entire warehouse team was running stock from AINOS.',
-    name: 'Meera Iyer',
-    role: 'Head of Ops, Atlas Retail',
-    initials: 'MI',
+    icon: Contact2,
+    role: 'Sales',
+    title: 'A pipeline connected to delivery',
+    desc: 'A closed deal reaches accounts with the customer, quote and scope already in place.',
+    href: '/features/crm',
   },
   {
-    quote: 'GST compliance used to take days. Now the filing pack builds itself and we file in minutes.',
-    name: 'Arjun Patel',
-    role: 'Director, Patel & Co.',
-    initials: 'AP',
+    icon: Boxes,
+    role: 'Operations',
+    title: 'Stock and orders in one picture',
+    desc: 'Products, purchase orders, warehouses and fulfilment share the catalogue sales uses.',
+    href: '/features/supply-chain',
   },
   {
-    quote: 'Our sales team closed thirty percent more deals after switching to AINOS CRM. The pipeline view is a game changer.',
-    name: 'Sneha Reddy',
-    role: 'VP Sales, Zenith Solutions',
-    initials: 'SR',
+    icon: Users,
+    role: 'People',
+    title: 'Team records finance can use',
+    desc: 'Employees, attendance, leave and payroll live in the same workspace as the rest of the company.',
+    href: '/features/people',
   },
   {
-    quote: 'The inventory module saved us from stockouts during peak season. Real-time updates across warehouses is exactly what we needed.',
-    name: 'Vikram Singh',
-    role: 'COO, Singh Enterprises',
-    initials: 'VS',
+    icon: Megaphone,
+    role: 'Marketing',
+    title: 'Campaigns built on real context',
+    desc: 'Plan content and campaigns from the same customer and product data the business already runs on.',
+    href: '/features/marketing',
   },
 ];
 
-const FAQS = [
+// Enterprise layer: announced, not shipped. Nothing here is billed or claimable yet.
+const ENTERPRISE_PILLARS = [
   {
-    q: 'What is AINOS?',
-    a: 'AINOS is a business operating suite from Yurekh. It brings invoicing, CRM, inventory, HR, payroll and AI assistance into one platform — so you do not need five different apps.',
+    icon: SlidersHorizontal,
+    title: 'Greater flexibility',
+    body: 'Configurable fields, documents and approval chains per entity, without a separate deployment.',
   },
   {
-    q: 'How long does setup take?',
-    a: 'Most businesses are up and running in under two minutes. Register your company, turn on the modules you need, and start invoicing immediately.',
+    icon: Workflow,
+    title: 'Smart automations',
+    body: 'AI-assisted routing, reminders and document handling across modules.',
   },
   {
-    q: 'Is my data secure?',
-    a: 'Yes. AINOS uses bank-level encryption, role-based access control and secure cloud infrastructure. Your data is never shared with third parties.',
+    icon: LayoutDashboard,
+    title: 'Unified oversight',
+    body: 'Group-level dashboards with per-entity drill-down and a shared audit trail.',
   },
   {
-    q: 'Can I import data from Tally or Excel?',
-    a: 'Yes. Import customers, products, ledgers and opening stock from Tally or Excel without retyping. History stays intact.',
+    icon: Blocks,
+    title: 'Integrated workflows',
+    body: 'Tally, e-invoicing and payment tools in one controlled flow.',
   },
   {
-    q: 'Do you support GST compliance?',
-    a: 'Yes. AINOS is GST-native with automatic CGST/SGST/IGST split on every invoice, GST-ready reports and a filing pack you can upload to the government portal yourself — or export to Tally format anytime.',
-  },
-  {
-    q: 'What kind of support do you offer?',
-    a: 'All plans include email support. Growth and Enterprise plans get priority support with a dedicated account manager.',
+    icon: Gauge,
+    title: 'Streamlined operations',
+    body: 'GST billing, invoicing, payroll, inventory and reporting under one policy.',
   },
 ];
+
+const GROWTH_POINTS = [
+  {
+    step: '01',
+    title: 'Set the company up once',
+    body: 'GSTIN, place of supply, document series and bank details sit in the company profile, and every app reads them.',
+  },
+  {
+    step: '02',
+    title: 'Let AI prepare, keep the approval',
+    body: 'AI Studio drafts, extracts and summarises. A person signs off before anything leaves the workspace.',
+  },
+  {
+    step: '03',
+    title: 'Add a branch, not a migration',
+    body: 'A new warehouse, department or team joins the same workspace with its own role access.',
+  },
+];
+
+const MANUAL_WORK = [
+  { label: 'GST returns', body: 'Reports built from the invoices already raised.' },
+  { label: 'Expense records', body: 'Receipts and scanned business cards filed against the right customer.' },
+  { label: 'Payroll', body: 'PF, ESI and professional tax configured once, then applied monthly.' },
+];
+
+
 
 export default function AinosLandingPage() {
-  const [menuOpen, setMenuOpen] = React.useState(false);
   const [email, setEmail] = React.useState('');
   const router = useRouter();
-  const sliderRef = React.useRef<HTMLDivElement>(null);
-  const [sliderProgress, setSliderProgress] = React.useState(0);
-  const [sliderPaused, setSliderPaused] = React.useState(false);
-
-  // One card width + gap, so arrows and autoplay move exactly one card
-  const slideStep = () => {
-    const card = sliderRef.current?.querySelector<HTMLElement>('[data-slide]');
-    return card ? card.offsetWidth + 20 : 400;
-  };
-
-  const scrollSlider = (dir: number) => {
-    const el = sliderRef.current;
-    if (!el) return;
-    const max = el.scrollWidth - el.clientWidth;
-    if (dir > 0 && el.scrollLeft >= max - 4) el.scrollTo({ left: 0, behavior: 'smooth' });
-    else if (dir < 0 && el.scrollLeft <= 4) el.scrollTo({ left: max, behavior: 'smooth' });
-    else el.scrollBy({ left: dir * slideStep(), behavior: 'smooth' });
-  };
-
-  const handleSliderScroll = () => {
-    const el = sliderRef.current;
-    if (!el) return;
-    const max = el.scrollWidth - el.clientWidth;
-    setSliderProgress(max > 0 ? el.scrollLeft / max : 0);
-  };
-
-  // Autoplay the Why AINOS slider; pauses on hover/touch and for reduced motion
-  React.useEffect(() => {
-    if (sliderPaused) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const t = setInterval(() => scrollSlider(1), 3500);
-    return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- scrollSlider only reads the ref
-  }, [sliderPaused]);
-
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, hash: string) => {
-    e.preventDefault();
-    setMenuOpen(false);
-    document.querySelector(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
 
   const [activeStep, setActiveStep] = React.useState(0);
   const [openFaq, setOpenFaq] = React.useState<number | null>(null);
@@ -247,77 +209,16 @@ export default function AinosLandingPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* ─── NAVBAR ──────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-b border-gray-100/80">
-        <div className="flex items-center justify-between w-full px-4 sm:px-6 lg:px-12 xl:px-20 py-3.5">
-          <Link href="/" className="flex items-center gap-[2px]">
-            <Image src="/ainos-wordmark.png" alt="AINOS" width={100} height={34} className="h-7 sm:h-8 w-auto object-contain" />
-          </Link>
-
-          {/* Desktop links */}
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#how" className="text-sm text-neutral-700 hover:text-neutral-900 transition-colors" onClick={(e) => handleNavClick(e, '#how')}>How it works</a>
-            <a href="#modules" className="text-sm text-neutral-700 hover:text-neutral-900 transition-colors" onClick={(e) => handleNavClick(e, '#modules')}>Modules</a>
-            <a href="#workflow" className="text-sm text-neutral-700 hover:text-neutral-900 transition-colors" onClick={(e) => handleNavClick(e, '#workflow')}>Why AINOS</a>
-            <a href="#about" className="text-sm text-neutral-700 hover:text-neutral-900 transition-colors" onClick={(e) => handleNavClick(e, '#about')}>About</a>
-            <Link href="/features" className="text-sm text-neutral-700 hover:text-neutral-900 transition-colors">Features</Link>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link href="/auth/signin" className="hidden md:inline-flex text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">Sign In</Link>
-            <Link href="/auth/register" className="hidden md:inline-flex px-5 py-2.5 bg-[#5b21b6] hover:bg-[#4c1d95] active:scale-95 rounded-full text-white text-sm font-semibold transition-all">Get Started</Link>
-            <button aria-label="menu" className="md:hidden p-2 text-gray-700" onClick={() => setMenuOpen(true)}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18M3 18h18M3 6h18" /></svg>
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      {/* Mobile drawer overlay */}
-      {menuOpen && (
-        <div className="md:hidden fixed inset-0 z-[60]" onClick={() => setMenuOpen(false)}>
-          <div className="absolute inset-0 bg-black/40" />
-        </div>
-      )}
-
-      {/* Mobile side drawer */}
-      <div className={`md:hidden fixed top-0 right-0 h-full w-[280px] bg-white z-[70] shadow-2xl transform transition-transform duration-300 ease-in-out ${menuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-        <div className="flex flex-col h-full">
-          {/* Drawer header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <Image src="/ainos-wordmark.png" alt="AINOS" width={80} height={28} className="h-6 w-auto object-contain" />
-            <button aria-label="close menu" className="p-2 text-gray-500 hover:text-gray-900" onClick={() => setMenuOpen(false)}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
-            </button>
-          </div>
-
-          {/* Drawer links */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
-            <nav className="flex flex-col gap-1">
-              <a href="#how" className="px-4 py-3 text-base font-medium text-gray-900 hover:bg-purple-50 rounded-lg transition-colors" onClick={(e) => { handleNavClick(e, '#how'); setMenuOpen(false); }}>How it works</a>
-              <a href="#modules" className="px-4 py-3 text-base font-medium text-gray-900 hover:bg-purple-50 rounded-lg transition-colors" onClick={(e) => { handleNavClick(e, '#modules'); setMenuOpen(false); }}>Modules</a>
-              <a href="#workflow" className="px-4 py-3 text-base font-medium text-gray-900 hover:bg-purple-50 rounded-lg transition-colors" onClick={(e) => { handleNavClick(e, '#workflow'); setMenuOpen(false); }}>Why AINOS</a>
-              <a href="#about" className="px-4 py-3 text-base font-medium text-gray-900 hover:bg-purple-50 rounded-lg transition-colors" onClick={(e) => { handleNavClick(e, '#about'); setMenuOpen(false); }}>About</a>
-              <Link href="/features" className="px-4 py-3 text-base font-medium text-gray-900 hover:bg-purple-50 rounded-lg transition-colors" onClick={() => setMenuOpen(false)}>Features</Link>
-            </nav>
-          </div>
-
-          {/* Drawer footer CTAs */}
-          <div className="px-6 py-6 border-t border-gray-100 space-y-3">
-            <Link href="/auth/register" className="block w-full px-6 py-3 bg-[#5b21b6] hover:bg-[#4c1d95] active:scale-95 rounded-full text-white text-base font-semibold text-center transition-all shadow-lg shadow-purple-900/25" onClick={() => setMenuOpen(false)}>Get Started</Link>
-            <Link href="/auth/signin" className="block w-full px-6 py-3 text-base font-medium text-gray-700 hover:text-gray-900 text-center transition-colors" onClick={() => setMenuOpen(false)}>Sign In</Link>
-          </div>
-        </div>
-      </div>
+      <SiteHeader />
 
       {/* ─── HERO SECTION ────────────────────────────────────────── */}
-      <section className="relative w-full overflow-hidden pt-14 md:pt-16 pb-12 px-4">
+      <section id="main-content" className="relative w-full overflow-hidden pb-10 pt-10 md:pt-12">
         {/* Background — subtle dot grid + soft purple glows (self-contained) */}
         <div className="absolute inset-0 bg-[radial-gradient(#e9e4f5_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_75%_65%_at_50%_35%,black,transparent)]" />
         <div className="absolute -top-32 -right-24 w-[440px] h-[440px] rounded-full bg-purple-200/50 blur-3xl" />
         <div className="absolute top-48 -left-28 w-[360px] h-[360px] rounded-full bg-indigo-200/40 blur-3xl" />
 
-        <div className="relative w-full md:px-12 lg:px-20 xl:px-28 mx-auto flex flex-col lg:flex-row items-center justify-between gap-8 py-10 md:py-14">
+        <div className="relative mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-8 py-8 md:py-10 lg:flex-row lg:gap-14 lg:pb-16 lg:pt-[72px] px-4 sm:px-6 lg:px-12">
           {/* Left */}
           <div className="flex flex-col items-center lg:items-start max-w-xl w-full lg:w-auto lg:flex-1 lg:min-w-0">
             <Link href="/auth/register" className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-full px-4 py-1.5 text-sm hover:bg-purple-100 transition-colors">
@@ -331,7 +232,7 @@ export default function AinosLandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.6 }}
-              className="text-center lg:text-left text-neutral-900 text-3xl sm:text-4xl md:text-5xl lg:text-[52px] leading-[1.2] font-bold max-w-[610px] mt-5 tracking-tight text-balance"
+              className="text-center lg:text-left text-neutral-900 text-[28px] sm:text-[32px] md:text-[35px] lg:text-[44px] xl:text-[52px] leading-[1.2] font-semibold lg:font-bold max-w-[610px] mt-5 tracking-tight text-balance"
             >
               One platform to run your{' '}
               <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">entire business</span>
@@ -371,11 +272,11 @@ export default function AinosLandingPage() {
               className="mt-8 w-full"
             >
               {/* Mobile + tablet: stacked cards - full width */}
-              <div className="flex lg:hidden flex-col gap-3 w-full">
+              <div className="flex xl:hidden flex-col gap-3 w-full">
                 {[
                   { icon: Shield, title: 'Secure & Reliable', desc: 'Your data, our priority' },
-                  { icon: Timer, title: 'Quick Setup', desc: 'Get started in minutes' },
-                  { icon: Headphones, title: 'Dedicated Support', desc: 'We\'re here to help' },
+                  { icon: Clock, title: 'Quick Setup', desc: 'Get started in minutes' },
+                  { icon: Headphones, title: 'Dedicated Support', desc: "We're here to help" },
                 ].map((item) => (
                   <div key={item.title} className="flex items-center gap-3 p-3.5 rounded-xl bg-purple-50/60 border border-purple-100 w-full">
                     <div className="w-10 h-10 rounded-xl bg-white ring-1 ring-purple-100 flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -389,17 +290,17 @@ export default function AinosLandingPage() {
                 ))}
               </div>
               {/* Desktop: inline row */}
-              <div className="hidden lg:flex flex-wrap items-center gap-x-7 gap-y-4">
+              <div className="hidden xl:flex flex-nowrap items-center gap-x-7 gap-y-4">
                 {[
                   { icon: Shield, title: 'Secure & Reliable', desc: 'Your data, our priority' },
-                  { icon: Timer, title: 'Quick Setup', desc: 'Get started in minutes' },
-                  { icon: Headphones, title: 'Dedicated Support', desc: 'We\'re here to help' },
+                  { icon: Clock, title: 'Quick Setup', desc: 'Get started in minutes' },
+                  { icon: Headphones, title: 'Dedicated Support', desc: "We're here to help" },
                 ].map((item) => (
-                  <div key={item.title} className="flex items-center gap-3">
+                  <div key={item.title} className="flex items-center gap-3 shrink-0 whitespace-nowrap">
                     <div className="w-10 h-10 rounded-xl bg-purple-50 ring-1 ring-purple-100 flex items-center justify-center flex-shrink-0">
                       <item.icon className="w-[18px] h-[18px] text-[#5b21b6]" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-[13px] font-semibold text-gray-900 leading-tight">{item.title}</p>
                       <p className="text-xs text-gray-500 leading-tight mt-0.5">{item.desc}</p>
                     </div>
@@ -414,7 +315,7 @@ export default function AinosLandingPage() {
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2, duration: 0.7 }}
-            className="relative w-full max-w-[420px] sm:max-w-[480px] lg:max-w-[420px] xl:max-w-[520px] flex-shrink-0 mx-auto lg:mx-0"
+            className="relative w-full max-w-[420px] sm:max-w-[480px] lg:max-w-[460px] xl:max-w-[520px] flex-shrink-0 mx-auto lg:mx-0"
           >
             <div className="relative aspect-square w-full">
               {/* Orbital rings — perfect circles, viewBox matches container */}
@@ -520,21 +421,21 @@ export default function AinosLandingPage() {
       </section>
 
       {/* ─── HOW IT WORKS — FOUR STEPS ───────────────────────────── */}
-      <section id="how" className="py-20 px-4 sm:px-6 lg:px-8 scroll-mt-20">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700 mb-4">
-              <Rocket className="w-3.5 h-3.5" /> How it works
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-4 text-balance">
+      <section id="how" className="py-12 sm:py-14 scroll-mt-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 max-w-3xl">
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#4c1d95]">
+              <Rocket className="h-3.5 w-3.5" /> How it works
+            </p>
+            <h2 className="mt-3 text-[25px] font-semibold tracking-tight text-gray-900 text-balance sm:text-[30px]">
               Run your entire business in four steps
             </h2>
-            <p className="text-base sm:text-lg text-gray-600">
-              AINOS takes you from signup to daily operations — quickly and efficiently.
+            <p className="mt-3 text-base text-gray-600 sm:text-lg">
+              Sign up, finish onboarding, switch on the modules you need, then run the day from one console.
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-start">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
             {/* Left — step list */}
             <div className="space-y-3 min-w-0">
               {STEPS.map((s, i) => (
@@ -582,10 +483,10 @@ export default function AinosLandingPage() {
                         <div className="flex h-full flex-col">
                           <div className="flex items-start justify-between mb-5">
                             <div className="flex items-center gap-3 min-w-0">
-                              <span className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#4c1d95] to-[#6d28d9] text-white flex items-center justify-center text-sm font-semibold shadow-md shadow-purple-900/20 flex-shrink-0">AT</span>
+                              <span className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#4c1d95] to-[#6d28d9] text-white flex items-center justify-center text-sm font-semibold shadow-md shadow-purple-900/20 flex-shrink-0">ST</span>
                               <div className="min-w-0">
                                 <p className="text-[11px] uppercase tracking-wider text-gray-400 mb-0.5">Business profile</p>
-                                <p className="text-base font-semibold text-gray-900 truncate">Aurelia Trading Co.</p>
+                                <p className="text-base font-semibold text-gray-900 truncate">Sundaram Traders</p>
                               </div>
                             </div>
                             <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 ring-1 ring-green-100 px-2.5 py-1 text-[11px] font-medium text-green-700 flex-shrink-0">
@@ -594,10 +495,10 @@ export default function AinosLandingPage() {
                           </div>
                           <div className="rounded-xl border border-gray-200 divide-y divide-gray-100">
                             {[
-                              ['Tax ID', 'VAT 8842-0116'],
-                              ['Owner email', 'ops@aurelia.com'],
+                              ['GSTIN', '27AABCS1429B1ZP'],
+                              ['Owner email', 'ops@sundaramtraders.in'],
                               ['Entities', '3 connected'],
-                              ['Base country', 'United Kingdom'],
+                              ['State of supply', 'Maharashtra'],
                             ].map(([k, v]) => (
                               <div key={k} className="flex items-center justify-between gap-4 px-4 py-3">
                                 <span className="text-xs text-gray-500">{k}</span>
@@ -607,7 +508,7 @@ export default function AinosLandingPage() {
                           </div>
                           <div className="mt-auto pt-4 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-500">
                             <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
-                            Setup complete — account ready in 2 minutes
+                            Company profile saved — review it any time in settings
                           </div>
                         </div>
                       )}
@@ -701,9 +602,9 @@ export default function AinosLandingPage() {
                           </div>
                           <div className="grid grid-cols-3 gap-3 mb-6">
                             {[
-                              { label: 'Revenue', value: '$32.4k', delta: '+32%', up: true },
+                              { label: 'Revenue', value: '₹12.6L', delta: '+32%', up: true },
                               { label: 'Invoices', value: '142', delta: '+18%', up: true },
-                              { label: 'Outstanding', value: '$6.1k', delta: '-9%', up: false },
+                              { label: 'Outstanding', value: '₹2.4L', delta: '-9%', up: false },
                             ].map((kpi) => (
                               <div key={kpi.label} className="rounded-xl border border-gray-200 p-3">
                                 <p className="text-[11px] text-gray-400 mb-1">{kpi.label}</p>
@@ -744,57 +645,68 @@ export default function AinosLandingPage() {
       </section>
 
       {/* ─── MODULES — FLIP CARDS ────────────────────────────────── */}
-      <section id="modules" className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50/60 scroll-mt-20">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto mb-14">
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-purple-100 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700 mb-4 shadow-sm">
-              <Layers className="w-3.5 h-3.5" /> Modules
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-3 text-balance">
-              One suite. Every department.
+      <section
+        id="modules"
+        className="relative overflow-hidden border-t border-purple-100/70 bg-gradient-to-b from-[#fbfaff] via-white to-white py-12 sm:py-14 scroll-mt-20"
+      >
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(60%_100%_at_50%_0%,rgba(109,40,217,0.06),transparent_72%)]" />
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          {/* Slim rail instead of a headline: label on the left, count on the right. */}
+          <div className="mb-7 flex items-end justify-between gap-4 border-b border-purple-100 pb-4">
+            <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#4c1d95]">
+              <Layers className="h-3.5 w-3.5" /> Modules
             </h2>
-            <p className="text-base sm:text-lg text-gray-600">
-              Eight modules, one login, one database. Hover or tap a card to look inside.
-            </p>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] tabular-nums text-gray-400">
+              {String(MODULES.length).padStart(2, '0')} modules
+            </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {MODULES.map((m, i) => (
               <motion.div
                 key={m.title}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
-                className="h-72 [perspective:1200px]"
+                transition={{ delay: i * 0.04 }}
+                className="h-64 [perspective:1200px]"
               >
                 <div
                   tabIndex={0}
                   className="group relative h-full w-full cursor-pointer rounded-2xl outline-none [transform-style:preserve-3d] transition-transform duration-700 hover:[transform:rotateY(180deg)] focus-within:[transform:rotateY(180deg)]"
                 >
                   {/* Front */}
-                  <div className="absolute inset-0 flex flex-col justify-between rounded-2xl bg-white p-6 ring-1 ring-gray-100 shadow-sm [backface-visibility:hidden]">
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${m.bg} flex items-center justify-center shadow-lg ${m.shadow}`}>
-                      <m.icon className="w-6 h-6 text-white" />
+                  <div className="absolute inset-0 flex flex-col rounded-2xl bg-white p-5 ring-1 ring-gray-200/80 shadow-[0_1px_2px_rgba(23,16,33,0.04)] transition-shadow duration-300 [backface-visibility:hidden] group-hover:shadow-lg">
+                    <div className="flex items-start justify-between">
+                      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-50 ring-1 ring-purple-100">
+                        <m.icon className="h-5 w-5 text-[#5b21b6]" />
+                      </span>
+                      <span className="pt-1 text-[11px] font-semibold tabular-nums tracking-[0.16em] text-gray-300">
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1.5">{m.title}</h3>
-                      <p className="text-sm text-gray-600 leading-relaxed">{m.desc}</p>
-                    </div>
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-700">
-                      Flip for details <ArrowRight className="w-3.5 h-3.5" />
+                    <h3 className="mt-5 text-base font-semibold tracking-tight text-gray-900">{m.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-gray-600">{m.desc}</p>
+                    <span className="mt-auto flex items-center justify-between border-t border-gray-100 pt-3 text-xs font-semibold text-purple-700">
+                      Flip for details
+                      <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
                     </span>
                   </div>
 
                   {/* Back */}
-                  <div className={`absolute inset-0 flex flex-col rounded-2xl bg-gradient-to-br ${m.bg} p-6 text-white shadow-xl ${m.shadow} [backface-visibility:hidden] [transform:rotateY(180deg)]`}>
-                    <h3 className="text-base font-semibold mb-4 flex items-center gap-2">
-                      <m.icon className="w-4 h-4" /> {m.title}
-                    </h3>
-                    <ul className="space-y-2.5">
+                  <div className="absolute inset-0 flex flex-col rounded-2xl ainos-surface-dots p-5 text-white ring-1 ring-white/10 shadow-xl [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                    <div className="flex items-start justify-between gap-3">
+                      <h3 className="flex items-center gap-2 text-sm font-semibold">
+                        <m.icon className="h-4 w-4 text-purple-200" /> {m.title}
+                      </h3>
+                      <span className="text-[11px] font-semibold tabular-nums tracking-[0.16em] text-white/30">
+                        {String(i + 1).padStart(2, '0')}
+                      </span>
+                    </div>
+                    <ul className="mt-4 space-y-2.5">
                       {m.points.map((p) => (
-                        <li key={p} className="flex items-start gap-2 text-[13px] leading-snug text-white/90">
-                          <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-white/80" />
+                        <li key={p} className="flex items-start gap-2 text-[13px] leading-snug text-white/85">
+                          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-purple-300" />
                           {p}
                         </li>
                       ))}
@@ -807,113 +719,78 @@ export default function AinosLandingPage() {
         </div>
       </section>
 
-      {/* ─── WHY AINOS — SCROLLABLE SLIDER ───────────────────────── */}
-      <section id="workflow" className="py-16 sm:py-20 overflow-hidden scroll-mt-20">
-        <div className="px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-wrap items-end justify-between gap-6 mb-8 sm:mb-10">
-            <div className="max-w-xl">
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700 mb-4">
-                <TrendingUp className="w-3.5 h-3.5" /> Why AINOS
+      {/* ─── COVERAGE — POINTS TO THE DEDICATED PAGE ─────────────── */}
+      <section id="coverage" className="py-12 sm:py-14 scroll-mt-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-6 rounded-3xl bg-[#fbfaff] p-6 ring-1 ring-purple-100 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl">
+              <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700">
+                <ScrollText className="w-3.5 h-3.5" /> Coverage
               </span>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-3 text-balance">
-                Built around the way your business actually works
+              <h2 className="mt-3 text-[22px] sm:text-[26px] font-semibold tracking-tight text-gray-900 text-balance">
+                Twelve areas of the business, listed one by one.
               </h2>
-              <p className="text-base sm:text-lg text-gray-600">
-                Small moments that save hours every week — swipe through them.
+              <p className="mt-2 text-sm sm:text-base leading-relaxed text-gray-600">
+                GST invoicing, payment links, payroll, dispatch and the compliance calendar — with the boundaries
+                stated next to them.
               </p>
             </div>
-            <div className="hidden md:flex items-center gap-2">
-              <button type="button" onClick={() => scrollSlider(-1)} aria-label="Scroll left" className="w-11 h-11 rounded-full bg-white ring-1 ring-gray-200 flex items-center justify-center text-gray-600 hover:text-purple-700 hover:ring-purple-300 transition-all active:scale-95 cursor-pointer">
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button type="button" onClick={() => scrollSlider(1)} aria-label="Scroll right" className="w-11 h-11 rounded-full bg-white ring-1 ring-gray-200 flex items-center justify-center text-gray-600 hover:text-purple-700 hover:ring-purple-300 transition-all active:scale-95 cursor-pointer">
-                <ChevronRight className="w-5 h-5" />
-              </button>
+            <Link
+              href="/coverage"
+              className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#4c1d95] px-5 py-3 text-sm font-semibold text-white shadow-md shadow-purple-900/20 transition-colors hover:bg-[#3b0f78]"
+            >
+              See what is covered <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── GROWTH — FIRST INVOICE TO MANY BRANCHES ─────────────── */}
+      <section className="border-y border-purple-100/70 bg-[#fbfaff] py-12 sm:py-14">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl">
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-purple-100 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700 mb-4 shadow-sm">
+              <TrendingUp className="w-3.5 h-3.5" /> From first invoice to many branches
+            </span>
+            <h2 className="text-[25px] sm:text-[30px] font-semibold tracking-tight text-gray-900 mb-3 text-balance">
+              Built to be added to, not replaced.
+            </h2>
+            <p className="text-base sm:text-lg text-gray-600">
+              Three things stay constant as the business grows.
+            </p>
+          </div>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {GROWTH_POINTS.map((point) => (
+              <div key={point.step} className="rounded-3xl bg-white p-6 ring-1 ring-gray-100 shadow-sm">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-purple-50 text-xs font-bold text-purple-700">
+                  {point.step}
+                </span>
+                <h3 className="mt-4 text-base font-semibold text-gray-900">{point.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-gray-600">{point.body}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 rounded-3xl ainos-surface p-6 sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-purple-200">What stops being manual</p>
+            <div className="mt-5 grid gap-5 sm:grid-cols-3">
+              {MANUAL_WORK.map((item) => (
+                <div key={item.label}>
+                  <p className="text-sm font-semibold text-white">{item.label}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-purple-200/80">{item.body}</p>
+                </div>
+              ))}
             </div>
           </div>
-
         </div>
-        </div>
-
-        {/* Full-bleed to the right edge, left-aligned with the content column */}
-        <div
-          id="workflow-slider"
-          ref={sliderRef}
-          onScroll={handleSliderScroll}
-          onMouseEnter={() => setSliderPaused(true)}
-          onMouseLeave={() => setSliderPaused(false)}
-          onTouchStart={() => setSliderPaused(true)}
-          onTouchEnd={() => setSliderPaused(false)}
-          onFocus={() => setSliderPaused(true)}
-          onBlur={() => setSliderPaused(false)}
-          className="flex gap-5 overflow-x-auto snap-x snap-mandatory pt-2 pb-6 scrollbar-hide"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        >
-          {WORKFLOWS.map((w, i) => (
-            <motion.div
-              key={w.title}
-              data-slide
-              initial={{ opacity: 0, x: 40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.5, delay: Math.min(i, 3) * 0.08, ease: 'easeOut' }}
-              className="group snap-start shrink-0 w-[82vw] max-w-[360px] sm:w-[340px] lg:w-[360px] rounded-3xl bg-white ring-1 ring-gray-100 shadow-sm p-6 sm:p-7 flex flex-col transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-purple-900/10 hover:ring-purple-200"
-            >
-              <div className="flex items-start justify-between mb-6">
-                <span className="w-12 h-12 rounded-2xl bg-purple-50 ring-1 ring-purple-100 flex items-center justify-center transition-colors duration-300 group-hover:bg-[#4c1d95] group-hover:ring-[#4c1d95]">
-                  <w.icon className="w-5 h-5 text-purple-600 transition-colors duration-300 group-hover:text-white" />
-                </span>
-                <span className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent leading-none">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-              </div>
-              <span className="self-start mb-3 px-2.5 py-1 rounded-full bg-purple-50 text-[11px] font-semibold uppercase tracking-wider text-purple-700">
-                {w.tag}
-              </span>
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2.5">{w.title}</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">{w.desc}</p>
-              <div className="mt-auto pt-6">
-                <span className="block h-1 w-12 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-500 group-hover:w-24" />
-              </div>
-            </motion.div>
-          ))}
-          {/* Trailing space so the last card never sits flush against the edge */}
-          <div aria-hidden className="shrink-0 w-px sm:w-4 lg:w-16" />
-        </div>
-
-        {/* Progress + arrows */}
-        <div className="px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto mt-2 flex items-center gap-4">
-          <div className="relative h-1 flex-1 rounded-full bg-purple-100 overflow-hidden">
-            <div
-              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-[width] duration-300"
-              style={{ width: `${Math.max(8, sliderProgress * 100)}%` }}
-            />
-          </div>
-          <div className="flex md:hidden items-center gap-2">
-            <button type="button" onClick={() => scrollSlider(-1)} aria-label="Scroll left" className="w-10 h-10 rounded-full bg-white ring-1 ring-gray-200 flex items-center justify-center text-gray-600 active:scale-95 transition-all">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button type="button" onClick={() => scrollSlider(1)} aria-label="Scroll right" className="w-10 h-10 rounded-full bg-white ring-1 ring-gray-200 flex items-center justify-center text-gray-600 active:scale-95 transition-all">
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-        </div>
-        <style>{`
-          #workflow-slider::-webkit-scrollbar { display: none; }
-          #workflow-slider { padding-left: 1rem; scroll-padding-left: 1rem; }
-          @media (min-width: 640px) { #workflow-slider { padding-left: 1.5rem; scroll-padding-left: 1.5rem; } }
-          @media (min-width: 1024px) { #workflow-slider { padding-left: max(2rem, calc((100% - 80rem) / 2)); scroll-padding-left: max(2rem, calc((100% - 80rem) / 2)); } }
-        `}</style>
       </section>
 
       {/* ─── ABOUT — MAGNIFIC-STYLE BENTO ────────────────────────── */}
-      <section id="about" className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50/60 scroll-mt-20">
-        <div className="max-w-7xl mx-auto">
+      <section id="about" className="bg-gray-50/60 py-12 sm:py-14 scroll-mt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header — heading left, CTA right */}
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-12">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -923,7 +800,7 @@ export default function AinosLandingPage() {
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-purple-100 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700 mb-5 shadow-sm">
                 <Building2 className="w-3.5 h-3.5" /> About AINOS
               </span>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-gray-900 mb-4 text-balance">
+              <h2 className="text-[26px] sm:text-[30px] md:text-[33px] font-semibold tracking-tight text-gray-900 mb-4 text-balance">
                 Start simple.<br className="hidden sm:block" /> Scale when you&rsquo;re ready
               </h2>
               <p className="text-base sm:text-lg text-gray-600">
@@ -953,13 +830,13 @@ export default function AinosLandingPage() {
             >
               <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 text-balance">Every module, ready to go</h3>
               <p className="text-sm sm:text-base text-gray-600 leading-relaxed mb-6">
-                Finance, CRM, inventory, HR, marketing and more — twelve modules, zero setup. Turn on only what your business needs today.
+                Eight modules, each with its own screens and permissions. Enable the ones your team uses; the rest stay dormant.
               </p>
               <div className="grid grid-cols-2 gap-3">
                 {MODULES.map((m) => (
                   <div key={m.title} className="flex items-center gap-2.5 rounded-2xl bg-white border border-purple-100/70 p-3 sm:p-4">
-                    <span className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br ${m.bg} ${m.shadow} shadow-md flex items-center justify-center flex-shrink-0`}>
-                      <m.icon className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-white" strokeWidth={2.2} />
+                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-purple-100/70 ring-1 ring-purple-200/70 sm:h-10 sm:w-10">
+                      <m.icon className="h-4 w-4 text-[#4c1d95] sm:h-[18px] sm:w-[18px]" strokeWidth={2.2} />
                     </span>
                     <span className="text-xs sm:text-sm font-medium text-gray-800 leading-snug min-w-0">{m.title}</span>
                   </div>
@@ -978,9 +855,9 @@ export default function AinosLandingPage() {
               <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-white/10 blur-3xl" />
               <div className="relative flex flex-col md:flex-row md:items-center gap-8">
                 <div className="max-w-sm">
-                  <h3 className="text-2xl font-bold mb-3">Your entire business on one dashboard</h3>
+                  <h3 className="text-2xl font-bold mb-3">The morning check, before the calls start</h3>
                   <p className="text-sm sm:text-base text-purple-100/90 leading-relaxed">
-                    Customers, invoices, stock, payroll and campaigns — connected in one workspace. Every module reads the same data, so nothing is ever out of sync.
+                    Overdue invoices, low stock, open payroll runs and today&rsquo;s follow-ups, each read from the record it belongs to.
                   </p>
                 </div>
                 {/* Mini dashboard visual */}
@@ -994,7 +871,7 @@ export default function AinosLandingPage() {
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     <div className="rounded-lg bg-white/15 px-3 py-2">
                       <p className="text-[10px] text-white/60 mb-0.5">Revenue</p>
-                      <p className="text-sm font-semibold">$32.4k</p>
+                      <p className="text-sm font-semibold">₹12.6L</p>
                     </div>
                     <div className="rounded-lg bg-white/15 px-3 py-2">
                       <p className="text-[10px] text-white/60 mb-0.5">Invoices</p>
@@ -1042,7 +919,7 @@ export default function AinosLandingPage() {
             >
               <div className="absolute -bottom-16 -right-16 w-48 h-48 rounded-full bg-white/10 blur-3xl" />
               <div className="relative">
-                <h3 className="text-2xl font-bold mb-3">One platform, whole team</h3>
+                <h3 className="text-2xl font-bold mb-3">Access, split by desk</h3>
                 <p className="text-sm sm:text-base text-purple-100/85 leading-relaxed">
                   Owner, sales, accounts and warehouse — everyone works from the same live data, with role-based access so each person sees exactly what they need.
                 </p>
@@ -1057,7 +934,7 @@ export default function AinosLandingPage() {
                       +9
                     </span>
                   </div>
-                  <span className="text-xs text-purple-100/75 leading-snug">Every role,<br />one shared workspace</span>
+                  <span className="text-xs text-purple-100/75 leading-snug">Owner, sales,<br />accounts, warehouse</span>
                 </div>
               </div>
             </motion.div>
@@ -1089,36 +966,408 @@ export default function AinosLandingPage() {
         </div>
       </section>
 
-      {/* ─ TESTIMONIALS — BIDIRECTIONAL MARQUEE ────────────────── */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700 mb-4">
-              <Quote className="w-3.5 h-3.5" /> Testimonials
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-4">
-              Loved by growing teams
+      {/* ─ ENTERPRISE LAYER — COMING SOON ──────────────────────── */}
+      <section className="border-y border-purple-100/70 bg-[#fbfaff] py-12 sm:py-14">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl">
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#4c1d95]">
+              <Clock className="h-3.5 w-3.5" /> Coming soon · Enterprise
+            </p>
+            <h2 className="mt-3 text-balance text-[25px] font-semibold leading-[1.22] tracking-tight text-gray-900 sm:text-[30px]">
+              Whether you are a start-up, a global enterprise, or everyone in between, find solutions that empower you.
             </h2>
-            <p className="text-base sm:text-lg text-gray-600">
-              Real stories from businesses running on AINOS.
+            <p className="mt-4 max-w-2xl text-pretty text-base leading-relaxed text-gray-600 sm:text-lg">
+              A configurable layer above the suite: group reporting, per-entity workspaces and controlled automation. It is in
+              build — the workspace you can sign up for today is the foundation it runs on.
+            </p>
+            <Link
+              href="/contact"
+              className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#4c1d95] px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-purple-900/15 transition-colors hover:bg-[#3b0f78]"
+            >
+              Register interest <ArrowRight className="h-4 w-4" />
+            </Link>
+            <p className="mt-3.5 text-[11px] leading-relaxed text-gray-500">
+              Illustrative interface and card mock-up. AINOS ONE is not an issued product yet.
+            </p>
+          </div>
+
+          {/* Showcase stage — product composite on deep violet */}
+          <div className="relative mt-10 overflow-hidden rounded-[2rem] ainos-surface px-4 pb-12 pt-9 text-white shadow-xl shadow-purple-950/25 sm:px-8 sm:pb-14 sm:pt-10">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.12)_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_75%_95%_at_50%_30%,black,transparent)]" />
+            <div className="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-white/[0.07] blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-28 -right-16 h-80 w-80 rounded-full bg-[#c4b5fd]/20 blur-3xl" />
+
+            <div className="relative mx-auto max-w-6xl">
+              {/* Product window — the AINOS dashboard */}
+              <div className="relative z-10 mx-auto w-full max-w-3xl overflow-hidden rounded-xl bg-white text-gray-900 shadow-[0_40px_90px_-30px_rgba(10,2,20,0.75)] ring-1 ring-white/20">
+                <div className="flex items-center gap-2 border-b border-gray-200 bg-[#f2eefb] px-3 py-1.5">
+                  <span className="flex shrink-0 gap-1" aria-hidden>
+                    <span className="h-1.5 w-1.5 rounded-full bg-gray-300" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-gray-300" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-gray-300" />
+                  </span>
+                  <span className="ml-1 min-w-0 flex-1 truncate rounded bg-white px-2 py-0.5 text-center text-[9px] text-gray-400 ring-1 ring-gray-200/80">
+                    ainossuite.com/dashboard
+                  </span>
+                  <span className="hidden shrink-0 rounded bg-white px-1.5 py-0.5 text-[8px] font-semibold text-[#4c1d95] ring-1 ring-gray-200/80 sm:block">
+                    Business Suite
+                  </span>
+                </div>
+
+                <div className="flex">
+                  {/* Product sidebar */}
+                  <aside className="hidden w-[7.25rem] shrink-0 flex-col justify-between bg-[#1d1036] px-1.5 py-2.5 sm:flex">
+                    <div>
+                      <div className="flex items-center gap-1.5 px-1">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-[10px] font-semibold leading-none text-[#4c1d95]">
+                          α
+                        </span>
+                        <span className="min-w-0">
+                          <Image
+                            src="/ainos-wordmark.png"
+                            alt=""
+                            width={56}
+                            height={18}
+                            className="h-2 w-auto object-contain brightness-0 invert"
+                          />
+                          <span className="mt-0.5 block truncate text-[5.5px] font-medium uppercase tracking-[0.16em] text-purple-200/70">
+                            Business Suite
+                          </span>
+                        </span>
+                      </div>
+
+                      <div className="mt-2.5 space-y-[2px]">
+                        {[
+                          { label: 'Dashboard', Icon: LayoutDashboard },
+                          { label: 'CRM', Icon: Contact2 },
+                          { label: 'Supply Chain', Icon: Boxes },
+                          { label: 'People', Icon: Users },
+                          { label: 'Support', Icon: Headphones },
+                          { label: 'Workspace', Icon: LayoutGrid },
+                          { label: 'Finance', Icon: Wallet },
+                          { label: 'Accounting', Icon: FileSpreadsheet },
+                          { label: 'Marketing', Icon: Megaphone },
+                          { label: 'eCommerce', Icon: Package },
+                        ].map(({ label, Icon }, navIndex) => (
+                          <div
+                            key={label}
+                            className={`flex items-center gap-1.5 rounded-[5px] px-1.5 py-[3px] ${
+                              navIndex === 0
+                                ? 'bg-gradient-to-r from-[#6d28d9] to-[#8b5cf6] text-white'
+                                : 'text-purple-100/70'
+                            }`}
+                          >
+                            <Icon className="h-2.5 w-2.5 shrink-0" />
+                            <span className="min-w-0 flex-1 truncate text-[7.5px] font-medium">{label}</span>
+                            <ChevronDown className="h-2 w-2 shrink-0 opacity-40" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-2 flex items-center gap-1.5 rounded-md bg-white/[0.08] px-1.5 py-1">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#a78bfa] to-[#6d28d9] text-[7px] font-semibold text-white">
+                        A
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-[7px] font-semibold text-white">Admin</span>
+                        <span className="block truncate text-[6px] text-purple-200/60">Owner</span>
+                      </span>
+                    </div>
+                  </aside>
+
+                  {/* Product main */}
+                  <div className="min-w-0 flex-1 bg-[#fcfbff] p-2.5 sm:p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-full bg-white px-2.5 py-1 ring-1 ring-gray-200/80">
+                        <Search className="h-2.5 w-2.5 shrink-0 text-gray-400" />
+                        <span className="truncate text-[8px] text-gray-400">Search anything…</span>
+                      </div>
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#4c1d95] to-[#6d28d9] text-[7px] font-semibold text-white">
+                        A
+                      </span>
+                    </div>
+
+                    <div className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-gradient-to-r from-[#4c1d95] to-[#7c3aed] px-2.5 py-1.5">
+                      <span className="min-w-0">
+                        <span className="block truncate text-[8px] font-semibold text-white">
+                          AINOS Trial · Unlock the workspaces your team needs
+                        </span>
+                        <span className="mt-0.5 block truncate text-[7px] text-purple-200">
+                          Every module, one login, one bill.
+                        </span>
+                      </span>
+                      <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-white px-1.5 py-0.5 text-[7px] font-semibold text-[#4c1d95]">
+                        View plans <ArrowRight className="h-2 w-2" />
+                      </span>
+                    </div>
+
+                    <div className="mt-2.5 flex items-end justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-[11px] font-semibold tracking-tight text-gray-900">Your Workspaces</p>
+                        <p className="truncate text-[7.5px] text-gray-500">Open the tools your team uses each day</p>
+                      </div>
+                      <span className="hidden shrink-0 text-[7px] font-semibold text-[#5b21b6] sm:block">
+                        View all →
+                      </span>
+                    </div>
+
+                    <div className="mt-2 grid grid-cols-2 gap-1.5 lg:grid-cols-3">
+                      {[
+                        {
+                          name: 'AINOS CRM',
+                          body: 'Manage leads, customers and follow-ups.',
+                          Icon: Contact2,
+                          tools: ['Leads', 'Pipeline'],
+                          count: 4,
+                        },
+                        {
+                          name: 'AINOS Supply Chain',
+                          body: 'Track stock, orders and vendors.',
+                          Icon: Boxes,
+                          tools: ['Stock', 'Orders'],
+                          count: 4,
+                        },
+                        {
+                          name: 'AINOS People',
+                          body: 'Manage staff, attendance and salary.',
+                          Icon: Users,
+                          tools: ['Staff', 'Payroll'],
+                          count: 3,
+                        },
+                        {
+                          name: 'AINOS Support',
+                          body: 'Handle customer questions and issues.',
+                          Icon: Headphones,
+                          tools: ['Tickets', 'Inbox'],
+                          count: 3,
+                        },
+                        {
+                          name: 'AINOS Workspace',
+                          body: 'Projects, tasks, approvals and reports.',
+                          Icon: LayoutGrid,
+                          tools: ['Tasks', 'Approvals'],
+                          count: 5,
+                        },
+                        {
+                          name: 'AINOS Finance',
+                          body: 'Invoices, bills, expenses and GST.',
+                          Icon: Wallet,
+                          tools: ['Invoices', 'GST'],
+                          count: 4,
+                        },
+                      ].map((card) => (
+                        <div key={card.name} className="rounded-lg border border-gray-200/70 bg-white p-2">
+                          <span className="flex h-4 w-4 items-center justify-center rounded bg-purple-50 text-[#5b21b6] ring-1 ring-purple-100">
+                            <card.Icon className="h-2.5 w-2.5" />
+                          </span>
+                          <p className="mt-1.5 truncate text-[8.5px] font-semibold text-gray-900">{card.name}</p>
+                          <p className="mt-0.5 line-clamp-2 text-[7.5px] leading-[1.35] text-gray-500">{card.body}</p>
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            {card.tools.map((tool) => (
+                              <span
+                                key={tool}
+                                className="rounded bg-gray-50 px-1 py-0.5 text-[6.5px] font-medium text-gray-500 ring-1 ring-gray-100"
+                              >
+                                {tool}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="mt-1.5 flex items-center justify-between border-t border-gray-100 pt-1">
+                            <span className="text-[7px] text-gray-400">{card.count} tools</span>
+                            <span className="flex items-center gap-0.5 text-[7px] font-semibold text-[#5b21b6]">
+                              Open <ArrowRight className="h-1.5 w-1.5" />
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating status pills */}
+              <div className="absolute left-0 top-14 z-20 hidden w-44 items-center gap-2.5 rounded-xl bg-white px-3 py-2 shadow-xl shadow-black/30 xl:flex">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-50">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-[10px] font-semibold text-gray-800">Invoice approved</span>
+                  <span className="block text-[9px] text-gray-400">Finance workspace</span>
+                </span>
+              </div>
+              <div className="absolute left-4 top-36 z-20 hidden w-40 items-center gap-2.5 rounded-xl bg-white px-3 py-2 shadow-xl shadow-black/30 xl:flex">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-purple-50">
+                  <Contact2 className="h-3.5 w-3.5 text-[#5b21b6]" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-[10px] font-semibold text-gray-800">New lead added</span>
+                  <span className="block text-[9px] text-gray-400">AINOS CRM</span>
+                </span>
+              </div>
+
+              {/* AINOS ONE entity card — stacked under the product window below xl, overlaid on it at xl */}
+              <div className="relative z-20 mx-auto mt-6 w-full max-w-sm overflow-hidden rounded-2xl bg-gradient-to-br from-[#2a1150] via-[#1c0a33] to-[#341463] p-5 text-white shadow-xl shadow-black/50 ring-1 ring-white/20 sm:mt-8 xl:absolute xl:-bottom-6 xl:-left-1 xl:mt-0 xl:w-72 xl:max-w-none xl:p-4">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.1)_1px,transparent_1px)] [background-size:14px_14px] [mask-image:radial-gradient(ellipse_85%_85%_at_25%_20%,black,transparent)]" />
+
+                <div className="relative flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white text-[11px] font-semibold leading-none text-[#4c1d95] xl:text-[10px]">
+                      α
+                    </span>
+                    <Image
+                      src="/ainos-wordmark.png"
+                      alt="AINOS"
+                      width={76}
+                      height={24}
+                      className="h-4 w-auto object-contain brightness-0 invert xl:h-3.5"
+                    />
+                  </div>
+                  <span className="shrink-0 rounded bg-white/15 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.18em] text-purple-100 ring-1 ring-white/25 xl:text-[7.5px]">
+                    Preview
+                  </span>
+                </div>
+
+                <div className="relative mt-6 flex items-center gap-2.5">
+                  <span
+                    className="h-6 w-8 shrink-0 rounded-[4px] bg-gradient-to-br from-[#f1ecfa] to-[#b3a6cc] ring-1 ring-white/40"
+                    aria-hidden
+                  />
+                  <span className="text-[11px] tracking-[0.3em] text-white/45 xl:text-[10px]">•••• ••••</span>
+                  <span className="text-[11px] tracking-[0.24em] text-white/85 xl:text-[10px]">0000</span>
+                </div>
+
+                <div className="relative mt-6 flex items-end justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[9px] font-medium uppercase tracking-[0.18em] text-purple-200/70 xl:text-[7.5px]">
+                      Entity card
+                    </p>
+                    <p className="mt-1 truncate text-[15px] font-semibold tracking-[0.1em] xl:text-[13px]">AINOS ONE</p>
+                  </div>
+                  <span className="shrink-0 text-[8px] font-medium uppercase tracking-[0.16em] text-white/45 xl:text-[7px]">
+                    Coming soon
+                  </span>
+                </div>
+              </div>
+
+              {/* Mobile app */}
+              <div className="absolute -bottom-6 right-2 z-20 hidden w-40 rounded-[1.9rem] bg-[#150a22] p-1.5 shadow-2xl shadow-black/50 ring-1 ring-white/25 xl:right-0 xl:block xl:w-44">
+                <div className="overflow-hidden rounded-[1.55rem] bg-white text-gray-900">
+                  <div className="flex items-center justify-between px-3 pb-1 pt-2">
+                    <span className="text-[7px] font-semibold text-gray-400">9:41</span>
+                    <span className="flex items-center gap-1" aria-hidden>
+                      <span className="h-1.5 w-1.5 rounded-full bg-gray-200" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-gray-200" />
+                      <span className="h-1 w-3 rounded-sm bg-gray-200" />
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 px-2.5 pb-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded bg-white text-[8px] font-semibold leading-none text-[#4c1d95] ring-1 ring-gray-200">
+                        α
+                      </span>
+                      <span className="truncate text-[8px] font-semibold tracking-tight text-gray-900">Business Suite</span>
+                      <span className="ml-auto h-4 w-4 shrink-0 rounded-full bg-gradient-to-br from-[#4c1d95] to-[#6d28d9]" />
+                    </div>
+
+                    <div className="rounded-lg bg-gradient-to-br from-[#4c1d95] to-[#6d28d9] p-2 text-white">
+                      <p className="text-[6.5px] uppercase tracking-[0.14em] text-purple-200">AINOS Trial</p>
+                      <p className="mt-0.5 text-[9px] font-semibold leading-tight">Unlock every workspace</p>
+                      <p className="mt-0.5 text-[6.5px] text-purple-200">View plans →</p>
+                    </div>
+
+                    <p className="text-[7px] font-semibold text-gray-900">Your workspaces</p>
+
+                    <div className="grid grid-cols-2 gap-1">
+                      {[
+                        { name: 'CRM', Icon: Contact2 },
+                        { name: 'Finance', Icon: Wallet },
+                        { name: 'People', Icon: Users },
+                        { name: 'Supply', Icon: Boxes },
+                      ].map((tile) => (
+                        <div key={tile.name} className="rounded-md border border-gray-100 bg-white p-1.5">
+                          <span className="flex h-4 w-4 items-center justify-center rounded bg-purple-50 text-[#5b21b6]">
+                            <tile.Icon className="h-2.5 w-2.5" />
+                          </span>
+                          <p className="mt-1 truncate text-[7px] font-semibold text-gray-900">{tile.name}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="rounded-md border border-gray-100 p-1.5">
+                      <p className="text-[6.5px] font-semibold text-gray-500">Today</p>
+                      {[
+                        { label: 'Invoice created', meta: 'Finance' },
+                        { label: 'Lead added', meta: 'CRM' },
+                      ].map((row) => (
+                        <div key={row.label} className="mt-1 flex items-center justify-between gap-1">
+                          <span className="truncate text-[7px] text-gray-700">{row.label}</span>
+                          <span className="shrink-0 text-[6px] text-gray-400">{row.meta}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-around border-t border-gray-100 py-1.5">
+                    {[LayoutDashboard, Contact2, Wallet, LayoutGrid].map((Icon, iconIndex) => (
+                      <Icon key={iconIndex} className={`h-2.5 w-2.5 ${iconIndex === 0 ? 'text-[#4c1d95]' : 'text-gray-300'}`} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Capabilities */}
+          <div className="mt-8 grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-5">
+            {ENTERPRISE_PILLARS.map((pillar) => (
+              <div key={pillar.title} className="min-w-0">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 ring-1 ring-purple-100">
+                  <pillar.icon className="h-[18px] w-[18px] text-[#5b21b6]" />
+                </span>
+                <h3 className="mt-4 text-[15px] font-semibold tracking-tight text-gray-950">{pillar.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-gray-600">{pillar.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─ ROLES — BIDIRECTIONAL MARQUEE ───────────────────────── */}
+      <section className="overflow-hidden py-12 sm:py-14">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 max-w-3xl">
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#4c1d95]">
+              <Layers className="h-3.5 w-3.5" /> Every role
+            </p>
+            <h2 className="mt-3 text-[25px] font-semibold tracking-tight text-gray-900 sm:text-[30px]">
+              Built for the people who run the business
+            </h2>
+            <p className="mt-3 text-base text-gray-600 sm:text-lg">
+              Each team works in the same system instead of passing spreadsheets and screenshots around.
             </p>
           </div>
 
           {/* Row 1 — scrolls left */}
           <div className="mb-5">
             <div className="flex gap-5 w-max animate-[scroll-left_50s_linear_infinite] hover:[animation-play-state:paused]">
-              {[...TESTIMONIALS, ...TESTIMONIALS].map((t, i) => (
-                <div key={`r1-${i}-${t.name}`} className="w-[min(320px,84vw)] sm:w-[380px] flex-shrink-0 rounded-3xl bg-white border border-gray-100 p-7 shadow-sm transition-colors hover:border-purple-200">
-                  <Quote className="w-6 h-6 text-purple-200 mb-4" />
-                  <p className="text-sm text-gray-700 leading-relaxed mb-6">&ldquo;{t.quote}&rdquo;</p>
-                  <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
-                    <span className="w-10 h-10 rounded-full bg-gradient-to-br from-[#4c1d95] to-[#6d28d9] text-white flex items-center justify-center text-xs font-semibold">{t.initials}</span>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">{t.name}</p>
-                      <p className="text-xs text-gray-500">{t.role}</p>
-                    </div>
-                  </div>
-                </div>
+              {[...TEAM_ROLES, ...TEAM_ROLES].map((t, i) => (
+                <Link
+                  key={`r1-${i}-${t.role}`}
+                  href={t.href}
+                  className="group w-[min(320px,84vw)] sm:w-[380px] flex-shrink-0 rounded-3xl bg-white border border-gray-100 p-7 shadow-sm transition-colors hover:border-purple-200"
+                >
+                  <span className="w-11 h-11 rounded-2xl bg-purple-50 ring-1 ring-purple-100 flex items-center justify-center text-[#5b21b6]">
+                    <t.icon className="w-5 h-5" />
+                  </span>
+                  <p className="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700">{t.role}</p>
+                  <p className="mt-2 text-base font-semibold text-gray-900">{t.title}</p>
+                  <p className="mt-2 text-sm text-gray-600 leading-relaxed">{t.desc}</p>
+                  <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-[#5b21b6]">
+                    See how it works <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                  </span>
+                </Link>
               ))}
             </div>
           </div>
@@ -1126,18 +1375,22 @@ export default function AinosLandingPage() {
           {/* Row 2 — scrolls right */}
           <div>
             <div className="flex gap-5 w-max animate-[scroll-right_50s_linear_infinite] hover:[animation-play-state:paused]">
-              {[...TESTIMONIALS, ...TESTIMONIALS].map((t, i) => (
-                <div key={`r2-${i}-${t.name}`} className="w-[min(320px,84vw)] sm:w-[380px] flex-shrink-0 rounded-3xl bg-white border border-gray-100 p-7 shadow-sm transition-colors hover:border-purple-200">
-                  <Quote className="w-6 h-6 text-purple-200 mb-4" />
-                  <p className="text-sm text-gray-700 leading-relaxed mb-6">&ldquo;{t.quote}&rdquo;</p>
-                  <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
-                    <span className="w-10 h-10 rounded-full bg-gradient-to-br from-[#4c1d95] to-[#6d28d9] text-white flex items-center justify-center text-xs font-semibold">{t.initials}</span>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">{t.name}</p>
-                      <p className="text-xs text-gray-500">{t.role}</p>
-                    </div>
-                  </div>
-                </div>
+              {[...TEAM_ROLES, ...TEAM_ROLES].map((t, i) => (
+                <Link
+                  key={`r2-${i}-${t.role}`}
+                  href={t.href}
+                  className="group w-[min(320px,84vw)] sm:w-[380px] flex-shrink-0 rounded-3xl bg-white border border-gray-100 p-7 shadow-sm transition-colors hover:border-purple-200"
+                >
+                  <span className="w-11 h-11 rounded-2xl bg-purple-50 ring-1 ring-purple-100 flex items-center justify-center text-[#5b21b6]">
+                    <t.icon className="w-5 h-5" />
+                  </span>
+                  <p className="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700">{t.role}</p>
+                  <p className="mt-2 text-base font-semibold text-gray-900">{t.title}</p>
+                  <p className="mt-2 text-sm text-gray-600 leading-relaxed">{t.desc}</p>
+                  <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-[#5b21b6]">
+                    See how it works <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                  </span>
+                </Link>
               ))}
             </div>
           </div>
@@ -1155,26 +1408,26 @@ export default function AinosLandingPage() {
       </section>
 
       {/* ─ FAQ ─────────────────────────────────────────────────── */}
-      <section className="py-12 px-4 sm:px-6 lg:px-8 bg-gray-50/60">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-14">
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-purple-100 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700 mb-4 shadow-sm">
-              <Headphones className="w-3.5 h-3.5" /> FAQ
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-4">
+      <section className="bg-gray-50/60 py-12 sm:py-14">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 max-w-2xl">
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#4c1d95]">
+              <Headphones className="h-3.5 w-3.5" /> FAQ
+            </p>
+            <h2 className="mt-3 text-[25px] font-semibold tracking-tight text-gray-900 sm:text-[30px]">
               Frequently asked questions
             </h2>
-            <p className="text-base sm:text-lg text-gray-600">
-              Everything you need to know about AINOS.
+            <p className="mt-3 text-base text-gray-600 sm:text-lg">
+              Anything not answered here can be asked directly on the contact page.
             </p>
           </div>
 
-          <div className="space-y-4">
-            {FAQS.map((faq, i) => {
+          <div className="max-w-4xl space-y-4">
+            {HOME_FAQS.map((faq, i) => {
               const isOpen = openFaq === i;
               return (
                 <div
-                  key={faq.q}
+                  key={faq.question}
                   className={`rounded-2xl border overflow-hidden transition-all duration-300 ${
                     isOpen
                       ? 'bg-white border-purple-200 shadow-lg shadow-purple-100/50'
@@ -1196,7 +1449,7 @@ export default function AinosLandingPage() {
                     <span className={`flex-1 text-sm sm:text-base font-semibold transition-colors duration-300 ${
                       isOpen ? 'text-[#4c1d95]' : 'text-gray-900'
                     }`}>
-                      {faq.q}
+                      {faq.question}
                     </span>
                     <ChevronDown className={`w-5 h-5 flex-shrink-0 transition-all duration-300 ${
                       isOpen ? 'rotate-180 text-[#4c1d95]' : 'text-gray-400'
@@ -1213,7 +1466,7 @@ export default function AinosLandingPage() {
                       >
                         <div className="px-6 pb-6 pl-[4.25rem]">
                           <div className="border-l-2 border-purple-300 pl-4">
-                            <p className="text-sm text-gray-600 leading-relaxed">{faq.a}</p>
+                            <p className="text-sm text-gray-600 leading-relaxed">{faq.answer}</p>
                           </div>
                         </div>
                       </motion.div>
@@ -1222,48 +1475,18 @@ export default function AinosLandingPage() {
                 </div>
               );
             })}
+
+            <div className="mt-8 text-center">
+              <Link href="/faq" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#5b21b6] hover:text-[#4c1d95] transition-colors">
+                Read all questions and answers <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ─── CTA SECTION ─────────────────────────────────────────── */}
-      <section className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="relative p-8 sm:p-14 lg:p-16 rounded-3xl bg-gradient-to-br from-[#4c1d95] via-[#5b21b6] to-[#6d28d9] shadow-2xl shadow-purple-900/30 overflow-hidden"
-          >
-            {/* Decorative glow blobs */}
-            <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-white/10 blur-3xl" />
-            <div className="absolute -bottom-24 -left-24 w-64 h-64 rounded-full bg-indigo-300/20 blur-3xl" />
-            <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.14)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_70%_80%_at_50%_50%,black,transparent)]" />
-
-            <div className="relative text-center">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 ring-1 ring-white/25 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-purple-100 mb-6">
-                <Rocket className="w-3.5 h-3.5" /> Get started today
-              </span>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight text-balance">
-                Run your entire business on one platform
-              </h2>
-              <p className="text-base sm:text-lg text-purple-100 mb-8 max-w-2xl mx-auto">
-                Bring finance, sales, operations and AI together in a single, secure workspace — built to help growing businesses work smarter and scale with confidence.
-              </p>
-              <Link
-                href="/auth/register"
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-white hover:bg-purple-50 active:scale-95 text-[#4c1d95] font-semibold transition-all shadow-lg shadow-purple-900/40"
-              >
-                Create Your Account
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
       {/* ─── FOOTER ──────────────────────────────────────────────── */}
-      <SiteFooter onHome onNavigate={handleNavClick} />
+      <SiteFooter />
     </div>
   );
 }
