@@ -7,7 +7,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "predev": "rmdir /s /q .next 2>nul || echo Skipping .next cleanup",
+    "predev": "node scripts/dev-clean.cjs",
     "dev": "cross-env NODE_OPTIONS=--max-old-space-size=12288 next dev --webpack",
     "prebuild": "prisma generate",
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next build --webpack",
@@ -16,6 +16,10 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "mobile:audit": "node scripts/mobile-audit.cjs",
+    "mobile:session": "node --env-file=.env scripts/mobile-session.cjs",
+    "mobile:app": "node scripts/mobile-audit.cjs --routes=scripts/mobile-app-routes.txt --cookie=_mobile-cookie.txt --widths=390",
+    "mobile:scan": "node scripts/mobile-scan.cjs",
     "postinstall": "prisma generate"
   },
   "dependencies": {

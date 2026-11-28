@@ -117,7 +117,7 @@ export default function StockPage() {
                   className="w-full px-4 py-2.5 rounded-xl glass-input text-sm" style={{ color: 'hsl(var(--foreground))' }} />
                 <input required placeholder="SKU *" value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl glass-input text-sm" style={{ color: 'hsl(var(--foreground))' }} />
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   <input required type="number" placeholder="Qty *" value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl glass-input text-sm" style={{ color: 'hsl(var(--foreground))' }} />
                   <input type="number" placeholder="Reorder" value={form.reorderLevel} onChange={e => setForm({ ...form, reorderLevel: e.target.value })}

@@ -49,6 +49,16 @@ debug.log
 commit_msg.txt
 _msg.txt
 signin_*.html
+_mobile-cookie.txt
+_procs.txt
+_users.txt
+_login.txt
+_reap.txt
+_shots/
+# throwaway headless-Chrome profiles and metric dumps from the mobile/hero audits
+_cdp*/
+_hero-metrics*.json
+_hero-metrics-*.txt
 test_doc.txt
 test_output.txt
 test_pan.pdf

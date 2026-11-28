@@ -1071,9 +1071,9 @@ export default function ToolExecutePage() {
               <p className="text-sm text-gray-600">Invoice created</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">{out.invoiceNumber}</p>
               <div className="mt-3 grid grid-cols-3 gap-3 text-center">
-                <div><p className="text-xs text-gray-500">Subtotal</p><p className="font-semibold text-gray-900">₹{Number(out.subtotal).toLocaleString('en-IN')}</p></div>
-                <div><p className="text-xs text-gray-500">GST</p><p className="font-semibold text-gray-900">₹{Number(out.tax).toLocaleString('en-IN')}</p></div>
-                <div><p className="text-xs text-gray-500">Total</p><p className="font-semibold text-green-700">₹{Number(out.total).toLocaleString('en-IN')}</p></div>
+                <div className="min-w-0"><p className="text-xs text-gray-500">Subtotal</p><p className="font-semibold text-gray-900 break-words">₹{Number(out.subtotal).toLocaleString('en-IN')}</p></div>
+                <div className="min-w-0"><p className="text-xs text-gray-500">GST</p><p className="font-semibold text-gray-900 break-words">₹{Number(out.tax).toLocaleString('en-IN')}</p></div>
+                <div className="min-w-0"><p className="text-xs text-gray-500">Total</p><p className="font-semibold text-green-700 break-words">₹{Number(out.total).toLocaleString('en-IN')}</p></div>
               </div>
               <button onClick={() => router.push(out.viewUrl || '/invoices')}
                 className="mt-4 w-full py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors">
@@ -1133,17 +1133,17 @@ export default function ToolExecutePage() {
                   </div>
                 )}
                 <div className="grid grid-cols-3 gap-3 pt-2 border-t border-gray-200">
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs text-gray-500">Subtotal</p>
-                    <p className="font-semibold text-gray-900">₹{(out.extracted.subtotal || 0).toLocaleString('en-IN')}</p>
+                    <p className="font-semibold text-gray-900 break-words">₹{(out.extracted.subtotal || 0).toLocaleString('en-IN')}</p>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs text-gray-500">Tax</p>
-                    <p className="font-semibold text-gray-900">₹{(out.extracted.tax || 0).toLocaleString('en-IN')}</p>
+                    <p className="font-semibold text-gray-900 break-words">₹{(out.extracted.tax || 0).toLocaleString('en-IN')}</p>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs text-gray-500">Total</p>
-                    <p className="font-semibold text-green-700">₹{(out.extracted.total || 0).toLocaleString('en-IN')}</p>
+                    <p className="font-semibold text-green-700 break-words">₹{(out.extracted.total || 0).toLocaleString('en-IN')}</p>
                   </div>
                 </div>
                 {out.extracted.balance !== undefined && (

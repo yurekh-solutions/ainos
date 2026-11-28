@@ -97,7 +97,7 @@ export default function EcomProductsPage() {
                 </div>
                 <div><label className="block text-sm font-medium mb-1" style={{ color: 'hsl(var(--foreground))' }}>Description</label>
                   <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={3} className="w-full px-3 py-2 rounded-lg border text-sm" style={{ background: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }} /></div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                   <div><label className="block text-sm font-medium mb-1" style={{ color: 'hsl(var(--foreground))' }}>Price (₹)</label>
                     <input type="number" required value={form.price} onChange={e => setForm({ ...form, price: +e.target.value })} className="w-full px-3 py-2 rounded-lg border text-sm" style={{ background: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }} /></div>
                   <div><label className="block text-sm font-medium mb-1" style={{ color: 'hsl(var(--foreground))' }}>Stock</label>

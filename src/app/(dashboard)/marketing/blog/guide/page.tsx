@@ -168,7 +168,7 @@ export default function BlogIntegrationGuide() {
           <p className="text-sm text-purple-100 leading-relaxed mb-5">
             AINOS writes and publishes new blog posts on your website automatically \u2014 one every day. You don\u2019t write anything and you don\u2019t post anything. Just follow these 4 simple steps to get started.
           </p>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {['Add Website', 'Add Code', 'It\u2019s Live', 'Blogs Appear'].map((label, i) => (
               <div key={label} className="flex flex-col items-center gap-1.5 text-center">
                 <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold">{i + 1}</div>

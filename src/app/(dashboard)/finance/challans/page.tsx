@@ -175,7 +175,7 @@ export default function ChallansPage() {
                   </button>
                 </div>
                 {items.map((item, idx) => (
-                  <div key={idx} className="grid grid-cols-5 gap-2 mb-2">
+                  <div key={idx} className="grid grid-cols-2 gap-2 mb-2 sm:grid-cols-5">
                     <input type="text" value={item.productName} onChange={e => { const n = [...items]; n[idx].productName = e.target.value; setItems(n); }}
                       className="col-span-2 px-3 py-2 rounded-lg text-xs focus:outline-none" style={inputStyle} placeholder="Product name" />
                     <input type="text" value={item.hsnCode} onChange={e => { const n = [...items]; n[idx].hsnCode = e.target.value; setItems(n); }}
