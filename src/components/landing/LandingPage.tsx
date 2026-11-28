@@ -212,7 +212,7 @@ export default function AinosLandingPage() {
       <SiteHeader />
 
       {/* ─── HERO SECTION ────────────────────────────────────────── */}
-      <section id="main-content" className="relative w-full overflow-hidden pb-10 pt-10 md:pt-12">
+      <section id="main-content" className="relative w-full overflow-hidden pb-10 pt-16 md:pt-12">
         {/* Background — subtle dot grid + soft purple glows (self-contained) */}
         <div className="absolute inset-0 bg-[radial-gradient(#e9e4f5_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_75%_65%_at_50%_35%,black,transparent)]" />
         <div className="absolute -top-32 -right-24 w-[440px] h-[440px] rounded-full bg-purple-200/50 blur-3xl" />
