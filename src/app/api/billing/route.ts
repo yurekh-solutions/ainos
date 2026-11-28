@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { recordAudit } from '@/lib/audit';
 import {
   APPS,
   ALL_APP_KEYS,
   ONE_BUNDLE,
   PAYMENT_DETAILS,
   priceForSelection,
+  hasLiveAccess,
   getAiUsage,
   type AppKey,
 } from '@/lib/billing';
@@ -104,42 +107,53 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Mark intent as pending — activation happens after payment verification
+    const label = wantsOne
+      ? ONE_BUNDLE.name
+      : pickedApps.map((k) => APPS[k].name).join(', ');
+
+    // Record what they asked for. Activation still waits for the transfer to
+    // actually land, but the status must never be downgraded to do it: a
+    // company inside a live trial that taps "buy" would otherwise lose every
+    // app the moment it asked, which punishes exactly the intent we want.
     const existing = await prisma.subscription.findFirst({
       where: { companyId: user.companyId },
       orderBy: { createdAt: 'desc' },
     });
 
-    if (existing && existing.status !== 'active') {
-      const updateData: Record<string, unknown> = { status: 'pending' };
-      if (wantsOne) {
-        updateData.plan = 'one';
-        updateData.apps = null;
-      } else {
-        updateData.plan = null;
-        updateData.apps = pickedApps;
-      }
+    const accessContinues = hasLiveAccess(existing);
+
+    // `apps` is a nullable Json column, so clearing it needs Prisma.JsonNull -
+    // a plain null is rejected by the client, and leaving the old list behind
+    // would show the wrong apps as chosen on every screen that reads this row.
+    const selectionData = wantsOne
+      ? { plan: 'one' as string | null, apps: Prisma.JsonNull as Prisma.NullableJsonNullValueInput }
+      : { plan: null, apps: pickedApps as unknown as Prisma.InputJsonValue };
+
+    let subscriptionId = existing?.id ?? '';
+    if (!existing) {
+      const created = await prisma.subscription.create({
+        data: { companyId: user.companyId, userId: user.id, status: 'pending', ...selectionData },
+      });
+      subscriptionId = created.id;
+    } else {
+      // Same row, so nothing about the current period is reset. Only a company
+      // with no live access is moved to 'pending'.
       await prisma.subscription.update({
         where: { id: existing.id },
-        data: updateData,
+        data: { ...selectionData, ...(accessContinues ? {} : { status: 'pending' }) },
       });
-    } else if (!existing) {
-      const createData: Record<string, unknown> = {
-        companyId: user.companyId,
-        userId: user.id,
-        status: 'pending',
-      };
-      if (wantsOne) {
-        createData.plan = 'one';
-      } else {
-        createData.apps = pickedApps;
-      }
-      await prisma.subscription.create({ data: createData });
     }
 
-    const label = wantsOne
-      ? ONE_BUNDLE.name
-      : pickedApps.map((k) => APPS[k].name).join(', ');
+    await recordAudit({
+      companyId: user.companyId,
+      entity: 'subscription',
+      entityId: subscriptionId,
+      action: 'plan_requested',
+      actor: { id: user.id, email: session.user.email },
+      summary: `${label} requested at ₹${amountInr}/month by bank transfer`,
+      changes: { plan: wantsOne ? 'one' : null, apps: pickedApps, amountInr, accessContinues },
+    });
+
     const message =
       `Hi, I want to activate ${label} (Rs.${amountInr}/month). ` +
       `My registered email: ${session.user.email}. I am making the bank transfer now.`;
@@ -151,6 +165,8 @@ export async function POST(req: NextRequest) {
       label,
       amountInr,
       oneIsCheaper,
+      // Lets the screen promise the right thing: keep working, or start fresh.
+      accessContinues,
       payment: PAYMENT_DETAILS,
       whatsappUrl,
     });

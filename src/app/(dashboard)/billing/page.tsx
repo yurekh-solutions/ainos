@@ -63,6 +63,23 @@ interface PaymentInfo {
   whatsapp: string;
 }
 
+/**
+ * The rupee company plan, served by /api/billing from src/lib/billing.ts.
+ * It is priced per company rather than per user, so it needs no seat count and
+ * no card: the transfer is reconciled by hand and the apps switch on after.
+ */
+interface BundleInfo { key: string; name: string; tagline: string; priceInr: number; apps: string[] }
+interface AppCatalogEntry { key: string; name: string; tagline: string; priceInr: number }
+interface RupeeOrder {
+  label: string;
+  amountInr: number;
+  oneIsCheaper: boolean;
+  /** True when a live trial or paid period keeps running while this is awaited. */
+  accessContinues: boolean;
+  payment: PaymentInfo;
+  whatsappUrl: string;
+}
+
 // ─── Plan Data ───────────────────────────────────────────────────────
 
 const FINANCE_PLANS: PlanDef[] = [
@@ -173,6 +190,12 @@ export default function BillingPage() {
   const [toolSeats, setToolSeats] = useState<Record<string, number>>({});
   const [wsSubs, setWsSubs] = useState<WorkspaceInfo[]>([]);
   const [busyWs, setBusyWs] = useState<string | null>(null);
+  const [bundle, setBundle] = useState<BundleInfo | null>(null);
+  const [appCatalog, setAppCatalog] = useState<AppCatalogEntry[]>([]);
+  const [pickedApps, setPickedApps] = useState<string[]>([]);
+  const [rupeeOrder, setRupeeOrder] = useState<RupeeOrder | null>(null);
+  const [rupeeBusy, setRupeeBusy] = useState(false);
+  const [rupeeError, setRupeeError] = useState<string | null>(null);
 
   // Marketing UI tiers map to the activate-tools plan keys (category-level plan).
   const MARKETING_PLAN_KEYS: Record<string, string> = {
@@ -281,6 +304,42 @@ export default function BillingPage() {
     } catch { alert('Could not cancel'); } finally { setBusyWs(null); }
   };
 
+  const rupeeTotal = pickedApps.reduce(
+    (sum, key) => sum + (appCatalog.find((a) => a.key === key)?.priceInr ?? 0), 0,
+  );
+
+  const toggleApp = (key: string) => setPickedApps((current) =>
+    current.includes(key) ? current.filter((k) => k !== key) : [...current, key],
+  );
+
+  /**
+   * Places the rupee order. This does not take money: the endpoint records the
+   * choice as pending and hands back the account to transfer to, so the apps
+   * only switch on once the business has seen the deposit reach their bank.
+   */
+  const requestRupeePlan = async (mode: 'one' | 'apps') => {
+    setRupeeBusy(true);
+    setRupeeError(null);
+    try {
+      const res = await fetch('/api/billing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mode === 'one' ? { plan: 'one' } : { apps: pickedApps }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setRupeeError(typeof data?.error === 'string' ? data.error : 'Could not place the request. Please try again.');
+        return;
+      }
+      setRupeeOrder(data as RupeeOrder);
+      await loadSnapshot();
+    } catch {
+      setRupeeError('Could not place the request. Please try again.');
+    } finally {
+      setRupeeBusy(false);
+    }
+  };
+
   useEffect(() => {
     Promise.all([
       fetch('/api/billing').then(r => r.ok ? r.json() : Promise.resolve({})),
@@ -290,6 +349,8 @@ export default function BillingPage() {
       fetch('/api/billing/workspaces').then(r => r.ok ? r.json() : Promise.resolve({})),
     ]).then(([billData, credData, packsData, toolsData, wsData]) => {
       setSubscription((billData as { subscription?: SubscriptionInfo }).subscription || null);
+      setBundle((billData as { bundle?: BundleInfo }).bundle ?? null);
+      setAppCatalog(Array.isArray((billData as { apps?: AppCatalogEntry[] }).apps) ? (billData as { apps: AppCatalogEntry[] }).apps : []);
       setCreditBalance((credData as { balance?: number }).balance || 0);
       setCreditPacks(Array.isArray(packsData) ? packsData as CreditPack[] : []);
       setToolSubs(Array.isArray((toolsData as { tools?: ToolInfo[] }).tools) ? (toolsData as { tools: ToolInfo[] }).tools : []);
@@ -305,6 +366,20 @@ export default function BillingPage() {
     if (subscription.plan === 'one') return 'AINOS One — every app included';
     return subscription.plan || '—';
   }, [subscription]);
+
+  // What a payer actually has to copy out of their banking app. The UPI line
+  // only appears if a UPI id is configured, so the screen never shows a blank
+  // field for the customer to fill in.
+  const rupeeCopyRows = rupeeOrder
+    ? [
+        { field: 'rupee-name', label: 'Account name', value: rupeeOrder.payment.accountName },
+        { field: 'rupee-acct', label: 'Account number', value: rupeeOrder.payment.accountNumber },
+        { field: 'rupee-ifsc', label: 'IFSC · Branch', value: `${rupeeOrder.payment.ifsc} · ${rupeeOrder.payment.bankName}` },
+        ...(rupeeOrder.payment.upiId
+          ? [{ field: 'rupee-upi', label: 'UPI id', value: rupeeOrder.payment.upiId }]
+          : []),
+      ]
+    : [];
 
   const formatDate = (d?: string) =>
     d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
@@ -362,6 +437,170 @@ export default function BillingPage() {
             <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
               <CheckCircle className="w-3.5 h-3.5" /> Active until {formatDate(subscription.currentPeriodEnd)}
             </span>
+          )}
+        </div>
+      )}
+
+      {/* ── AINOS ONE — the rupee company plan ──────────────
+          Priced per company, not per user, and paid by transfer. Kept apart
+          from the USD workspaces above on purpose: those bill seats through a
+          card, this one bills the whole suite through the bank. */}
+      {bundle && (
+        <div
+          className="rounded-xl border-2 p-5 sm:p-6"
+          style={{ borderColor: 'rgba(109,40,217,0.4)', background: 'hsl(var(--card))' }}
+        >
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div className="flex-1 min-w-[240px]">
+              <div className="flex items-center gap-2 mb-2">
+                <Landmark className="w-4 h-4 text-purple-500" />
+                <p className="text-xs uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  For businesses in India
+                </p>
+              </div>
+              <h2 className="text-xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>{bundle.name}</h2>
+              <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>{bundle.tagline}</p>
+              <ul className="mt-3 space-y-1.5">
+                {[
+                  `Every app in the suite (${bundle.apps.length} apps)`,
+                  'One price for the company — add as many users as you need',
+                  'Paid by bank transfer or UPI, no card details taken',
+                ].map((line) => (
+                  <li key={line} className="flex items-start gap-2 text-sm" style={{ color: 'hsl(var(--foreground))' }}>
+                    <CheckCircle className="w-4 h-4 mt-0.5 text-purple-500 shrink-0" />
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="text-left sm:text-right">
+              <p className="text-3xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>
+                ₹{bundle.priceInr.toLocaleString('en-IN')}
+              </p>
+              <p className="text-xs mb-3" style={{ color: 'hsl(var(--muted-foreground))' }}>per month</p>
+
+              {subscription?.plan === 'one' && subscription.status === 'active' ? (
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
+                  <CheckCircle className="w-3.5 h-3.5" /> Active until {formatDate(subscription.currentPeriodEnd)}
+                </span>
+              ) : subscription?.plan === 'one' && subscription.status === 'pending' ? (
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/30">
+                  <Clock className="w-3.5 h-3.5" /> Waiting for your transfer
+                </span>
+              ) : (
+                <button
+                  onClick={() => requestRupeePlan('one')}
+                  disabled={rupeeBusy}
+                  className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
+                  style={{ background: 'linear-gradient(90deg, #4c1d95, #6d28d9)' }}
+                >
+                  {rupeeBusy ? 'Sending…' : 'Choose AINOS One'} <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+              {subscription?.status === 'trialing' && subscription.plan !== 'one' && (
+                <p className="mt-2 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                  Your trial already includes everything in AINOS One.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {appCatalog.length > 0 && (
+            <div className="mt-5 pt-5 border-t" style={{ borderColor: 'hsl(var(--border))' }}>
+              <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                Need only part of the suite? Tap the apps you want — each price is shown on its
+                own label, and the monthly total for your selection appears underneath.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {appCatalog.map((app) => {
+                  const picked = pickedApps.includes(app.key);
+                  return (
+                    <button
+                      key={app.key}
+                      onClick={() => toggleApp(app.key)}
+                      title={app.tagline}
+                      className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${picked ? 'text-white' : ''}`}
+                      style={picked
+                        ? { background: 'linear-gradient(90deg, #4c1d95, #6d28d9)', borderColor: 'transparent' }
+                        : { borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }}
+                    >
+                      {app.name} · ₹{app.priceInr.toLocaleString('en-IN')}
+                    </button>
+                  );
+                })}
+              </div>
+              {pickedApps.length > 0 && (
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <p className="text-sm font-semibold" style={{ color: 'hsl(var(--foreground))' }}>
+                    {pickedApps.length} app{pickedApps.length > 1 ? 's' : ''} · ₹{rupeeTotal.toLocaleString('en-IN')}/month
+                  </p>
+                  <button
+                    onClick={() => requestRupeePlan('apps')}
+                    disabled={rupeeBusy}
+                    className="rounded-lg border px-3 py-1.5 text-xs font-bold disabled:opacity-60"
+                    style={{ borderColor: 'rgba(109,40,217,0.4)', color: '#6d28d9' }}
+                  >
+                    {rupeeBusy ? 'Sending…' : 'Send this selection'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {rupeeError && (
+            <p className="mt-4 text-sm text-rose-600">{rupeeError}</p>
+          )}
+
+          {rupeeOrder && (
+            <div className="mt-5 rounded-xl border p-4" style={{ borderColor: 'hsl(var(--border))' }}>
+              <p className="text-sm font-bold" style={{ color: 'hsl(var(--foreground))' }}>
+                {rupeeOrder.label} · ₹{rupeeOrder.amountInr.toLocaleString('en-IN')}/month
+              </p>
+              <p className="mt-1 text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                Transfer this amount to the account below. The apps switch on as soon as the
+                transfer reaches us, so nothing is activated on an unverified claim.
+              </p>
+              {rupeeOrder.accessContinues && (
+                <p className="mt-2 text-xs font-medium" style={{ color: '#047857' }}>
+                  Everything you can use right now stays usable until then — asking to buy does not
+                  switch anything off.
+                </p>
+              )}
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {rupeeCopyRows.map((row) => (
+                  <button
+                    key={row.field}
+                    onClick={() => copyValue(row.field, row.value)}
+                    className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left"
+                    style={{ borderColor: 'hsl(var(--border))' }}
+                  >
+                    <span className="min-w-0">
+                      <span className="block text-[10px] uppercase tracking-wide" style={{ color: 'hsl(var(--muted-foreground))' }}>{row.label}</span>
+                      <span className="block truncate text-sm font-medium" style={{ color: 'hsl(var(--foreground))' }}>{row.value}</span>
+                    </span>
+                    {copiedField === row.field
+                      ? <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                      : <Copy className="w-4 h-4 shrink-0" style={{ color: 'hsl(var(--muted-foreground))' }} />}
+                  </button>
+                ))}
+              </div>
+              {rupeeOrder.oneIsCheaper && (
+                <p className="mt-3 text-xs" style={{ color: '#6d28d9' }}>
+                  AINOS One is ₹{bundle.priceInr.toLocaleString('en-IN')} for every app, so it costs the same
+                  or less than this selection.
+                </p>
+              )}
+              <a
+                href={rupeeOrder.whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold text-white"
+                style={{ background: '#128c7e' }}
+              >
+                <MessageCircle className="w-4 h-4" /> Send the transfer details to us
+              </a>
+            </div>
           )}
         </div>
       )}

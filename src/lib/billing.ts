@@ -297,7 +297,9 @@ export const TRIAL_DAYS = 14;
 /** What a subscription costs per month: bundle price or sum of chosen apps. */
 export function priceForSelection(selection: { plan?: PlanKey; apps?: AppKey[] }): number {
   if (selection.plan === 'one') return ONE_BUNDLE.priceInr;
-  return (selection.apps || []).reduce((sum, key) => sum + (APPS[key]?.priceInr || 0), 0);
+  // Counted once per app whatever the caller sends, so a duplicated or repeated
+  // selection can never be quoted higher than the apps actually cost.
+  return [...new Set(selection.apps || [])].reduce((sum, key) => sum + (APPS[key]?.priceInr || 0), 0);
 }
 
 // ============ Payment Details (manual bank transfer) ============
@@ -330,21 +332,34 @@ const LEGACY_PLAN_APPS: Record<string, AppKey[]> = {
 };
 
 /**
+ * Does this subscription row still grant access right now?
+ *
+ * One definition on purpose: the entitlement engine below needs it to decide
+ * what a company may open, and /api/billing needs it to decide whether an order
+ * may be recorded without touching the status. If those two disagreed, asking
+ * to buy could switch a paying customer off.
+ */
+export function hasLiveAccess(
+  sub: { status: string; trialEndsAt: Date | null; currentPeriodEnd: Date | null } | null,
+  now = new Date(),
+): boolean {
+  if (!sub) return false;
+  if (sub.status === 'trialing') return Boolean(sub.trialEndsAt && sub.trialEndsAt > now);
+  if (sub.status === 'active') return Boolean(sub.currentPeriodEnd && sub.currentPeriodEnd > now);
+  return false;
+}
+
+/**
  * Returns the set of apps a company can currently use.
  * - active requires currentPeriodEnd in the future
  * - trialing requires trialEndsAt in the future (trial = full AINOS One access)
  */
 export async function getActiveApps(companyId: string): Promise<Set<AppKey>> {
   const sub = await getSubscription(companyId);
-  if (!sub) return new Set();
-
-  const now = new Date();
-  const trialValid = sub.status === 'trialing' && sub.trialEndsAt && sub.trialEndsAt > now;
-  const activeValid = sub.status === 'active' && sub.currentPeriodEnd && sub.currentPeriodEnd > now;
-  if (!trialValid && !activeValid) return new Set();
+  if (!sub || !hasLiveAccess(sub)) return new Set();
 
   // Trials and the One bundle unlock the whole suite
-  if (trialValid || sub.plan === 'one') return new Set(ALL_APP_KEYS);
+  if (sub.status === 'trialing' || sub.plan === 'one') return new Set(ALL_APP_KEYS);
 
   if (sub.plan && LEGACY_PLAN_APPS[sub.plan]) return new Set(LEGACY_PLAN_APPS[sub.plan]);
   return new Set(sub.apps || []);
