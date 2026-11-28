@@ -1,0 +1,9 @@
+name = "ainos-origin-shield"
+main = "worker.js"
+compatibility_date = "2026-11-24"
+workers_dev = false
+
+# No route or custom domain is attached. The cron is the part that keeps the
+# AINOS app, GST scraper and template extractor from falling asleep on Render.
+[triggers]
+crons = ["* * * * *"]
