@@ -509,9 +509,23 @@ const FONT_SIZES = { small: '12px', medium: '14px', large: '16px' };
 const BORDER_RADII = { small: '4px', medium: '8px', large: '16px', none: '0px' };
 const ACCENT_WIDTHS = { thin: '3px', medium: '5px', thick: '8px', none: '0px' };
 
+// The preview has to show the account the download actually prints. The PDF
+// generator reads these fields off the Company record, so anything sampled here
+// makes an owner believe her invoice carries somebody else's account number.
+interface CompanyDetails {
+  name: string | null;
+  gstNumber: string | null;
+  bankName: string | null;
+  bankAccountNumber: string | null;
+  bankIfscCode: string | null;
+  accountHolder: string | null;
+  upiId: string | null;
+}
+
 export default function TemplateDesignerPage() {
   const [template, setTemplate] = useState<Template>(defaultTemplate);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [company, setCompany] = useState<CompanyDetails | null>(null);
   const [saved, setSaved] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>('branding');
   const [loading, setLoading] = useState(true);
@@ -531,8 +545,16 @@ export default function TemplateDesignerPage() {
     setLoading(false);
   };
 
+  const fetchCompany = async () => {
+    try {
+      const res = await fetch('/api/company');
+      if (res.ok) setCompany(await res.json());
+    } catch { /* ignore */ }
+  };
+
   useEffect(() => {
     fetchTemplates();
+    fetchCompany();
   }, []);
 
   const update = (key: keyof Template, value: string | boolean) => {
@@ -1258,6 +1280,11 @@ export default function TemplateDesignerPage() {
                     <span className="text-sm" style={{ color: 'var(--foreground)' }}>{label}</span>
                   </label>
                 ))}
+                {/* Owners look for a bank field inside the designer and never find
+                    one, so name the screen that actually holds the account. */}
+                <p className="text-[11px]" style={{ color: 'var(--muted-foreground)', opacity: 0.7 }}>
+                  Your account, IFSC and UPI id are set on the Company page. This block prints whatever is saved there.
+                </p>
                 <div>
                   <label className="text-xs mb-1 block" style={{ color: 'var(--muted-foreground)' }}>Header Text</label>
                   <input value={template.headerText || ''} onChange={e => update('headerText', e.target.value)} placeholder="Optional header text" className="glass-input w-full px-3 py-2 rounded-lg text-sm" style={{ color: 'var(--foreground)' }} />
@@ -1362,10 +1389,10 @@ export default function TemplateDesignerPage() {
                       </div>
                     )}
                     <h2 style={{ color: '#fff', fontSize: template.layout === 'compact' ? 14 : 18, fontWeight: 700, margin: 0 }}>
-                      Your Company Name
+                      {company?.name || 'Your Company Name'}
                     </h2>
                     <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: fs === '12px' ? 10 : 12, margin: '2px 0 0' }}>
-                      GSTIN: 27AABCU9603R1ZM
+                      {company?.gstNumber ? `GSTIN: ${company.gstNumber}` : 'GSTIN not saved yet'}
                     </p>
                   </div>
                   <div style={{ textAlign: 'right' }}>
@@ -1463,10 +1490,18 @@ export default function TemplateDesignerPage() {
                 {template.showBankDetails && (
                   <div style={{ marginTop: 16, padding: '10px 14px', background: `${template.primaryColor}06`, borderRadius: br, border: `1px dashed ${template.primaryColor}30` }}>
                     <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, color: template.primaryColor, fontWeight: 600, margin: '0 0 6px' }}>Bank Details</p>
-                    <div style={{ fontSize: fs === '12px' ? 10 : 12, opacity: 0.7 }}>
-                      <p style={{ margin: '2px 0' }}>Bank: HDFC Bank, Mumbai Branch</p>
-                      <p style={{ margin: '2px 0' }}>A/C: 1234567890 | IFSC: HDFC0001234</p>
-                    </div>
+                    {company?.bankName || company?.upiId ? (
+                      <div style={{ fontSize: fs === '12px' ? 10 : 12, opacity: 0.7 }}>
+                        <p style={{ margin: '2px 0' }}>A/c Name: {company.accountHolder || company.name || '-'}</p>
+                        <p style={{ margin: '2px 0' }}>Bank: {company.bankName || '-'}</p>
+                        <p style={{ margin: '2px 0' }}>A/C: {company.bankAccountNumber || '-'} | IFSC: {company.bankIfscCode || '-'}</p>
+                        {company.upiId && <p style={{ margin: '2px 0' }}>UPI: {company.upiId}</p>}
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: fs === '12px' ? 10 : 12, opacity: 0.7, margin: 0 }}>
+                        No bank account saved yet, so this block does not print on your invoices. Add it on the Company page and it appears here.
+                      </p>
+                    )}
                   </div>
                 )}
 
