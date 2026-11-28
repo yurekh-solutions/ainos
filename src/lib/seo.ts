@@ -9,8 +9,31 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://ainossuite
 
 export const SITE_NAME = 'AINOS Business Suite';
 
+/** Short brand string used inside page titles and social cards. */
+export const SITE_SHORT_NAME = 'AINOS';
+
 export const SITE_DESCRIPTION =
-  'Unified business platform with GST invoicing, CRM, HR & payroll, inventory, AI-powered marketing and Tally integration. Built for Indian businesses.';
+  'AINOS Business Suite is an all-in-one business suite: GST invoicing, accounting, CRM, HR and payroll, inventory, POS, marketing and AI in one login.';
+
+/**
+ * Terms every public page competes for. AINOS is an Indian brand selling
+ * globally, so each page repeats the category phrase ("business suite") next to
+ * the brand name — that pairing is what teaches search engines and AI answer
+ * engines which company answers the query.
+ */
+export const BRAND_KEYWORDS = [
+  'AINOS',
+  'AINOS Business Suite',
+  'ainossuite',
+  'business suite',
+  'all-in-one business suite',
+  'business management software India',
+];
+
+/** Page keywords first, then the shared brand set, without duplicates. */
+export function withBrandKeywords(keywords: string[] = []): string[] {
+  return Array.from(new Set([...keywords, ...BRAND_KEYWORDS]));
+}
 
 export const absoluteUrl = (path = '/'): string =>
   `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;
@@ -51,8 +74,13 @@ export function pageMetadata(opts: {
   return {
     title,
     description,
-    keywords,
-    alternates: { canonical: path },
+    keywords: withBrandKeywords(keywords),
+    // One canonical URL, plus hreflang entries so the single English edition
+    // serves India and every other market instead of competing with itself.
+    alternates: {
+      canonical: path,
+      languages: { 'en-IN': path, en: path, 'x-default': path },
+    },
     openGraph: {
       title,
       description,

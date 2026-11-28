@@ -47,7 +47,7 @@ export function LegalPage({
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">{title}</h1>
+          <h1 className="text-[27px] sm:text-[31px] font-semibold text-gray-900">{title}</h1>
           <p className="text-sm text-gray-500 mt-2">Effective date and last updated: {LEGAL_EFFECTIVE_DATE}</p>
         </div>
 
@@ -68,7 +68,7 @@ export function LegalPage({
             </ol>
           </nav>
 
-          <div className="mt-10 space-y-10">
+          <div className="mt-8 space-y-8">
             {sections.map((s, i) => (
               <section key={s.id} id={s.id} className="scroll-mt-6">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">

@@ -19,16 +19,20 @@ const geistMono = Geist_Mono({
 });
 
 // Kept under ~60 characters so Google shows it untruncated.
-const DEFAULT_TITLE = "AINOS — GST Billing, CRM, HR & AI Business Suite";
+const DEFAULT_TITLE = "AINOS Business Suite — GST, CRM, HR & AI in One";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  // Short suffix: a 24-character brand tail pushed most page titles past the
+  // ~60-character SERP cutoff, so pages truncated mid-word.
   title: { default: DEFAULT_TITLE, template: "%s | AINOS" },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
   keywords: [
+    "AINOS", "AINOS Business Suite", "business suite", "all-in-one business suite",
     "business software India", "GST billing software", "CRM software", "HR and payroll software",
-    "inventory management", "AI marketing tools", "Tally integration", "ERP for small business",
+    "inventory management", "POS software India", "AI marketing tools", "Tally integration",
+    "ERP for small business",
   ],
   authors: [{ name: "AINOS" }],
   creator: "AINOS",
@@ -61,6 +65,9 @@ export const metadata: Metadata = {
 };
 
 // Site-wide structured data: who publishes the site and what the product is.
+// Search engines and AI answer engines resolve "AINOS", "AINOS Business Suite"
+// and "ainossuite.com" to this one entity, so a brand mention anywhere in the
+// world reinforces the same listing.
 const ORG_JSON_LD = {
   "@context": "https://schema.org",
   "@graph": [
@@ -68,9 +75,20 @@ const ORG_JSON_LD = {
       "@type": "Organization",
       "@id": `${SITE_URL}/#organization`,
       name: "AINOS",
+      alternateName: ["AINOS Business Suite", "AINOS Suite", "ainossuite"],
       legalName: "Yurekh Solutions Private Limited",
       url: SITE_URL,
-      logo: `${SITE_URL}/icon.png`,
+      foundingDate: "2018",
+      numberOfEmployees: { "@type": "QuantitativeValue", minValue: 51, maxValue: 200 },
+      logo: {
+        "@type": "ImageObject",
+        url: `${SITE_URL}/icon.png`,
+        caption: "AINOS Business Suite",
+      },
+      image: `${SITE_URL}/icon.png`,
+      description: SITE_DESCRIPTION,
+      slogan: "One login. Every business workspace.",
+      brand: { "@id": `${SITE_URL}/#brand` },
       // sameAs is what lets Google and AI answers treat these profiles as the
       // same company, so brand mentions off-site reinforce one entity.
       sameAs: [
@@ -84,23 +102,90 @@ const ORG_JSON_LD = {
         addressRegion: "Maharashtra",
         addressCountry: "IN",
       },
+      // Built in India, sold everywhere. areaServed tells a search engine that
+      // a query from outside India is still in scope for this business.
+      foundingLocation: { "@type": "Place", name: "Mumbai, Maharashtra, India" },
+      areaServed: [
+        { "@type": "Country", name: "India" },
+        { "@type": "Place", name: "Worldwide" },
+      ],
+      knowsAbout: [
+        "Business suite software",
+        "GST invoicing",
+        "Accounting and bookkeeping",
+        "Customer relationship management",
+        "Inventory and warehouse management",
+        "Human resources and payroll",
+        "Point of sale billing",
+        "eCommerce operations",
+        "Marketing automation",
+        "Artificial intelligence for business",
+      ],
+      contactPoint: {
+        "@type": "ContactPoint",
+        contactType: "customer support",
+        email: "info.ainosio@gmail.com",
+        availableLanguage: ["en", "hi"],
+        areaServed: "Worldwide",
+      },
+    },
+    {
+      "@type": "Brand",
+      "@id": `${SITE_URL}/#brand`,
+      name: "AINOS",
+      alternateName: "AINOS Business Suite",
+      slogan: "One login. Every business workspace.",
+      logo: `${SITE_URL}/icon.png`,
     },
     {
       "@type": "WebSite",
       "@id": `${SITE_URL}/#website`,
       url: SITE_URL,
       name: SITE_NAME,
+      alternateName: ["AINOS", "ainossuite"],
       publisher: { "@id": `${SITE_URL}/#organization` },
-      inLanguage: "en-IN",
+      inLanguage: ["en-IN", "en"],
+      about: { "@id": `${SITE_URL}/#organization` },
     },
     {
       "@type": "SoftwareApplication",
       name: SITE_NAME,
+      alternateName: "AINOS",
       url: SITE_URL,
       applicationCategory: "BusinessApplication",
+      applicationSubCategory: "All-in-one business suite",
       operatingSystem: "Web",
       description: SITE_DESCRIPTION,
       publisher: { "@id": `${SITE_URL}/#organization` },
+      brand: { "@id": `${SITE_URL}/#brand` },
+      // Published prices, so the product entity carries an offer instead of
+      // making a crawler infer one.
+      offers: [
+        {
+          "@type": "Offer",
+          name: "AINOS One — full app set",
+          price: "3999",
+          priceCurrency: "INR",
+          availability: "https://schema.org/InStock",
+          url: `${SITE_URL}/pricing`,
+        },
+        {
+          "@type": "Offer",
+          name: "Individual business apps, from",
+          price: "799",
+          priceCurrency: "INR",
+          availability: "https://schema.org/InStock",
+          url: `${SITE_URL}/pricing`,
+        },
+        {
+          "@type": "Offer",
+          name: "AINOS AI Studio",
+          price: "1499",
+          priceCurrency: "INR",
+          availability: "https://schema.org/InStock",
+          url: `${SITE_URL}/pricing`,
+        },
+      ],
     },
   ],
 };

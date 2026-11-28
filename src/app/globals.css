@@ -287,6 +287,64 @@ select option {
   display: none;
 }
 
+/* ── Mobile navigation drawer ───────────────────────────────────────
+   The drawer is portalled to <body> so it escapes the blurred header; these
+   give the slide-in and scrim fade a single source. */
+@keyframes ainos-drawer-slide {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes ainos-drawer-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.ainos-drawer-in {
+  animation: ainos-drawer-slide 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ainos-drawer-scrim {
+  animation: ainos-drawer-fade 0.18s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ainos-drawer-in,
+  .ainos-drawer-scrim {
+    animation: none;
+  }
+}
+
+/* ── AINOS One card surface ─────────────────────────────────────────
+   The violet gradient of the AINOS One entity card. Every dark panel on
+   the marketing site uses this instead of a flat near-black fill. */
+.ainos-surface {
+  background-color: #4c1d95;
+  background-image:
+    radial-gradient(120% 95% at 10% 0%, rgba(167, 139, 250, 0.5), transparent 64%),
+    radial-gradient(85% 80% at 100% 100%, rgba(109, 40, 217, 0.55), transparent 62%),
+    linear-gradient(140deg, #3b0f78 0%, #4c1d95 52%, #6d28d9 100%);
+}
+
+/* Same surface plus the card's dot texture, for card-sized panels. */
+.ainos-surface-dots {
+  background-color: #4c1d95;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1.4px),
+    radial-gradient(120% 95% at 10% 0%, rgba(167, 139, 250, 0.5), transparent 64%),
+    radial-gradient(85% 80% at 100% 100%, rgba(109, 40, 217, 0.55), transparent 62%),
+    linear-gradient(140deg, #3b0f78 0%, #4c1d95 52%, #6d28d9 100%);
+  background-size: 18px 18px, 100% 100%, 100% 100%, 100% 100%;
+}
+
 /* Reference dashboard surfaces are scoped to the overview, not other tools. */
 .ainos-overview {
   min-height: 100%;

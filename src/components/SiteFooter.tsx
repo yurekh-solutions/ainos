@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { ArrowRight } from 'lucide-react';
 import { ToolsDirectory } from '@/components/seo/ToolsDirectory';
 import SocialLinks from '@/components/SocialLinks';
+import { FOOTER_GROUPS } from '@/lib/site-content';
 
 // One footer for the whole public site. On the landing page the section links
 // scroll in place; on every other page they point back at the home page sections.
@@ -11,10 +12,8 @@ type NavHandler = (event: React.MouseEvent<HTMLAnchorElement>, hash: string) => 
 const SECTION_LINKS = [
   { label: 'Modules', href: '#modules' },
   { label: 'How it works', href: '#how' },
-  { label: 'Why AINOS', href: '#workflow' },
+  { label: 'Coverage', href: '#coverage' },
 ];
-
-const COMPANY_SECTION_LINKS = [{ label: 'About', href: '#about' }];
 
 export default function SiteFooter({
   onHome = false,
@@ -28,81 +27,108 @@ export default function SiteFooter({
       <a
         href={href}
         onClick={(event) => onNavigate?.(event, href)}
-        className="hover:text-[#4c1d95] transition-colors"
+        className="transition-colors hover:text-[#4c1d95]"
       >
         {label}
       </a>
     ) : (
-      <Link href={`/${href}`} className="hover:text-[#4c1d95] transition-colors">
+      <Link href={`/${href}`} className="transition-colors hover:text-[#4c1d95]">
         {label}
       </Link>
     );
 
+  const footerLink = (label: string, href: string) => {
+    if (href.startsWith('http')) {
+      return (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="transition-colors hover:text-[#4c1d95]"
+        >
+          {label}
+        </a>
+      );
+    }
+    return (
+      <Link href={href} className="transition-colors hover:text-[#4c1d95]">
+        {label}
+      </Link>
+    );
+  };
+
   return (
-    <footer className="border-t border-gray-100 bg-gray-50/40">
-      <div className="max-w-7xl mx-auto py-14 px-4 sm:px-6 lg:px-8">
-        {/* Suite and tool directory sits above the columns so every tool page is one click away. */}
-        <ToolsDirectory className="mb-12 border-b border-gray-200 pb-12" />
+    <footer className="bg-white">
+      <div className="mx-auto max-w-7xl px-4 pt-12 sm:px-6 lg:px-8">
+        <ToolsDirectory className="border-b border-gray-200 pb-10" />
+      </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-12 gap-8 md:gap-6 mb-10">
-          {/* Brand */}
-          <div className="col-span-2 md:col-span-5">
-            <Image src="/ainos-wordmark.png" alt="AINOS" width={100} height={34} className="h-7 w-auto object-contain" />
-            <p className="text-sm text-gray-500 leading-relaxed mt-3 max-w-xs">
-              The business operating suite — finance, CRM, HR, inventory and AI in one platform.
+      <div className="border-t border-purple-100 bg-[#fbf9ff] text-gray-600">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-12">
+            <div className="col-span-2 md:col-span-4">
+              <Link href="/" className="inline-flex items-center" aria-label="AINOS home">
+                <Image
+                  src="/ainos-wordmark.png"
+                  alt="AINOS"
+                  width={100}
+                  height={34}
+                  className="h-7 w-auto object-contain"
+                />
+              </Link>
+              <p className="mt-4 max-w-xs text-sm leading-relaxed text-gray-600">
+                The business operating suite for finance, CRM, people, inventory, marketing and AI. Built by Yurekh
+                Solutions in Mumbai.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-xs text-gray-500">
+                {SECTION_LINKS.map(({ label, href }) => (
+                  <span key={href}>{sectionLink(label, href)}</span>
+                ))}
+              </div>
+            </div>
+
+            {FOOTER_GROUPS.map((group) => (
+              <div key={group.title} className="md:col-span-2">
+                <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#4c1d95]">
+                  {group.title}
+                </p>
+                <ul className="space-y-3 text-sm">
+                  {group.links.map((link) => (
+                    <li key={`${group.title}-${link.href}`}>{footerLink(link.label, link.href)}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+
+            <div className="col-span-2 md:col-span-2">
+              <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#4c1d95]">Get started</p>
+              <Link
+                href="/auth/register"
+                className="inline-flex items-center gap-2 rounded-full bg-[#5b21b6] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#4c1d95]"
+              >
+                Create account <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link href="/auth/signin" className="mt-3 block text-sm text-gray-600 transition-colors hover:text-[#4c1d95]">
+                Sign in
+              </Link>
+            </div>
+          </div>
+
+          <div className="mt-8 flex flex-col gap-4 border-t border-purple-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs leading-relaxed text-gray-500">
+              © {new Date().getFullYear()} AINOS. All rights reserved.{' '}
+              <Link
+                href="https://yurekh.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-[#4c1d95] transition-colors hover:text-[#5b21b6]"
+              >
+                YUREKH
+              </Link>
             </p>
-          </div>
-
-          {/* Product */}
-          <div className="md:col-span-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Product</p>
-            <ul className="space-y-2.5 text-sm text-gray-600">
-              {SECTION_LINKS.map(({ label, href }) => (
-                <li key={href}>{sectionLink(label, href)}</li>
-              ))}
-              <li>
-                <Link href="/features" className="hover:text-[#4c1d95] transition-colors">All features</Link>
-              </li>
-              <li>
-                <Link href="/blog" className="hover:text-[#4c1d95] transition-colors">Blog</Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Company */}
-          <div className="md:col-span-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Company</p>
-            <ul className="space-y-2.5 text-sm text-gray-600">
-              {COMPANY_SECTION_LINKS.map(({ label, href }) => (
-                <li key={href}>{sectionLink(label, href)}</li>
-              ))}
-              <li>
-                <Link href="https://yurekh.com/" target="_blank" rel="noopener noreferrer" className="hover:text-[#4c1d95] transition-colors">Yurekh</Link>
-              </li>
-              <li>
-                <Link href="/auth/signin" className="hover:text-[#4c1d95] transition-colors">Sign In</Link>
-              </li>
-              <li>
-                <Link href="/privacy" className="hover:text-[#4c1d95] transition-colors">Privacy</Link>
-              </li>
-              <li>
-                <Link href="/terms" className="hover:text-[#4c1d95] transition-colors">Terms</Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Get started */}
-          <div className="col-span-2 md:col-span-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Get started</p>
-            <Link href="/auth/register" className="inline-flex items-center gap-2 rounded-full bg-[#4c1d95] px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-purple-900/20 transition-colors hover:bg-[#3b0f78]">
-              Create account <ArrowRight className="w-4 h-4" />
-            </Link>
+            <SocialLinks tone="light" className="justify-start sm:justify-end" />
           </div>
         </div>
-        <div className="pt-6 border-t border-gray-200 flex items-center justify-center text-sm text-gray-500">
-          <p>© {new Date().getFullYear()} AINOS. All rights reserved. <Link href="https://yurekh.com/" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#4c1d95] hover:text-[#3b0f78] transition-colors">YUREKH</Link></p>
-        </div>
-        <SocialLinks className="mt-4" />
       </div>
     </footer>
   );

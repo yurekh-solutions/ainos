@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Calendar, Clock, ArrowLeft, BookOpen, Tag, Layers, ArrowRight, Share2, Linkedin, Twitter, Facebook, Copy, Check, List, ChevronRight, Mail, X, Volume2, VolumeX, Rss, ListChecks } from 'lucide-react';
+import { Calendar, Clock, ArrowLeft, BookOpen, Tag, Layers, ArrowRight, Share2, Linkedin, Twitter, Facebook, Copy, Check, List, X, Volume2, VolumeX, Rss, ListChecks } from 'lucide-react';
 import SiteFooter from '@/components/SiteFooter';
 import { topicFor } from '@/lib/blog-topics';
 import { SITE_URL } from '@/lib/seo';
@@ -34,9 +34,9 @@ function renderMarkdown(md: string): string {
     .replace(/^> (.*$)/gm, '<blockquote class="border-l-4 border-purple-500 pl-4 py-2 my-4 bg-purple-50 rounded-r-lg text-gray-700 italic">$1</blockquote>')
     .replace(/^---$/gm, '<hr class="my-8 border-gray-200" />')
     .replace(/^### (.*$)/gm, '<h3 id="$1" class="text-lg font-bold mt-8 mb-3 text-gray-900">$1</h3>')
-    .replace(/^## (.*$)/gm, '<h2 id="$1" class="text-xl font-bold mt-10 mb-4 text-gray-900 scroll-mt-20">$1</h2>')
+    .replace(/^## (.*$)/gm, '<h2 id="$1" class="text-xl font-bold mt-8 mb-4 text-gray-900 scroll-mt-20">$1</h2>')
     // The post title is the page's only <h1>; a top-level heading in the body becomes an <h2>.
-    .replace(/^# (.*$)/gm, '<h2 class="text-2xl font-bold mt-10 mb-4 text-gray-900">$1</h2>')
+    .replace(/^# (.*$)/gm, '<h2 class="text-2xl font-bold mt-8 mb-4 text-gray-900">$1</h2>')
     .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/`(.*?)`/g, '<code class="px-1.5 py-0.5 bg-gray-100 rounded text-sm font-mono text-purple-700">$1</code>')
@@ -59,7 +59,7 @@ function extractTOC(md: string): { id: string; text: string }[] {
 }
 
 // Inject mid-content CTA after 3rd H2 heading
-function injectCTAs(md: string, websiteName?: string): string {
+function injectCTAs(md: string): string {
   const cta = `\n\n> **Need help with this?** Let our AI handle it for you. [Get started with AINOS](/) and automate your content, SEO, and social media — all in one platform.\n\n`;
   const parts = md.split(/^(## .+)$/gm);
   let h2Count = 0;
@@ -139,14 +139,6 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, []);
-
-  const handleShare = async () => {
-    if (navigator.share) {
-      await navigator.share({ title: post.title, text: post.excerpt || '', url: window.location.href });
-    } else {
-      await handleCopyLink();
-    }
-  };
 
   // AI Audio Blog - Text-to-Speech using browser SpeechSynthesis
   const toggleAudio = useCallback(() => {
@@ -294,7 +286,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
       <article className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
         {/* Title & Meta */}
         <header className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-5 leading-tight">
+          <h1 className="text-[27px] sm:text-[31px] md:text-[34px] font-semibold text-gray-900 mb-5 leading-tight">
             {post.title}
           </h1>
 
@@ -330,7 +322,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
 
         {/* Answer-first summary: one direct answer plus the article's key points. */}
         {(post.excerpt || takeaways.length > 0) && (
-          <section id="aeo-answer" className="mb-10 rounded-2xl border border-violet-100 bg-violet-50/60 p-5 sm:p-6">
+          <section id="aeo-answer" className="mb-8 rounded-2xl border border-violet-100 bg-violet-50/60 p-5 sm:p-6">
             <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-violet-700">
               <ListChecks className="h-3.5 w-3.5" /> In short
             </p>
@@ -362,7 +354,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
 
         {/* Tags */}
         {post.tags && Array.isArray(post.tags) && post.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-10 pt-8 border-t border-gray-200">
+          <div className="flex flex-wrap gap-2 mt-8 pt-8 border-t border-gray-200">
             <Tag className="w-4 h-4 text-gray-400 mt-1" />
             {post.tags.map((tag, i) => (
               <span key={i} className="px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-600 font-medium">
@@ -374,7 +366,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
 
         {/* Follow the blog */}
         {showNewsletter && (
-          <div className="mt-10 bg-gradient-to-br from-purple-600 to-indigo-700 rounded-2xl p-6 sm:p-8 text-center relative">
+          <div className="mt-8 bg-gradient-to-br from-purple-600 to-indigo-700 rounded-2xl p-6 sm:p-8 text-center relative">
             <button
               onClick={() => setShowNewsletter(false)}
               className="absolute top-2 right-2 p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
@@ -398,7 +390,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
 
         {/* Author Bio */}
         {post.authorName ? (
-          <div className="mt-10 bg-white rounded-2xl border border-gray-200 p-6">
+          <div className="mt-8 bg-white rounded-2xl border border-gray-200 p-6">
             <div className="flex items-start gap-4">
               {post.authorImage ? (
                 <img src={post.authorImage} alt={post.authorName} className="w-16 h-16 rounded-full object-cover flex-shrink-0" />
@@ -426,7 +418,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
             </div>
           </div>
         ) : (
-          <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-6">
+          <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
               <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-violet-50 ring-1 ring-violet-100">
                 <Image src="/ainos-alpha.png" alt="AINOS" width={28} height={27} className="h-7 w-auto" />
@@ -446,7 +438,7 @@ export default function BlogArticleClient({ post, relatedPosts }: { post: BlogPo
         )}
 
         {/* About AINOS / CTA */}
-        <div className="mt-10 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-5 sm:p-6 border border-purple-100">
+        <div className="mt-8 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-5 sm:p-6 border border-purple-100">
           <div className="flex flex-col sm:flex-row items-start gap-4">
             <span className="w-12 h-12 rounded-full bg-white ring-1 ring-violet-200 flex items-center justify-center flex-shrink-0">
               <Image src="/ainos-alpha.png" alt="AINOS" width={28} height={27} className="w-7 h-auto" />

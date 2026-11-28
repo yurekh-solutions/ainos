@@ -33,14 +33,14 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/api/blog-rss', '/api/blog-sitemap', '/llms.txt'],
+        allow: ['/', '/api/blog-rss', '/api/blog-sitemap', '/llms.txt', '/llms-full.txt'],
         disallow: PRIVATE_PREFIXES,
       },
       // Answer engines (AI Overviews, ChatGPT search, Perplexity, Claude) are
       // welcome on the public pages so AINOS guides can be quoted with a citation.
       ...AI_ANSWER_ENGINES.map((userAgent) => ({
         userAgent,
-        allow: ['/', '/api/blog-rss', '/api/blog-sitemap', '/llms.txt'],
+        allow: ['/', '/api/blog-rss', '/api/blog-sitemap', '/llms.txt', '/llms-full.txt'],
         disallow: PRIVATE_PREFIXES,
       })),
     ],

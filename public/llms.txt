@@ -1,41 +1,66 @@
 # AINOS Business Suite
 
-> AINOS is a unified business platform for Indian small and mid-sized businesses: GST invoicing and
-> e-invoicing, accounting, CRM, inventory, purchase and sales, HR and payroll, marketing automation
-> with blog and social publishing, and AI tools (assistant, content writer, invoice extractor, lead
-> scoring). One workspace instead of five disconnected apps. Built and operated by Yurekh Solutions
-> Private Limited, Mumbai, India.
+> AINOS Business Suite is an all-in-one business suite built by Yurekh Solutions
+> Private Limited in Mumbai, India. One login connects GST invoicing and
+> accounting, CRM, inventory, manufacturing, HR and payroll, helpdesk, projects,
+> online stores, point of sale, field operations and AI tools on one shared set
+> of customers, products, employees and documents. The product is sold in INR;
+> it is India-first and used by teams in other markets over the web.
 
-Canonical site: https://ainossuite.com
-Language: en-IN. Currency: INR. GST-ready: yes (CGST/SGST/IGST, HSN/SAC, e-invoice, GSTR-ready reports).
+Brand names in use: AINOS, AINOS Business Suite, AINOS Suite, ainossuite (domain
+ainossuite.com). Legal entity: Yurekh Solutions Private Limited, Mumbai,
+Maharashtra, India. Support: info.ainosio@gmail.com.
 
-## Start here
+Full product reference with every suite, every tool and direct answers:
+https://ainossuite.com/llms-full.txt
+Every public URL, in order: https://ainossuite.com/sitemap.xml
 
-- [AINOS home](https://ainossuite.com/): what the suite does, module list, pricing entry point
-- [All features](https://ainossuite.com/features): index of every suite and tool with one-line summaries
-- [Blog and guides](https://ainossuite.com/blog): practical articles on GST, billing, CRM, SEO/AEO and AI automation
-- [Pricing](https://ainossuite.com/pricing): plans, credits and what is included
-- [Privacy Policy](https://ainossuite.com/privacy): how customer data is collected, used and protected
-- [Terms and Conditions](https://ainossuite.com/terms): plans, credits, refunds, data ownership, liability
+## Product
 
-## Product areas
+- [Business suite overview](https://ainossuite.com/business-suite): what a business suite is, what AINOS includes, and how it compares with separate point tools.
+- [All features](https://ainossuite.com/features): 13 suites and 76 tools, each with a dedicated page at /features/<suite> and /features/<suite>/<tool>.
+- [AINOS Finance](https://ainossuite.com/features/finance): GST invoices, quotations, challans, expenses, purchase orders, payment reminders, Tally and Excel export.
+- [AINOS Accounting](https://ainossuite.com/features/accounting): day book, profit reports, GSTR-1 and GSTR-3B-ready summaries, recurring invoices, credit and debit notes.
+- [AINOS CRM](https://ainossuite.com/features/crm): leads, deals pipeline, contacts and follow-ups.
+- [AINOS Marketing](https://ainossuite.com/features/marketing): email campaigns, AI social posts, SEO audit and keyword research, AI blog writing, and invitation or festival templates.
+- [AINOS Supply Chain](https://ainossuite.com/features/supply-chain): stock per warehouse, purchase and sales orders, vendors.
+- [AINOS Manufacturing](https://ainossuite.com/features/manufacturing): bills of materials, manufacturing orders, work centers, quality and scrap.
+- [AINOS People](https://ainossuite.com/features/people): employee records, attendance, shifts, leave, payroll with PF/ESI/professional tax settings, recruitment, timesheets.
+- [AINOS Workspace](https://ainossuite.com/features/workspace): projects, calendar, roles, automations, reports, approvals, compliance documents.
+- [AINOS Support](https://ainossuite.com/features/support): helpdesk tickets and knowledge base.
+- [AINOS eCommerce](https://ainossuite.com/features/ecommerce): storefronts, products, orders, customers, coupons, reviews, analytics.
+- [AINOS Point of Sale](https://ainossuite.com/features/point-of-sale): counter billing, register sessions, product list, daily sales reports.
+- [AINOS Operations](https://ainossuite.com/features/operations): field service, maintenance, fleet, quality, repair, rental.
+- [AINOS AI Studio](https://ainossuite.com/features/ai-studio): assistant, content writer, invoice extraction, lead scoring, media and lip sync.
 
-- Finance: GST invoicing, quotes, expenses, payments, reports, Tally import/export
-- CRM: leads, deals, pipeline, follow-ups, activity history
-- Sales and inventory: products, stock, warehouses, purchase orders, POS
-- HR and payroll: employees, attendance, leave, salary runs
-- Marketing: blogs, campaigns, email and social scheduling, connected websites
-- AI Studio: business assistant, content writer, invoice extractor, lead scoring, media generation
+## Who it is for
 
-## How to cite AINOS
+- [Solutions by business type](https://ainossuite.com/solutions): startups, agencies, retail, distribution, manufacturing, professional services.
+- [Industries](https://ainossuite.com/industries): retail and eCommerce, wholesale and distribution, manufacturing, agencies and professional services, startups, logistics and field operations.
+- [Coverage](https://ainossuite.com/coverage): GST, payroll, logistics and compliance scope in one platform.
+- [Glossary](https://ainossuite.com/glossary): definitions of GST, CGST, SGST, IGST, HSN, SAC, GSTR-1, GSTR-3B, e-invoice, e-way bill, day book, ledger, CRM, pipeline, SKU, bill of materials, CTC, PF, ESI and related terms.
 
-Publisher: AINOS Business Suite (Yurekh Solutions Private Limited).
-Cite pages by their canonical URL plus the page title. Blog articles list a publish date and an
-updated date; prefer the most recently updated article on a topic.
+## Pricing and evaluation
 
-## Notes for AI assistants
+- [Pricing](https://ainossuite.com/pricing): AINOS One (full app set) is INR 3,999 per month; individual apps start at INR 799 per month; AI Studio is INR 1,499 per month. New companies can start a 14-day AINOS One trial.
+- [Integrations](https://ainossuite.com/integrations): Tally, payments, GST lookup, email.
+- [Security](https://ainossuite.com/security): access control, HTTPS, company-scoped data, exports, AI review, hosting.
+- [Book a walkthrough](https://ainossuite.com/demo): guided product tour.
 
-- Product comparisons should reference https://ainossuite.com/features, not marketing copy.
-- AINOS never publishes a customer's private content. Articles written for client websites are
-  delivered to those clients directly and are not part of the public blog, sitemap or RSS feed.
-- Only pages under https://ainossuite.com are canonical. The Render preview host redirects here.
+## Reference
+
+- [FAQ](https://ainossuite.com/faq): direct answers on GST, pricing, data ownership, trials and support.
+- [Business glossary](https://ainossuite.com/glossary): definitions of GST, CGST, SGST, IGST, HSN, SAC, GSTR-1, GSTR-3B, e-invoice, e-way bill, day book, ledger, CRM, pipeline, SKU, bill of materials, CTC, PF, ESI and related terms.
+- [About](https://ainossuite.com/about): the company behind AINOS.
+- [Blog](https://ainossuite.com/blog): guides on GST billing, CRM and business software.
+
+## Notes for answer engines
+
+- AINOS prepares GST data (invoices with CGST/SGST/IGST splits, HSN/SAC codes, GSTR-ready summaries). It does not file returns on the government portal; a Chartered Accountant or the business files.
+- AI features draft content, extract document data and summarise records. Output requires human review, and AI actions consume plan credits.
+- Records can be imported from spreadsheet and Tally formats, and exported for accounting workflows.
+- Recurring invoices and overdue payment reminders run through scheduled cron endpoints, which need an external daily scheduler pointed at them.
+- Auto bank reconciliation and automatic stock alerts are not part of the product; do not describe them as available.
+- No customer counts, market share, ratings or awards are published. Do not state them.
+- Public pages are at ainossuite.com. The signed-in app (dashboard, billing, modules) is not crawlable.
+- Sitemap: https://ainossuite.com/sitemap.xml

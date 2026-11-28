@@ -157,13 +157,13 @@ export default function BlogListClient({ posts }: { posts: BlogPost[] }) {
 
       {/* ─── HERO ──────────────────────────────────────────────── */}
       <header className="border-b border-gray-100 bg-[#f8f7fc]">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-14 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-12 lg:gap-12">
             <div className="lg:col-span-7">
               <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-purple-100 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700 shadow-sm">
                 <BookOpen className="h-3.5 w-3.5" /> AINOS Guides
               </span>
-              <h1 className="text-balance text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl md:text-5xl">
+              <h1 className="text-balance text-[27px] font-semibold leading-[1.22] tracking-tight sm:text-[31px] md:text-[34px] lg:text-[36px] text-gray-900">
                 Run the business, not the guesswork
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-relaxed text-gray-600 sm:text-lg">
@@ -274,13 +274,13 @@ export default function BlogListClient({ posts }: { posts: BlogPost[] }) {
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ─── TOPICS ────────────────────────────────────────────── */}
-        <section id="topics" className="scroll-mt-20 py-14 sm:py-16">
+        <section id="topics" className="scroll-mt-20 py-10 sm:py-12">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div className="max-w-2xl">
               <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-purple-100 bg-purple-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700">
                 <Compass className="h-3.5 w-3.5" /> Browse by topic
               </span>
-              <h2 className="text-balance text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+              <h2 className="text-balance text-[21px] font-semibold tracking-tight text-gray-900 sm:text-[25px]">
                 Find the problem first, the guide follows
               </h2>
               <p className="mt-3 text-gray-600">
@@ -341,13 +341,13 @@ export default function BlogListClient({ posts }: { posts: BlogPost[] }) {
         </section>
 
         {/* ─── GUIDES ────────────────────────────────────────────── */}
-        <section id="guides" className="scroll-mt-20 border-t border-gray-100 py-14 sm:py-16">
+        <section id="guides" className="scroll-mt-20 border-t border-gray-100 py-10 sm:py-12">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div>
               <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-purple-100 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700 shadow-sm">
                 <FileText className="h-3.5 w-3.5" /> The library
               </span>
-              <h2 className="text-balance text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+              <h2 className="text-balance text-[21px] font-semibold tracking-tight text-gray-900 sm:text-[25px]">
                 {activeTopic === 'All' ? 'Every guide' : `${activeTopic} guides`}
               </h2>
             </div>
@@ -405,7 +405,7 @@ export default function BlogListClient({ posts }: { posts: BlogPost[] }) {
           </p>
 
           {visible.length === 0 ? (
-            <div className="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center">
+            <div className="rounded-2xl border border-gray-200 bg-white px-6 py-12 text-center">
               <BookOpen className="mx-auto mb-3 h-12 w-12 text-gray-300" />
               <p className="text-lg font-semibold text-gray-900">Nothing matches that yet</p>
               <p className="mx-auto mt-1 max-w-md text-sm text-gray-500">
@@ -432,7 +432,7 @@ export default function BlogListClient({ posts }: { posts: BlogPost[] }) {
               {featured && !isFiltered && sort === 'latest' && (
                 <Link
                   href={`/blog/${featured.slug}`}
-                  className="group mb-10 block overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:border-purple-200 hover:shadow-xl"
+                  className="group mb-8 block overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:border-purple-200 hover:shadow-xl"
                 >
                   <div className="grid lg:grid-cols-5">
                     <div className="relative min-h-[220px] overflow-hidden bg-gray-100 lg:col-span-3 lg:min-h-[340px]">
@@ -552,13 +552,13 @@ export default function BlogListClient({ posts }: { posts: BlogPost[] }) {
         </section>
 
         {/* ─── FAQ ───────────────────────────────────────────────── */}
-        <section id="faq" className="scroll-mt-20 border-t border-gray-100 py-14 sm:py-16">
+        <section id="faq" className="scroll-mt-20 border-t border-gray-100 py-10 sm:py-12">
           <div className="grid gap-10 lg:grid-cols-12">
             <div className="lg:col-span-4">
               <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-purple-100 bg-purple-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-purple-700">
                 <CheckCircle2 className="h-3.5 w-3.5" /> About these guides
               </span>
-              <h2 className="text-balance text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+              <h2 className="text-balance text-[21px] font-semibold tracking-tight text-gray-900 sm:text-[25px]">
                 What people ask before they read
               </h2>
               <p className="mt-3 text-gray-600">
@@ -593,11 +593,11 @@ export default function BlogListClient({ posts }: { posts: BlogPost[] }) {
         </section>
 
         {/* ─── CTA ───────────────────────────────────────────────── */}
-        <section className="pb-16">
+        <section className="pb-12">
           <div className="overflow-hidden rounded-2xl border border-purple-100 bg-[#f8f7fc] p-6 sm:p-10">
             <div className="grid items-center gap-8 lg:grid-cols-12">
               <div className="lg:col-span-7">
-                <h2 className="text-balance text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+                <h2 className="text-balance text-[21px] font-semibold tracking-tight text-gray-900 sm:text-[25px]">
                   Read the guide, then put it to work
                 </h2>
                 <p className="mt-3 max-w-2xl text-gray-600">
